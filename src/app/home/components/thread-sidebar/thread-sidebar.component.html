@@ -69,12 +69,7 @@
           <i class="fa-solid fa-ellipsis"></i>
         </button>
 
-        <div
-          class="thread-menu-panel"
-          *ngIf="threadMenuOpen === thread.id && threadMenuPosition as pos"
-          [style.top.px]="pos.top"
-          [style.left.px]="pos.left"
-        >
+        <div class="thread-menu-panel" *ngIf="threadMenuOpen === thread.id">
           <button type="button" (click)="editThread(thread, $event)">
             <i class="fa-solid fa-pen"></i>
             <span>Rename Title</span>

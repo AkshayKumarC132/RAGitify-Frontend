@@ -2,11 +2,6 @@ import { Component, Input, Output, EventEmitter, HostListener } from '@angular/c
 import { Thread } from '../../../shared/models/thread.model';
 import { User } from '../../../shared/models/user.model';
 
-interface ThreadMenuPosition {
-  top: number;
-  left: number;
-}
-
 @Component({
   selector: 'app-thread-sidebar',
   templateUrl: './thread-sidebar.component.html',
@@ -27,13 +22,10 @@ export class ThreadSidebarComponent {
   @Output() removeThread = new EventEmitter<Thread>();
 
   threadMenuOpen: string | null = null;
-  threadMenuPosition: ThreadMenuPosition | null = null;
   profileMenuOpen = false;
-  private readonly menuDimensions = { width: 180, height: 96, margin: 16 };
 
   selectThread(thread: Thread): void {
     this.threadMenuOpen = null;
-    this.threadMenuPosition = null;
     this.profileMenuOpen = false;
     this.threadSelected.emit(thread);
   }
@@ -113,24 +105,8 @@ export class ThreadSidebarComponent {
     }
 
     const trigger = event.currentTarget as HTMLElement;
-    const rect = trigger.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-
-    let left = rect.right + 12;
-    if (left + this.menuDimensions.width + this.menuDimensions.margin > viewportWidth) {
-      left = rect.left - this.menuDimensions.width - 12;
-    }
-
-    const centerOffset = rect.height / 2;
-    let top = rect.top + scrollY + centerOffset - this.menuDimensions.height / 2;
-    const minTop = scrollY + this.menuDimensions.margin;
-    const maxTop = scrollY + viewportHeight - this.menuDimensions.height - this.menuDimensions.margin;
-    top = Math.max(minTop, Math.min(maxTop, top));
-
+    trigger.focus();
     this.threadMenuOpen = thread.id;
-    this.threadMenuPosition = { top, left };
   }
 
   editThread(thread: Thread, event?: MouseEvent): void {
@@ -198,6 +174,5 @@ export class ThreadSidebarComponent {
 
   private closeThreadMenu(): void {
     this.threadMenuOpen = null;
-    this.threadMenuPosition = null;
   }
 }
