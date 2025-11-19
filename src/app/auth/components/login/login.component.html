@@ -22,15 +22,15 @@
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" *ngIf="!showRegister" class="auth-form">
       <label>
-        <span>Email or Username</span>
+        <span>Email</span>
         <input
-          type="text"
-          id="identifier"
-          formControlName="identifier"
-          [class.error]="loginForm.get('identifier')?.invalid && loginForm.get('identifier')?.touched"
+          type="email"
+          id="email"
+          formControlName="email"
+          [class.error]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
           placeholder="team@ragitify.ai"
         />
-        <small *ngIf="loginForm.get('identifier')?.invalid && loginForm.get('identifier')?.touched">Required field</small>
+        <small *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">Valid email required</small>
       </label>
 
       <label>

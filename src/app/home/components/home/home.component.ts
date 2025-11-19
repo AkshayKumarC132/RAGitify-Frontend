@@ -68,8 +68,7 @@ export class HomeComponent implements OnInit {
     this.profileForm = this.fb.group({
       first_name: [''],
       last_name: [''],
-      email: ['', [Validators.email]],
-      username: ['']
+      email: ['', [Validators.email]]
     });
   }
 
@@ -85,8 +84,7 @@ export class HomeComponent implements OnInit {
         this.profileForm.patchValue({
           first_name: user.first_name || '',
           last_name: user.last_name || '',
-          email: user.email || '',
-          username: user.username || ''
+          email: user.email || ''
         }, { emitEvent: false });
       }
     });

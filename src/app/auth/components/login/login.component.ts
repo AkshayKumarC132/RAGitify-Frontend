@@ -21,7 +21,7 @@ export class LoginComponent implements OnInit {
     private router: Router
   ) {
     this.loginForm = this.fb.group({
-      identifier: ['', [Validators.required]],
+      email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]]
     });
   }
@@ -36,18 +36,11 @@ export class LoginComponent implements OnInit {
     if (this.loginForm.valid) {
       this.loading = true;
       this.errorMessage = '';
-      const { identifier, password } = this.loginForm.value;
-      const normalizedIdentifier = (identifier || '').trim();
+      const { email, password } = this.loginForm.value;
       const credentials: LoginRequest = {
+        email: (email || '').trim(),
         password
       };
-
-      if (normalizedIdentifier) {
-        credentials.username = normalizedIdentifier;
-        if (this.isEmail(normalizedIdentifier)) {
-          credentials.email = normalizedIdentifier;
-        }
-      }
 
       this.authService.login(credentials).subscribe({
         next: (response) => {
@@ -71,8 +64,5 @@ export class LoginComponent implements OnInit {
     this.errorMessage = '';
   }
 
-  private isEmail(value: string): boolean {
-    return /\S+@\S+\.\S+/.test(value);
-  }
 }
 

@@ -38,7 +38,6 @@ export class RegisterComponent {
       
       const formValue = this.registerForm.value;
       const registerData: RegisterRequest = {
-        username: this.deriveUsername(formValue.email),
         email: formValue.email,
         password: formValue.password,
         first_name: formValue.first_name || undefined,
@@ -102,12 +101,5 @@ export class RegisterComponent {
     return fallback;
   }
 
-  private deriveUsername(email: string): string {
-    if (!email) {
-      return 'ragitify-user';
-    }
-    const [local] = email.split('@');
-    return local?.trim() || email;
-  }
 }
 

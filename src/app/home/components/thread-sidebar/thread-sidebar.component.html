@@ -81,7 +81,7 @@
       [attr.title]="collapsed ? getProfileName(user) : null"
     >
       <div class="avatar" [attr.aria-label]="getProfileName(user)">
-        {{ getInitials(user!.first_name, user!.last_name, user!.username) }}
+        {{ getInitials(user!.first_name, user!.last_name, user!.email) }}
       </div>
       <div class="profile-meta" *ngIf="!collapsed">
         <div class="profile-name">{{ getProfileName(user) }}</div>
