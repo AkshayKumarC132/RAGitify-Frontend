@@ -30,13 +30,13 @@
 
 .brand-title {
   color: var(--text-primary);
-  font-size: 1.2rem;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .brand-subtitle {
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
@@ -76,7 +76,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  font-size: 0.9rem;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -115,7 +115,7 @@
 .section-title {
   padding: 0.5rem;
   color: var(--text-secondary);
-  font-size: 0.75rem;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -164,7 +164,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: 11px;
 }
 
 .thread-item.active .thread-item-icon {
@@ -174,13 +174,13 @@
 
 .thread-title {
   color: var(--text-primary);
-  font-size: 0.9rem;
+  font-size: 11px;
   margin-bottom: 0.15rem;
 }
 
 .thread-time {
   color: var(--text-secondary);
-  font-size: 0.75rem;
+  font-size: 10px;
 }
 
 .button-text {

@@ -12,13 +12,13 @@
 
   h1 {
     color: var(--text-primary);
-    font-size: 2rem;
+    font-size: 11px;
     margin-bottom: 0.5rem;
   }
 
   .subtitle {
     color: var(--text-secondary);
-    font-size: 1.1rem;
+    font-size: 11px;
     margin-bottom: 2rem;
   }
 }
@@ -29,7 +29,7 @@
 
 .suggestion-title {
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 1rem;
@@ -51,7 +51,7 @@
   text-align: left;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 0.9rem;
+  font-size: 11px;
 
   &:hover {
     background: var(--bg-secondary);

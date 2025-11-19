@@ -14,7 +14,7 @@
 
   h1 {
     color: var(--text-primary);
-    font-size: 1.4rem;
+    font-size: 11px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -69,7 +69,7 @@
   border: 1px solid var(--border-color);
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 11px;
   transition: background 0.2s;
   display: inline-flex;
   align-items: center;
@@ -107,7 +107,7 @@
 
 .provider-showcase h2 {
   margin-bottom: 1rem;
-  font-size: 1rem;
+  font-size: 11px;
   color: var(--text-primary);
   display: flex;
   align-items: center;
@@ -144,20 +144,20 @@
 .provider-badge {
   padding: 0.15rem 0.45rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 10px;
   background: var(--bg-tertiary);
   color: var(--text-secondary);
 }
 
 .provider-description {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 11px;
   line-height: 1.4;
   flex: 1;
 }
 
 .provider-meta {
-  font-size: 0.8rem;
+  font-size: 10px;
   color: var(--text-secondary);
 }
 
@@ -171,7 +171,7 @@
   h2 {
     color: var(--text-primary);
     margin-bottom: 1rem;
-    font-size: 1.1rem;
+    font-size: 11px;
     display: flex;
     align-items: center;
     gap: 0.4rem;
@@ -185,7 +185,7 @@
     display: block;
     color: var(--text-primary);
     margin-bottom: 0.5rem;
-    font-size: 0.9rem;
+    font-size: 11px;
     font-weight: 500;
   }
 
@@ -196,7 +196,7 @@
     border: 1px solid var(--border-color);
     border-radius: 4px;
     color: var(--text-primary);
-    font-size: 1rem;
+    font-size: 11px;
 
     &:focus {
       outline: none;
@@ -251,7 +251,7 @@
 
 .model-details {
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 10px;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -262,7 +262,7 @@
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 10px;
   font-weight: 500;
 }
 

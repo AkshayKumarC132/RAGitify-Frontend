@@ -12,7 +12,7 @@
   color: var(--text-primary);
   cursor: pointer;
   z-index: 1000;
-  font-size: 0.85rem;
+  font-size: 11px;
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 
   &:hover {
@@ -22,6 +22,6 @@
   }
 
   i {
-    font-size: 0.95rem;
+    font-size: 11px;
   }
 }

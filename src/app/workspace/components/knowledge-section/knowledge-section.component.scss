@@ -16,7 +16,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 1.4rem;
+    font-size: 11px;
   }
 
   p {
@@ -73,7 +73,7 @@
 
   span {
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 11px;
   }
 }
 
@@ -93,7 +93,7 @@
 
   small {
     color: var(--error-color);
-    font-size: 0.8rem;
+    font-size: 10px;
   }
 }
 
@@ -108,7 +108,7 @@
 
 .loading-state {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 11px;
 }
 
 .documents-list {
@@ -142,7 +142,7 @@
 
   .document-date {
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: 10px;
   }
 }
 
@@ -150,7 +150,7 @@
   padding: 0.15rem 0.65rem;
   border-radius: 100px;
   text-transform: capitalize;
-  font-size: 0.8rem;
+  font-size: 10px;
   font-weight: 600;
 
   &.status-completed {

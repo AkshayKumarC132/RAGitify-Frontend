@@ -24,17 +24,21 @@
   </div>
 
   <div class="main-content">
-    <div class="header">
-      <app-model-selector
-        [models]="availableModels"
-        [selectedModel]="selectedModel"
-        (modelSelected)="onModelSelected($event)"
-      ></app-model-selector>
-    </div>
-
     <div class="chat-area">
+      <div class="chat-toolbar">
+        <div class="toolbar-label">
+          <i class="fa-solid fa-robot" aria-hidden="true"></i>
+          <span>Active model</span>
+        </div>
+        <app-model-selector
+          [models]="availableModels"
+          [selectedModel]="selectedModel"
+          (modelSelected)="onModelSelected($event)"
+        ></app-model-selector>
+      </div>
+
       <app-empty-state *ngIf="!currentThread && messages.length === 0"></app-empty-state>
-      
+
       <app-chat-container
         *ngIf="currentThread || messages.length > 0"
         [messages]="messages"

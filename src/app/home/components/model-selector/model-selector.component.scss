@@ -1,5 +1,7 @@
 .model-selector {
   position: relative;
+  display: inline-block;
+  min-width: 220px;
 }
 
 .selector-button {
@@ -9,10 +11,10 @@
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  padding: 0.5rem 1rem;
+  padding: 0.35rem 0.75rem;
   color: var(--text-primary);
   cursor: pointer;
-  width: 100%;
+  width: auto;
   transition: background 0.2s;
 
   &:hover {
@@ -29,17 +31,17 @@
 
 .model-name {
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 11px;
 }
 
 .model-provider {
-  font-size: 0.75rem;
+  font-size: 10px;
   color: var(--text-secondary);
   margin-top: 0.125rem;
 }
 
 .dropdown-icon {
-  font-size: 0.75rem;
+  font-size: 10px;
   color: var(--text-secondary);
 }
 
@@ -85,11 +87,11 @@
 
 .item-name {
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 11px;
 }
 
 .item-details {
-  font-size: 0.75rem;
+  font-size: 10px;
   color: var(--text-secondary);
   margin-top: 0.25rem;
 }
