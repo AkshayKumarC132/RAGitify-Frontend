@@ -73,6 +73,7 @@ export class HomeComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.authService.restoreUserFromStorage();
     this.loadModels();
     this.loadThreads();
     this.loadLibraries();

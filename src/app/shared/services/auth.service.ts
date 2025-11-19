@@ -12,13 +12,15 @@ export class AuthService {
   private readonly TOKEN_KEY = 'auth_token';
   private readonly USER_KEY = 'current_user';
   
-  private currentUserSubject = new BehaviorSubject<User | null>(this.getStoredUser());
+  private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(
     private api: ApiService,
     private router: Router
-  ) {}
+  ) {
+    this.restoreUserFromStorage();
+  }
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.api.post<AuthResponse>('/login/', credentials);
@@ -48,7 +50,24 @@ export class AuthService {
 
   getStoredUser(): User | null {
     const userStr = localStorage.getItem(this.USER_KEY);
-    return userStr ? JSON.parse(userStr) : null;
+    if (!userStr) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(userStr);
+    } catch (error) {
+      console.error('[AuthService] Unable to parse stored user, clearing cache', error);
+      localStorage.removeItem(this.USER_KEY);
+      return null;
+    }
+  }
+
+  restoreUserFromStorage(): void {
+    const storedUser = this.getStoredUser();
+    if (storedUser) {
+      this.currentUserSubject.next(storedUser);
+    }
   }
 
   clearAuth(): void {
@@ -66,6 +85,7 @@ export class AuthService {
     const token = this.getToken();
 
     if (!token) {
+      this.currentUserSubject.next(null);
       return;
     }
 
@@ -77,7 +97,11 @@ export class AuthService {
           return of(null);
         })
       )
-      .subscribe();
+      .subscribe((response) => {
+        if (response !== null) {
+          this.restoreUserFromStorage();
+        }
+      });
   }
 
   isAuthenticated(): boolean {
