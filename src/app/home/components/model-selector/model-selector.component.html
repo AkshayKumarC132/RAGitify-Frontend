@@ -1,0 +1,25 @@
+<div class="model-selector">
+  <button class="selector-button" (click)="toggleDropdown()">
+    <span class="model-info">
+      <span class="model-name">{{ selectedModel ? getDisplayName(selectedModel) : 'Select Model' }}</span>
+      <span class="model-provider" *ngIf="selectedModel">{{ selectedModel.provider }}</span>
+    </span>
+    <span class="dropdown-icon">▼</span>
+  </button>
+
+  <div class="dropdown" *ngIf="showDropdown">
+    <div
+      *ngFor="let model of models"
+      class="dropdown-item"
+      [class.active]="selectedModel?.id === model.id"
+      (click)="selectModel(model)"
+    >
+      <div class="item-name">{{ getDisplayName(model) }}</div>
+      <div class="item-details">{{ model.provider }} - {{ model.model }}</div>
+    </div>
+    <div class="dropdown-item empty" *ngIf="models.length === 0">
+      No models available
+    </div>
+  </div>
+</div>
+

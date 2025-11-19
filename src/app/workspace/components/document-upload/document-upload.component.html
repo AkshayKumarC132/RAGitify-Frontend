@@ -1,0 +1,37 @@
+<div class="document-upload">
+  <h2>Upload Document</h2>
+  
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div class="form-group">
+    <label>Library</label>
+    <select [(ngModel)]="selectedVectorStoreId" class="form-control">
+      <option value="">Select library</option>
+      <option *ngFor="let store of vectorStores" [value]="store.id">{{ store.name }}</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>File</label>
+    <input type="file" (change)="onFileSelected($event)" class="form-control" />
+    <div *ngIf="selectedFile" class="file-info">
+      Selected: {{ selectedFile.name }}
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="progress">
+    <div class="progress-bar" [style.width.%]="uploadProgress"></div>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn-primary" (click)="onUpload()" [disabled]="loading || !selectedFile || !selectedVectorStoreId">
+      {{ loading ? 'Uploading...' : 'Upload' }}
+    </button>
+    <button class="btn-secondary" (click)="onCancel()" [disabled]="loading">
+      Cancel
+    </button>
+  </div>
+</div>
+

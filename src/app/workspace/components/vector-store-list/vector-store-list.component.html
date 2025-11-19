@@ -1,0 +1,14 @@
+<div class="vector-store-list">
+  <h2>Library</h2>
+  <div *ngFor="let store of vectorStores" 
+       class="store-item"
+       [class.selected]="selectedVectorStore?.id === store.id"
+       (click)="selectStore(store)">
+    <div class="store-name">{{ store.name }}</div>
+    <div class="store-date">Created: {{ formatDate(store.created_at) }}</div>
+  </div>
+  <div *ngIf="vectorStores.length === 0" class="empty-state">
+    No library entries found.
+  </div>
+</div>
+

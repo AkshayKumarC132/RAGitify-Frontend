@@ -1,0 +1,57 @@
+<div class="home-container">
+  <div class="sidebar">
+    <app-thread-sidebar
+      [threads]="threads"
+      [currentThread]="currentThread"
+      (threadSelected)="onThreadSelected($event)"
+      (newThread)="onNewThread()"
+      (workspaceNavigate)="onWorkspaceNavigate()"
+    ></app-thread-sidebar>
+    
+    <div class="sidebar-footer">
+      <button class="logout-button" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="header">
+      <app-model-selector
+        [models]="availableModels"
+        [selectedModel]="selectedModel"
+        (modelSelected)="onModelSelected($event)"
+      ></app-model-selector>
+    </div>
+
+    <div class="chat-area">
+      <app-empty-state *ngIf="!currentThread && messages.length === 0"></app-empty-state>
+      
+      <app-chat-container
+        *ngIf="currentThread || messages.length > 0"
+        [messages]="messages"
+        [currentRun]="currentRun"
+      ></app-chat-container>
+    </div>
+
+    <div class="input-area">
+      <app-chat-input
+        [mode]="mode"
+        [loading]="loading || attachmentsInProgress"
+        [libraries]="libraries"
+        [selectedLibraryId]="selectedLibraryId"
+        [prompts]="prompts"
+        [selectedPromptId]="selectedPromptId"
+        (messageSent)="onMessageSent($event)"
+        (modeToggle)="onModeToggle($event)"
+        (filesSelected)="onFilesSelected($event)"
+        (webpageAttached)="onWebpageAttach($event)"
+        (notesAttached)="onNotesAttach($event)"
+        (librarySelected)="onLibrarySelected($event)"
+        (promptSelected)="onPromptSelected($event)"
+      ></app-chat-input>
+
+      <div class="attachment-status" *ngIf="attachmentMessage">
+        {{ attachmentMessage }}
+      </div>
+    </div>
+  </div>
+</div>

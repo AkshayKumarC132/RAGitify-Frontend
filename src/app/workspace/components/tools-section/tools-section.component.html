@@ -1,0 +1,84 @@
+<div class="tools-section">
+  <div class="section-header">
+    <h1>Tools</h1>
+  </div>
+
+  <div class="assistants-list">
+    <h2>Select Assistant</h2>
+    <div *ngIf="loadingAssistants" class="loading-state">Loading assistants...</div>
+    <div *ngFor="let assistant of assistants" 
+         class="assistant-item"
+         [class.selected]="selectedAssistant?.id === assistant.id"
+         (click)="selectAssistant(assistant)">
+      {{ assistant.name }}
+    </div>
+    <div *ngIf="!loadingAssistants && assistants.length === 0" class="empty-state">
+      Create a prompt first to attach tools.
+    </div>
+  </div>
+
+  <div *ngIf="selectedAssistant" class="tools-content">
+    <div class="tools-header">
+      <h2>Tools for {{ selectedAssistant.name }}</h2>
+      <button class="btn-primary" (click)="toggleToolForm()">
+        + Add Tool
+      </button>
+    </div>
+
+    <div *ngIf="showToolForm" class="tool-form">
+      <h3>Add Function Tool</h3>
+      <form [formGroup]="toolForm" (ngSubmit)="onToolSubmit()">
+        <div class="form-group">
+          <label>Tool Type</label>
+          <select formControlName="type" class="form-control">
+            <option value="function">Function</option>
+            <option value="file_search">File Search</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Function Name *</label>
+          <input type="text" formControlName="name" class="form-control" />
+        </div>
+
+        <div class="form-group">
+          <label>Description *</label>
+          <textarea formControlName="description" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Parameters (JSON)</label>
+          <textarea formControlName="parameters" class="form-control" rows="6"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="loading || toolForm.invalid">
+            {{ loading ? 'Adding...' : 'Add Tool' }}
+          </button>
+          <button type="button" class="btn-secondary" (click)="toggleToolForm()" [disabled]="loading">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="tools-list">
+      <div *ngFor="let tool of (selectedAssistant.tools || []); let i = index" class="tool-item">
+        <div class="tool-type">{{ tool.type }}</div>
+        <div class="tool-name" *ngIf="tool.function">{{ tool.function.name }}</div>
+        <div class="tool-description" *ngIf="tool.function">{{ tool.function.description }}</div>
+        <button class="btn-small btn-danger" (click)="removeTool(i)">
+          Remove
+        </button>
+      </div>
+      <div *ngIf="!selectedAssistant.tools || selectedAssistant.tools.length === 0" class="empty-state">
+        No tools added yet.
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!selectedAssistant && assistants.length" class="empty-state">
+    Select an assistant to manage its tools.
+  </div>
+</div>
+

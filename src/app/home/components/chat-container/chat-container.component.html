@@ -1,0 +1,17 @@
+<div class="chat-container">
+  <div class="messages-list">
+    <app-message-bubble
+      *ngFor="let message of messages"
+      [message]="message"
+    ></app-message-bubble>
+    
+    <div *ngIf="currentRun && (currentRun.status === 'queued' || currentRun.status === 'in_progress')" class="loading-indicator">
+      <div class="typing-indicator">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </div>
+</div>
+

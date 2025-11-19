@@ -1,0 +1,102 @@
+<div class="models-section">
+  <div class="section-header">
+    <h1>Models</h1>
+    <button class="btn-primary" (click)="toggleCreateForm()">
+      + New Model
+    </button>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="showCreateForm" class="create-form">
+    <h2>Create New Model</h2>
+    <form [formGroup]="createForm" (ngSubmit)="onCreateSubmit()">
+      <div class="form-group">
+        <label>Name (Optional)</label>
+        <input type="text" formControlName="name" class="form-control" placeholder="Model name" />
+      </div>
+
+      <div class="form-group">
+        <label>Provider *</label>
+        <select formControlName="provider" class="form-control">
+          <option value="OpenAI">OpenAI</option>
+          <option value="Ollama">Ollama</option>
+          <option value="Claude">Claude</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Model</label>
+        <input type="text" formControlName="model" class="form-control" placeholder="e.g., gpt-4o" />
+      </div>
+
+      <div class="form-group" *ngIf="createForm.get('provider')?.value === 'OpenAI'">
+        <label>API Key *</label>
+        <input type="password" formControlName="api_key" class="form-control" placeholder="Enter API key" />
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" formControlName="is_active" />
+          Set as active
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="loading || createForm.invalid">
+          {{ loading ? 'Creating...' : 'Create' }}
+        </button>
+        <button type="button" class="btn-secondary" (click)="toggleCreateForm()" [disabled]="loading">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="provider-showcase">
+    <h2>Available Providers</h2>
+    <div class="provider-grid">
+      <div class="provider-card" *ngFor="let provider of availableProviders">
+        <div class="provider-card__header">
+          <span class="provider-name">{{ provider.name }}</span>
+          <span class="provider-badge">{{ provider.badge }}</span>
+        </div>
+        <p class="provider-description">{{ provider.description }}</p>
+        <div class="provider-meta">
+          <span *ngIf="provider.requiresApiKey">Requires API Key</span>
+          <span *ngIf="!provider.requiresApiKey">Runs Locally</span>
+        </div>
+        <button class="btn-secondary" (click)="connectProvider(provider)">
+          Connect {{ provider.name }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="models-list">
+    <div *ngFor="let model of models" class="model-item" [class.active]="model.is_active">
+      <div class="model-info">
+        <div class="model-name">{{ model.name || (model.provider + ' - ' + model.model) }}</div>
+        <div class="model-details">
+          <span>{{ model.provider }}</span> • <span>{{ model.model }}</span>
+          <span *ngIf="model.is_active" class="active-badge">Active</span>
+        </div>
+      </div>
+      <div class="model-actions">
+        <button *ngIf="!model.is_active" class="btn-small" (click)="setActive(model)">
+          Set Active
+        </button>
+        <button class="btn-small btn-danger" (click)="deleteModel(model.id)">
+          Delete
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="models.length === 0" class="empty-state">
+      <p>No models found. Create your first model to get started.</p>
+    </div>
+  </div>
+</div>
+

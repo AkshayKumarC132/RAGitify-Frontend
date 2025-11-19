@@ -1,0 +1,27 @@
+<div class="thread-sidebar">
+  <div class="sidebar-header">
+    <h2>RAG App</h2>
+    <button class="new-thread-button" (click)="createNewThread()">
+      <span>+</span> New Chat
+    </button>
+    <button class="workspace-button" (click)="goToWorkspace()">
+      Workspace
+    </button>
+  </div>
+
+  <div class="threads-section">
+    <div class="section-title">Today</div>
+    <div class="threads-list">
+      <div
+        *ngFor="let thread of threads"
+        class="thread-item"
+        [class.active]="currentThread?.id === thread.id"
+        (click)="selectThread(thread)"
+      >
+        <div class="thread-title">{{ getThreadTitle(thread) }}</div>
+        <div class="thread-time">{{ formatTime(thread.created_at) }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+

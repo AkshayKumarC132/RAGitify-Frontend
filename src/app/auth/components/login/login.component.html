@@ -1,0 +1,58 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1>RAG Application</h1>
+      <p>Sign in to continue</p>
+    </div>
+
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" *ngIf="!showRegister">
+      <div class="form-group">
+        <label for="identifier">Email or Username</label>
+        <input
+          type="text"
+          id="identifier"
+          formControlName="identifier"
+          class="form-control"
+          [class.error]="loginForm.get('identifier')?.invalid && loginForm.get('identifier')?.touched"
+          placeholder="Enter your email or username"
+        />
+        <div *ngIf="loginForm.get('identifier')?.invalid && loginForm.get('identifier')?.touched" class="error-text">
+          Please enter your email or username
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          formControlName="password"
+          class="form-control"
+          [class.error]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+          placeholder="Enter your password"
+        />
+        <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="error-text">
+          Password must be at least 6 characters
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary" [disabled]="loading || loginForm.invalid">
+        <span *ngIf="!loading">Sign In</span>
+        <span *ngIf="loading">Signing in...</span>
+      </button>
+    </form>
+
+    <div *ngIf="showRegister">
+      <app-register (backToLogin)="toggleRegister()"></app-register>
+    </div>
+
+    <div class="auth-footer" *ngIf="!showRegister">
+      <p>Don't have an account? <a (click)="toggleRegister()" class="link">Sign up</a></p>
+    </div>
+  </div>
+</div>
+

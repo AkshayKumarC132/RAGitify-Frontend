@@ -1,0 +1,79 @@
+<div class="prompts-section">
+  <div class="section-header">
+    <h1>Prompts</h1>
+    <button class="btn-primary" (click)="toggleCreateForm()">
+      + New Prompt
+    </button>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="showCreateForm" class="create-form">
+    <h2>Create Assistant Prompt</h2>
+    <form [formGroup]="createForm" (ngSubmit)="onCreateSubmit()">
+      <div class="form-group">
+        <label>Name *</label>
+        <input type="text" formControlName="name" class="form-control" placeholder="Assistant name" />
+      </div>
+
+      <div class="form-group">
+        <label>Library</label>
+        <select formControlName="vector_store_id" class="form-control">
+          <option value="">None</option>
+          <option *ngFor="let store of vectorStores" [value]="store.id">{{ store.name }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Instructions</label>
+        <textarea
+          formControlName="instructions"
+          class="form-control"
+          rows="8"
+          placeholder="Enter assistant instructions (system prompt)..."
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Model</label>
+        <input type="text" formControlName="model" class="form-control" placeholder="e.g., gpt-4o" />
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="loading || createForm.invalid">
+          {{ loading ? 'Creating...' : 'Create' }}
+        </button>
+        <button type="button" class="btn-secondary" (click)="toggleCreateForm()" [disabled]="loading">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="prompts-list">
+    <div *ngFor="let assistant of assistants" class="prompt-item">
+      <div class="prompt-info">
+        <div class="prompt-name">{{ assistant.name }}</div>
+        <div class="prompt-meta">
+          <span>Model: {{ assistant.model || 'Workspace default' }}</span>
+          <span>• Library: {{ vectorStoreLabel(assistant.vector_store_id) }}</span>
+        </div>
+        <div class="prompt-instructions">
+          {{ instructionsPreview(assistant.instructions) }}
+        </div>
+      </div>
+      <div class="prompt-actions">
+        <span class="prompt-date">Updated {{ assistant.updated_at | date:'mediumDate' }}</span>
+        <button class="btn-small btn-danger" (click)="deleteAssistant(assistant)">
+          Delete
+        </button>
+      </div>
+    </div>
+    <div *ngIf="assistants.length === 0" class="empty-state">
+      No prompts created yet.
+    </div>
+  </div>
+</div>
+

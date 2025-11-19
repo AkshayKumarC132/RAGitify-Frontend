@@ -1,0 +1,111 @@
+<div class="knowledge-section">
+  <div class="section-header">
+    <div>
+      <h1>Knowledge</h1>
+      <p>Upload documents and manage your knowledge library for retrieval.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="toggleVectorStoreForm()">
+        {{ showCreateVectorStoreForm ? 'Close' : '+ New Library' }}
+      </button>
+      <button class="btn-primary"
+              [disabled]="vectorStores.length === 0"
+              (click)="showUploadForm = !showUploadForm">
+        {{ showUploadForm ? 'Close upload' : '+ Upload Knowledge' }}
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="showCreateVectorStoreForm" class="panel">
+    <h3>Create library</h3>
+    <form [formGroup]="createVectorStoreForm" (ngSubmit)="createVectorStore()">
+      <div class="form-group">
+        <label>Name *</label>
+        <input type="text" formControlName="name" placeholder="e.g., Product manuals" />
+        <small *ngIf="createVectorStoreForm.get('name')?.invalid && createVectorStoreForm.get('name')?.touched">
+          A descriptive name is required.
+        </small>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="createVectorStoreForm.invalid">
+          Create
+        </button>
+        <button type="button" class="btn-secondary" (click)="toggleVectorStoreForm()">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div *ngIf="showUploadForm" class="panel upload-panel">
+    <app-document-upload
+      [vectorStores]="vectorStores"
+      [defaultVectorStoreId]="selectedVectorStore?.id || null"
+      (uploaded)="onDocumentUploaded()"
+      (cancel)="showUploadForm = false"
+    ></app-document-upload>
+  </div>
+
+  <div class="knowledge-grid">
+    <div class="vector-store-column">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Library</h3>
+          <span>{{ vectorStores.length }} total</span>
+        </div>
+        <div *ngIf="loadingStores" class="loading-state">Loading library...</div>
+        <app-vector-store-list
+          *ngIf="!loadingStores"
+          [vectorStores]="vectorStores"
+          [selectedVectorStore]="selectedVectorStore"
+          (vectorStoreSelected)="onVectorStoreSelected($event)"
+        ></app-vector-store-list>
+        <div *ngIf="!loadingStores && vectorStores.length === 0" class="empty-state">
+          Create a library to begin uploading documents.
+        </div>
+      </div>
+    </div>
+
+    <div class="documents-column">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>
+            Documents
+            <span *ngIf="selectedVectorStore">
+              in {{ selectedVectorStore.name }}
+            </span>
+          </h3>
+          <span>{{ filteredDocuments.length }} items</span>
+        </div>
+
+        <div *ngIf="loadingDocuments" class="loading-state">Loading documents...</div>
+
+        <div *ngIf="!loadingDocuments && filteredDocuments.length === 0" class="empty-state">
+          No documents found for the selected library.
+        </div>
+
+        <div *ngIf="!loadingDocuments && filteredDocuments.length > 0" class="documents-list">
+          <div *ngFor="let doc of filteredDocuments" class="document-item">
+            <div class="document-meta">
+              <div>
+                <div class="document-title">{{ doc.title }}</div>
+                <div class="document-date">Uploaded {{ formatDate(doc.uploaded_at) }}</div>
+              </div>
+              <span class="status-badge" [ngClass]="getStatusBadgeClass(doc.status)">
+                {{ doc.status }}
+              </span>
+            </div>
+            <button class="btn-link danger" (click)="deleteDocument(doc.id)">
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,60 @@
+@import '../models-section/models-section.component.scss';
+
+.prompts-section {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.error-message {
+  margin-bottom: 1rem;
+}
+
+.prompts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.prompt-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.prompt-name {
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.prompt-instructions {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.prompt-meta {
+  display: flex;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.prompt-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.prompt-date {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
