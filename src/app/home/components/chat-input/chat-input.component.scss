@@ -8,12 +8,13 @@
   display: flex;
   align-items: flex-end;
   gap: 0.5rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border: none;
+  border-radius: 999px;
+  padding: 0.65rem 0.85rem;
   position: relative;
   overflow: visible;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
 }
 
 .chat-input {
@@ -23,7 +24,7 @@
   color: var(--text-primary);
   font-size: 11px;
   resize: none;
-  min-height: 24px;
+  min-height: 22px;
   max-height: 200px;
   font-family: inherit;
 
@@ -53,10 +54,10 @@
 
 .attachment-toggle {
   background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  width: 36px;
-  height: 36px;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
   color: var(--text-secondary);
   font-size: 11px;
   cursor: pointer;
@@ -64,7 +65,7 @@
 
   &.active,
   &:hover {
-    background: var(--bg-secondary);
+    background: rgba(255, 255, 255, 0.08);
     color: var(--text-primary);
   }
 }
@@ -113,15 +114,15 @@
 
 .mode-toggle {
   background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 0.5rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
   cursor: pointer;
   color: var(--text-secondary);
   transition: all 0.2s;
 
   &:hover {
-    background: var(--bg-secondary);
+    background: rgba(255, 255, 255, 0.08);
     color: var(--text-primary);
   }
 
@@ -136,8 +137,8 @@
 }
 
 .send-button {
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
   font-size: 11px;
   border-color: var(--accent-color);
   color: var(--accent-color);

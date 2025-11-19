@@ -16,9 +16,9 @@
     ></app-thread-sidebar>
   </div>
 
-  <div class="main-content">
+  <div class="main-content" [class.empty-mode]="isConversationEmpty">
     <div class="chat-area">
-      <div class="chat-toolbar">
+      <!-- <div class="chat-toolbar">
         <div class="toolbar-label">
           <i class="fa-solid fa-robot" aria-hidden="true"></i>
           <span>{{ selectedModel?.name || selectedModel?.model || 'Default Model' }}</span>
@@ -27,18 +27,18 @@
           <i class="fa-regular fa-clock" aria-hidden="true"></i>
           <span>{{ selectedModel?.provider || 'Auto' }}</span>
         </div>
-      </div>
+      </div> -->
 
-      <app-empty-state *ngIf="!currentThread && messages.length === 0"></app-empty-state>
+      <app-empty-state *ngIf="isConversationEmpty"></app-empty-state>
 
       <app-chat-container
-        *ngIf="currentThread || messages.length > 0"
+        *ngIf="!isConversationEmpty"
         [messages]="messages"
         [currentRun]="currentRun"
       ></app-chat-container>
     </div>
 
-    <div class="input-area">
+    <div class="input-area" [class.centered]="isConversationEmpty">
       <app-chat-input
         [mode]="mode"
         [loading]="loading || attachmentsInProgress"

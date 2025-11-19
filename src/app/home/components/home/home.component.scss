@@ -9,7 +9,6 @@
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
   overflow: hidden;
   transition: width 0.3s ease;
 }
@@ -28,6 +27,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: padding 0.3s ease;
 }
 
 .chat-area {
@@ -62,9 +62,8 @@
 }
 
 .input-area {
-  padding: 1rem;
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-color);
+  padding: 1rem 1.25rem;
+  background: var(--bg-primary);
 }
 
 .attachment-status {
@@ -176,5 +175,33 @@
 .profile-message {
   font-size: 10px;
   color: var(--accent-color);
+}
+
+.main-content.empty-mode {
+  justify-content: center;
+  gap: 2.5rem;
+  padding-bottom: 3rem;
+}
+
+.main-content.empty-mode .chat-area {
+  flex: none;
+  min-height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.input-area.centered {
+  background: transparent;
+  border: none;
+  padding: 0;
+  max-width: 620px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.input-area.centered .attachment-status {
+  text-align: center;
 }
 

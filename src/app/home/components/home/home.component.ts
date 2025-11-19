@@ -130,6 +130,10 @@ export class HomeComponent implements OnInit {
     }, 2500);
   }
 
+  get isConversationEmpty(): boolean {
+    return !this.currentThread && this.messages.length === 0;
+  }
+
   onThreadRename(event: { thread: Thread; title: string }): void {
     this.threadService.update(event.thread.id, { title: event.title }).subscribe({
       next: (updated) => {
