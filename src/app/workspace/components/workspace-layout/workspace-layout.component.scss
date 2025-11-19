@@ -144,9 +144,8 @@
     transition: all 0.2s ease;
 
     &.active {
-      background: var(--accent-color);
       border-color: var(--accent-color);
-      color: #fff;
+      color: var(--accent-color);
     }
 
     &:hover:not(.active) {

@@ -1,57 +1,58 @@
-<div class="auth-container">
+<div class="auth-shell">
+  <div class="auth-illustration">
+    <img src="assets/images/ragitify-logo.svg" alt="RAGitify" class="hero-logo" />
+    <h1>RAGitify Workspace</h1>
+    <p>Trusted environment for organizing prompts, models, and knowledge.</p>
+    <ul>
+      <li><i class="fa-solid fa-lock"></i> Enterprise security baked in</li>
+      <li><i class="fa-solid fa-sparkles"></i> Curated prompt & model library</li>
+      <li><i class="fa-solid fa-users"></i> Collaborate with your entire team</li>
+    </ul>
+  </div>
+
   <div class="auth-card">
-    <div class="auth-header">
-      <h1>RAG Application</h1>
-      <p>Sign in to continue</p>
+    <div class="auth-tabs">
+      <button type="button" [class.active]="!showRegister" (click)="setAuthMode(false)">Sign In</button>
+      <button type="button" [class.active]="showRegister" (click)="setAuthMode(true)">Create Account</button>
     </div>
 
     <div *ngIf="errorMessage" class="error-message">
       {{ errorMessage }}
     </div>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" *ngIf="!showRegister">
-      <div class="form-group">
-        <label for="identifier">Email or Username</label>
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" *ngIf="!showRegister" class="auth-form">
+      <label>
+        <span>Email or Username</span>
         <input
           type="text"
           id="identifier"
           formControlName="identifier"
-          class="form-control"
           [class.error]="loginForm.get('identifier')?.invalid && loginForm.get('identifier')?.touched"
-          placeholder="Enter your email or username"
+          placeholder="team@ragitify.ai"
         />
-        <div *ngIf="loginForm.get('identifier')?.invalid && loginForm.get('identifier')?.touched" class="error-text">
-          Please enter your email or username
-        </div>
-      </div>
+        <small *ngIf="loginForm.get('identifier')?.invalid && loginForm.get('identifier')?.touched">Required field</small>
+      </label>
 
-      <div class="form-group">
-        <label for="password">Password</label>
+      <label>
+        <span>Password</span>
         <input
           type="password"
           id="password"
           formControlName="password"
-          class="form-control"
           [class.error]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
-          placeholder="Enter your password"
+          placeholder="••••••"
         />
-        <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="error-text">
-          Password must be at least 6 characters
-        </div>
-      </div>
+        <small *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">Minimum 6 characters</small>
+      </label>
 
       <button type="submit" class="btn-primary" [disabled]="loading || loginForm.invalid">
-        <span *ngIf="!loading">Sign In</span>
+        <span *ngIf="!loading">Access Workspace</span>
         <span *ngIf="loading">Signing in...</span>
       </button>
     </form>
 
-    <div *ngIf="showRegister">
+    <div *ngIf="showRegister" class="auth-form">
       <app-register (backToLogin)="toggleRegister()"></app-register>
-    </div>
-
-    <div class="auth-footer" *ngIf="!showRegister">
-      <p>Don't have an account? <a (click)="toggleRegister()" class="link">Sign up</a></p>
     </div>
   </div>
 </div>

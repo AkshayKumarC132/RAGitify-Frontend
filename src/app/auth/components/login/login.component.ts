@@ -57,7 +57,11 @@ export class LoginComponent {
   }
 
   toggleRegister(): void {
-    this.showRegister = !this.showRegister;
+    this.setAuthMode(!this.showRegister);
+  }
+
+  setAuthMode(showRegister: boolean): void {
+    this.showRegister = showRegister;
     this.errorMessage = '';
   }
 

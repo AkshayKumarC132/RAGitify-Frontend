@@ -21,72 +21,29 @@
   }
 }
 
-.btn-primary {
-  padding: 0.6rem 1.25rem;
-  background: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-
-  &:hover {
-    background: var(--accent-hover);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-}
-
-.btn-secondary {
-  padding: 0.6rem 1.25rem;
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-
-  &:hover {
-    background: var(--bg-secondary);
-  }
-}
-
+.btn-primary,
+.btn-secondary,
 .btn-small {
-  padding: 0.45rem 0.9rem;
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  padding: 0.45rem 0.85rem;
   border-radius: 4px;
-  cursor: pointer;
-  font-size: 11px;
-  transition: background 0.2s;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+}
 
-  &:hover {
-    background: var(--bg-secondary);
-  }
+.btn-secondary,
+.btn-small {
+  background: transparent;
+}
 
-  &.btn-danger {
-    color: var(--error-color);
-    border-color: var(--error-color);
+.btn-small {
+  font-size: 10px;
+}
 
-    &:hover {
-      background: rgba(244, 67, 54, 0.1);
-    }
-  }
+.btn-small.btn-danger {
+  color: var(--error-color);
+  border-color: var(--error-color);
 }
 
 .error-message {

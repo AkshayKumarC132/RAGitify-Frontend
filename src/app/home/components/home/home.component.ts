@@ -18,6 +18,8 @@ import { OpenAIKey } from '../../../shared/models/openai-key.model';
 import { Document } from '../../../shared/models/document.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
+import { User } from '../../../shared/models/user.model';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 @Component({
   selector: 'app-home',
@@ -43,6 +45,10 @@ export class HomeComponent implements OnInit {
   attachmentMessage = '';
   currentVectorStoreId: string | null = null;
   isSidebarCollapsed = false;
+  currentUser: User | null = null;
+  profileForm: FormGroup;
+  showProfilePanel = false;
+  profileMessage = '';
   private attachmentMessageTimeout?: any;
 
   constructor(
@@ -56,20 +62,97 @@ export class HomeComponent implements OnInit {
     private openAIKeyService: OpenAIKeyService,
     private authService: AuthService,
     private documentService: DocumentService,
-    private documentAccessService: DocumentAccessService
-  ) {}
+    private documentAccessService: DocumentAccessService,
+    private fb: FormBuilder
+  ) {
+    this.profileForm = this.fb.group({
+      first_name: [''],
+      last_name: [''],
+      email: ['', [Validators.email]],
+      username: ['']
+    });
+  }
 
   ngOnInit(): void {
     this.loadModels();
     this.loadThreads();
     this.loadLibraries();
     this.loadPrompts();
-    
+
+    this.authService.currentUser$.subscribe(user => {
+      this.currentUser = user;
+      if (user) {
+        this.profileForm.patchValue({
+          first_name: user.first_name || '',
+          last_name: user.last_name || '',
+          email: user.email || '',
+          username: user.username || ''
+        }, { emitEvent: false });
+      }
+    });
+
     this.route.params.subscribe(params => {
       const threadId = params['threadId'];
       if (threadId) {
         this.loadThread(threadId);
       }
+    });
+  }
+
+  onManageProfile(): void {
+    this.showProfilePanel = true;
+  }
+
+  closeProfilePanel(): void {
+    this.showProfilePanel = false;
+    this.profileMessage = '';
+  }
+
+  saveProfile(): void {
+    if (!this.currentUser || this.profileForm.invalid) {
+      return;
+    }
+
+    const token = this.authService.getToken();
+    const updatedUser: User = {
+      ...this.currentUser,
+      ...this.profileForm.value
+    };
+
+    if (token) {
+      this.authService.setAuth(token, updatedUser);
+    }
+
+    this.currentUser = updatedUser;
+    this.profileMessage = 'Profile updated locally';
+    setTimeout(() => {
+      this.profileMessage = '';
+    }, 2500);
+  }
+
+  onThreadRename(event: { thread: Thread; title: string }): void {
+    this.threadService.update(event.thread.id, { title: event.title }).subscribe({
+      next: (updated) => {
+        this.threads = this.threads.map(t => (t.id === updated.id ? updated : t));
+        if (this.currentThread?.id === updated.id) {
+          this.currentThread = updated;
+        }
+      },
+      error: (err) => console.error('Unable to update thread title', err)
+    });
+  }
+
+  onThreadRemove(thread: Thread): void {
+    this.threadService.delete(thread.id).subscribe({
+      next: () => {
+        this.threads = this.threads.filter(t => t.id !== thread.id);
+        if (this.currentThread?.id === thread.id) {
+          this.currentThread = null;
+          this.messages = [];
+          this.router.navigate(['/home']);
+        }
+      },
+      error: (err) => console.error('Unable to delete thread', err)
     });
   }
 
