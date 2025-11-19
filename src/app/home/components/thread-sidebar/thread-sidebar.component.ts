@@ -1,6 +1,11 @@
-import { Component, Input, Output, EventEmitter, HostListener, ElementRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
 import { Thread } from '../../../shared/models/thread.model';
 import { User } from '../../../shared/models/user.model';
+
+interface ThreadMenuPosition {
+  top: number;
+  left: number;
+}
 
 @Component({
   selector: 'app-thread-sidebar',
@@ -22,12 +27,13 @@ export class ThreadSidebarComponent {
   @Output() removeThread = new EventEmitter<Thread>();
 
   threadMenuOpen: string | null = null;
+  threadMenuPosition: ThreadMenuPosition | null = null;
   profileMenuOpen = false;
-
-  constructor(private host: ElementRef<HTMLElement>) {}
+  private readonly menuDimensions = { width: 180, height: 96, margin: 16 };
 
   selectThread(thread: Thread): void {
     this.threadMenuOpen = null;
+    this.threadMenuPosition = null;
     this.profileMenuOpen = false;
     this.threadSelected.emit(thread);
   }
@@ -101,7 +107,30 @@ export class ThreadSidebarComponent {
 
   toggleThreadMenu(thread: Thread, event: MouseEvent): void {
     event.stopPropagation();
-    this.threadMenuOpen = this.threadMenuOpen === thread.id ? null : thread.id;
+    if (this.threadMenuOpen === thread.id) {
+      this.closeThreadMenu();
+      return;
+    }
+
+    const trigger = event.currentTarget as HTMLElement;
+    const rect = trigger.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+
+    let left = rect.right + 12;
+    if (left + this.menuDimensions.width + this.menuDimensions.margin > viewportWidth) {
+      left = rect.left - this.menuDimensions.width - 12;
+    }
+
+    const centerOffset = rect.height / 2;
+    let top = rect.top + scrollY + centerOffset - this.menuDimensions.height / 2;
+    const minTop = scrollY + this.menuDimensions.margin;
+    const maxTop = scrollY + viewportHeight - this.menuDimensions.height - this.menuDimensions.margin;
+    top = Math.max(minTop, Math.min(maxTop, top));
+
+    this.threadMenuOpen = thread.id;
+    this.threadMenuPosition = { top, left };
   }
 
   editThread(thread: Thread, event?: MouseEvent): void {
@@ -110,7 +139,7 @@ export class ThreadSidebarComponent {
     const updatedTitle = window.prompt('Edit thread title', currentTitle);
     if (updatedTitle && updatedTitle.trim() && updatedTitle.trim() !== currentTitle) {
       this.renameThread.emit({ thread, title: updatedTitle.trim() });
-      this.threadMenuOpen = null;
+      this.closeThreadMenu();
     }
   }
 
@@ -119,14 +148,14 @@ export class ThreadSidebarComponent {
     const confirmed = window.confirm('Delete this conversation?');
     if (confirmed) {
       this.removeThread.emit(thread);
-      this.threadMenuOpen = null;
+      this.closeThreadMenu();
     }
   }
 
   toggleProfileMenu(event: MouseEvent): void {
     event.stopPropagation();
     this.profileMenuOpen = !this.profileMenuOpen;
-    this.threadMenuOpen = null;
+    this.closeThreadMenu();
   }
 
   openSettings(event: MouseEvent): void {
@@ -141,50 +170,34 @@ export class ThreadSidebarComponent {
     this.logoutRequested.emit();
   }
 
-  @HostListener('mouseenter')
-  onMouseEnter(): void {
-    this.expandSidebar();
-  }
-
-  @HostListener('focusin')
-  onFocusIn(): void {
-    this.expandSidebar();
-  }
-
-  @HostListener('mouseleave')
-  onMouseLeave(): void {
-    this.collapseSidebar();
-  }
-
-  @HostListener('focusout', ['$event'])
-  onFocusOut(event: FocusEvent): void {
-    const nextTarget = event.relatedTarget as HTMLElement | null;
-    if (!nextTarget || !this.host.nativeElement.contains(nextTarget)) {
-      this.collapseSidebar();
-    }
-  }
-
   @HostListener('document:click', ['$event'])
   closeMenus(event: MouseEvent): void {
-    this.threadMenuOpen = null;
     const target = event?.target as HTMLElement;
+    if (target && target.closest('.thread-menu-panel')) {
+      return;
+    }
     if (target && target.closest('.profile-region')) {
       return;
     }
+    this.closeThreadMenu();
     this.profileMenuOpen = false;
   }
 
-  private expandSidebar(): void {
-    if (this.collapsed) {
-      this.sidebarToggled.emit(false);
+  toggleSidebar(forceState?: boolean, event?: MouseEvent): void {
+    event?.stopPropagation();
+    const nextState = typeof forceState === 'boolean' ? forceState : !this.collapsed;
+    if (nextState === this.collapsed) {
+      return;
     }
+    if (nextState) {
+      this.closeThreadMenu();
+      this.profileMenuOpen = false;
+    }
+    this.sidebarToggled.emit(nextState);
   }
 
-  private collapseSidebar(): void {
-    if (!this.collapsed) {
-      this.threadMenuOpen = null;
-      this.profileMenuOpen = false;
-      this.sidebarToggled.emit(true);
-    }
+  private closeThreadMenu(): void {
+    this.threadMenuOpen = null;
+    this.threadMenuPosition = null;
   }
 }

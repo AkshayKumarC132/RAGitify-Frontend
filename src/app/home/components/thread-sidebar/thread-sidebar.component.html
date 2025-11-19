@@ -1,12 +1,26 @@
 <div class="thread-sidebar" [class.collapsed]="collapsed">
   <div class="sidebar-header">
-    <div class="brand">
+    <button
+      type="button"
+      class="brand-toggle"
+      (click)="toggleSidebar(undefined, $event)"
+      [attr.title]="collapsed ? 'Expand menu' : 'Collapse menu'"
+    >
       <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" class="brand-logo" />
       <div class="brand-text" *ngIf="!collapsed">
         <div class="brand-title">RAGitify</div>
         <div class="brand-subtitle">AI Workspace</div>
       </div>
-    </div>
+    </button>
+
+    <button
+      class="sidebar-toggle-control"
+      type="button"
+      (click)="toggleSidebar(undefined, $event)"
+      [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+    >
+      <i class="fa-solid" [ngClass]="collapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+    </button>
   </div>
 
   <div class="sidebar-actions">
@@ -55,9 +69,20 @@
           <i class="fa-solid fa-ellipsis"></i>
         </button>
 
-        <div class="thread-menu-panel" *ngIf="threadMenuOpen === thread.id">
-          <button type="button" (click)="editThread(thread, $event)">Edit Title</button>
-          <button type="button" (click)="deleteThread(thread, $event)">Delete Thread</button>
+        <div
+          class="thread-menu-panel"
+          *ngIf="threadMenuOpen === thread.id && threadMenuPosition as pos"
+          [style.top.px]="pos.top"
+          [style.left.px]="pos.left"
+        >
+          <button type="button" (click)="editThread(thread, $event)">
+            <i class="fa-solid fa-pen"></i>
+            <span>Rename Title</span>
+          </button>
+          <button type="button" class="danger" (click)="deleteThread(thread, $event)">
+            <i class="fa-solid fa-trash"></i>
+            <span>Delete</span>
+          </button>
         </div>
       </div>
     </div>
