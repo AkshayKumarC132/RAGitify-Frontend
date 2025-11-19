@@ -9,8 +9,10 @@
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
-  overflow: hidden;
-  transition: width 0.3s ease;
+  overflow: visible;
+  transition: width 0.25s ease;
+  position: relative;
+  z-index: 4;
 }
 
 .sidebar app-thread-sidebar {
@@ -19,7 +21,7 @@
 }
 
 .sidebar.collapsed {
-  width: 84px;
+  width: 64px;
 }
 
 .main-content {

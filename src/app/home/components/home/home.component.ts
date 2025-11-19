@@ -44,7 +44,7 @@ export class HomeComponent implements OnInit {
   attachmentsInProgress = false;
   attachmentMessage = '';
   currentVectorStoreId: string | null = null;
-  isSidebarCollapsed = false;
+  isSidebarCollapsed = true;
   currentUser: User | null = null;
   profileForm: FormGroup;
   showProfilePanel = false;

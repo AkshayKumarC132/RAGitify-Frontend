@@ -8,7 +8,7 @@
 .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--border-color);
   gap: 0.5rem;
@@ -39,22 +39,6 @@
   font-size: 9px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-}
-
-.sidebar-toggle {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.sidebar-toggle:hover {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
 }
 
 .avatar {
@@ -293,8 +277,8 @@ button.thread-menu {
 
 .thread-menu-panel {
   position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
+  top: 50%;
+  left: calc(100% + 0.5rem);
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -302,7 +286,13 @@ button.thread-menu {
   flex-direction: column;
   min-width: 140px;
   padding: 0.25rem;
-  z-index: 5;
+  z-index: 6;
+  transform: translateY(-50%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+
+.thread-sidebar.collapsed .thread-menu-panel {
+  left: calc(100% + 0.35rem);
 }
 
 .thread-menu-panel button {

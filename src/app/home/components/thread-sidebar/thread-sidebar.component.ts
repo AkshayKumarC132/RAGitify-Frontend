@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, ElementRef } from '@angular/core';
 import { Thread } from '../../../shared/models/thread.model';
 import { User } from '../../../shared/models/user.model';
 
@@ -24,6 +24,8 @@ export class ThreadSidebarComponent {
   threadMenuOpen: string | null = null;
   profileMenuOpen = false;
 
+  constructor(private host: ElementRef<HTMLElement>) {}
+
   selectThread(thread: Thread): void {
     this.threadMenuOpen = null;
     this.profileMenuOpen = false;
@@ -38,11 +40,6 @@ export class ThreadSidebarComponent {
   goToWorkspace(): void {
     this.profileMenuOpen = false;
     this.workspaceNavigate.emit();
-  }
-
-  toggleSidebar(): void {
-    this.profileMenuOpen = false;
-    this.sidebarToggled.emit(!this.collapsed);
   }
 
   getThreadTitle(thread: Thread): string {
@@ -144,6 +141,29 @@ export class ThreadSidebarComponent {
     this.logoutRequested.emit();
   }
 
+  @HostListener('mouseenter')
+  onMouseEnter(): void {
+    this.expandSidebar();
+  }
+
+  @HostListener('focusin')
+  onFocusIn(): void {
+    this.expandSidebar();
+  }
+
+  @HostListener('mouseleave')
+  onMouseLeave(): void {
+    this.collapseSidebar();
+  }
+
+  @HostListener('focusout', ['$event'])
+  onFocusOut(event: FocusEvent): void {
+    const nextTarget = event.relatedTarget as HTMLElement | null;
+    if (!nextTarget || !this.host.nativeElement.contains(nextTarget)) {
+      this.collapseSidebar();
+    }
+  }
+
   @HostListener('document:click', ['$event'])
   closeMenus(event: MouseEvent): void {
     this.threadMenuOpen = null;
@@ -152,5 +172,19 @@ export class ThreadSidebarComponent {
       return;
     }
     this.profileMenuOpen = false;
+  }
+
+  private expandSidebar(): void {
+    if (this.collapsed) {
+      this.sidebarToggled.emit(false);
+    }
+  }
+
+  private collapseSidebar(): void {
+    if (!this.collapsed) {
+      this.threadMenuOpen = null;
+      this.profileMenuOpen = false;
+      this.sidebarToggled.emit(true);
+    }
   }
 }
