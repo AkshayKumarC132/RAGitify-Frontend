@@ -22,7 +22,11 @@ export class ThreadSidebarComponent {
   @Output() removeThread = new EventEmitter<Thread>();
 
   threadMenuOpen: string | null = null;
+  menuThread: Thread | null = null;
+  threadMenuPosition: { top: number; left: number } | null = null;
   profileMenuOpen = false;
+  menuOpensLeft = false;
+  private menuTrigger: HTMLElement | null = null;
 
   selectThread(thread: Thread): void {
     this.threadMenuOpen = null;
@@ -106,7 +110,11 @@ export class ThreadSidebarComponent {
 
     const trigger = event.currentTarget as HTMLElement;
     trigger.focus();
+    this.menuThread = thread;
     this.threadMenuOpen = thread.id;
+    this.menuTrigger = trigger;
+    this.profileMenuOpen = false;
+    this.updateThreadMenuPosition();
   }
 
   editThread(thread: Thread, event?: MouseEvent): void {
@@ -159,6 +167,26 @@ export class ThreadSidebarComponent {
     this.profileMenuOpen = false;
   }
 
+  @HostListener('window:scroll')
+  handleWindowScroll(): void {
+    if (this.threadMenuOpen) {
+      this.updateThreadMenuPosition();
+    }
+  }
+
+  @HostListener('window:resize')
+  handleWindowResize(): void {
+    if (this.threadMenuOpen) {
+      this.updateThreadMenuPosition();
+    }
+  }
+
+  handleThreadsScroll(): void {
+    if (this.threadMenuOpen) {
+      this.updateThreadMenuPosition();
+    }
+  }
+
   toggleSidebar(forceState?: boolean, event?: MouseEvent): void {
     event?.stopPropagation();
     const nextState = typeof forceState === 'boolean' ? forceState : !this.collapsed;
@@ -174,5 +202,38 @@ export class ThreadSidebarComponent {
 
   private closeThreadMenu(): void {
     this.threadMenuOpen = null;
+    this.threadMenuPosition = null;
+    this.menuThread = null;
+    this.menuTrigger = null;
+    this.menuOpensLeft = false;
+  }
+
+  private updateThreadMenuPosition(): void {
+    if (!this.menuTrigger) {
+      this.threadMenuPosition = null;
+      return;
+    }
+
+    const rect = this.menuTrigger.getBoundingClientRect();
+    const offset = 12;
+    const assumedPanelHeight = 120;
+    const assumedPanelWidth = 190;
+    const viewportPadding = 12;
+
+    let top = rect.top + rect.height / 2;
+    const halfHeight = assumedPanelHeight / 2;
+    const minTop = viewportPadding + halfHeight;
+    const maxTop = window.innerHeight - halfHeight - viewportPadding;
+    top = Math.min(Math.max(top, minTop), maxTop);
+
+    this.menuOpensLeft = false;
+    let left = rect.right + offset;
+    const maxLeft = window.innerWidth - assumedPanelWidth - viewportPadding;
+    if (left > maxLeft) {
+      left = Math.max(rect.left - offset - assumedPanelWidth, viewportPadding);
+      this.menuOpensLeft = true;
+    }
+
+    this.threadMenuPosition = { top, left };
   }
 }

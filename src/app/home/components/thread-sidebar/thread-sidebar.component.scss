@@ -314,9 +314,7 @@ button.thread-menu {
 }
 
 .thread-menu-panel {
-  position: absolute;
-  top: 50%;
-  left: calc(100% + 12px);
+  position: fixed;
   transform: translateY(-50%);
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -325,7 +323,7 @@ button.thread-menu {
   flex-direction: column;
   min-width: 170px;
   padding: 0.25rem;
-  z-index: 20;
+  z-index: 40;
   box-shadow: 0 22px 55px rgba(5, 11, 22, 0.35);
   animation: dropdownFade 0.16s ease;
 }
@@ -343,6 +341,14 @@ button.thread-menu {
   border-right: none;
   border-bottom: none;
   transform-origin: center;
+}
+
+.thread-menu-panel.open-left::before {
+  left: auto;
+  right: -7px;
+  border: 1px solid var(--border-color);
+  border-left: none;
+  border-top: none;
 }
 
 .thread-menu-panel button {

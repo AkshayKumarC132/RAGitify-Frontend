@@ -46,7 +46,7 @@
 
   <div class="threads-section">
     <div class="section-title" *ngIf="!collapsed">Today</div>
-    <div class="threads-list">
+    <div class="threads-list" (scroll)="handleThreadsScroll()">
       <div
         *ngFor="let thread of threads"
         class="thread-item"
@@ -69,16 +69,6 @@
           <i class="fa-solid fa-ellipsis"></i>
         </button>
 
-        <div class="thread-menu-panel" *ngIf="threadMenuOpen === thread.id">
-          <button type="button" (click)="editThread(thread, $event)">
-            <i class="fa-solid fa-pen"></i>
-            <span>Rename Title</span>
-          </button>
-          <button type="button" class="danger" (click)="deleteThread(thread, $event)">
-            <i class="fa-solid fa-trash"></i>
-            <span>Delete</span>
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -110,6 +100,23 @@
         <span>Logout</span>
       </button>
     </div>
+  </div>
+
+  <div
+    class="thread-menu-panel"
+    *ngIf="threadMenuOpen && menuThread && threadMenuPosition"
+    [ngStyle]="{ top: threadMenuPosition.top + 'px', left: threadMenuPosition.left + 'px' }"
+    [class.open-left]="menuOpensLeft"
+    (click)="$event.stopPropagation()"
+  >
+    <button type="button" (click)="editThread(menuThread, $event)">
+      <i class="fa-solid fa-pen"></i>
+      <span>Rename Title</span>
+    </button>
+    <button type="button" class="danger" (click)="deleteThread(menuThread, $event)">
+      <i class="fa-solid fa-trash"></i>
+      <span>Delete</span>
+    </button>
   </div>
 </div>
 
