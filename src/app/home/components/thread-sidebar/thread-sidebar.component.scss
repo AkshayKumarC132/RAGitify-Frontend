@@ -57,20 +57,6 @@
   color: var(--accent-color);
 }
 
-.user-profile {
-  padding: 1rem;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.profile-summary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .avatar {
   width: 40px;
   height: 40px;
@@ -100,11 +86,6 @@
   color: var(--text-secondary);
 }
 
-.profile-manage {
-  width: auto;
-  align-self: flex-start;
-}
-
 .sidebar-actions {
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--border-color);
@@ -115,7 +96,6 @@
 
 button.new-thread-button,
 button.workspace-button,
-button.profile-manage,
 button.thread-menu {
   border: 1px solid var(--border-color);
   background: transparent;
@@ -199,6 +179,79 @@ button.thread-menu {
   position: relative;
 }
 
+.sidebar-profile {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border-color);
+  position: relative;
+}
+
+.profile-trigger {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 6px;
+  transition: border-color 0.2s ease;
+}
+
+.profile-trigger:hover,
+.profile-trigger:focus-visible {
+  border-color: var(--border-color);
+}
+
+.profile-trigger .avatar {
+  flex-shrink: 0;
+}
+
+.profile-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 1rem;
+  right: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.35rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  z-index: 4;
+}
+
+.profile-dropdown button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-primary);
+  padding: 0.35rem 0.4rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+  text-align: left;
+}
+
+.profile-dropdown button:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-color);
+}
+
+.thread-sidebar.collapsed .sidebar-profile {
+  padding: 0.75rem 0.5rem;
+}
+
+.thread-sidebar.collapsed .profile-trigger {
+  justify-content: center;
+}
+
 .thread-item:hover {
   background: var(--bg-tertiary);
   border-color: var(--border-color);
@@ -261,7 +314,7 @@ button.thread-menu {
 
 .thread-sidebar.collapsed .sidebar-header,
 .thread-sidebar.collapsed .sidebar-actions,
-.thread-sidebar.collapsed .user-profile {
+.thread-sidebar.collapsed .sidebar-profile {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
 }
@@ -274,7 +327,6 @@ button.thread-menu {
 .thread-sidebar.collapsed .thread-details,
 .thread-sidebar.collapsed .thread-menu,
 .thread-sidebar.collapsed .profile-meta,
-.thread-sidebar.collapsed .profile-manage,
 .thread-sidebar.collapsed .section-title {
   display: none;
 }

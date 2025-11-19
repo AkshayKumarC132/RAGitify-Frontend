@@ -18,27 +18,6 @@
     </button>
   </div>
 
-  <div class="user-profile" *ngIf="user">
-    <div class="profile-summary">
-      <div class="avatar" [attr.title]="user!.username">
-        {{ getInitials(user!.first_name, user!.last_name, user!.username) }}
-      </div>
-      <div class="profile-meta" *ngIf="!collapsed">
-        <div class="profile-name">{{ getProfileName(user) }}</div>
-        <div class="profile-email">{{ user!.email }}</div>
-      </div>
-    </div>
-    <button
-      class="profile-manage"
-      type="button"
-      (click)="manageProfile.emit()"
-      [attr.title]="collapsed ? 'Manage profile' : null"
-    >
-      <i class="fa-solid fa-user-gear" aria-hidden="true"></i>
-      <span *ngIf="!collapsed">Manage</span>
-    </button>
-  </div>
-
   <div class="sidebar-actions">
     <button
       class="new-thread-button"
@@ -90,6 +69,35 @@
           <button type="button" (click)="deleteThread(thread, $event)">Delete Thread</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="sidebar-profile profile-region" *ngIf="user">
+    <button
+      class="profile-trigger"
+      type="button"
+      (click)="toggleProfileMenu($event)"
+      [attr.title]="collapsed ? getProfileName(user) : null"
+    >
+      <div class="avatar" [attr.aria-label]="getProfileName(user)">
+        {{ getInitials(user!.first_name, user!.last_name, user!.username) }}
+      </div>
+      <div class="profile-meta" *ngIf="!collapsed">
+        <div class="profile-name">{{ getProfileName(user) }}</div>
+        <div class="profile-email">{{ user!.email }}</div>
+      </div>
+      <i class="fa-solid" [ngClass]="profileMenuOpen ? 'fa-angle-up' : 'fa-angle-down'" *ngIf="!collapsed"></i>
+    </button>
+
+    <div class="profile-dropdown" *ngIf="profileMenuOpen">
+      <button type="button" (click)="openSettings($event)">
+        <i class="fa-solid fa-gear"></i>
+        <span>Settings</span>
+      </button>
+      <button type="button" (click)="requestLogout($event)">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Logout</span>
+      </button>
     </div>
   </div>
 </div>

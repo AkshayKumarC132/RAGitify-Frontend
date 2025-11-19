@@ -17,25 +17,31 @@ export class ThreadSidebarComponent {
   @Output() workspaceNavigate = new EventEmitter<void>();
   @Output() sidebarToggled = new EventEmitter<boolean>();
   @Output() manageProfile = new EventEmitter<void>();
+  @Output() logoutRequested = new EventEmitter<void>();
   @Output() renameThread = new EventEmitter<{ thread: Thread; title: string }>();
   @Output() removeThread = new EventEmitter<Thread>();
 
   threadMenuOpen: string | null = null;
+  profileMenuOpen = false;
 
   selectThread(thread: Thread): void {
     this.threadMenuOpen = null;
+    this.profileMenuOpen = false;
     this.threadSelected.emit(thread);
   }
 
   createNewThread(): void {
+    this.profileMenuOpen = false;
     this.newThread.emit();
   }
 
   goToWorkspace(): void {
+    this.profileMenuOpen = false;
     this.workspaceNavigate.emit();
   }
 
   toggleSidebar(): void {
+    this.profileMenuOpen = false;
     this.sidebarToggled.emit(!this.collapsed);
   }
 
@@ -120,8 +126,31 @@ export class ThreadSidebarComponent {
     }
   }
 
-  @HostListener('document:click')
-  closeMenus(): void {
+  toggleProfileMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.profileMenuOpen = !this.profileMenuOpen;
     this.threadMenuOpen = null;
+  }
+
+  openSettings(event: MouseEvent): void {
+    event.stopPropagation();
+    this.profileMenuOpen = false;
+    this.manageProfile.emit();
+  }
+
+  requestLogout(event: MouseEvent): void {
+    event.stopPropagation();
+    this.profileMenuOpen = false;
+    this.logoutRequested.emit();
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeMenus(event: MouseEvent): void {
+    this.threadMenuOpen = null;
+    const target = event?.target as HTMLElement;
+    if (target && target.closest('.profile-region')) {
+      return;
+    }
+    this.profileMenuOpen = false;
   }
 }

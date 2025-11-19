@@ -10,21 +10,10 @@
       [collapsed]="isSidebarCollapsed"
       (sidebarToggled)="onSidebarToggled($event)"
       (manageProfile)="onManageProfile()"
+      (logoutRequested)="logout()"
       (renameThread)="onThreadRename($event)"
       (removeThread)="onThreadRemove($event)"
     ></app-thread-sidebar>
-
-    <div class="sidebar-footer">
-      <button
-        class="logout-button"
-        (click)="logout()"
-        [attr.title]="isSidebarCollapsed ? 'Logout' : null"
-        aria-label="Logout"
-      >
-        <i class="fa-solid fa-right-from-bracket"></i>
-        <span class="button-text" *ngIf="!isSidebarCollapsed">Logout</span>
-      </button>
-    </div>
   </div>
 
   <div class="main-content">
@@ -96,12 +85,8 @@
       </label>
       <label>
         <span>Email</span>
-        <input type="email" formControlName="email" placeholder="email@ragitify.ai" />
+        <input type="email" formControlName="email" placeholder="email@ragitify.ai" readonly />
         <small *ngIf="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">Enter a valid email</small>
-      </label>
-      <label>
-        <span>Username</span>
-        <input type="text" formControlName="username" placeholder="username" />
       </label>
 
       <div class="profile-message" *ngIf="profileMessage">{{ profileMessage }}</div>

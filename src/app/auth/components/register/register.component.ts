@@ -22,7 +22,6 @@ export class RegisterComponent {
     private router: Router
   ) {
     this.registerForm = this.fb.group({
-      username: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
       first_name: [''],
@@ -39,7 +38,7 @@ export class RegisterComponent {
       
       const formValue = this.registerForm.value;
       const registerData: RegisterRequest = {
-        username: formValue.username?.trim(),
+        username: this.deriveUsername(formValue.email),
         email: formValue.email,
         password: formValue.password,
         first_name: formValue.first_name || undefined,
@@ -53,7 +52,6 @@ export class RegisterComponent {
           // Registration endpoint does not return a token, so immediately log the user in
           this.authService.login({
             email: registerData.email,
-            username: registerData.username,
             password: registerData.password
           }).subscribe({
             next: (loginResponse) => {
@@ -102,6 +100,14 @@ export class RegisterComponent {
       }
     }
     return fallback;
+  }
+
+  private deriveUsername(email: string): string {
+    if (!email) {
+      return 'ragitify-user';
+    }
+    const [local] = email.split('@');
+    return local?.trim() || email;
   }
 }
 
