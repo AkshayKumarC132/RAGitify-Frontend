@@ -16,7 +16,7 @@ export type LibrarySelectionEvent =
   styleUrls: ['./chat-input.component.scss']
 })
 export class ChatInputComponent implements OnChanges {
-  @Input() mode: 'normal' | 'web' | 'document' = 'normal';
+  @Input() mode: 'normal' | 'web' | 'document' = 'document';
   @Input() loading = false;
   @Input() libraries: VectorStore[] = [];
   @Input() selectedLibraryId: string | null = null;
@@ -25,7 +25,7 @@ export class ChatInputComponent implements OnChanges {
   @Input() prompts: Assistant[] = [];
   @Input() selectedPromptId: string | null = null;
   @Output() messageSent = new EventEmitter<string>();
-  @Output() modeToggle = new EventEmitter<'normal' | 'web'>();
+  @Output() modeToggle = new EventEmitter<'normal' | 'web' | 'document'>();
   @Output() filesSelected = new EventEmitter<FileList>();
   @Output() webpageAttached = new EventEmitter<{ url: string; title?: string }>();
   @Output() notesAttached = new EventEmitter<{ title: string; content: string }>();
@@ -81,6 +81,11 @@ export class ChatInputComponent implements OnChanges {
     this.modeToggle.emit(newMode);
   }
 
+  toggleDocumentMode(): void {
+    const newMode = this.mode === 'document' ? 'normal' : 'document';
+    this.modeToggle.emit(newMode);
+  }
+
   toggleAttachmentMenu(): void {
     this.attachmentMenuOpen = !this.attachmentMenuOpen;
     if (this.attachmentMenuOpen) {
@@ -121,18 +126,18 @@ export class ChatInputComponent implements OnChanges {
 
   openPanel(panel: AttachmentPanel): void {
     if (!panel) return;
-    
+
     console.log('Opening panel:', panel);
     console.log('Libraries:', this.libraries.length);
     console.log('Prompts:', this.prompts.length);
-    
+
     // Close menu first, then open panel
     this.attachmentMenuOpen = false;
-    
+
     // Use setTimeout to ensure the panel opens after the menu closes
     setTimeout(() => {
       this.activePanel = panel;
-      
+
       if (panel === 'library') {
         this.pendingLibraryId = this.selectedLibraryId;
         this.pendingDocumentIds = new Set(this.selectedDocumentIds || []);

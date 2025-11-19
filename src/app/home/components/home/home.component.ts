@@ -34,7 +34,7 @@ export class HomeComponent implements OnInit {
   currentRun: Run | null = null;
   selectedModel: OpenAIKey | null = null;
   availableModels: OpenAIKey[] = [];
-  mode: 'normal' | 'web' | 'document' = 'normal';
+  mode: 'normal' | 'web' | 'document' = 'document';
   loading = false;
   knowledgeSources: Document[] = [];
   allDocuments: Document[] = [];
@@ -231,7 +231,7 @@ export class HomeComponent implements OnInit {
   }
 
   onMessageSent(content: string): void {
-    this.updateModeFromSelection();
+    // this.updateModeFromSelection();
     if (!content.trim()) return;
 
     this.loading = true;
@@ -349,12 +349,12 @@ export class HomeComponent implements OnInit {
       switchMap(assistants => {
         // Update prompts list
         this.prompts = assistants || [];
-        
+
         const existingAssistant = assistants?.find(a => a.vector_store_id === vectorStoreId);
         if (existingAssistant) {
           return of({ assistantId: existingAssistant.id, threadId });
         }
-        
+
         // Create new assistant
         const model = this.selectedModel?.model || 'gpt-4o';
         return this.assistantService.create({
@@ -670,11 +670,16 @@ export class HomeComponent implements OnInit {
     return undefined;
   }
 
-  onModeToggle(mode: 'normal' | 'web'): void {
+  onModeToggle(mode: 'normal' | 'web' | 'document'): void {
     if (mode === 'web') {
       this.mode = 'web';
       return;
     }
+    if (mode === 'document') {
+      this.mode = 'document';
+      return;
+    }
+    this.mode = 'normal';
     this.updateModeFromSelection(true);
   }
 

@@ -36,13 +36,26 @@
     ></textarea>
 
     <div class="input-actions">
+      <!-- Web toggle -->
       <button
-        class="mode-toggle"
+        class="mode-toggle web-toggle"
         [class.active]="mode === 'web'"
         (click)="toggleMode()"
-        [title]="mode === 'normal' ? 'Switch to Web Mode' : 'Switch to Normal Mode'"
+        [title]="mode === 'web' ? 'Switch to Normal Mode' : 'Switch to Web Mode'"
       >
         <span class="icon">🌐</span>
+        <!-- <span class="label">Web</span> -->
+      </button>
+
+      <!-- Document / Normal toggle -->
+      <button
+        class="mode-toggle document-toggle"
+        [class.active]="mode === 'document'"
+        (click)="toggleDocumentMode()"
+        [title]="mode === 'document' ? 'Switch to Normal Mode' : 'Switch to Document Mode'"
+      >
+        <span class="icon">📄</span>
+        <!-- <span class="label">Docs</span> -->
       </button>
 
       <button
@@ -54,7 +67,7 @@
         <span *ngIf="loading">...</span>
       </button>
     </div>
-  </div>
+
 
   <div class="attachment-panel" *ngIf="activePanel === 'web'" (click)="$event.stopPropagation()">
     <h4>Attach Webpage</h4>
@@ -192,12 +205,12 @@
     </div>
   </div>
 
-  <div class="mode-indicator" *ngIf="mode === 'web'">
+  <!-- <div class="mode-indicator" *ngIf="mode === 'web'">
     <span>Web Mode Active</span>
   </div>
   <div class="mode-indicator document" *ngIf="mode === 'document'">
     <span>Documents Mode Active</span>
-  </div>
+  </div> -->
 
   <div class="attachment-pill" *ngIf="selectedLibraryId">
     <span>Library: {{ getLibraryLabel() || selectedLibraryId }}</span>
