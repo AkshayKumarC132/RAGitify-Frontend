@@ -231,6 +231,7 @@ export class HomeComponent implements OnInit {
   }
 
   onMessageSent(content: string): void {
+    this.updateModeFromSelection();
     if (!content.trim()) return;
 
     this.loading = true;

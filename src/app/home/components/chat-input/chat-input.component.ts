@@ -91,15 +91,19 @@ export class ChatInputComponent implements OnChanges {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    // Don't close if clicking inside attachment controls, panels, or the container
-    if (target.closest('.attachment-controls') || 
-        target.closest('.attachment-panel') || 
-        target.closest('.chat-input-container')) {
+    const clickedAttachmentControl = target.closest('.attachment-controls');
+    const clickedPanel = target.closest('.attachment-panel');
+    const clickedMenu = target.closest('.attachment-menu');
+
+    if (clickedAttachmentControl || clickedPanel || clickedMenu) {
       return;
     }
-    // Close menu and panels when clicking outside
-    this.attachmentMenuOpen = false;
-    this.activePanel = null;
+
+    if (!this.attachmentMenuOpen && !this.activePanel) {
+      return;
+    }
+
+    this.closeMenus();
   }
 
   triggerFilePicker(input: HTMLInputElement): void {
@@ -246,11 +250,13 @@ export class ChatInputComponent implements OnChanges {
   }
 
   toggleDocumentSelection(documentId: string, selected: boolean): void {
+    const next = new Set(this.pendingDocumentIds);
     if (selected) {
-      this.pendingDocumentIds.add(documentId);
+      next.add(documentId);
     } else {
-      this.pendingDocumentIds.delete(documentId);
+      next.delete(documentId);
     }
+    this.pendingDocumentIds = next;
   }
 }
 
