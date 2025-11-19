@@ -79,6 +79,10 @@ export class HomeComponent implements OnInit {
     this.loadPrompts();
 
     this.authService.currentUser$.subscribe(user => {
+      console.log('[HomeComponent] currentUser$ emitted', {
+        hasUser: !!user,
+        tokenAvailable: !!this.authService.getToken()
+      });
       this.currentUser = user;
       if (user) {
         this.profileForm.patchValue({
@@ -86,6 +90,10 @@ export class HomeComponent implements OnInit {
           last_name: user.last_name || '',
           email: user.email || ''
         }, { emitEvent: false });
+      } else {
+        console.warn('[HomeComponent] user is null - sidebar profile cannot render', {
+          storedUser: this.authService.getStoredUser()
+        });
       }
     });
 

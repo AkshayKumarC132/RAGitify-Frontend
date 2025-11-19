@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, OnChanges, SimpleChanges } from '@angular/core';
 import { Thread } from '../../../shared/models/thread.model';
 import { User } from '../../../shared/models/user.model';
 
@@ -7,7 +7,7 @@ import { User } from '../../../shared/models/user.model';
   templateUrl: './thread-sidebar.component.html',
   styleUrls: ['./thread-sidebar.component.scss']
 })
-export class ThreadSidebarComponent {
+export class ThreadSidebarComponent implements OnChanges {
   @Input() threads: Thread[] = [];
   @Input() currentThread: Thread | null = null;
   @Input() collapsed = false;
@@ -27,6 +27,24 @@ export class ThreadSidebarComponent {
   profileMenuOpen = false;
   menuOpensLeft = false;
   private menuTrigger: HTMLElement | null = null;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if ('user' in changes) {
+      const nextUser = changes['user'].currentValue as User | null;
+      if (!nextUser) {
+        console.warn('[ThreadSidebar] profile region hidden - no user data available', {
+          hasToken: !!localStorage.getItem('auth_token'),
+          storedUser: localStorage.getItem('current_user') ? 'present' : 'missing'
+        });
+      } else {
+        console.log('[ThreadSidebar] profile region ready for user', {
+          email: nextUser.email,
+          hasFirstName: !!nextUser.first_name,
+          hasLastName: !!nextUser.last_name
+        });
+      }
+    }
+  }
 
   selectThread(thread: Thread): void {
     this.threadMenuOpen = null;
