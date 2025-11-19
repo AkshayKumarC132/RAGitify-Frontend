@@ -1,25 +1,61 @@
-<div class="thread-sidebar">
+<div class="thread-sidebar" [class.collapsed]="collapsed">
   <div class="sidebar-header">
-    <h2>RAG App</h2>
-    <button class="new-thread-button" (click)="createNewThread()">
-      <span>+</span> New Chat
+    <div class="brand">
+      <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" class="brand-logo" />
+      <div class="brand-text" *ngIf="!collapsed">
+        <div class="brand-title">RAGitify</div>
+        <div class="brand-subtitle">AI Workspace</div>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="sidebar-toggle"
+      (click)="toggleSidebar()"
+      [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+    >
+      <i class="fa-solid" [ngClass]="collapsed ? 'fa-angles-right' : 'fa-angles-left'"></i>
     </button>
-    <button class="workspace-button" (click)="goToWorkspace()">
-      Workspace
+  </div>
+
+  <div class="sidebar-actions">
+    <button
+      class="new-thread-button"
+      type="button"
+      (click)="createNewThread()"
+      [attr.title]="collapsed ? 'Start a new chat' : null"
+    >
+      <i class="fa-solid fa-plus"></i>
+      <span class="button-text" *ngIf="!collapsed">New Chat</span>
+    </button>
+    <button
+      class="workspace-button"
+      type="button"
+      (click)="goToWorkspace()"
+      [attr.title]="collapsed ? 'Open workspace' : null"
+    >
+      <i class="fa-solid fa-briefcase"></i>
+      <span class="button-text" *ngIf="!collapsed">Workspace</span>
     </button>
   </div>
 
   <div class="threads-section">
-    <div class="section-title">Today</div>
+    <div class="section-title" *ngIf="!collapsed">Today</div>
     <div class="threads-list">
       <div
         *ngFor="let thread of threads"
         class="thread-item"
         [class.active]="currentThread?.id === thread.id"
         (click)="selectThread(thread)"
+        [attr.title]="collapsed ? getThreadTitle(thread) : null"
       >
-        <div class="thread-title">{{ getThreadTitle(thread) }}</div>
-        <div class="thread-time">{{ formatTime(thread.created_at) }}</div>
+        <div class="thread-item-icon">
+          <i class="fa-solid fa-comments"></i>
+        </div>
+        <div class="thread-details" *ngIf="!collapsed">
+          <div class="thread-title">{{ getThreadTitle(thread) }}</div>
+          <div class="thread-time">{{ formatTime(thread.created_at) }}</div>
+        </div>
       </div>
     </div>
   </div>

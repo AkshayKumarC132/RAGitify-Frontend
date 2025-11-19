@@ -42,6 +42,7 @@ export class HomeComponent implements OnInit {
   attachmentsInProgress = false;
   attachmentMessage = '';
   currentVectorStoreId: string | null = null;
+  isSidebarCollapsed = false;
   private attachmentMessageTimeout?: any;
 
   constructor(
@@ -114,6 +115,10 @@ export class HomeComponent implements OnInit {
       },
       error: (err) => console.error('Error loading messages:', err)
     });
+  }
+
+  onSidebarToggled(collapsed: boolean): void {
+    this.isSidebarCollapsed = collapsed;
   }
 
   onThreadSelected(thread: Thread): void {

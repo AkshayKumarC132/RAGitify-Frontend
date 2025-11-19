@@ -9,9 +9,11 @@ import { Thread } from '../../../shared/models/thread.model';
 export class ThreadSidebarComponent {
   @Input() threads: Thread[] = [];
   @Input() currentThread: Thread | null = null;
+  @Input() collapsed = false;
   @Output() threadSelected = new EventEmitter<Thread>();
   @Output() newThread = new EventEmitter<void>();
   @Output() workspaceNavigate = new EventEmitter<void>();
+  @Output() sidebarToggled = new EventEmitter<boolean>();
 
   selectThread(thread: Thread): void {
     this.threadSelected.emit(thread);
@@ -23,6 +25,10 @@ export class ThreadSidebarComponent {
 
   goToWorkspace(): void {
     this.workspaceNavigate.emit();
+  }
+
+  toggleSidebar(): void {
+    this.sidebarToggled.emit(!this.collapsed);
   }
 
   getThreadTitle(thread: Thread): string {

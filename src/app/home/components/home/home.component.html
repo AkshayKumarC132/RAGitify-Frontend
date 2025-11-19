@@ -1,15 +1,25 @@
 <div class="home-container">
-  <div class="sidebar">
+  <div class="sidebar" [class.collapsed]="isSidebarCollapsed">
     <app-thread-sidebar
       [threads]="threads"
       [currentThread]="currentThread"
       (threadSelected)="onThreadSelected($event)"
       (newThread)="onNewThread()"
       (workspaceNavigate)="onWorkspaceNavigate()"
+      [collapsed]="isSidebarCollapsed"
+      (sidebarToggled)="onSidebarToggled($event)"
     ></app-thread-sidebar>
-    
+
     <div class="sidebar-footer">
-      <button class="logout-button" (click)="logout()">Logout</button>
+      <button
+        class="logout-button"
+        (click)="logout()"
+        [attr.title]="isSidebarCollapsed ? 'Logout' : null"
+        aria-label="Logout"
+      >
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span class="button-text" *ngIf="!isSidebarCollapsed">Logout</span>
+      </button>
     </div>
   </div>
 

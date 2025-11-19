@@ -6,101 +6,168 @@
 }
 
 .sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 1rem;
   border-bottom: 1px solid var(--border-color);
+  gap: 0.5rem;
+}
 
-  h2 {
-    color: var(--text-primary);
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-  }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.brand-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #000;
+}
+
+.brand-title {
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.brand-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.sidebar-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.sidebar-actions {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.new-thread-button,
+.workspace-button {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .new-thread-button {
-  width: 100%;
-  padding: 0.75rem;
   background: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: background 0.2s;
+  color: #fff;
+  border-color: var(--accent-color);
+}
 
-  &:hover {
-    background: var(--accent-hover);
-  }
-
-  span {
-    font-size: 1.2rem;
-    margin-right: 0.25rem;
-  }
+.new-thread-button:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .workspace-button {
-  width: 100%;
-  margin-top: 0.5rem;
-  padding: 0.65rem;
   background: transparent;
   color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.2s;
+  border-color: var(--border-color);
+}
 
-  &:hover {
-    background: var(--bg-tertiary);
-    border-color: var(--accent-color);
-    color: var(--accent-color);
-  }
+.workspace-button:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 .threads-section {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem 0;
+  padding: 1rem 0.5rem 1.5rem;
 }
 
 .section-title {
-  padding: 0.5rem 1rem;
+  padding: 0.5rem;
   color: var(--text-secondary);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
 }
 
 .threads-list {
   display: flex;
   flex-direction: column;
+  gap: 0.25rem;
 }
 
 .thread-item {
-  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.2s;
-  border-left: 3px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  border: 1px solid transparent;
+}
 
-  &:hover {
-    background: var(--bg-tertiary);
-  }
+.thread-item:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
 
-  &.active {
-    background: var(--bg-tertiary);
-    border-left-color: var(--accent-color);
-  }
+.thread-item.active {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-color);
+}
+
+.thread-item-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(74, 158, 255, 0.12);
+  color: var(--accent-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.thread-item.active .thread-item-icon {
+  background: var(--accent-color);
+  color: #fff;
 }
 
 .thread-title {
   color: var(--text-primary);
   font-size: 0.9rem;
-  margin-bottom: 0.25rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  margin-bottom: 0.15rem;
 }
 
 .thread-time {
@@ -108,3 +175,24 @@
   font-size: 0.75rem;
 }
 
+.button-text {
+  white-space: nowrap;
+}
+
+.thread-sidebar.collapsed .sidebar-header,
+.thread-sidebar.collapsed .sidebar-actions {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.thread-sidebar.collapsed .threads-section {
+  padding: 1rem 0.25rem 1.5rem;
+}
+
+.thread-sidebar.collapsed .thread-item {
+  justify-content: center;
+}
+
+.thread-sidebar.collapsed .thread-item-icon {
+  margin: 0 auto;
+}
