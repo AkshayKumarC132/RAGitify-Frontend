@@ -8,15 +8,19 @@ import { AuthService } from '../../../shared/services/auth.service';
   styleUrls: ['./workspace-layout.component.scss']
 })
 export class WorkspaceLayoutComponent {
-  activeSection: 'models' | 'knowledge' | 'prompts' | 'tools' = 'models';
+  activeSection: 'models' | 'knowledge' | 'prompts' = 'prompts';
 
   constructor(
     private authService: AuthService,
     private router: Router
   ) {}
 
-  setActiveSection(section: 'models' | 'knowledge' | 'prompts' | 'tools'): void {
+  setActiveSection(section: 'models' | 'knowledge' | 'prompts'): void {
     this.activeSection = section;
+  }
+
+  startNewChat(): void {
+    this.router.navigate(['/home']);
   }
 
   logout(): void {

@@ -1,57 +1,74 @@
 <div class="workspace-container">
-  <div class="workspace-sidebar">
-    <div class="sidebar-header">
-      <h2>Workspace</h2>
+  <aside class="workspace-sidebar">
+    <div class="sidebar-brand">
+      <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" />
+      <div>
+        <p class="eyebrow">RAGitify</p>
+        <h2>Workspace</h2>
+      </div>
     </div>
-    
-    <nav class="sidebar-nav">
-      <button
-        class="nav-item"
-        [class.active]="activeSection === 'models'"
-        (click)="setActiveSection('models')"
-      >
-        <span class="icon">🤖</span>
-        <span>Models</span>
+
+    <nav class="sidebar-actions">
+      <button type="button" (click)="startNewChat()">
+        <i class="fa-solid fa-comments"></i>
+        <span>New Chat</span>
       </button>
-      
-      <button
-        class="nav-item"
-        [class.active]="activeSection === 'knowledge'"
-        (click)="setActiveSection('knowledge')"
-      >
-        <span class="icon">📚</span>
-        <span>Knowledge</span>
-      </button>
-      
-      <button
-        class="nav-item"
-        [class.active]="activeSection === 'prompts'"
-        (click)="setActiveSection('prompts')"
-      >
-        <span class="icon">💬</span>
-        <span>Prompts</span>
-      </button>
-      
-      <button
-        class="nav-item"
-        [class.active]="activeSection === 'tools'"
-        (click)="setActiveSection('tools')"
-      >
-        <span class="icon">🔧</span>
-        <span>Tools</span>
+      <button type="button" class="active">
+        <i class="fa-solid fa-briefcase"></i>
+        <span>Workspace</span>
       </button>
     </nav>
 
     <div class="sidebar-footer">
-      <a routerLink="/home" class="nav-link">Home</a>
-      <button class="logout-button" (click)="logout()">Logout</button>
+      <a routerLink="/home" class="nav-link">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Back to Home</span>
+      </a>
+      <button class="logout-button" (click)="logout()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Logout</span>
+      </button>
     </div>
-  </div>
+  </aside>
 
   <div class="workspace-content">
-    <app-models-section *ngIf="activeSection === 'models'"></app-models-section>
-    <app-knowledge-section *ngIf="activeSection === 'knowledge'"></app-knowledge-section>
-    <app-prompts-section *ngIf="activeSection === 'prompts'"></app-prompts-section>
-    <app-tools-section *ngIf="activeSection === 'tools'"></app-tools-section>
+    <div class="workspace-top-bar">
+      <div>
+        <p class="eyebrow">Workspace hub</p>
+        <h1>Manage your intelligence stack</h1>
+      </div>
+      <div class="workspace-tabs">
+        <button
+          type="button"
+          [class.active]="activeSection === 'prompts'"
+          (click)="setActiveSection('prompts')"
+        >
+          <i class="fa-solid fa-message"></i>
+          <span>Prompts</span>
+        </button>
+        <button
+          type="button"
+          [class.active]="activeSection === 'models'"
+          (click)="setActiveSection('models')"
+        >
+          <i class="fa-solid fa-robot"></i>
+          <span>Models</span>
+        </button>
+        <button
+          type="button"
+          [class.active]="activeSection === 'knowledge'"
+          (click)="setActiveSection('knowledge')"
+        >
+          <i class="fa-solid fa-folder-open"></i>
+          <span>Knowledge</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="workspace-panels">
+      <app-prompts-section *ngIf="activeSection === 'prompts'"></app-prompts-section>
+      <app-models-section *ngIf="activeSection === 'models'"></app-models-section>
+      <app-knowledge-section *ngIf="activeSection === 'knowledge'"></app-knowledge-section>
+    </div>
   </div>
 </div>

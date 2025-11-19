@@ -5,6 +5,18 @@
   margin: 0 auto;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.4rem;
+  }
+}
+
 .error-message {
   margin-bottom: 1rem;
 }
@@ -13,6 +25,9 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
 }
 
 .prompt-item {
@@ -49,12 +64,21 @@
 
 .prompt-actions {
   display: flex;
-  gap: 0.75rem;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.65rem;
+  align-items: flex-end;
 }
 
 .prompt-date {
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
 }
 

@@ -1,17 +1,22 @@
 <div class="knowledge-section">
   <div class="section-header">
     <div>
-      <h1>Knowledge</h1>
+      <h1>
+        <i class="fa-solid fa-folder-open"></i>
+        <span>Knowledge</span>
+      </h1>
       <p>Upload documents and manage your knowledge library for retrieval.</p>
     </div>
     <div class="header-actions">
       <button class="btn-secondary" (click)="toggleVectorStoreForm()">
-        {{ showCreateVectorStoreForm ? 'Close' : '+ New Library' }}
+        <i class="fa-solid" [ngClass]="showCreateVectorStoreForm ? 'fa-xmark' : 'fa-folder-plus'"></i>
+        <span>{{ showCreateVectorStoreForm ? 'Close' : 'New Library' }}</span>
       </button>
       <button class="btn-primary"
               [disabled]="vectorStores.length === 0"
               (click)="showUploadForm = !showUploadForm">
-        {{ showUploadForm ? 'Close upload' : '+ Upload Knowledge' }}
+        <i class="fa-solid" [ngClass]="showUploadForm ? 'fa-xmark' : 'fa-cloud-arrow-up'"></i>
+        <span>{{ showUploadForm ? 'Close upload' : 'Upload Knowledge' }}</span>
       </button>
     </div>
   </div>
@@ -21,7 +26,10 @@
   </div>
 
   <div *ngIf="showCreateVectorStoreForm" class="panel">
-    <h3>Create library</h3>
+    <h3>
+      <i class="fa-solid fa-folder-plus"></i>
+      <span>Create library</span>
+    </h3>
     <form [formGroup]="createVectorStoreForm" (ngSubmit)="createVectorStore()">
       <div class="form-group">
         <label>Name *</label>
@@ -32,10 +40,35 @@
       </div>
       <div class="form-actions">
         <button type="submit" class="btn-primary" [disabled]="createVectorStoreForm.invalid">
-          Create
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>Create</span>
         </button>
         <button type="button" class="btn-secondary" (click)="toggleVectorStoreForm()">
-          Cancel
+          <i class="fa-solid fa-xmark"></i>
+          <span>Cancel</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div *ngIf="editingVectorStore" class="panel">
+    <h3>
+      <i class="fa-solid fa-pen"></i>
+      <span>Rename "{{ editingVectorStore.name }}"</span>
+    </h3>
+    <form [formGroup]="editVectorStoreForm" (ngSubmit)="updateVectorStore()">
+      <div class="form-group">
+        <label>New name *</label>
+        <input type="text" formControlName="name" />
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="editVectorStoreForm.invalid">
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>Save</span>
+        </button>
+        <button type="button" class="btn-secondary" (click)="cancelVectorStoreEdit()">
+          <i class="fa-solid fa-xmark"></i>
+          <span>Cancel</span>
         </button>
       </div>
     </form>
@@ -63,6 +96,8 @@
           [vectorStores]="vectorStores"
           [selectedVectorStore]="selectedVectorStore"
           (vectorStoreSelected)="onVectorStoreSelected($event)"
+          (editRequested)="startVectorStoreEdit($event)"
+          (deleteRequested)="deleteVectorStore($event)"
         ></app-vector-store-list>
         <div *ngIf="!loadingStores && vectorStores.length === 0" class="empty-state">
           Create a library to begin uploading documents.
@@ -92,16 +127,36 @@
           <div *ngFor="let doc of filteredDocuments" class="document-item">
             <div class="document-meta">
               <div>
-                <div class="document-title">{{ doc.title }}</div>
+                <div class="document-title" *ngIf="editingDocumentId !== doc.id">{{ doc.title }}</div>
+                <div class="document-edit" *ngIf="editingDocumentId === doc.id">
+                  <input type="text" [formControl]="documentTitleControl" placeholder="Document title" />
+                  <div class="edit-actions">
+                    <button class="btn-small" (click)="saveDocumentTitle(doc)" type="button">
+                      <i class="fa-solid fa-floppy-disk"></i>
+                      <span>Save</span>
+                    </button>
+                    <button class="btn-small" (click)="cancelDocumentRename()" type="button">
+                      <i class="fa-solid fa-xmark"></i>
+                      <span>Cancel</span>
+                    </button>
+                  </div>
+                </div>
                 <div class="document-date">Uploaded {{ formatDate(doc.uploaded_at) }}</div>
               </div>
               <span class="status-badge" [ngClass]="getStatusBadgeClass(doc.status)">
                 {{ doc.status }}
               </span>
             </div>
-            <button class="btn-link danger" (click)="deleteDocument(doc.id)">
-              Delete
-            </button>
+            <div class="document-actions">
+              <button class="btn-link" (click)="startDocumentRename(doc)" [disabled]="editingDocumentId === doc.id">
+                <i class="fa-solid fa-pen"></i>
+                <span>Rename</span>
+              </button>
+              <button class="btn-link danger" (click)="deleteDocument(doc.id)">
+                <i class="fa-solid fa-trash"></i>
+                <span>Delete</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

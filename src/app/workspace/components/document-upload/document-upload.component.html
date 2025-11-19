@@ -1,5 +1,8 @@
 <div class="document-upload">
-  <h2>Upload Document</h2>
+  <h2>
+    <i class="fa-solid fa-cloud-arrow-up"></i>
+    <span>Upload Document</span>
+  </h2>
   
   <div *ngIf="errorMessage" class="error-message">
     {{ errorMessage }}
@@ -27,10 +30,12 @@
 
   <div class="form-actions">
     <button class="btn-primary" (click)="onUpload()" [disabled]="loading || !selectedFile || !selectedVectorStoreId">
-      {{ loading ? 'Uploading...' : 'Upload' }}
+      <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+      <span>{{ loading ? 'Uploading…' : 'Upload' }}</span>
     </button>
     <button class="btn-secondary" (click)="onCancel()" [disabled]="loading">
-      Cancel
+      <i class="fa-solid fa-xmark"></i>
+      <span>Cancel</span>
     </button>
   </div>
 </div>

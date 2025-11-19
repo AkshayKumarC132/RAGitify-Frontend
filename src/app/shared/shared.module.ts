@@ -5,9 +5,10 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { ApiService } from './services/api.service';
 import { AuthService } from './services/auth.service';
+import { ThemeToggleComponent } from './components/theme-toggle/theme-toggle.component';
 
 @NgModule({
-  declarations: [],
+  declarations: [ThemeToggleComponent],
   imports: [
     CommonModule,
     HttpClientModule,
@@ -26,7 +27,8 @@ import { AuthService } from './services/auth.service';
   exports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    ThemeToggleComponent
   ]
 })
 export class SharedModule { }

@@ -15,8 +15,11 @@ export class PromptsSectionComponent implements OnInit {
   vectorStores: VectorStore[] = [];
   showCreateForm = false;
   createForm: FormGroup;
+  editForm: FormGroup;
   loading = false;
+  editLoading = false;
   errorMessage = '';
+  editingAssistant: Assistant | null = null;
 
   constructor(
     private assistantService: AssistantService,
@@ -24,6 +27,13 @@ export class PromptsSectionComponent implements OnInit {
     private fb: FormBuilder
   ) {
     this.createForm = this.fb.group({
+      name: ['', Validators.required],
+      vector_store_id: [''],
+      instructions: [''],
+      model: ['']
+    });
+
+    this.editForm = this.fb.group({
       name: ['', Validators.required],
       vector_store_id: [''],
       instructions: [''],
@@ -58,6 +68,27 @@ export class PromptsSectionComponent implements OnInit {
     this.showCreateForm = !this.showCreateForm;
   }
 
+  startEdit(assistant: Assistant): void {
+    this.editingAssistant = assistant;
+    this.editForm.reset({
+      name: assistant.name,
+      vector_store_id: assistant.vector_store_id || '',
+      instructions: assistant.instructions || '',
+      model: assistant.model || ''
+    });
+  }
+
+  cancelEdit(): void {
+    this.editingAssistant = null;
+    this.editForm.reset({
+      name: '',
+      vector_store_id: '',
+      instructions: '',
+      model: ''
+    });
+    this.editLoading = false;
+  }
+
   onCreateSubmit(): void {
     if (this.createForm.valid) {
       this.loading = true;
@@ -89,6 +120,35 @@ export class PromptsSectionComponent implements OnInit {
         }
       });
     }
+  }
+
+  onEditSubmit(): void {
+    if (!this.editingAssistant || this.editForm.invalid) {
+      return;
+    }
+
+    this.editLoading = true;
+    this.errorMessage = '';
+    const formValue = this.editForm.value;
+
+    this.assistantService.update(this.editingAssistant.id, {
+      name: formValue.name,
+      vector_store_id: formValue.vector_store_id || undefined,
+      instructions: formValue.instructions || undefined,
+      model: formValue.model || undefined,
+      tools: this.editingAssistant.tools || []
+    }).subscribe({
+      next: () => {
+        this.editLoading = false;
+        this.cancelEdit();
+        this.loadAssistants();
+      },
+      error: (err) => {
+        this.editLoading = false;
+        this.errorMessage = err.error?.error || 'Failed to update prompt.';
+        console.error('Error updating assistant:', err);
+      }
+    });
   }
 
   deleteAssistant(assistant: Assistant): void {

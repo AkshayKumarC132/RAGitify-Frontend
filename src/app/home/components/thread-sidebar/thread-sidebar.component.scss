@@ -107,8 +107,9 @@
 
 .threads-section {
   flex: 1;
-  overflow-y: auto;
   padding: 1rem 0.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .section-title {
@@ -124,6 +125,13 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  max-height: calc(100vh - 280px);
+}
+
+.thread-sidebar.collapsed .threads-list {
+  max-height: calc(100vh - 220px);
 }
 
 .thread-item {

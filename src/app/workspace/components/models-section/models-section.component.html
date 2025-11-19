@@ -1,8 +1,12 @@
 <div class="models-section">
   <div class="section-header">
-    <h1>Models</h1>
+    <h1>
+      <i class="fa-solid fa-robot"></i>
+      <span>Models</span>
+    </h1>
     <button class="btn-primary" (click)="toggleCreateForm()">
-      + New Model
+      <i class="fa-solid fa-plus"></i>
+      <span>New Model</span>
     </button>
   </div>
 
@@ -11,7 +15,10 @@
   </div>
 
   <div *ngIf="showCreateForm" class="create-form">
-    <h2>Create New Model</h2>
+    <h2>
+      <i class="fa-solid fa-square-pen"></i>
+      <span>Create New Model</span>
+    </h2>
     <form [formGroup]="createForm" (ngSubmit)="onCreateSubmit()">
       <div class="form-group">
         <label>Name (Optional)</label>
@@ -46,17 +53,22 @@
 
       <div class="form-actions">
         <button type="submit" class="btn-primary" [disabled]="loading || createForm.invalid">
-          {{ loading ? 'Creating...' : 'Create' }}
+          <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+          <span>{{ loading ? 'Creating…' : 'Create' }}</span>
         </button>
         <button type="button" class="btn-secondary" (click)="toggleCreateForm()" [disabled]="loading">
-          Cancel
+          <i class="fa-solid fa-xmark"></i>
+          <span>Cancel</span>
         </button>
       </div>
     </form>
   </div>
 
   <div class="provider-showcase">
-    <h2>Available Providers</h2>
+    <h2>
+      <i class="fa-solid fa-cloud"></i>
+      <span>Available Providers</span>
+    </h2>
     <div class="provider-grid">
       <div class="provider-card" *ngFor="let provider of availableProviders">
         <div class="provider-card__header">
@@ -69,7 +81,8 @@
           <span *ngIf="!provider.requiresApiKey">Runs Locally</span>
         </div>
         <button class="btn-secondary" (click)="connectProvider(provider)">
-          Connect {{ provider.name }}
+          <i class="fa-solid fa-plug"></i>
+          <span>Connect {{ provider.name }}</span>
         </button>
       </div>
     </div>
@@ -86,10 +99,12 @@
       </div>
       <div class="model-actions">
         <button *ngIf="!model.is_active" class="btn-small" (click)="setActive(model)">
-          Set Active
+          <i class="fa-solid fa-check"></i>
+          <span>Set Active</span>
         </button>
         <button class="btn-small btn-danger" (click)="deleteModel(model.id)">
-          Delete
+          <i class="fa-solid fa-trash"></i>
+          <span>Delete</span>
         </button>
       </div>
     </div>
