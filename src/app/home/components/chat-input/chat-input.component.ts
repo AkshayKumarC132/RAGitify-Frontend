@@ -1,8 +1,14 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener } from '@angular/core';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
+import { Document } from '../../../shared/models/document.model';
 
 type AttachmentPanel = 'web' | 'notes' | 'library' | 'prompts' | null;
+
+export type LibrarySelectionEvent =
+  | { type: 'library'; libraryId: string | null }
+  | { type: 'documents'; documentIds: string[] }
+  | { type: 'clear' };
 
 @Component({
   selector: 'app-chat-input',
@@ -10,10 +16,12 @@ type AttachmentPanel = 'web' | 'notes' | 'library' | 'prompts' | null;
   styleUrls: ['./chat-input.component.scss']
 })
 export class ChatInputComponent implements OnChanges {
-  @Input() mode: 'normal' | 'web' = 'normal';
+  @Input() mode: 'normal' | 'web' | 'document' = 'normal';
   @Input() loading = false;
   @Input() libraries: VectorStore[] = [];
   @Input() selectedLibraryId: string | null = null;
+  @Input() documents: Document[] = [];
+  @Input() selectedDocumentIds: string[] = [];
   @Input() prompts: Assistant[] = [];
   @Input() selectedPromptId: string | null = null;
   @Output() messageSent = new EventEmitter<string>();
@@ -21,7 +29,7 @@ export class ChatInputComponent implements OnChanges {
   @Output() filesSelected = new EventEmitter<FileList>();
   @Output() webpageAttached = new EventEmitter<{ url: string; title?: string }>();
   @Output() notesAttached = new EventEmitter<{ title: string; content: string }>();
-  @Output() librarySelected = new EventEmitter<string | null>();
+  @Output() librarySelected = new EventEmitter<LibrarySelectionEvent>();
   @Output() promptSelected = new EventEmitter<string | null>();
 
   message = '';
@@ -31,13 +39,26 @@ export class ChatInputComponent implements OnChanges {
   noteForm = { title: '', content: '' };
   pendingLibraryId: string | null = null;
   pendingPromptId: string | null = null;
+  selectionMode: 'library' | 'documents' = 'library';
+  pendingDocumentIds = new Set<string>();
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selectedLibraryId']) {
       this.pendingLibraryId = this.selectedLibraryId;
+      if (this.selectedLibraryId) {
+        this.selectionMode = 'library';
+      }
     }
     if (changes['selectedPromptId']) {
       this.pendingPromptId = this.selectedPromptId;
+    }
+    if (changes['selectedDocumentIds']) {
+      this.pendingDocumentIds = new Set(this.selectedDocumentIds || []);
+      if (this.selectedDocumentIds?.length) {
+        this.selectionMode = 'documents';
+      } else if (!this.selectedLibraryId) {
+        this.selectionMode = 'library';
+      }
     }
   }
 
@@ -56,7 +77,7 @@ export class ChatInputComponent implements OnChanges {
   }
 
   toggleMode(): void {
-    const newMode = this.mode === 'normal' ? 'web' : 'normal';
+    const newMode = this.mode === 'web' ? 'normal' : 'web';
     this.modeToggle.emit(newMode);
   }
 
@@ -110,6 +131,7 @@ export class ChatInputComponent implements OnChanges {
       
       if (panel === 'library') {
         this.pendingLibraryId = this.selectedLibraryId;
+        this.pendingDocumentIds = new Set(this.selectedDocumentIds || []);
         console.log('Library panel opened, pendingLibraryId:', this.pendingLibraryId);
       }
       if (panel === 'prompts') {
@@ -148,13 +170,19 @@ export class ChatInputComponent implements OnChanges {
   }
 
   confirmLibrarySelection(): void {
-    this.librarySelected.emit(this.pendingLibraryId || null);
+    if (this.selectionMode === 'documents') {
+      this.librarySelected.emit({ type: 'documents', documentIds: Array.from(this.pendingDocumentIds) });
+    } else {
+      this.librarySelected.emit({ type: 'library', libraryId: this.pendingLibraryId || null });
+    }
     this.closePanels();
   }
 
   clearLibrarySelection(): void {
     this.pendingLibraryId = null;
-    this.librarySelected.emit(null);
+    this.pendingDocumentIds.clear();
+    this.selectionMode = 'library';
+    this.librarySelected.emit({ type: 'clear' });
     this.closePanels();
   }
 
@@ -188,6 +216,41 @@ export class ChatInputComponent implements OnChanges {
   private closeMenus(): void {
     this.attachmentMenuOpen = false;
     this.activePanel = null;
+  }
+
+  setSelectionMode(mode: 'library' | 'documents'): void {
+    if (mode === 'documents' && !this.documents.length) {
+      return;
+    }
+    this.selectionMode = mode;
+  }
+
+  getDocumentsByLibrary(): { libraryId: string; name: string; documents: Document[] }[] {
+    const grouping = new Map<string, Document[]>();
+    (this.documents || []).forEach(doc => {
+      const list = grouping.get(doc.vector_store) || [];
+      list.push(doc);
+      grouping.set(doc.vector_store, list);
+    });
+
+    return Array.from(grouping.entries()).map(([libraryId, docs]) => ({
+      libraryId,
+      name: this.getLibraryName(libraryId),
+      documents: docs
+    }));
+  }
+
+  private getLibraryName(libraryId: string): string {
+    const match = this.libraries.find(lib => lib.id === libraryId);
+    return match ? match.name : 'Unknown Library';
+  }
+
+  toggleDocumentSelection(documentId: string, selected: boolean): void {
+    if (selected) {
+      this.pendingDocumentIds.add(documentId);
+    } else {
+      this.pendingDocumentIds.delete(documentId);
+    }
   }
 }
 

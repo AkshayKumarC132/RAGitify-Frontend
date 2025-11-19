@@ -156,6 +156,11 @@
   font-size: 10px;
 }
 
+.mode-indicator.document {
+  color: var(--text-primary);
+  opacity: 0.8;
+}
+
 .attachment-panel {
   margin-top: 0.75rem;
   background: var(--bg-secondary);
@@ -237,6 +242,35 @@
   }
 }
 
+.library-mode-switch {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+
+  button {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s;
+
+    &.active {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+}
+
 .knowledge-list,
 .library-list,
 .prompt-list {
@@ -301,6 +335,49 @@
 .empty-text {
   color: var(--text-secondary);
   margin: 0;
+}
+
+.documents-list {
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.library-group {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: var(--bg-tertiary);
+
+  .group-title {
+    font-weight: 600;
+    font-size: 11px;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+  }
+
+  label {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.5rem 0;
+    border-radius: 6px;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--bg-secondary);
+    }
+
+    input[type='checkbox'] {
+      margin-top: 0.25rem;
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent-color);
+    }
+  }
 }
 
 .prompt-grid {

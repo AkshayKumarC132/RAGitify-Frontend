@@ -94,25 +94,73 @@
 
   <div class="attachment-panel" *ngIf="activePanel === 'library'">
     <h4>Attach Library</h4>
-    <div class="library-list" *ngIf="libraries.length; else emptyLibrary">
-      <label *ngFor="let library of libraries">
-        <input
-          type="radio"
-          name="library"
-          [value]="library.id"
-          [(ngModel)]="pendingLibraryId"
-        />
-        <div class="library-meta">
-          <span class="title">{{ library.name }}</span>
-          <span class="meta">Created {{ library.created_at | date:'short' }}</span>
-        </div>
-      </label>
+    <div class="library-mode-switch">
+      <button type="button" [class.active]="selectionMode === 'library'" (click)="setSelectionMode('library')">
+        Whole Library
+      </button>
+      <button
+        type="button"
+        [class.active]="selectionMode === 'documents'"
+        [disabled]="!documents.length"
+        (click)="setSelectionMode('documents')"
+      >
+        Specific Documents
+      </button>
     </div>
+
+    <ng-container [ngSwitch]="selectionMode">
+      <div class="library-list" *ngSwitchCase="'library'">
+        <ng-container *ngIf="libraries.length; else emptyLibrary">
+          <label *ngFor="let library of libraries">
+            <input
+              type="radio"
+              name="library"
+              [value]="library.id"
+              [(ngModel)]="pendingLibraryId"
+            />
+            <div class="library-meta">
+              <span class="title">{{ library.name }}</span>
+              <span class="meta">Created {{ library.created_at | date:'short' }}</span>
+            </div>
+          </label>
+        </ng-container>
+      </div>
+
+      <div class="documents-list" *ngSwitchCase="'documents'">
+        <ng-container *ngIf="documents.length; else emptyDocuments">
+          <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
+            <div class="group-title">{{ group.name }}</div>
+            <label *ngFor="let doc of group.documents">
+              <input
+                type="checkbox"
+                [value]="doc.id"
+                [checked]="pendingDocumentIds.has(doc.id)"
+                (change)="toggleDocumentSelection(doc.id, $any($event.target).checked)"
+              />
+              <div class="library-meta">
+                <span class="title">{{ doc.title || ('Document ' + doc.id) }}</span>
+                <span class="meta">Uploaded {{ doc.uploaded_at | date:'short' }}</span>
+              </div>
+            </label>
+          </div>
+        </ng-container>
+      </div>
+    </ng-container>
+
     <ng-template #emptyLibrary>
       <p class="empty-text">Create a library in Workspace first to attach it.</p>
     </ng-template>
+    <ng-template #emptyDocuments>
+      <p class="empty-text">No documents available. Upload knowledge in Workspace.</p>
+    </ng-template>
     <div class="panel-actions">
-      <button type="button" (click)="confirmLibrarySelection()" [disabled]="!pendingLibraryId">Apply</button>
+      <button
+        type="button"
+        (click)="confirmLibrarySelection()"
+        [disabled]="(selectionMode === 'library' && !pendingLibraryId) || (selectionMode === 'documents' && !pendingDocumentIds.size)"
+      >
+        Apply
+      </button>
       <button type="button" (click)="clearLibrarySelection()">Clear</button>
       <button type="button" (click)="closePanels()">Close</button>
     </div>
@@ -147,9 +195,16 @@
   <div class="mode-indicator" *ngIf="mode === 'web'">
     <span>Web Mode Active</span>
   </div>
+  <div class="mode-indicator document" *ngIf="mode === 'document'">
+    <span>Documents Mode Active</span>
+  </div>
 
   <div class="attachment-pill" *ngIf="selectedLibraryId">
     <span>Library: {{ getLibraryLabel() || selectedLibraryId }}</span>
+    <button type="button" (click)="clearLibrarySelection()">×</button>
+  </div>
+  <div class="attachment-pill" *ngIf="selectedDocumentIds?.length">
+    <span>{{ selectedDocumentIds.length }} document{{ selectedDocumentIds.length === 1 ? '' : 's' }} selected</span>
     <button type="button" (click)="clearLibrarySelection()">×</button>
   </div>
   <div class="attachment-pill" *ngIf="selectedPromptId">

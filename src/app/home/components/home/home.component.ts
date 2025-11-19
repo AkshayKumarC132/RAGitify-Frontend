@@ -20,6 +20,7 @@ import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
 import { User } from '../../../shared/models/user.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { LibrarySelectionEvent } from '../chat-input/chat-input.component';
 
 @Component({
   selector: 'app-home',
@@ -33,17 +34,20 @@ export class HomeComponent implements OnInit {
   currentRun: Run | null = null;
   selectedModel: OpenAIKey | null = null;
   availableModels: OpenAIKey[] = [];
-  mode: 'normal' | 'web' = 'normal';
+  mode: 'normal' | 'web' | 'document' = 'normal';
   loading = false;
   knowledgeSources: Document[] = [];
+  allDocuments: Document[] = [];
   selectedKnowledgeId: string | null = null;
   libraries: VectorStore[] = [];
   selectedLibraryId: string | null = null;
+  selectedDocumentIds: string[] = [];
   prompts: Assistant[] = [];
   selectedPromptId: string | null = null;
   attachmentsInProgress = false;
   attachmentMessage = '';
   currentVectorStoreId: string | null = null;
+  documentSelectionVectorStoreId: string | null = null;
   isSidebarCollapsed = false;
   currentUser: User | null = null;
   profileForm: FormGroup;
@@ -78,6 +82,7 @@ export class HomeComponent implements OnInit {
     this.loadThreads();
     this.loadLibraries();
     this.loadPrompts();
+    this.loadDocuments();
 
     this.authService.currentUser$.subscribe(user => {
       console.log('[HomeComponent] currentUser$ emitted', {
@@ -247,55 +252,85 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  private ensureVectorStoreAndThread(): Promise<{ vectorStoreId: string; threadId: string }> {
-    // If a library is selected, we still use the current thread's vector store
-    // but grant access to documents from the selected library via Document Access API
-    // This allows using documents from multiple libraries in the same thread
+  private async ensureVectorStoreAndThread(): Promise<{ vectorStoreId: string; threadId: string }> {
+    const vectorStoreId = await this.getDesiredVectorStoreId();
 
-    if (this.currentThread) {
-      const vectorStoreId = this.currentThread.vector_store_id_read;
+    if (this.currentThread && this.currentThread.vector_store_id_read === vectorStoreId) {
       this.setCurrentVectorStore(vectorStoreId);
-      return Promise.resolve({ vectorStoreId, threadId: this.currentThread.id });
+      return { vectorStoreId, threadId: this.currentThread.id };
     }
 
-    // Get or create vector store
-    return this.vectorStoreService.list().pipe(
-      switchMap(vectorStores => {
-        this.libraries = vectorStores || [];
-        if (vectorStores && vectorStores.length > 0) {
-          const existingId = vectorStores[0].id;
-          this.setCurrentVectorStore(existingId);
-          return of(existingId);
-        } else {
-          return this.vectorStoreService.create({ name: 'Default' }).pipe(
-            map(vs => {
-              this.libraries = [vs, ...this.libraries];
-              return vs.id;
-            })
-          );
-        }
-      }),
-      catchError(() => {
-        return this.vectorStoreService.create({ name: 'Default' }).pipe(
-          map(vs => {
-            this.libraries = [vs, ...this.libraries];
-            return vs.id;
-          })
-        );
-      }),
-      switchMap(vectorStoreId => {
-        this.setCurrentVectorStore(vectorStoreId);
-        // Create thread
-        return this.threadService.create({ vector_store_id: vectorStoreId }).pipe(
-          map(thread => {
-            this.currentThread = thread;
-            this.router.navigate(['/home/chat', thread.id]);
-            this.loadThreads();
-            return { vectorStoreId, threadId: thread.id };
-          })
-        );
+    const thread = await lastValueFrom(
+      this.threadService.create({ vector_store_id: vectorStoreId })
+    );
+    this.currentThread = thread;
+    this.setCurrentVectorStore(vectorStoreId);
+    this.router.navigate(['/home/chat', thread.id]);
+    this.loadThreads();
+    return { vectorStoreId, threadId: thread.id };
+  }
+
+  private async getDesiredVectorStoreId(): Promise<string> {
+    if (this.selectedDocumentIds.length) {
+      return this.ensureDocumentSelectionVectorStore();
+    }
+
+    if (this.selectedLibraryId) {
+      this.setCurrentVectorStore(this.selectedLibraryId);
+      return this.selectedLibraryId;
+    }
+
+    if (this.currentVectorStoreId) {
+      return this.currentVectorStoreId;
+    }
+
+    return this.ensureDefaultVectorStore();
+  }
+
+  private async ensureDefaultVectorStore(): Promise<string> {
+    try {
+      const vectorStores = await lastValueFrom(this.vectorStoreService.list());
+      this.libraries = vectorStores || [];
+      if (vectorStores && vectorStores.length > 0) {
+        const existingId = vectorStores[0].id;
+        this.setCurrentVectorStore(existingId);
+        return existingId;
+      }
+    } catch (error) {
+      console.error('Error fetching vector stores, creating default:', error);
+    }
+
+    const created = await lastValueFrom(this.vectorStoreService.create({ name: 'Default' }));
+    this.libraries = [created, ...this.libraries];
+    this.setCurrentVectorStore(created.id);
+    return created.id;
+  }
+
+  private async ensureDocumentSelectionVectorStore(): Promise<string> {
+    if (!this.selectedDocumentIds.length) {
+      throw new Error('No documents selected for attachment');
+    }
+
+    if (this.documentSelectionVectorStoreId) {
+      this.setCurrentVectorStore(this.documentSelectionVectorStoreId);
+      return this.documentSelectionVectorStoreId;
+    }
+
+    const vectorStore = await lastValueFrom(
+      this.vectorStoreService.create({ name: `Selection-${Date.now()}` })
+    );
+
+    await lastValueFrom(
+      this.documentAccessService.create({
+        document_ids: this.selectedDocumentIds.map(id => String(id)),
+        vector_store_id: vectorStore.id
       })
-    ).toPromise() as Promise<{ vectorStoreId: string; threadId: string }>;
+    );
+
+    this.documentSelectionVectorStoreId = vectorStore.id;
+    this.setCurrentVectorStore(vectorStore.id);
+    this.loadLibraries();
+    return vectorStore.id;
   }
 
   private ensureAssistant(vectorStoreId: string, threadId: string): Promise<{ assistantId: string; threadId: string }> {
@@ -424,7 +459,7 @@ export class HomeComponent implements OnInit {
         this.documentService.ingest({ s3_file_url: payload.url, vector_store_id: vectorStoreId })
       );
       this.setAttachmentMessage('Webpage attached successfully.');
-      this.refreshKnowledge(vectorStoreId);
+      this.loadDocuments(vectorStoreId);
       if (response?.id) {
         this.selectedKnowledgeId = response.id;
       }
@@ -455,105 +490,43 @@ export class HomeComponent implements OnInit {
     this.setAttachmentMessage(documentId ? 'Knowledge pinned for the next reply.' : 'Knowledge selection cleared.');
   }
 
-  async onLibrarySelected(libraryId: string | null): Promise<void> {
-    if (!libraryId) {
+  onLibrarySelected(selection: LibrarySelectionEvent): void {
+    if (!selection || selection.type === 'clear' || (selection.type === 'library' && !selection.libraryId)) {
       this.selectedLibraryId = null;
+      this.selectedDocumentIds = [];
+      this.documentSelectionVectorStoreId = null;
+      this.setCurrentVectorStore(null);
       this.setAttachmentMessage('Library selection cleared.');
+      this.updateModeFromSelection(true);
       return;
     }
 
-    try {
-      this.selectedLibraryId = libraryId;
-      this.attachmentsInProgress = true;
-      this.setAttachmentMessage('Attaching library...');
-
-      const selectedLibrary = this.libraries.find(l => l.id === libraryId);
-      if (!selectedLibrary) {
-        this.setAttachmentMessage('Library not found.');
-        this.attachmentsInProgress = false;
-        return;
-      }
-
-      // Get all documents from the selected library
-      const allDocuments = await lastValueFrom(this.documentService.list());
-      const libraryDocuments = allDocuments.filter(doc => doc.vector_store === libraryId);
-      
-      if (libraryDocuments.length === 0) {
-        this.setAttachmentMessage('Selected library has no documents.');
-        this.attachmentsInProgress = false;
-        return;
-      }
-
-      // Get or ensure we have a thread with a vector store
-      const { vectorStoreId, threadId } = await this.ensureVectorStoreAndThread();
-      
-      console.log('Attaching library:', libraryId, 'to vector store:', vectorStoreId, 'with', libraryDocuments.length, 'documents');
-      
-      // Grant access to all documents from the selected library to the current thread's vector store
-      // Ensure document IDs are strings (backend expects strings)
-      const documentIds = libraryDocuments.map(doc => String(doc.id));
-      console.log('Library documents to grant access:', documentIds);
-      
-      // Check for existing access to avoid duplicate errors
-      let existingAccessIds: string[] = [];
-      try {
-        const existingAccess = await lastValueFrom(this.documentAccessService.list());
-        existingAccessIds = existingAccess
-          .filter(access => String(access.vector_store) === String(vectorStoreId))
-          .map(access => String(access.document));
-        console.log('Existing access IDs for vector store', vectorStoreId, ':', existingAccessIds);
-      } catch (err) {
-        console.warn('Could not check existing access, proceeding anyway:', err);
-      }
-
-      // Filter out documents that already have access
-      const newDocumentIds = documentIds.filter(id => !existingAccessIds.includes(id));
-      console.log('New document IDs to grant access:', newDocumentIds, 'out of', documentIds.length, 'total');
-      
-      if (newDocumentIds.length === 0) {
-        this.setAttachmentMessage(`Library already attached. ${libraryDocuments.length} document(s) accessible.`);
-        this.attachmentsInProgress = false;
-        return;
-      }
-
-      try {
-        const response = await lastValueFrom(
-          this.documentAccessService.create({
-            document_ids: newDocumentIds,
-            vector_store_id: vectorStoreId
-          })
-        );
-        console.log('Document access granted:', response);
-        
-        // Backend returns a message with access_details
-        const message = (response as any)?.message || '';
-        const alreadyAttached = libraryDocuments.length - newDocumentIds.length;
-        if (alreadyAttached > 0) {
-          this.setAttachmentMessage(`${newDocumentIds.length} new document(s) attached. ${alreadyAttached} already accessible.`);
-        } else {
-          this.setAttachmentMessage(message || `Library attached. ${newDocumentIds.length} document(s) now accessible.`);
-        }
-      } catch (accessError: any) {
-        console.error('Document access error:', accessError);
-        // Check if error is about duplicate access (which is fine - backend uses update_or_create)
-        const errorMsg = accessError?.error?.document_ids || accessError?.error?.detail || '';
-        const errorStr = typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg);
-        
-        if (errorStr.includes('already granted') || errorStr.includes('already exists') || 
-            errorStr.includes('Access already granted')) {
-          this.setAttachmentMessage(`Library already attached. ${libraryDocuments.length} document(s) accessible.`);
-        } else {
-          // Re-throw to be caught by outer catch
-          throw accessError;
-        }
-      }
-    } catch (error: any) {
-      console.error('Error attaching library:', error);
-      const errorMsg = error?.error?.message || error?.error?.document_ids || error?.error?.detail || 'Failed to attach library.';
-      this.setAttachmentMessage(`Error: ${errorMsg}`);
-    } finally {
-      this.attachmentsInProgress = false;
+    if (selection.type === 'library') {
+      this.selectedLibraryId = selection.libraryId;
+      this.selectedDocumentIds = [];
+      this.documentSelectionVectorStoreId = null;
+      this.setAttachmentMessage('Library selected for the next reply.');
+      this.resetConversationState();
+      this.setCurrentVectorStore(selection.libraryId);
+      this.updateModeFromSelection();
+      return;
     }
+
+    const documentIds = selection.documentIds || [];
+    this.selectedDocumentIds = documentIds;
+    this.selectedLibraryId = null;
+    this.documentSelectionVectorStoreId = null;
+    this.setCurrentVectorStore(null);
+
+    if (!documentIds.length) {
+      this.setAttachmentMessage('Document selection cleared.');
+      this.updateModeFromSelection(true);
+      return;
+    }
+
+    this.setAttachmentMessage(`${documentIds.length} document(s) selected.`);
+    this.resetConversationState();
+    this.updateModeFromSelection();
   }
 
   onPromptSelected(promptId: string | null): void {
@@ -585,6 +558,20 @@ export class HomeComponent implements OnInit {
     });
   }
 
+  loadDocuments(vectorStoreId?: string): void {
+    this.documentService.list().subscribe({
+      next: (docs) => {
+        this.allDocuments = docs || [];
+        this.applyKnowledgeFilter(vectorStoreId);
+      },
+      error: (err) => {
+        console.error('Error loading documents:', err);
+        this.allDocuments = [];
+        this.knowledgeSources = [];
+      }
+    });
+  }
+
   private async uploadFiles(files: File[], vectorStoreId: string): Promise<void> {
     if (!files.length) {
       return;
@@ -595,7 +582,7 @@ export class HomeComponent implements OnInit {
         files.map(file => lastValueFrom(this.documentService.ingest({ file, vector_store_id: vectorStoreId })))
       );
       this.setAttachmentMessage(`Attached ${createdDocs.length} item(s) successfully.`);
-      this.refreshKnowledge(vectorStoreId);
+      this.loadDocuments(vectorStoreId);
       const latest = createdDocs[createdDocs.length - 1];
       if (latest?.id) {
         this.selectedKnowledgeId = latest.id;
@@ -605,8 +592,16 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  private setCurrentVectorStore(vectorStoreId: string): void {
+  private setCurrentVectorStore(vectorStoreId: string | null): void {
+    if (!vectorStoreId) {
+      this.currentVectorStoreId = null;
+      this.selectedKnowledgeId = null;
+      this.knowledgeSources = [];
+      return;
+    }
+
     if (this.currentVectorStoreId === vectorStoreId) {
+      this.refreshKnowledge(vectorStoreId);
       return;
     }
     this.currentVectorStoreId = vectorStoreId;
@@ -619,17 +614,24 @@ export class HomeComponent implements OnInit {
   private refreshKnowledge(vectorStoreId?: string): void {
     const targetId = vectorStoreId || this.currentVectorStoreId;
     if (!targetId) {
+      this.knowledgeSources = [];
       return;
     }
-    this.documentService.list().subscribe({
-      next: (docs) => {
-        this.knowledgeSources = docs.filter(doc => doc.vector_store === targetId);
-      },
-      error: (err) => {
-        console.error('Error loading knowledge sources:', err);
-        this.knowledgeSources = [];
-      }
-    });
+
+    if (!this.allDocuments.length) {
+      this.loadDocuments(targetId);
+      return;
+    }
+
+    this.applyKnowledgeFilter(targetId);
+  }
+
+  private applyKnowledgeFilter(vectorStoreId: string | undefined): void {
+    if (!vectorStoreId) {
+      this.knowledgeSources = [];
+      return;
+    }
+    this.knowledgeSources = this.allDocuments.filter(doc => doc.vector_store === vectorStoreId);
   }
 
   private setAttachmentMessage(message: string): void {
@@ -642,6 +644,24 @@ export class HomeComponent implements OnInit {
     }, 4000);
   }
 
+  private resetConversationState(): void {
+    this.currentThread = null;
+    this.currentRun = null;
+    this.messages = [];
+    this.router.navigate(['/home']);
+  }
+
+  private updateModeFromSelection(forceNormal = false): void {
+    if (this.selectedLibraryId || this.selectedDocumentIds.length) {
+      this.mode = 'document';
+      return;
+    }
+
+    if (forceNormal || this.mode === 'document') {
+      this.mode = 'normal';
+    }
+  }
+
   private buildRunFilters(): Record<string, any> | undefined {
     if (this.selectedKnowledgeId) {
       return { document_id: this.selectedKnowledgeId };
@@ -650,7 +670,11 @@ export class HomeComponent implements OnInit {
   }
 
   onModeToggle(mode: 'normal' | 'web'): void {
-    this.mode = mode;
+    if (mode === 'web') {
+      this.mode = 'web';
+      return;
+    }
+    this.updateModeFromSelection(true);
   }
 
   onModelSelected(model: OpenAIKey): void {
