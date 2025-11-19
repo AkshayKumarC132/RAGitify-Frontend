@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Router } from '@angular/router';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { catchError, take } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { User, LoginRequest, RegisterRequest, AuthResponse } from '../models/user.model';
 
@@ -13,7 +15,10 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(this.getStoredUser());
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private router: Router
+  ) {}
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.api.post<AuthResponse>('/login/', credentials);
@@ -50,6 +55,29 @@ export class AuthService {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.currentUserSubject.next(null);
+  }
+
+  forceLogout(): void {
+    this.clearAuth();
+    this.router.navigate(['/auth/login']);
+  }
+
+  ensureValidSession(): void {
+    const token = this.getToken();
+
+    if (!token) {
+      return;
+    }
+
+    this.verifyToken(token)
+      .pipe(
+        take(1),
+        catchError(() => {
+          this.forceLogout();
+          return of(null);
+        })
+      )
+      .subscribe();
   }
 
   isAuthenticated(): boolean {

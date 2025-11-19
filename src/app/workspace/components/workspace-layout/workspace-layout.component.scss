@@ -106,12 +106,15 @@
 }
 
 .workspace-top-bar {
+  position: relative;
   padding: 1.75rem 2rem 1rem;
+  padding-right: 10rem;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
+  z-index: 1;
 
   h1 {
     margin: 0;
@@ -179,5 +182,11 @@
 
   .sidebar-footer {
     flex-direction: row;
+  }
+}
+
+@media (max-width: 768px) {
+  .workspace-top-bar {
+    padding-right: 2rem;
   }
 }
