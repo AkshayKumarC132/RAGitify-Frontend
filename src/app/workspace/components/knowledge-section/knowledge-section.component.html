@@ -83,6 +83,39 @@
     ></app-document-upload>
   </div>
 
+  <div *ngIf="selectedVectorStore as activeVectorStore" class="panel reuse-panel">
+    <h3>
+      <i class="fa-solid fa-link"></i>
+      <span>Reuse existing documents</span>
+    </h3>
+    <p class="helper-text">
+      Grant <strong>{{ activeVectorStore.name }}</strong> access to documents that already exist in other libraries by referencing their IDs.
+    </p>
+    <form (ngSubmit)="linkExistingDocuments()">
+      <div class="form-group">
+        <label>Document IDs *</label>
+        <textarea
+          rows="2"
+          [formControl]="linkDocumentIdsControl"
+          placeholder="doc_123, doc_456 or one ID per line"
+        ></textarea>
+        <small>Separate multiple IDs using commas, spaces, or new lines.</small>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="linkDocumentIdsControl.invalid || linkingDocuments">
+          <i class="fa-solid" [ngClass]="linkingDocuments ? 'fa-spinner fa-spin' : 'fa-link'"></i>
+          <span>{{ linkingDocuments ? 'Linking…' : ('Link to ' + activeVectorStore.name) }}</span>
+        </button>
+        <button type="button" class="btn-secondary" (click)="linkDocumentIdsControl.reset('')" [disabled]="linkingDocuments">
+          <i class="fa-solid fa-eraser"></i>
+          <span>Clear</span>
+        </button>
+      </div>
+    </form>
+    <div class="helper-text" *ngIf="linkDocumentsMessage">{{ linkDocumentsMessage }}</div>
+    <div class="error-message" *ngIf="linkDocumentsError">{{ linkDocumentsError }}</div>
+  </div>
+
   <div class="knowledge-grid">
     <div class="vector-store-column">
       <div class="panel">
@@ -141,6 +174,7 @@
                     </button>
                   </div>
                 </div>
+                <div class="document-id">ID: {{ doc.id }}</div>
                 <div class="document-date">Uploaded {{ formatDate(doc.uploaded_at) }}</div>
               </div>
               <span class="status-badge" [ngClass]="getStatusBadgeClass(doc.status)">

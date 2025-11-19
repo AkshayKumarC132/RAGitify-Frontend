@@ -3,6 +3,7 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { Subscription, interval } from 'rxjs';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentService } from '../../../shared/services/document.service';
+import { DocumentAccessService } from '../../../shared/services/document-access.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document } from '../../../shared/models/document.model';
 
@@ -26,10 +27,15 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   editingVectorStore: VectorStore | null = null;
   editingDocumentId: string | null = null;
   documentTitleControl = new FormControl('', [Validators.required, Validators.minLength(3)]);
+  linkDocumentIdsControl = new FormControl('', [Validators.required]);
+  linkDocumentsMessage = '';
+  linkDocumentsError = '';
+  linkingDocuments = false;
 
   constructor(
     private vectorStoreService: VectorStoreService,
     private documentService: DocumentService,
+    private documentAccessService: DocumentAccessService,
     private fb: FormBuilder
   ) {
     this.createVectorStoreForm = this.fb.group({
@@ -84,6 +90,9 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
 
   onVectorStoreSelected(store: VectorStore): void {
     this.selectedVectorStore = store;
+    this.linkDocumentsMessage = '';
+    this.linkDocumentsError = '';
+    this.linkDocumentIdsControl.reset('');
   }
 
   onDocumentUploaded(): void {
@@ -188,6 +197,45 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     });
   }
 
+  linkExistingDocuments(): void {
+    if (!this.selectedVectorStore) {
+      this.linkDocumentsError = 'Select a library before linking documents.';
+      return;
+    }
+
+    if (this.linkDocumentIdsControl.invalid) {
+      this.linkDocumentIdsControl.markAsTouched();
+    }
+
+    const parsedIds = this.parseDocumentIds(this.linkDocumentIdsControl.value || '');
+    if (parsedIds.length === 0) {
+      this.linkDocumentsError = 'Enter at least one valid document ID.';
+      return;
+    }
+
+    this.linkDocumentsError = '';
+    this.linkDocumentsMessage = '';
+    this.linkingDocuments = true;
+
+    this.documentAccessService.create({
+      document_ids: parsedIds,
+      vector_store_id: this.selectedVectorStore.id
+    }).subscribe({
+      next: (response) => {
+        this.linkingDocuments = false;
+        const message = (response as any)?.message || `${parsedIds.length} document(s) linked to ${this.selectedVectorStore?.name}.`;
+        this.linkDocumentsMessage = message;
+        this.linkDocumentIdsControl.reset('');
+        this.loadDocuments();
+      },
+      error: (err) => {
+        console.error('Error linking existing documents:', err);
+        this.linkingDocuments = false;
+        this.linkDocumentsError = this.extractErrorMessage(err, 'Unable to link existing documents.');
+      }
+    });
+  }
+
   get filteredDocuments(): Document[] {
     if (!this.selectedVectorStore) {
       return this.documents;
@@ -253,6 +301,15 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
 
   formatDate(date: string): string {
     return new Date(date).toLocaleDateString();
+  }
+
+  private parseDocumentIds(rawValue: string): string[] {
+    return Array.from(new Set(
+      rawValue
+        .split(/[\s,]+/)
+        .map(id => id.trim())
+        .filter(id => id.length > 0)
+    ));
   }
 
   private extractErrorMessage(error: any, fallback: string): string {

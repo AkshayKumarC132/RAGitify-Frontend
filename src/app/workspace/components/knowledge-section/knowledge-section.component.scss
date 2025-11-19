@@ -91,6 +91,16 @@
     color: var(--text-primary);
   }
 
+  textarea {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.65rem 0.75rem;
+    color: var(--text-primary);
+    resize: vertical;
+    min-height: 70px;
+  }
+
   small {
     color: var(--error-color);
     font-size: 10px;
@@ -120,6 +130,16 @@
   padding-right: 0.5rem;
 }
 
+.helper-text {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 0.5rem;
+}
+
+.reuse-panel {
+  margin-bottom: 1rem;
+}
+
 .document-item {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
@@ -141,6 +161,11 @@
   }
 
   .document-date {
+    color: var(--text-secondary);
+    font-size: 10px;
+  }
+
+  .document-id {
     color: var(--text-secondary);
     font-size: 10px;
   }
