@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { Thread, ThreadCreateRequest } from '../models/thread.model';
+import { Message } from '../models/message.model';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +12,7 @@ export class ThreadService {
   constructor(
     private api: ApiService,
     private auth: AuthService
-  ) {}
+  ) { }
 
   private getToken(): string {
     const token = this.auth.getToken();
@@ -46,5 +47,9 @@ export class ThreadService {
     return this.api.delete<void>(`/thread/${token}/${id}/`, token);
   }
 
+  getMessages(threadId: string): Observable<Message[]> {
+    const token = this.getToken();
+    return this.api.get<Message[]>(`/thread/${token}/${threadId}/messages/`, token);
+  }
 }
 

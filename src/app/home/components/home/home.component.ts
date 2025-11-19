@@ -203,7 +203,7 @@ export class HomeComponent implements OnInit {
   }
 
   loadMessages(threadId: string): void {
-    this.messageService.list(threadId).subscribe({
+    this.threadService.getMessages(threadId).subscribe({
       next: (messages) => {
         this.messages = messages;
       },
