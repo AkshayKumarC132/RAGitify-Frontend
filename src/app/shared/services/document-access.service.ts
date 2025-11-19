@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
-import { DocumentAccess, DocumentAccessCreateRequest, DocumentAccessRemoveRequest } from '../models/document-access.model';
+import { DocumentAccess, DocumentAccessCreateRequest } from '../models/document-access.model';
 
 @Injectable({
   providedIn: 'root'
@@ -31,24 +31,5 @@ export class DocumentAccessService {
     return this.api.get<DocumentAccess[]>(`/document-access/${token}/list/`, token);
   }
 
-  getById(id: number): Observable<DocumentAccess> {
-    const token = this.getToken();
-    return this.api.get<DocumentAccess>(`/document-access/${token}/${id}/`, token);
-  }
-
-  update(id: number, data: Partial<DocumentAccessCreateRequest>): Observable<DocumentAccess> {
-    const token = this.getToken();
-    return this.api.put<DocumentAccess>(`/document-access/${token}/${id}/`, data, token);
-  }
-
-  remove(data: DocumentAccessRemoveRequest): Observable<any> {
-    const token = this.getToken();
-    return this.api.put(`/document-access/remove/${token}/`, data, token);
-  }
-
-  delete(id: number): Observable<void> {
-    const token = this.getToken();
-    return this.api.delete<void>(`/document-access/${token}/${id}/`, token);
-  }
 }
 

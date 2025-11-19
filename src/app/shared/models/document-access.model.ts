@@ -12,8 +12,3 @@ export interface DocumentAccessCreateRequest {
   vector_store_id: string;
 }
 
-export interface DocumentAccessRemoveRequest {
-  document_ids: string[];
-  vector_store_id: string;
-}
-

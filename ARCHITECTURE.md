@@ -228,7 +228,7 @@ All services follow the same pattern:
 
 Special methods:
 - `RunService.pollRunStatus()` - Polls run status every 2s
-- `ThreadService.getMessages()` - Get thread messages
+- `MessageService.list(thread_id)` - Get thread messages
 - `DocumentService.getStatus()` - Check document processing status
 
 ## Data Flow
