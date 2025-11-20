@@ -10,5 +10,9 @@ import { Run } from '../../../shared/models/run.model';
 export class ChatContainerComponent {
   @Input() messages: Message[] = [];
   @Input() currentRun: Run | null = null;
+
+  trackByMessage(index: number, message: Message): number {
+    return message.id;
+  }
 }
 

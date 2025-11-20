@@ -1,7 +1,7 @@
 <div class="message-bubble" [class.user]="isUser" [class.assistant]="!isUser">
   <div class="message-content">
     <div class="message-text">
-      <markdown [data]="message.content"></markdown>
+      <markdown [data]="displayContent"></markdown>
     </div>
     <div class="message-time">{{ formatTime(message.created_at) }}</div>
   </div>
