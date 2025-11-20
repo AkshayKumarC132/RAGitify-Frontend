@@ -20,6 +20,7 @@
   padding: 0.75rem 0.85rem;
   border-bottom: 1px solid var(--border-color);
   gap: 0.5rem;
+  position: relative;
 }
 
 .brand-toggle {
@@ -333,11 +334,45 @@ button.thread-menu {
 }
 
 .thread-sidebar.collapsed .sidebar-profile {
-  padding: 0.75rem 0.5rem;
+  padding: 0.35rem 0.5rem;
 }
 
 .thread-sidebar.collapsed .brand-toggle {
   justify-content: center;
+}
+
+.thread-sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  position: relative;
+}
+
+.thread-sidebar.collapsed .sidebar-header .brand-logo {
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.thread-sidebar.collapsed .sidebar-header .sidebar-toggle-control {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  opacity: 0;
+  pointer-events: none;
+  background: var(--bg-primary);
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+  box-shadow: 0 6px 18px rgba(5, 11, 22, 0.22);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 2;
+}
+
+.thread-sidebar.collapsed .sidebar-header.show-expand-control .sidebar-toggle-control {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.thread-sidebar.collapsed .sidebar-header.show-expand-control .brand-logo {
+  opacity: 0;
 }
 
 .thread-sidebar.collapsed .profile-trigger {
