@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 import { switchMap, map, catchError } from 'rxjs/operators';
-import { of, lastValueFrom } from 'rxjs';
+import { of, lastValueFrom, EMPTY } from 'rxjs';
 import { ThreadService } from '../../../shared/services/thread.service';
 import { MessageService } from '../../../shared/services/message.service';
 import { RunService } from '../../../shared/services/run.service';
@@ -68,7 +69,8 @@ export class HomeComponent implements OnInit {
     private authService: AuthService,
     private documentService: DocumentService,
     private documentAccessService: DocumentAccessService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private location: Location
   ) {
     this.profileForm = this.fb.group({
       first_name: [''],
@@ -104,12 +106,15 @@ export class HomeComponent implements OnInit {
       }
     });
 
-    this.route.params.subscribe(params => {
-      const threadId = params['threadId'];
-      if (threadId) {
-        this.loadThread(threadId);
-      }
-    });
+    this.route.params.pipe(
+      switchMap(params => {
+        const threadId = params['threadId'];
+        if (threadId) {
+          this.loadThread(threadId);
+        }
+        return EMPTY;
+      })
+    ).subscribe();
   }
 
   onManageProfile(): void {
@@ -232,13 +237,21 @@ export class HomeComponent implements OnInit {
   }
 
   onMessageSent(content: string): void {
-    // this.updateModeFromSelection();
     if (!content.trim()) return;
 
-    this.loading = true;
+    const optimisticMessage: Message = {
+      id: Date.now(),
+      thread_id: '',
+      user: '',
+      content: content,
+      role: 'user',
+      created_at: new Date().toISOString()
+    };
 
-    // Auto-create flow: VectorStore -> Thread -> Assistant -> Message -> Run
+    this.messages.push(optimisticMessage);
+
     this.ensureVectorStoreAndThread().then(({ vectorStoreId, threadId }) => {
+      optimisticMessage.thread_id = threadId;
       return this.ensureAssistant(vectorStoreId, threadId);
     }).then(({ assistantId, threadId }) => {
       return this.createMessage(threadId, content).then(({ messageId }) => ({
@@ -250,7 +263,7 @@ export class HomeComponent implements OnInit {
       return this.createRun(threadId, assistantId, messageId);
     }).catch((error) => {
       console.error('Error in message flow:', error);
-      this.loading = false;
+      this.currentRun = null;
     });
   }
 
@@ -267,7 +280,10 @@ export class HomeComponent implements OnInit {
     );
     this.currentThread = thread;
     this.setCurrentVectorStore(vectorStoreId);
-    this.router.navigate(['/home/chat', thread.id]);
+
+    // Update URL without triggering navigation/component destruction
+    this.location.replaceState(`/home/chat/${thread.id}`);
+
     this.loadThreads();
     return { vectorStoreId, threadId: thread.id };
   }
@@ -393,8 +409,17 @@ export class HomeComponent implements OnInit {
   private createMessage(threadId: string, content: string): Promise<{ messageId: number; threadId: string }> {
     return this.messageService.create({ thread_id: threadId, content }).pipe(
       map(message => {
-        this.messages.push(message);
-        this.loadMessages(threadId);
+        // Update the optimistic message with the real message
+        // Find by content and role since the optimistic message has a temporary timestamp ID
+        const optimisticIndex = this.messages.findIndex(m =>
+          m.role === 'user' &&
+          m.content === content &&
+          typeof m.id === 'number' &&
+          m.id > 1000000000000 // timestamp-based ID
+        );
+        if (optimisticIndex !== -1) {
+          this.messages[optimisticIndex] = message;
+        }
         return { messageId: message.id, threadId };
       })
     ).toPromise() as Promise<{ messageId: number; threadId: string }>;
@@ -415,24 +440,23 @@ export class HomeComponent implements OnInit {
     return this.runService.create(payload).pipe(
       switchMap(run => {
         this.currentRun = run;
-        this.loading = false;
 
-        // Poll for run status
         this.runService.pollRunStatus(run.id).subscribe({
           next: (updatedRun) => {
             if (updatedRun) {
               this.currentRun = updatedRun;
               if (updatedRun.status === 'completed') {
                 this.loadMessages(threadId);
+              } else if (updatedRun.status === 'failed' || updatedRun.status === 'cancelled') {
+                this.currentRun = null;
               } else if (updatedRun.status === 'requires_action') {
-                // Handle tool calls if needed
                 console.log('Run requires action:', updatedRun.required_action);
               }
             }
           },
           error: (err) => {
             console.error('Error polling run:', err);
-            this.loading = false;
+            this.currentRun = null;
           }
         });
 
