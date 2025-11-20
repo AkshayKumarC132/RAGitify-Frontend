@@ -4,7 +4,14 @@
   flex-direction: column;
   background: var(--bg-secondary);
   position: relative;
+  // padding-bottom: 70px; /* Make room for fixed profile */
 }
+
+// .threads-section {
+//   flex: 1;
+//   overflow-y: auto;
+//   min-height: 0; /* Important for flex shrink */
+// }
 
 .sidebar-header {
   display: flex;
@@ -220,25 +227,66 @@ button.thread-menu {
 }
 
 .sidebar-profile {
-  padding: 0.75rem 1rem;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.55rem;
+  background: var(--bg-primary);
   border-top: 1px solid var(--border-color);
-  position: relative;
+  z-index: 10;
 }
 
 .profile-trigger {
-  width: 100%;
-  border: 1px solid transparent;
-  background: transparent;
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  color: var(--text-primary);
+  gap: 0.55rem;
+  width: 90%;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 6px;
-  transition: border-color 0.2s ease;
-}
+  transition: background 0.2s ease;
+  text-align: left;
 
+  &:hover {
+    background: var(--bg-tertiary);
+  }
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .profile-meta {
+    flex: 1;
+    min-width: 0;
+    .profile-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .profile-email {
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
 .profile-trigger:hover,
 .profile-trigger:focus-visible {
   border-color: var(--border-color);
