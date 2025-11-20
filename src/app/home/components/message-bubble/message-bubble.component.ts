@@ -13,10 +13,7 @@ export class MessageBubbleComponent {
     return this.message.role === 'user';
   }
 
-  formatMessage(content: string): string {
-    // Simple formatting - can be enhanced with markdown support
-    return content.replace(/\n/g, '<br>');
-  }
+
 
   formatTime(timestamp: string): string {
     const date = new Date(timestamp);
