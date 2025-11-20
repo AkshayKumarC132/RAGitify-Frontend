@@ -27,8 +27,14 @@ export class ThreadSidebarComponent implements OnChanges {
   profileMenuOpen = false;
   menuOpensLeft = false;
   private menuTrigger: HTMLElement | null = null;
+  hoveringExpandControl = false;
+  private brandExpandInteraction = false;
+  private toggleExpandInteraction = false;
 
   ngOnChanges(changes: SimpleChanges): void {
+    if ('collapsed' in changes && !this.collapsed) {
+      this.resetExpandControlState();
+    }
     if ('user' in changes) {
       const nextUser = changes['user'].currentValue as User | null;
       if (!nextUser) {
@@ -44,6 +50,30 @@ export class ThreadSidebarComponent implements OnChanges {
         });
       }
     }
+  }
+
+  handleBrandExpandInteraction(active: boolean): void {
+    this.brandExpandInteraction = active;
+    this.updateExpandControlState();
+  }
+
+  handleToggleExpandInteraction(active: boolean): void {
+    this.toggleExpandInteraction = active;
+    this.updateExpandControlState();
+  }
+
+  private updateExpandControlState(): void {
+    if (!this.collapsed) {
+      this.resetExpandControlState();
+      return;
+    }
+    this.hoveringExpandControl = this.brandExpandInteraction || this.toggleExpandInteraction;
+  }
+
+  private resetExpandControlState(): void {
+    this.brandExpandInteraction = false;
+    this.toggleExpandInteraction = false;
+    this.hoveringExpandControl = false;
   }
 
   selectThread(thread: Thread): void {
