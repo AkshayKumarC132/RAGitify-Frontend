@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener, ChangeDetectorRef } from '@angular/core';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
 import { Document } from '../../../shared/models/document.model';
@@ -16,7 +16,7 @@ export type LibrarySelectionEvent =
   styleUrls: ['./chat-input.component.scss']
 })
 export class ChatInputComponent implements OnChanges {
-  @Input() mode: 'normal' | 'web' | 'document' = 'document';
+  @Input() mode: 'normal' | 'web' | 'document' = 'normal';
   @Input() loading = false;
   @Input() libraries: VectorStore[] = [];
   @Input() selectedLibraryId: string | null = null;
@@ -34,6 +34,7 @@ export class ChatInputComponent implements OnChanges {
 
   message = '';
   attachmentMenuOpen = false;
+  modeMenuOpen = false;
   activePanel: AttachmentPanel = null;
   webForm = { url: '', title: '' };
   noteForm = { title: '', content: '' };
@@ -41,6 +42,8 @@ export class ChatInputComponent implements OnChanges {
   pendingPromptId: string | null = null;
   selectionMode: 'library' | 'documents' = 'library';
   pendingDocumentIds = new Set<string>();
+
+  constructor(private cdr: ChangeDetectorRef) { }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selectedLibraryId']) {
@@ -53,7 +56,7 @@ export class ChatInputComponent implements OnChanges {
       this.pendingPromptId = this.selectedPromptId;
     }
     if (changes['selectedDocumentIds']) {
-      this.pendingDocumentIds = new Set(this.selectedDocumentIds || []);
+      this.pendingDocumentIds = new Set((this.selectedDocumentIds || []).map(id => String(id)));
       if (this.selectedDocumentIds?.length) {
         this.selectionMode = 'documents';
       } else if (!this.selectedLibraryId) {
@@ -76,14 +79,45 @@ export class ChatInputComponent implements OnChanges {
     }
   }
 
-  toggleMode(): void {
-    const newMode = this.mode === 'web' ? 'normal' : 'web';
-    this.modeToggle.emit(newMode);
+  toggleModeMenu(): void {
+    this.modeMenuOpen = !this.modeMenuOpen;
+    if (this.modeMenuOpen) {
+      this.attachmentMenuOpen = false;
+      this.activePanel = null;
+    }
   }
 
-  toggleDocumentMode(): void {
-    const newMode = this.mode === 'document' ? 'normal' : 'document';
-    this.modeToggle.emit(newMode);
+  selectMode(newMode: 'normal' | 'web' | 'document'): void {
+    if (this.mode !== newMode) {
+      this.modeToggle.emit(newMode);
+    }
+    this.modeMenuOpen = false;
+  }
+
+  getModeIcon(): string {
+    switch (this.mode) {
+      case 'web':
+        return '🌐';
+      case 'document':
+        return '📄';
+      default:
+        return '💬';
+    }
+  }
+
+  getModeLabel(): string {
+    switch (this.mode) {
+      case 'web':
+        return 'Web';
+      case 'document':
+        return 'Document';
+      default:
+        return 'Normal';
+    }
+  }
+
+  getModeTitle(): string {
+    return `Current mode: ${ this.getModeLabel() }. Click to change mode.`;
   }
 
   toggleAttachmentMenu(): void {
@@ -99,16 +133,18 @@ export class ChatInputComponent implements OnChanges {
     const clickedAttachmentControl = target.closest('.attachment-controls');
     const clickedPanel = target.closest('.attachment-panel');
     const clickedMenu = target.closest('.attachment-menu');
+    const clickedModeSelector = target.closest('.mode-selector');
 
-    if (clickedAttachmentControl || clickedPanel || clickedMenu) {
+    if (clickedAttachmentControl || clickedPanel || clickedMenu || clickedModeSelector) {
       return;
     }
 
-    if (!this.attachmentMenuOpen && !this.activePanel) {
+    if (!this.attachmentMenuOpen && !this.activePanel && !this.modeMenuOpen) {
       return;
     }
 
     this.closeMenus();
+    this.modeMenuOpen = false;
   }
 
   triggerFilePicker(input: HTMLInputElement): void {
@@ -140,7 +176,7 @@ export class ChatInputComponent implements OnChanges {
 
       if (panel === 'library') {
         this.pendingLibraryId = this.selectedLibraryId;
-        this.pendingDocumentIds = new Set(this.selectedDocumentIds || []);
+        this.pendingDocumentIds = new Set((this.selectedDocumentIds || []).map(id => String(id)));
         console.log('Library panel opened, pendingLibraryId:', this.pendingLibraryId);
       }
       if (panel === 'prompts') {
@@ -254,14 +290,43 @@ export class ChatInputComponent implements OnChanges {
     return match ? match.name : 'Unknown Library';
   }
 
-  toggleDocumentSelection(documentId: string, selected: boolean): void {
+  isDocumentSelected(documentId: string): boolean {
+    return this.pendingDocumentIds.has(String(documentId));
+  }
+
+  toggleDocumentSelectionClick(documentId: string, event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const target = event.target as HTMLElement;
+    const isCurrentlySelected = this.pendingDocumentIds.has(String(documentId));
+    const newState = !isCurrentlySelected;
+
+    // Toggle the selection state
+    this.toggleDocumentSelectionById(documentId, newState);
+
+    // Update the checkbox visual state to match (prevent browser default toggle)
+    const label = event.currentTarget as HTMLElement;
+    const checkbox = label.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    if (checkbox) {
+      checkbox.checked = newState;
+    }
+  }
+
+  toggleDocumentSelectionById(documentId: string, selected: boolean): void {
     const next = new Set(this.pendingDocumentIds);
     if (selected) {
-      next.add(documentId);
+      next.add(String(documentId));
     } else {
-      next.delete(documentId);
+      next.delete(String(documentId));
     }
     this.pendingDocumentIds = next;
+    this.cdr.detectChanges();
+  }
+
+  toggleDocumentSelection(documentId: string, event: Event): void {
+    const checkbox = event.target as HTMLInputElement;
+    const selected = checkbox.checked;
+    this.toggleDocumentSelectionById(documentId, selected);
   }
 }
-

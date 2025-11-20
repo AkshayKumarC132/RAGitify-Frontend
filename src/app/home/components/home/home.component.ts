@@ -54,6 +54,7 @@ export class HomeComponent implements OnInit {
   showProfilePanel = false;
   profileMessage = '';
   private attachmentMessageTimeout?: any;
+  private enforceDocumentMode = true;
 
   constructor(
     private router: Router,
@@ -655,10 +656,20 @@ export class HomeComponent implements OnInit {
   private updateModeFromSelection(forceNormal = false): void {
     if (this.selectedLibraryId || this.selectedDocumentIds.length) {
       this.mode = 'document';
+      this.enforceDocumentMode = false;
       return;
     }
 
-    if (forceNormal || this.mode === 'document') {
+    if (forceNormal) {
+      this.enforceDocumentMode = false;
+      this.mode = 'normal';
+      return;
+    }
+    if (this.enforceDocumentMode) {
+      this.mode = 'document';
+      return;
+    }
+    if (this.mode === 'document') {
       this.mode = 'normal';
     }
   }
@@ -673,10 +684,12 @@ export class HomeComponent implements OnInit {
   onModeToggle(mode: 'normal' | 'web' | 'document'): void {
     if (mode === 'web') {
       this.mode = 'web';
+      this.enforceDocumentMode = false;
       return;
     }
     if (mode === 'document') {
       this.mode = 'document';
+      this.enforceDocumentMode = false;
       return;
     }
     this.mode = 'normal';

@@ -8,7 +8,7 @@ import { AuthService } from '../../../shared/services/auth.service';
   styleUrls: ['./workspace-layout.component.scss']
 })
 export class WorkspaceLayoutComponent {
-  activeSection: 'models' | 'knowledge' | 'prompts' = 'prompts';
+  activeSection: 'models' | 'knowledge' | 'prompts' = 'knowledge';
 
   constructor(
     private authService: AuthService,

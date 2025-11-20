@@ -38,29 +38,17 @@
         <h1>Manage your intelligence stack</h1>
       </div>
       <div class="workspace-tabs">
-        <button
-          type="button"
-          [class.active]="activeSection === 'prompts'"
-          (click)="setActiveSection('prompts')"
-        >
+        <button type="button" [class.active]="activeSection === 'knowledge'" (click)="setActiveSection('knowledge')">
+          <i class="fa-solid fa-folder-open"></i>
+          <span>Knowledge</span>
+        </button>
+        <button type="button" [class.active]="activeSection === 'prompts'" (click)="setActiveSection('prompts')">
           <i class="fa-solid fa-message"></i>
           <span>Prompts</span>
         </button>
-        <button
-          type="button"
-          [class.active]="activeSection === 'models'"
-          (click)="setActiveSection('models')"
-        >
+        <button type="button" [class.active]="activeSection === 'models'" (click)="setActiveSection('models')">
           <i class="fa-solid fa-robot"></i>
           <span>Models</span>
-        </button>
-        <button
-          type="button"
-          [class.active]="activeSection === 'knowledge'"
-          (click)="setActiveSection('knowledge')"
-        >
-          <i class="fa-solid fa-folder-open"></i>
-          <span>Knowledge</span>
         </button>
       </div>
     </div>

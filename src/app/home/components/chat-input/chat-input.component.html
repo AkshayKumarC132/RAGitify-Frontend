@@ -3,13 +3,8 @@
 
   <div class="input-wrapper">
     <div class="attachment-controls">
-      <button
-        type="button"
-        class="attachment-toggle"
-        (click)="toggleAttachmentMenu()"
-        [class.active]="attachmentMenuOpen"
-        title="Attachments"
-      >
+      <button type="button" class="attachment-toggle" (click)="toggleAttachmentMenu()"
+        [class.active]="attachmentMenuOpen" title="Attachments">
         +
       </button>
 
@@ -26,61 +21,45 @@
       </div>
     </div>
 
-    <textarea
-      [(ngModel)]="message"
-      (keydown)="onKeyPress($event)"
-      placeholder="How can I help you today?"
-      class="chat-input"
-      [disabled]="loading"
-      rows="1"
-    ></textarea>
+    <textarea [(ngModel)]="message" (keydown)="onKeyPress($event)" placeholder="How can I help you today?"
+      class="chat-input" [disabled]="loading" rows="1"></textarea>
 
     <div class="input-actions">
-      <!-- Web toggle -->
-      <button
-        class="mode-toggle web-toggle"
-        [class.active]="mode === 'web'"
-        (click)="toggleMode()"
-        [title]="mode === 'web' ? 'Switch to Normal Mode' : 'Switch to Web Mode'"
-      >
-        <span class="icon">🌐</span>
-        <!-- <span class="label">Web</span> -->
-      </button>
+      <div class="mode-selector" (click)="$event.stopPropagation()">
+        <button class="mode-toggle-button" [class.active]="mode === 'normal' || mode === 'web' || mode === 'document'"
+          (click)="toggleModeMenu()" [title]="getModeTitle()">
+          <span class="mode-icon">{{ getModeIcon() }}</span>
+          <span class="mode-label">{{ getModeLabel() }}</span>
+          <span class="mode-arrow">▼</span>
+        </button>
+        <div class="mode-menu" *ngIf="modeMenuOpen">
+          <button type="button" class="mode-option" [class.active]="mode === 'normal'" (click)="selectMode('normal')">
+            <span class="mode-icon">💬</span>
+            <span>Normal</span>
+          </button>
+          <button type="button" class="mode-option" [class.active]="mode === 'web'" (click)="selectMode('web')">
+            <span class="mode-icon">🌐</span>
+            <span>Web</span>
+          </button>
+          <button type="button" class="mode-option" [class.active]="mode === 'document'"
+            (click)="selectMode('document')">
+            <span class="mode-icon">📄</span>
+            <span>Document</span>
+          </button>
+        </div>
+      </div>
 
-      <!-- Document / Normal toggle -->
-      <button
-        class="mode-toggle document-toggle"
-        [class.active]="mode === 'document'"
-        (click)="toggleDocumentMode()"
-        [title]="mode === 'document' ? 'Switch to Normal Mode' : 'Switch to Document Mode'"
-      >
-        <span class="icon">📄</span>
-        <!-- <span class="label">Docs</span> -->
-      </button>
-
-      <button
-        class="send-button"
-        (click)="sendMessage()"
-        [disabled]="!message.trim() || loading"
-      >
+      <button class="send-button" (click)="sendMessage()" [disabled]="!message.trim() || loading">
         <span *ngIf="!loading">→</span>
         <span *ngIf="loading">...</span>
       </button>
     </div>
-
+  </div>
 
   <div class="attachment-panel" *ngIf="activePanel === 'web'" (click)="$event.stopPropagation()">
     <h4>Attach Webpage</h4>
-    <input
-      type="text"
-      placeholder="https://example.com/article"
-      [(ngModel)]="webForm.url"
-    />
-    <input
-      type="text"
-      placeholder="Optional title"
-      [(ngModel)]="webForm.title"
-    />
+    <input type="text" placeholder="https://example.com/article" [(ngModel)]="webForm.url" />
+    <input type="text" placeholder="Optional title" [(ngModel)]="webForm.title" />
     <div class="panel-actions">
       <button type="button" (click)="submitWebForm()" [disabled]="!webForm.url.trim()">Attach</button>
       <button type="button" (click)="closePanels()">Cancel</button>
@@ -89,16 +68,8 @@
 
   <div class="attachment-panel" *ngIf="activePanel === 'notes'" (click)="$event.stopPropagation()">
     <h4>Attach Notes</h4>
-    <input
-      type="text"
-      placeholder="Note title"
-      [(ngModel)]="noteForm.title"
-    />
-    <textarea
-      rows="4"
-      placeholder="Add the text you want to reference..."
-      [(ngModel)]="noteForm.content"
-    ></textarea>
+    <input type="text" placeholder="Note title" [(ngModel)]="noteForm.title" />
+    <textarea rows="4" placeholder="Add the text you want to reference..." [(ngModel)]="noteForm.content"></textarea>
     <div class="panel-actions">
       <button type="button" (click)="submitNoteForm()" [disabled]="!noteForm.content.trim()">Attach</button>
       <button type="button" (click)="closePanels()">Cancel</button>
@@ -111,12 +82,8 @@
       <button type="button" [class.active]="selectionMode === 'library'" (click)="setSelectionMode('library')">
         Whole Library
       </button>
-      <button
-        type="button"
-        [class.active]="selectionMode === 'documents'"
-        [disabled]="!documents.length"
-        (click)="setSelectionMode('documents')"
-      >
+      <button type="button" [class.active]="selectionMode === 'documents'" [disabled]="!documents.length"
+        (click)="setSelectionMode('documents')">
         Specific Documents
       </button>
     </div>
@@ -125,12 +92,7 @@
       <div class="library-list" *ngSwitchCase="'library'">
         <ng-container *ngIf="libraries.length; else emptyLibrary">
           <label *ngFor="let library of libraries">
-            <input
-              type="radio"
-              name="library"
-              [value]="library.id"
-              [(ngModel)]="pendingLibraryId"
-            />
+            <input type="radio" name="library" [value]="library.id" [(ngModel)]="pendingLibraryId" />
             <div class="library-meta">
               <span class="title">{{ library.name }}</span>
               <span class="meta">Created {{ library.created_at | date:'short' }}</span>
@@ -143,13 +105,8 @@
         <ng-container *ngIf="documents.length; else emptyDocuments">
           <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
             <div class="group-title">{{ group.name }}</div>
-            <label *ngFor="let doc of group.documents">
-              <input
-                type="checkbox"
-                [value]="doc.id"
-                [checked]="pendingDocumentIds.has(doc.id)"
-                (change)="toggleDocumentSelection(doc.id, $any($event.target).checked)"
-              />
+            <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)">
+              <input type="checkbox" [checked]="isDocumentSelected(doc.id)" />
               <div class="library-meta">
                 <span class="title">{{ doc.title || ('Document ' + doc.id) }}</span>
                 <span class="meta">Uploaded {{ doc.uploaded_at | date:'short' }}</span>
@@ -167,11 +124,8 @@
       <p class="empty-text">No documents available. Upload knowledge in Workspace.</p>
     </ng-template>
     <div class="panel-actions">
-      <button
-        type="button"
-        (click)="confirmLibrarySelection()"
-        [disabled]="(selectionMode === 'library' && !pendingLibraryId) || (selectionMode === 'documents' && !pendingDocumentIds.size)"
-      >
+      <button type="button" (click)="confirmLibrarySelection()"
+        [disabled]="(selectionMode === 'library' && !pendingLibraryId) || (selectionMode === 'documents' && !pendingDocumentIds.size)">
         Apply
       </button>
       <button type="button" (click)="clearLibrarySelection()">Clear</button>
@@ -183,15 +137,11 @@
     <h4>Use Prompts</h4>
     <div class="prompt-list" *ngIf="prompts.length; else emptyPrompts">
       <label *ngFor="let prompt of prompts">
-        <input
-          type="radio"
-          name="prompt"
-          [value]="prompt.id"
-          [(ngModel)]="pendingPromptId"
-        />
+        <input type="radio" name="prompt" [value]="prompt.id" [(ngModel)]="pendingPromptId" />
         <div class="prompt-meta">
           <span class="title">{{ prompt.name || 'Untitled Prompt' }}</span>
-          <span class="meta" *ngIf="prompt.instructions">{{ prompt.instructions | slice:0:60 }}{{ prompt.instructions.length > 60 ? '...' : '' }}</span>
+          <span class="meta" *ngIf="prompt.instructions">{{ prompt.instructions | slice:0:60 }}{{
+            prompt.instructions.length > 60 ? '...' : '' }}</span>
         </div>
       </label>
     </div>
@@ -205,12 +155,12 @@
     </div>
   </div>
 
-  <!-- <div class="mode-indicator" *ngIf="mode === 'web'">
+  <div class="mode-indicator" *ngIf="mode === 'web'">
     <span>Web Mode Active</span>
   </div>
   <div class="mode-indicator document" *ngIf="mode === 'document'">
     <span>Documents Mode Active</span>
-  </div> -->
+  </div>
 
   <div class="attachment-pill" *ngIf="selectedLibraryId">
     <span>Library: {{ getLibraryLabel() || selectedLibraryId }}</span>
@@ -225,4 +175,3 @@
     <button type="button" (click)="clearPromptSelection()">×</button>
   </div>
 </div>
-
