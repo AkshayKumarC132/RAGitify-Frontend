@@ -7,8 +7,10 @@ import { ApiService } from './services/api.service';
 import { AuthService } from './services/auth.service';
 import { ThemeToggleComponent } from './components/theme-toggle/theme-toggle.component';
 
+import { TypingLabelComponent } from './components/typing-label/typing-label.component';
+
 @NgModule({
-  declarations: [ThemeToggleComponent],
+  declarations: [ThemeToggleComponent, TypingLabelComponent],
   imports: [
     CommonModule,
     HttpClientModule,
@@ -28,7 +30,8 @@ import { ThemeToggleComponent } from './components/theme-toggle/theme-toggle.com
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    ThemeToggleComponent
+    ThemeToggleComponent,
+    TypingLabelComponent
   ]
 })
 export class SharedModule { }

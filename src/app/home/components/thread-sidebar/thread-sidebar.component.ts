@@ -254,4 +254,8 @@ export class ThreadSidebarComponent implements OnChanges {
 
     this.threadMenuPosition = { top, left };
   }
+
+  trackByThreadId(index: number, thread: Thread): string {
+    return thread.id;
+  }
 }

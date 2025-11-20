@@ -447,6 +447,8 @@ export class HomeComponent implements OnInit {
               this.currentRun = updatedRun;
               if (updatedRun.status === 'completed') {
                 this.loadMessages(threadId);
+                this.loadThreads();
+                this.threadService.getById(threadId).subscribe(t => this.currentThread = t);
               } else if (updatedRun.status === 'failed' || updatedRun.status === 'cancelled') {
                 this.currentRun = null;
               } else if (updatedRun.status === 'requires_action') {

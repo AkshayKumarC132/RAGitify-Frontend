@@ -48,7 +48,7 @@
     <div class="section-title" *ngIf="!collapsed">Today</div>
     <div class="threads-list" (scroll)="handleThreadsScroll()">
       <div
-        *ngFor="let thread of threads"
+        *ngFor="let thread of threads; trackBy: trackByThreadId"
         class="thread-item"
         [class.active]="currentThread?.id === thread.id"
         (click)="selectThread(thread)"
@@ -56,7 +56,9 @@
       >
         <div class="title-slice">{{ getTitleSlice(thread) }}</div>
         <div class="thread-details" *ngIf="!collapsed">
-          <div class="thread-title">{{ getThreadTitle(thread) }}</div>
+          <div class="thread-title">
+            <app-typing-label [text]="getThreadTitle(thread)"></app-typing-label>
+          </div>
           <div class="thread-time">{{ formatTime(thread.created_at) }}</div>
         </div>
 
