@@ -54,7 +54,7 @@
         (click)="selectThread(thread)"
         [attr.title]="collapsed ? getThreadTitle(thread) : null"
       >
-        <div class="title-slice">{{ getTitleSlice(thread) }}</div>
+        <!-- <div class="title-slice">{{ getTitleSlice(thread) }}</div> -->
         <div class="thread-details" *ngIf="!collapsed">
           <div class="thread-title">
             <app-typing-label [text]="getThreadTitle(thread)"></app-typing-label>
