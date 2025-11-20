@@ -186,15 +186,37 @@ button.thread-menu {
 }
 
 .thread-item {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 0.35rem;
-  padding: 0.4rem 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.5rem;
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease;
   border: 1px solid transparent;
   position: relative;
+  min-height: 44px;
+
+  &:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+  }
+
+  &.active {
+    border-color: var(--accent-color);
+  }
+}
+
+.thread-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.thread-title.single-line {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .sidebar-profile {
@@ -295,22 +317,75 @@ button.thread-menu {
   font-weight: 700;
   color: var(--accent-color);
   text-transform: uppercase;
+  flex-shrink: 0;
+
+  .thread-item.active & {
+    border-color: var(--accent-color);
+  }
 }
 
-.thread-item.active .title-slice {
-  border-color: var(--accent-color);
+.thread-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; // Important for text overflow
+
+  &.expanded {
+    .thread-title {
+      margin-bottom: 0.2rem;
+    }
+  }
 }
 
 .thread-title {
   color: var(--text-primary);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  margin-bottom: 0.1rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  &.single-line {
+    line-height: 1.2;
+  }
 }
 
 .thread-time {
   color: var(--text-secondary);
-  font-size: 9px;
+  font-size: 11px;
+  line-height: 1.1;
+  margin-top: auto;
+}
+
+.thread-menu {
+  flex-shrink: 0;
+  padding: 0.25rem;
+  margin-left: auto;
+  border-radius: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  i {
+    font-size: 12px;
+  }
+
+  &:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  &[aria-expanded="true"] {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
 }
 
 .thread-menu-panel {
@@ -326,6 +401,94 @@ button.thread-menu {
   z-index: 40;
   box-shadow: 0 22px 55px rgba(5, 11, 22, 0.35);
   animation: dropdownFade 0.16s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -7px;
+    transform: translateY(-50%) rotate(45deg);
+    width: 14px;
+    height: 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-right: none;
+    border-bottom: none;
+    transform-origin: center;
+  }
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 11px;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background: var(--bg-tertiary);
+    }
+
+    &.danger {
+      color: var(--danger-color);
+
+      &:hover {
+        background: rgba(var(--danger-color-rgb), 0.1);
+      }
+    }
+
+    i {
+      width: 16px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+  }
+}
+
+// Collapsed state styles
+.thread-sidebar.collapsed {
+  .thread-content {
+    .thread-title {
+      display: none;
+    }
+
+    .thread-time {
+      display: none;
+    }
+  }
+
+  .profile-trigger {
+    justify-content: center;
+    padding: 0.5rem;
+
+    .profile-meta {
+      display: none;
+    }
+
+    .fa-solid.fa-angle-up,
+    .fa-solid.fa-angle-down {
+      display: none;
+    }
+  }
+}
+
+// Animation for dropdown
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
 }
 
 .thread-menu-panel::before {
@@ -399,15 +562,4 @@ button.thread-menu {
 .thread-sidebar.collapsed .profile-meta,
 .thread-sidebar.collapsed .section-title {
   display: none;
-}
-
-@keyframes dropdownFade {
-  from {
-    opacity: 0;
-    transform: translate(8px, -50%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%);
-  }
 }

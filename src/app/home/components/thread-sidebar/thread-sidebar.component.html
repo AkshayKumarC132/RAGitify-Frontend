@@ -54,12 +54,15 @@
         (click)="selectThread(thread)"
         [attr.title]="collapsed ? getThreadTitle(thread) : null"
       >
-        <!-- <div class="title-slice">{{ getTitleSlice(thread) }}</div> -->
-        <div class="thread-details" *ngIf="!collapsed">
-          <div class="thread-title">
+        <div class="thread-icon" *ngIf="collapsed">
+          <div class="title-slice">{{ getTitleSlice(thread) }}</div>
+        </div>
+        
+        <div class="thread-content" [class.expanded]="!collapsed">
+          <div class="thread-title single-line">
             <app-typing-label [text]="getThreadTitle(thread)"></app-typing-label>
           </div>
-          <div class="thread-time">{{ formatTime(thread.created_at) }}</div>
+          <div class="thread-time" *ngIf="!collapsed">{{ formatTime(thread.created_at) }}</div>
         </div>
 
         <button
@@ -68,9 +71,8 @@
           (click)="toggleThreadMenu(thread, $event)"
           [attr.aria-expanded]="threadMenuOpen === thread.id"
         >
-          <i class="fa-solid fa-ellipsis"></i>
+          <i class="fa-solid fa-ellipsis-vertical"></i>
         </button>
-
       </div>
     </div>
   </div>
@@ -121,4 +123,3 @@
     </button>
   </div>
 </div>
-
