@@ -1,11 +1,35 @@
-<div class="workspace-container">
-  <aside class="workspace-sidebar">
-    <div class="sidebar-brand">
-      <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" />
-      <div>
-        <p class="eyebrow">RAGitify</p>
-        <h2>Workspace</h2>
-      </div>
+<div class="workspace-container" [class.sidebar-collapsed]="sidebarCollapsed">
+  <aside class="workspace-sidebar" [class.collapsed]="sidebarCollapsed">
+    <div class="sidebar-header" [class.show-expand-control]="sidebarCollapsed && hoveringExpandControl">
+      <button
+        type="button"
+        class="brand-toggle"
+        (click)="toggleSidebar(undefined, $event)"
+        [attr.title]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        (mouseenter)="handleBrandExpandInteraction(true)"
+        (mouseleave)="handleBrandExpandInteraction(false)"
+        (focus)="handleBrandExpandInteraction(true)"
+        (blur)="handleBrandExpandInteraction(false)"
+      >
+        <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" class="brand-logo" />
+        <div class="brand-text" *ngIf="!sidebarCollapsed">
+          <p class="eyebrow">RAGitify</p>
+          <h2>Workspace</h2>
+        </div>
+      </button>
+
+      <button
+        class="sidebar-toggle-control"
+        type="button"
+        (click)="toggleSidebar(undefined, $event)"
+        [attr.aria-label]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        (mouseenter)="handleToggleExpandInteraction(true)"
+        (mouseleave)="handleToggleExpandInteraction(false)"
+        (focus)="handleToggleExpandInteraction(true)"
+        (blur)="handleToggleExpandInteraction(false)"
+      >
+        <i class="fa-solid" [ngClass]="sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+      </button>
     </div>
 
     <nav class="sidebar-actions">

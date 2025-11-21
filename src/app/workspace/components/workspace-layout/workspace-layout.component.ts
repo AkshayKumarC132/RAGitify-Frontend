@@ -9,6 +9,10 @@ import { AuthService } from '../../../shared/services/auth.service';
 })
 export class WorkspaceLayoutComponent {
   activeSection: 'models' | 'knowledge' | 'prompts' = 'knowledge';
+  sidebarCollapsed = false;
+  hoveringExpandControl = false;
+  private brandExpandInteraction = false;
+  private toggleExpandInteraction = false;
 
   constructor(
     private authService: AuthService,
@@ -21,6 +25,42 @@ export class WorkspaceLayoutComponent {
 
   startNewChat(): void {
     this.router.navigate(['/home']);
+  }
+
+  toggleSidebar(forceState?: boolean, event?: MouseEvent): void {
+    event?.stopPropagation();
+    const nextState = typeof forceState === 'boolean' ? forceState : !this.sidebarCollapsed;
+    if (nextState === this.sidebarCollapsed) {
+      return;
+    }
+    this.sidebarCollapsed = nextState;
+    if (!nextState) {
+      this.resetExpandControlState();
+    }
+  }
+
+  handleBrandExpandInteraction(active: boolean): void {
+    this.brandExpandInteraction = active;
+    this.updateExpandControlState();
+  }
+
+  handleToggleExpandInteraction(active: boolean): void {
+    this.toggleExpandInteraction = active;
+    this.updateExpandControlState();
+  }
+
+  private updateExpandControlState(): void {
+    if (!this.sidebarCollapsed) {
+      this.resetExpandControlState();
+      return;
+    }
+    this.hoveringExpandControl = this.brandExpandInteraction || this.toggleExpandInteraction;
+  }
+
+  private resetExpandControlState(): void {
+    this.brandExpandInteraction = false;
+    this.toggleExpandInteraction = false;
+    this.hoveringExpandControl = false;
   }
 
   logout(): void {
