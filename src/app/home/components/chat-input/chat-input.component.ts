@@ -10,14 +10,22 @@ type SpeechRecognitionResultEvent = Event & {
   results: SpeechRecognitionResultList;
 };
 
+type SpeechRecognitionEventMap = {
+  result: SpeechRecognitionResultEvent;
+  end: Event;
+  error: Event;
+};
+
 type SpeechRecognitionInstance = {
   lang: string;
   interimResults: boolean;
   continuous: boolean;
   start: () => void;
   stop: () => void;
-  addEventListener: (type: 'result', listener: (event: SpeechRecognitionResultEvent) => void) => void;
-  addEventListener: (type: 'end' | 'error', listener: () => void) => void;
+  addEventListener<K extends keyof SpeechRecognitionEventMap>(
+    type: K,
+    listener: (event: SpeechRecognitionEventMap[K]) => void
+  ): void;
 };
 
 @Component({
@@ -276,8 +284,8 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit {
     this.speechSupported = true;
 
     this.recognition.addEventListener('result', (event: SpeechRecognitionResultEvent) => {
-      const transcript = Array.from(event.results)
-        .map(result => result[0].transcript)
+      const transcript = Array.from(event.results as ArrayLike<SpeechRecognitionResult>)
+        .map((result: SpeechRecognitionResult) => result[0].transcript)
         .join(' ')
         .trim();
 
