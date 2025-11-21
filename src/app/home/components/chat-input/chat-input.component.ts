@@ -61,6 +61,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   pendingDocumentIds = new Set<string>();
   speechSupported = false;
   isListening = false;
+  isOverflowing = false;
   private recognition: SpeechRecognitionLike | null = null;
 
   constructor(private cdr: ChangeDetectorRef) { }
@@ -449,5 +450,6 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     const baseHeight = Math.max(textarea.scrollHeight, 36);
     const nextHeight = Math.min(baseHeight, 240);
     textarea.style.height = `${nextHeight}px`;
+    this.isOverflowing = baseHeight > nextHeight;
   }
 }

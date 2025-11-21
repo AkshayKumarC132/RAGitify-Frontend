@@ -42,6 +42,7 @@
         (input)="onInputChange()"
         placeholder="How can I help you today?"
         class="chat-input"
+        [class.overflowing]="isOverflowing"
         [disabled]="loading"
         rows="1"
       ></textarea>
