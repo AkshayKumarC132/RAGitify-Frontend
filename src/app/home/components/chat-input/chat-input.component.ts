@@ -4,6 +4,22 @@ import { Assistant } from '../../../shared/models/assistant.model';
 
 type AttachmentPanel = 'web' | 'notes' | 'library' | 'prompts' | null;
 
+type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
+
+type SpeechRecognitionResultEvent = Event & {
+  results: SpeechRecognitionResultList;
+};
+
+type SpeechRecognitionInstance = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  addEventListener: (type: 'result', listener: (event: SpeechRecognitionResultEvent) => void) => void;
+  addEventListener: (type: 'end' | 'error', listener: () => void) => void;
+};
+
 @Component({
   selector: 'app-chat-input',
   templateUrl: './chat-input.component.html',
@@ -36,7 +52,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit {
   isTextareaOverflowing = false;
   isListening = false;
   speechSupported = false;
-  private recognition?: SpeechRecognition;
+  private recognition: SpeechRecognitionInstance | null = null;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selectedLibraryId']) {
@@ -246,7 +262,8 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit {
       return;
     }
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition: SpeechRecognitionConstructor | undefined =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       this.speechSupported = false;
       return;
@@ -258,7 +275,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit {
     this.recognition.continuous = false;
     this.speechSupported = true;
 
-    this.recognition.addEventListener('result', (event: SpeechRecognitionEvent) => {
+    this.recognition.addEventListener('result', (event: SpeechRecognitionResultEvent) => {
       const transcript = Array.from(event.results)
         .map(result => result[0].transcript)
         .join(' ')
