@@ -1,9 +1,25 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener, ChangeDetectorRef, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
 import { Document } from '../../../shared/models/document.model';
 
 type AttachmentPanel = 'web' | 'notes' | 'library' | 'prompts' | null;
+
+type SpeechRecognitionEventLike = {
+  resultIndex: number;
+  results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }>;
+};
+
+type SpeechRecognitionLike = {
+  start: () => void;
+  stop: () => void;
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: any) => void) | null;
+};
 
 export type LibrarySelectionEvent =
   | { type: 'library'; libraryId: string | null }
@@ -15,7 +31,9 @@ export type LibrarySelectionEvent =
   templateUrl: './chat-input.component.html',
   styleUrls: ['./chat-input.component.scss']
 })
-export class ChatInputComponent implements OnChanges {
+export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('messageArea') messageArea?: ElementRef<HTMLTextAreaElement>;
+
   @Input() mode: 'normal' | 'web' | 'document' = 'document';
   @Input() loading = false;
   @Input() libraries: VectorStore[] = [];
@@ -41,8 +59,28 @@ export class ChatInputComponent implements OnChanges {
   pendingPromptId: string | null = null;
   selectionMode: 'library' | 'documents' = 'library';
   pendingDocumentIds = new Set<string>();
+  speechSupported = false;
+  isListening = false;
+  private recognition: SpeechRecognitionLike | null = null;
 
   constructor(private cdr: ChangeDetectorRef) { }
+
+  ngOnInit(): void {
+    this.initializeSpeechRecognition();
+  }
+
+  ngAfterViewInit(): void {
+    this.adjustTextareaHeight();
+  }
+
+  ngOnDestroy(): void {
+    if (this.recognition) {
+      this.recognition.onresult = null;
+      this.recognition.onend = null;
+      this.recognition.onerror = null;
+      this.recognition.stop();
+    }
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selectedLibraryId']) {
@@ -68,6 +106,7 @@ export class ChatInputComponent implements OnChanges {
     if (this.message.trim() && !this.loading) {
       this.messageSent.emit(this.message);
       this.message = '';
+      setTimeout(() => this.adjustTextareaHeight(), 0);
     }
   }
 
@@ -76,6 +115,10 @@ export class ChatInputComponent implements OnChanges {
       event.preventDefault();
       this.sendMessage();
     }
+  }
+
+  onInputChange(): void {
+    this.adjustTextareaHeight();
   }
 
   toggleWebMode(): void {
@@ -316,5 +359,95 @@ export class ChatInputComponent implements OnChanges {
         this.modeToggle.emit('document');
       }
     }
+  }
+
+  toggleVoiceInput(): void {
+    if (!this.speechSupported || !this.recognition) {
+      return;
+    }
+    if (this.isListening) {
+      this.stopListening();
+    } else {
+      this.startListening();
+    }
+  }
+
+  private initializeSpeechRecognition(): void {
+    const SpeechRecognitionCtor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) {
+      this.speechSupported = false;
+      return;
+    }
+
+    this.recognition = new SpeechRecognitionCtor() as SpeechRecognitionLike;
+    this.recognition.continuous = true;
+    this.recognition.interimResults = true;
+    this.recognition.lang = 'en-US';
+    this.speechSupported = true;
+
+    this.recognition.onresult = (event: SpeechRecognitionEventLike) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const text = result[0].transcript;
+        if (result.isFinal) {
+          finalTranscript += text;
+        } else {
+          interimTranscript += text;
+        }
+      }
+
+      if (finalTranscript) {
+        this.message = `${this.message ? this.message + ' ' : ''}${finalTranscript.trim()}`.trim();
+        this.adjustTextareaHeight();
+        this.cdr.detectChanges();
+      }
+
+      if (interimTranscript) {
+        this.cdr.detectChanges();
+      }
+    };
+
+    this.recognition.onend = () => {
+      this.isListening = false;
+      this.cdr.detectChanges();
+    };
+
+    this.recognition.onerror = () => {
+      this.isListening = false;
+      this.cdr.detectChanges();
+    };
+  }
+
+  private startListening(): void {
+    if (!this.recognition || this.loading) {
+      return;
+    }
+    this.recognition.start();
+    this.isListening = true;
+    this.cdr.detectChanges();
+  }
+
+  private stopListening(): void {
+    if (!this.recognition) {
+      return;
+    }
+    this.recognition.stop();
+    this.isListening = false;
+    this.cdr.detectChanges();
+  }
+
+  private adjustTextareaHeight(): void {
+    const textarea = this.messageArea?.nativeElement;
+    if (!textarea) {
+      return;
+    }
+
+    textarea.style.height = 'auto';
+    const baseHeight = Math.max(textarea.scrollHeight, 36);
+    const nextHeight = Math.min(baseHeight, 240);
+    textarea.style.height = `${nextHeight}px`;
   }
 }
