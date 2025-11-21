@@ -9,9 +9,16 @@
       </button>
 
       <div class="attachment-menu" *ngIf="attachmentMenuOpen" (click)="$event.stopPropagation()">
-        <button type="button" (click)="triggerFilePicker(filePicker); $event.stopPropagation()">Upload Files</button>
+        <!-- <button type="button" (click)="triggerFilePicker(filePicker); $event.stopPropagation()">Upload Files</button>
         <button type="button" (click)="openPanel('web'); $event.stopPropagation()">Attach Webpage</button>
-        <button type="button" (click)="openPanel('notes'); $event.stopPropagation()">Attach Notes</button>
+        <button type="button" (click)="openPanel('notes'); $event.stopPropagation()">Attach Notes</button> -->
+        <div class="normal-mode-toggle" (click)="$event.stopPropagation()">
+          <span>Normal Mode</span>
+          <label class="toggle-switch">
+            <input type="checkbox" [checked]="mode === 'normal'" (change)="toggleNormalMode($event)" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
         <button type="button" (click)="openPanel('library'); $event.stopPropagation()" [disabled]="!libraries.length">
           Attach Library
         </button>
@@ -25,29 +32,15 @@
       class="chat-input" [disabled]="loading" rows="1"></textarea>
 
     <div class="input-actions">
-      <div class="mode-selector" (click)="$event.stopPropagation()">
-        <button class="mode-toggle-button" [class.active]="mode === 'normal' || mode === 'web' || mode === 'document'"
-          (click)="toggleModeMenu()" [title]="getModeTitle()">
-          <span class="mode-icon">{{ getModeIcon() }}</span>
-          <span class="mode-label">{{ getModeLabel() }}</span>
-          <span class="mode-arrow">▼</span>
-        </button>
-        <div class="mode-menu" *ngIf="modeMenuOpen">
-          <button type="button" class="mode-option" [class.active]="mode === 'normal'" (click)="selectMode('normal')">
-            <span class="mode-icon">💬</span>
-            <span>Normal</span>
-          </button>
-          <button type="button" class="mode-option" [class.active]="mode === 'web'" (click)="selectMode('web')">
-            <span class="mode-icon">🌐</span>
-            <span>Web</span>
-          </button>
-          <button type="button" class="mode-option" [class.active]="mode === 'document'"
-            (click)="selectMode('document')">
-            <span class="mode-icon">📄</span>
-            <span>Document</span>
-          </button>
-        </div>
-      </div>
+      <button 
+        type="button" 
+        class="web-mode-button" 
+        [class.active]="mode === 'web'"
+        (click)="toggleWebMode()"
+        [title]="mode === 'web' ? 'Disable Web Mode' : 'Enable Web Mode'"
+      >
+        <i class="fa-solid fa-globe"></i>
+      </button>
 
       <button class="send-button" (click)="sendMessage()" [disabled]="!message.trim() || loading">
         <span *ngIf="!loading">→</span>
