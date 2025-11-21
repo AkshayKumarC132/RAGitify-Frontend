@@ -666,3 +666,71 @@ button.thread-menu {
 .thread-sidebar.collapsed .section-title {
   display: none;
 }
+
+.profile-menu-panel {
+  position: fixed;
+  transform: translateY(-50%);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  min-width: 170px;
+  padding: 0.25rem;
+  z-index: 40;
+  box-shadow: 0 22px 55px rgba(5, 11, 22, 0.35);
+  animation: dropdownFade 0.16s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -7px;
+    transform: translateY(-50%) rotate(45deg);
+    width: 14px;
+    height: 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-right: none;
+    border-bottom: none;
+    transform-origin: center;
+  }
+
+  button {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0.45rem 0.6rem;
+    font-weight: 600;
+    gap: 0.45rem;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 11px;
+    transition: background-color 0.2s ease;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+    }
+
+    i {
+      width: 16px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.profile-menu-panel.open-left::before {
+  left: auto;
+  right: -7px;
+  border: 1px solid var(--border-color);
+  border-left: none;
+  border-top: none;
+}

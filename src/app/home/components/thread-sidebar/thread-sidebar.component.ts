@@ -1,6 +1,8 @@
 import { Component, Input, Output, EventEmitter, HostListener, OnChanges, SimpleChanges } from '@angular/core';
+import { Observable } from 'rxjs';
 import { Thread } from '../../../shared/models/thread.model';
 import { User } from '../../../shared/models/user.model';
+import { ThemeService } from '../../../shared/services/theme.service';
 
 @Component({
   selector: 'app-thread-sidebar',
@@ -25,15 +27,32 @@ export class ThreadSidebarComponent implements OnChanges {
   menuThread: Thread | null = null;
   threadMenuPosition: { top: number; left: number } | null = null;
   profileMenuOpen = false;
+  profileMenuPosition: { top: number; left: number } | null = null;
+  profileMenuOpensLeft = false;
   menuOpensLeft = false;
   private menuTrigger: HTMLElement | null = null;
+  private profileMenuTrigger: HTMLElement | null = null;
   hoveringExpandControl = false;
   private brandExpandInteraction = false;
   private toggleExpandInteraction = false;
+  theme$: Observable<'light' | 'dark'>;
+
+  constructor(private themeService: ThemeService) {
+    this.theme$ = this.themeService.theme$;
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if ('collapsed' in changes && !this.collapsed) {
-      this.resetExpandControlState();
+    if ('collapsed' in changes) {
+      const wasCollapsed = changes['collapsed'].previousValue;
+      const isCollapsed = changes['collapsed'].currentValue;
+      
+      if (!isCollapsed) {
+        this.resetExpandControlState();
+        // Close profile menu when expanding (transitioning from collapsed to expanded)
+        if (wasCollapsed && this.profileMenuOpen) {
+          this.closeProfileMenu();
+        }
+      }
     }
     if ('user' in changes) {
       const nextUser = changes['user'].currentValue as User | null;
@@ -78,17 +97,17 @@ export class ThreadSidebarComponent implements OnChanges {
 
   selectThread(thread: Thread): void {
     this.threadMenuOpen = null;
-    this.profileMenuOpen = false;
+    this.closeProfileMenu();
     this.threadSelected.emit(thread);
   }
 
   createNewThread(): void {
-    this.profileMenuOpen = false;
+    this.closeProfileMenu();
     this.newThread.emit();
   }
 
   goToWorkspace(): void {
-    this.profileMenuOpen = false;
+    this.closeProfileMenu();
     this.workspaceNavigate.emit();
   }
 
@@ -161,7 +180,7 @@ export class ThreadSidebarComponent implements OnChanges {
     this.menuThread = thread;
     this.threadMenuOpen = thread.id;
     this.menuTrigger = trigger;
-    this.profileMenuOpen = false;
+    this.closeProfileMenu();
     this.updateThreadMenuPosition();
   }
 
@@ -186,20 +205,38 @@ export class ThreadSidebarComponent implements OnChanges {
 
   toggleProfileMenu(event: MouseEvent): void {
     event.stopPropagation();
-    this.profileMenuOpen = !this.profileMenuOpen;
+    if (this.profileMenuOpen) {
+      this.closeProfileMenu();
+      return;
+    }
+
+    const trigger = event.currentTarget as HTMLElement;
+    trigger.focus();
+    this.profileMenuTrigger = trigger;
+    this.profileMenuOpen = true;
     this.closeThreadMenu();
+    
+    if (this.collapsed) {
+      this.updateProfileMenuPosition();
+    }
   }
 
   openSettings(event: MouseEvent): void {
     event.stopPropagation();
-    this.profileMenuOpen = false;
+    this.closeProfileMenu();
     this.manageProfile.emit();
   }
 
   requestLogout(event: MouseEvent): void {
     event.stopPropagation();
-    this.profileMenuOpen = false;
+    this.closeProfileMenu();
     this.logoutRequested.emit();
+  }
+
+  toggleTheme(event: MouseEvent): void {
+    event.stopPropagation();
+    this.themeService.toggleTheme();
+    // Don't close the menu when toggling theme
   }
 
   @HostListener('document:click', ['$event'])
@@ -208,11 +245,14 @@ export class ThreadSidebarComponent implements OnChanges {
     if (target && target.closest('.thread-menu-panel')) {
       return;
     }
+    if (target && target.closest('.profile-menu-panel')) {
+      return;
+    }
     if (target && target.closest('.profile-region')) {
       return;
     }
     this.closeThreadMenu();
-    this.profileMenuOpen = false;
+    this.closeProfileMenu();
   }
 
   @HostListener('window:scroll')
@@ -220,12 +260,18 @@ export class ThreadSidebarComponent implements OnChanges {
     if (this.threadMenuOpen) {
       this.updateThreadMenuPosition();
     }
+    if (this.profileMenuOpen && this.collapsed) {
+      this.updateProfileMenuPosition();
+    }
   }
 
   @HostListener('window:resize')
   handleWindowResize(): void {
     if (this.threadMenuOpen) {
       this.updateThreadMenuPosition();
+    }
+    if (this.profileMenuOpen && this.collapsed) {
+      this.updateProfileMenuPosition();
     }
   }
 
@@ -243,7 +289,7 @@ export class ThreadSidebarComponent implements OnChanges {
     }
     if (nextState) {
       this.closeThreadMenu();
-      this.profileMenuOpen = false;
+      this.closeProfileMenu();
     }
     this.sidebarToggled.emit(nextState);
   }
@@ -254,6 +300,13 @@ export class ThreadSidebarComponent implements OnChanges {
     this.menuThread = null;
     this.menuTrigger = null;
     this.menuOpensLeft = false;
+  }
+
+  private closeProfileMenu(): void {
+    this.profileMenuOpen = false;
+    this.profileMenuPosition = null;
+    this.profileMenuTrigger = null;
+    this.profileMenuOpensLeft = false;
   }
 
   private updateThreadMenuPosition(): void {
@@ -287,5 +340,34 @@ export class ThreadSidebarComponent implements OnChanges {
 
   trackByThreadId(index: number, thread: Thread): string {
     return thread.id;
+  }
+
+  private updateProfileMenuPosition(): void {
+    if (!this.profileMenuTrigger) {
+      this.profileMenuPosition = null;
+      return;
+    }
+
+    const rect = this.profileMenuTrigger.getBoundingClientRect();
+    const offset = 12;
+    const assumedPanelHeight = 140; // Increased for theme toggle button
+    const assumedPanelWidth = 180;
+    const viewportPadding = 12;
+
+    let top = rect.top + rect.height / 2;
+    const halfHeight = assumedPanelHeight / 2;
+    const minTop = viewportPadding + halfHeight;
+    const maxTop = window.innerHeight - halfHeight - viewportPadding;
+    top = Math.min(Math.max(top, minTop), maxTop);
+
+    this.profileMenuOpensLeft = false;
+    let left = rect.right + offset;
+    const maxLeft = window.innerWidth - assumedPanelWidth - viewportPadding;
+    if (left > maxLeft) {
+      left = Math.max(rect.left - offset - assumedPanelWidth, viewportPadding);
+      this.profileMenuOpensLeft = true;
+    }
+
+    this.profileMenuPosition = { top, left };
   }
 }
