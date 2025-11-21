@@ -1,5 +1,5 @@
 <div class="chat-container">
-  <div class="messages-list">
+  <div class="messages-list" #messagesList>
     <app-message-bubble *ngFor="let message of messages; let last = last; trackBy: trackByMessage" [message]="message"
       [isLast]="last"></app-message-bubble>
 
