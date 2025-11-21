@@ -16,7 +16,7 @@ export type LibrarySelectionEvent =
   styleUrls: ['./chat-input.component.scss']
 })
 export class ChatInputComponent implements OnChanges {
-  @Input() mode: 'normal' | 'web' | 'document' = 'normal';
+  @Input() mode: 'normal' | 'web' | 'document' = 'document';
   @Input() loading = false;
   @Input() libraries: VectorStore[] = [];
   @Input() selectedLibraryId: string | null = null;
@@ -34,7 +34,6 @@ export class ChatInputComponent implements OnChanges {
 
   message = '';
   attachmentMenuOpen = false;
-  modeMenuOpen = false;
   activePanel: AttachmentPanel = null;
   webForm = { url: '', title: '' };
   noteForm = { title: '', content: '' };
@@ -79,11 +78,13 @@ export class ChatInputComponent implements OnChanges {
     }
   }
 
-  toggleModeMenu(): void {
-    this.modeMenuOpen = !this.modeMenuOpen;
-    if (this.modeMenuOpen) {
-      this.attachmentMenuOpen = false;
-      this.activePanel = null;
+  toggleWebMode(): void {
+    if (this.mode === 'web') {
+      // If web mode is active, switch to document mode (default)
+      this.modeToggle.emit('document');
+    } else {
+      // Otherwise, switch to web mode
+      this.modeToggle.emit('web');
     }
   }
 
@@ -91,33 +92,6 @@ export class ChatInputComponent implements OnChanges {
     if (this.mode !== newMode) {
       this.modeToggle.emit(newMode);
     }
-    this.modeMenuOpen = false;
-  }
-
-  getModeIcon(): string {
-    switch (this.mode) {
-      case 'web':
-        return '🌐';
-      case 'document':
-        return '📄';
-      default:
-        return '💬';
-    }
-  }
-
-  getModeLabel(): string {
-    switch (this.mode) {
-      case 'web':
-        return 'Web';
-      case 'document':
-        return 'Document';
-      default:
-        return 'Normal';
-    }
-  }
-
-  getModeTitle(): string {
-    return `Current mode: ${ this.getModeLabel() }. Click to change mode.`;
   }
 
   toggleAttachmentMenu(): void {
@@ -133,18 +107,16 @@ export class ChatInputComponent implements OnChanges {
     const clickedAttachmentControl = target.closest('.attachment-controls');
     const clickedPanel = target.closest('.attachment-panel');
     const clickedMenu = target.closest('.attachment-menu');
-    const clickedModeSelector = target.closest('.mode-selector');
 
-    if (clickedAttachmentControl || clickedPanel || clickedMenu || clickedModeSelector) {
+    if (clickedAttachmentControl || clickedPanel || clickedMenu) {
       return;
     }
 
-    if (!this.attachmentMenuOpen && !this.activePanel && !this.modeMenuOpen) {
+    if (!this.attachmentMenuOpen && !this.activePanel) {
       return;
     }
 
     this.closeMenus();
-    this.modeMenuOpen = false;
   }
 
   triggerFilePicker(input: HTMLInputElement): void {
@@ -328,5 +300,21 @@ export class ChatInputComponent implements OnChanges {
     const checkbox = event.target as HTMLInputElement;
     const selected = checkbox.checked;
     this.toggleDocumentSelectionById(documentId, selected);
+  }
+
+  toggleNormalMode(event: Event): void {
+    event.stopPropagation();
+    const checkbox = event.target as HTMLInputElement;
+    if (checkbox.checked) {
+      // Switch to normal mode
+      if (this.mode !== 'normal') {
+        this.modeToggle.emit('normal');
+      }
+    } else {
+      // When toggling off, switch to document mode as default
+      if (this.mode === 'normal') {
+        this.modeToggle.emit('document');
+      }
+    }
   }
 }
