@@ -1,39 +1,72 @@
-<div class="chat-input-container">
+<div class="chat-input-container" [class.is-listening]="isListening">
   <input type="file" #filePicker multiple hidden (change)="handleFilesChange($event)" />
 
   <div class="input-wrapper">
-    <div class="attachment-controls">
+    <div class="attachment-controls" [class.open]="attachmentMenuOpen">
       <button
         type="button"
         class="attachment-toggle"
         (click)="toggleAttachmentMenu()"
         [class.active]="attachmentMenuOpen"
-        title="Attachments"
+        title="Add context"
       >
-        +
+        <i class="fa-solid fa-plus"></i>
       </button>
 
       <div class="attachment-menu" *ngIf="attachmentMenuOpen" (click)="$event.stopPropagation()">
-        <button type="button" (click)="triggerFilePicker(filePicker); $event.stopPropagation()">Upload Files</button>
-        <button type="button" (click)="openPanel('web'); $event.stopPropagation()">Attach Webpage</button>
-        <button type="button" (click)="openPanel('notes'); $event.stopPropagation()">Attach Notes</button>
+        <p class="menu-eyebrow">Add context</p>
+        <button type="button" (click)="triggerFilePicker(filePicker); $event.stopPropagation()">
+          <span class="icon"><i class="fa-solid fa-file-arrow-up"></i></span>
+          <div class="menu-copy">
+            <span class="title">Upload files</span>
+            <span class="hint">Share PDFs, docs, and images</span>
+          </div>
+        </button>
+        <button type="button" (click)="openPanel('web'); $event.stopPropagation()">
+          <span class="icon"><i class="fa-solid fa-globe"></i></span>
+          <div class="menu-copy">
+            <span class="title">Attach webpage</span>
+            <span class="hint">Reference a live link</span>
+          </div>
+        </button>
+        <button type="button" (click)="openPanel('notes'); $event.stopPropagation()">
+          <span class="icon"><i class="fa-solid fa-note-sticky"></i></span>
+          <div class="menu-copy">
+            <span class="title">Attach notes</span>
+            <span class="hint">Drop quick notes or outlines</span>
+          </div>
+        </button>
         <button type="button" (click)="openPanel('library'); $event.stopPropagation()" [disabled]="!libraries.length">
-          Attach Library
+          <span class="icon"><i class="fa-solid fa-folder-tree"></i></span>
+          <div class="menu-copy">
+            <span class="title">Link a library</span>
+            <span class="hint">Pull in your saved sources</span>
+          </div>
         </button>
         <button type="button" (click)="openPanel('prompts'); $event.stopPropagation()" [disabled]="!prompts.length">
-          Use Prompts
+          <span class="icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+          <div class="menu-copy">
+            <span class="title">Use prompts</span>
+            <span class="hint">Start with curated guidance</span>
+          </div>
         </button>
       </div>
     </div>
 
-    <textarea
-      [(ngModel)]="message"
-      (keydown)="onKeyPress($event)"
-      placeholder="How can I help you today?"
-      class="chat-input"
-      [disabled]="loading"
-      rows="1"
-    ></textarea>
+    <div class="input-body">
+      <div class="input-label">What can I help with?</div>
+      <textarea
+        #messageInput
+        [(ngModel)]="message"
+        (keydown)="onKeyPress($event)"
+        (input)="handleInputChange()"
+        placeholder="Ask anything or describe the task..."
+        class="chat-input"
+        [class.overflowing]="isTextareaOverflowing"
+        [disabled]="loading"
+        rows="1"
+      ></textarea>
+    </div>
 
     <div class="input-actions">
       <button
@@ -42,7 +75,20 @@
         (click)="toggleMode()"
         [title]="mode === 'normal' ? 'Switch to Web Mode' : 'Switch to Normal Mode'"
       >
-        <span class="icon">🌐</span>
+        <i class="fa-solid" [ngClass]="mode === 'web' ? 'fa-globe' : 'fa-earth-americas'"></i>
+        <span class="label">{{ mode === 'web' ? 'Web' : 'Standard' }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="dictation-button"
+        [class.active]="isListening"
+        (click)="toggleListening()"
+        [disabled]="loading || !speechSupported"
+        [title]="microphoneLabel"
+      >
+        <span class="pulse" *ngIf="isListening"></span>
+        <i class="fa-solid" [ngClass]="isListening ? 'fa-stop' : 'fa-microphone'"></i>
       </button>
 
       <button
@@ -50,7 +96,7 @@
         (click)="sendMessage()"
         [disabled]="!message.trim() || loading"
       >
-        <span *ngIf="!loading">→</span>
+        <span *ngIf="!loading"><i class="fa-solid fa-arrow-up"></i></span>
         <span *ngIf="loading">...</span>
       </button>
     </div>
