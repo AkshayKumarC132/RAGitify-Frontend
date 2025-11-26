@@ -1,5 +1,5 @@
 <div class="chat-container">
-  <div class="messages-list" #messagesList>
+  <div class="messages-list" #messagesWrapper (scroll)="onScroll()">
     <app-message-bubble *ngFor="let message of messages; let last = last; trackBy: trackByMessage" [message]="message"
       [isLast]="last"></app-message-bubble>
 
@@ -12,4 +12,14 @@
       </div>
     </div>
   </div>
+
+  <button
+    type="button"
+    class="jump-to-bottom-btn"
+    *ngIf="showJumpToBottom"
+    (click)="jumpToBottom()"
+    aria-label="Jump to bottom"
+  >
+    <i class="fa-solid fa-arrow-circle-down" aria-hidden="true"></i>
+  </button>
 </div>

@@ -232,7 +232,20 @@ export class HomeComponent implements OnInit {
 
   onNewThread(): void {
     this.currentThread = null;
+    this.currentRun = null;
     this.messages = [];
+    this.selectedDocumentIds = [];
+    this.documentSelectionVectorStoreId = null;
+    this.selectedKnowledgeId = null;
+    this.selectedPromptId = null;
+    if (!this.selectedLibraryId) {
+      this.currentVectorStoreId = null;
+      this.mode = 'normal';
+      this.enforceDocumentMode = false;
+    } else {
+      this.setCurrentVectorStore(this.selectedLibraryId);
+      this.mode = 'document';
+    }
     this.router.navigate(['/home']);
   }
 
@@ -306,22 +319,24 @@ export class HomeComponent implements OnInit {
   }
 
   private async ensureDefaultVectorStore(): Promise<string> {
+    const name = `Chat-${Date.now()}`;
     try {
-      const vectorStores = await lastValueFrom(this.vectorStoreService.list());
-      this.libraries = vectorStores || [];
-      if (vectorStores && vectorStores.length > 0) {
-        const existingId = vectorStores[0].id;
+      const created = await lastValueFrom(this.vectorStoreService.create({ name }));
+      this.libraries = [created, ...this.libraries];
+      this.setCurrentVectorStore(created.id);
+      this.mode = 'normal';
+      this.enforceDocumentMode = false;
+      return created.id;
+    } catch (error) {
+      console.error('Error creating default vector store:', error);
+      const fallback = await lastValueFrom(this.vectorStoreService.list());
+      if (fallback?.length) {
+        const existingId = fallback[0].id;
         this.setCurrentVectorStore(existingId);
         return existingId;
       }
-    } catch (error) {
-      console.error('Error fetching vector stores, creating default:', error);
+      throw error;
     }
-
-    const created = await lastValueFrom(this.vectorStoreService.create({ name: 'Default' }));
-    this.libraries = [created, ...this.libraries];
-    this.setCurrentVectorStore(created.id);
-    return created.id;
   }
 
   private async ensureDocumentSelectionVectorStore(): Promise<string> {
@@ -329,21 +344,21 @@ export class HomeComponent implements OnInit {
       throw new Error('No documents selected for attachment');
     }
 
-    if (this.documentSelectionVectorStoreId) {
-      this.setCurrentVectorStore(this.documentSelectionVectorStoreId);
-      return this.documentSelectionVectorStoreId;
+    const activeThreadVectorStore = this.currentThread?.vector_store_id_read;
+    if (activeThreadVectorStore) {
+      if (this.documentSelectionVectorStoreId !== activeThreadVectorStore) {
+        await this.grantDocumentAccessToVectorStore(this.selectedDocumentIds, activeThreadVectorStore);
+      }
+      this.documentSelectionVectorStoreId = activeThreadVectorStore;
+      this.setCurrentVectorStore(activeThreadVectorStore);
+      return activeThreadVectorStore;
     }
 
     const vectorStore = await lastValueFrom(
-      this.vectorStoreService.create({ name: `Selection-${Date.now()}` })
+      this.vectorStoreService.create({ name: `DocChat-${Date.now()}` })
     );
 
-    await lastValueFrom(
-      this.documentAccessService.create({
-        document_ids: this.selectedDocumentIds.map(id => String(id)),
-        vector_store_id: vectorStore.id
-      })
-    );
+    await this.grantDocumentAccessToVectorStore(this.selectedDocumentIds, vectorStore.id);
 
     this.documentSelectionVectorStoreId = vectorStore.id;
     this.setCurrentVectorStore(vectorStore.id);
@@ -518,12 +533,12 @@ export class HomeComponent implements OnInit {
     this.setAttachmentMessage(documentId ? 'Knowledge pinned for the next reply.' : 'Knowledge selection cleared.');
   }
 
-  onLibrarySelected(selection: LibrarySelectionEvent): void {
+  async onLibrarySelected(selection: LibrarySelectionEvent): Promise<void> {
     if (!selection || selection.type === 'clear' || (selection.type === 'library' && !selection.libraryId)) {
       this.selectedLibraryId = null;
       this.selectedDocumentIds = [];
       this.documentSelectionVectorStoreId = null;
-      this.setCurrentVectorStore(null);
+      this.setCurrentVectorStore(this.currentThread?.vector_store_id_read || null);
       this.setAttachmentMessage('Library selection cleared.');
       this.updateModeFromSelection(true);
       return;
@@ -540,18 +555,37 @@ export class HomeComponent implements OnInit {
       return;
     }
 
-    const documentIds = selection.documentIds || [];
+    const documentIds = (selection.documentIds || []).map(id => String(id));
     this.selectedDocumentIds = documentIds;
     this.selectedLibraryId = null;
-    this.documentSelectionVectorStoreId = null;
-    this.setCurrentVectorStore(null);
 
     if (!documentIds.length) {
+      this.documentSelectionVectorStoreId = null;
+      this.setCurrentVectorStore(this.currentThread?.vector_store_id_read || null);
       this.setAttachmentMessage('Document selection cleared.');
       this.updateModeFromSelection(true);
       return;
     }
 
+    if (this.currentThread) {
+      const targetVectorStore = this.currentThread.vector_store_id_read;
+      this.documentSelectionVectorStoreId = targetVectorStore;
+      this.setCurrentVectorStore(targetVectorStore);
+      this.setAttachmentMessage(`${documentIds.length} document(s) selected for this chat.`);
+      try {
+        await this.grantDocumentAccessToVectorStore(documentIds, targetVectorStore);
+      } catch (error) {
+        console.error('Unable to grant document access for current thread:', error);
+        this.selectedDocumentIds = [];
+        this.documentSelectionVectorStoreId = null;
+        this.setAttachmentMessage('Failed to attach documents. Please try again.');
+      }
+      this.updateModeFromSelection();
+      return;
+    }
+
+    this.documentSelectionVectorStoreId = null;
+    this.setCurrentVectorStore(null);
     this.setAttachmentMessage(`${documentIds.length} document(s) selected.`);
     this.resetConversationState();
     this.updateModeFromSelection();
@@ -662,6 +696,18 @@ export class HomeComponent implements OnInit {
     this.knowledgeSources = this.allDocuments.filter(doc => doc.vector_store === vectorStoreId);
   }
 
+  private async grantDocumentAccessToVectorStore(documentIds: string[], vectorStoreId: string): Promise<void> {
+    if (!documentIds.length || !vectorStoreId) {
+      return;
+    }
+    await lastValueFrom(
+      this.documentAccessService.create({
+        document_ids: documentIds.map(id => String(id)),
+        vector_store_id: vectorStoreId
+      })
+    );
+  }
+
   private setAttachmentMessage(message: string): void {
     this.attachmentMessage = message;
     if (this.attachmentMessageTimeout) {
@@ -681,9 +727,11 @@ export class HomeComponent implements OnInit {
 
   private updateModeFromSelection(forceNormal = false): void {
     if (this.selectedLibraryId || this.selectedDocumentIds.length) {
-      this.mode = 'document';
-      this.enforceDocumentMode = false;
-      return;
+      if (!forceNormal) {
+        this.mode = 'document';
+        this.enforceDocumentMode = false;
+        return;
+      }
     }
 
     if (forceNormal) {
@@ -710,16 +758,14 @@ export class HomeComponent implements OnInit {
   onModeToggle(mode: 'normal' | 'web' | 'document'): void {
     if (mode === 'web') {
       this.mode = 'web';
-      this.enforceDocumentMode = false;
       return;
     }
     if (mode === 'document') {
       this.mode = 'document';
-      this.enforceDocumentMode = false;
       return;
     }
     this.mode = 'normal';
-    this.updateModeFromSelection(true);
+    this.enforceDocumentMode = false;
   }
 
   onModelSelected(model: OpenAIKey): void {

@@ -48,6 +48,7 @@
         [selectedDocumentIds]="selectedDocumentIds"
         [prompts]="prompts"
         [selectedPromptId]="selectedPromptId"
+        [hasExistingThread]="!!currentThread"
         (messageSent)="onMessageSent($event)"
         (modeToggle)="onModeToggle($event)"
         (filesSelected)="onFilesSelected($event)"

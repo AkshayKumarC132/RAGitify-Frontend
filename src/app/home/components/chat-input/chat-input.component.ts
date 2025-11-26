@@ -42,6 +42,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Input() selectedDocumentIds: string[] = [];
   @Input() prompts: Assistant[] = [];
   @Input() selectedPromptId: string | null = null;
+  @Input() hasExistingThread = false;
   @Output() messageSent = new EventEmitter<string>();
   @Output() modeToggle = new EventEmitter<'normal' | 'web' | 'document'>();
   @Output() filesSelected = new EventEmitter<FileList>();
@@ -101,6 +102,13 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
         this.selectionMode = 'library';
       }
     }
+    if (changes['hasExistingThread']) {
+      if (this.hasExistingThread) {
+        this.enforceDocumentsOnlyMode();
+      } else if (!this.selectedDocumentIds?.length && this.selectedLibraryId) {
+        this.selectionMode = 'library';
+      }
+    }
   }
 
   sendMessage(): void {
@@ -124,10 +132,8 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   toggleWebMode(): void {
     if (this.mode === 'web') {
-      // If web mode is active, switch to document mode (default)
       this.modeToggle.emit('document');
     } else {
-      // Otherwise, switch to web mode
       this.modeToggle.emit('web');
     }
   }
@@ -183,16 +189,17 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     console.log('Libraries:', this.libraries.length);
     console.log('Prompts:', this.prompts.length);
 
-    // Close menu first, then open panel
     this.attachmentMenuOpen = false;
 
-    // Use setTimeout to ensure the panel opens after the menu closes
     setTimeout(() => {
       this.activePanel = panel;
 
       if (panel === 'library') {
         this.pendingLibraryId = this.selectedLibraryId;
         this.pendingDocumentIds = new Set((this.selectedDocumentIds || []).map(id => String(id)));
+        if (this.hasExistingThread) {
+          this.enforceDocumentsOnlyMode();
+        }
         console.log('Library panel opened, pendingLibraryId:', this.pendingLibraryId);
       }
       if (panel === 'prompts') {
@@ -242,7 +249,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   clearLibrarySelection(): void {
     this.pendingLibraryId = null;
     this.pendingDocumentIds.clear();
-    this.selectionMode = 'library';
+    this.selectionMode = this.hasExistingThread ? 'documents' : 'library';
     this.librarySelected.emit({ type: 'clear' });
     this.closePanels();
   }
@@ -280,6 +287,9 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   }
 
   setSelectionMode(mode: 'library' | 'documents'): void {
+    if (this.hasExistingThread && mode === 'library') {
+      return;
+    }
     if (mode === 'documents' && !this.documents.length) {
       return;
     }
@@ -318,10 +328,8 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     const isCurrentlySelected = this.pendingDocumentIds.has(String(documentId));
     const newState = !isCurrentlySelected;
 
-    // Toggle the selection state
     this.toggleDocumentSelectionById(documentId, newState);
 
-    // Update the checkbox visual state to match (prevent browser default toggle)
     const label = event.currentTarget as HTMLElement;
     const checkbox = label.querySelector('input[type="checkbox"]') as HTMLInputElement;
     if (checkbox) {
@@ -350,26 +358,13 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     event.stopPropagation();
     const checkbox = event.target as HTMLInputElement;
     if (checkbox.checked) {
-      // Switch to normal mode
       if (this.mode !== 'normal') {
         this.modeToggle.emit('normal');
       }
     } else {
-      // When toggling off, switch to document mode as default
       if (this.mode === 'normal') {
         this.modeToggle.emit('document');
       }
-    }
-  }
-
-  toggleVoiceInput(): void {
-    if (!this.speechSupported || !this.recognition) {
-      return;
-    }
-    if (this.isListening) {
-      this.stopListening();
-    } else {
-      this.startListening();
     }
   }
 
@@ -440,6 +435,17 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     this.cdr.detectChanges();
   }
 
+  toggleVoiceInput(): void {
+    if (!this.speechSupported || !this.recognition) {
+      return;
+    }
+    if (this.isListening) {
+      this.stopListening();
+    } else {
+      this.startListening();
+    }
+  }
+
   private adjustTextareaHeight(): void {
     const textarea = this.messageArea?.nativeElement;
     if (!textarea) {
@@ -451,5 +457,10 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     const nextHeight = Math.min(baseHeight, 240);
     textarea.style.height = `${nextHeight}px`;
     this.isOverflowing = baseHeight > nextHeight;
+  }
+
+  private enforceDocumentsOnlyMode(): void {
+    this.selectionMode = 'documents';
+    this.pendingLibraryId = null;
   }
 }

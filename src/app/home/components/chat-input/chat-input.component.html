@@ -26,7 +26,7 @@
           </label>
         </div>
         <button type="button" (click)="openPanel('library'); $event.stopPropagation()" [disabled]="!libraries.length">
-          Attach Library
+          Attach Documents
         </button>
         <button type="button" (click)="openPanel('prompts'); $event.stopPropagation()" [disabled]="!prompts.length">
           Use Prompts
@@ -105,31 +105,9 @@
   </div>
 
   <div class="attachment-panel" *ngIf="activePanel === 'library'" (click)="$event.stopPropagation()">
-    <h4>Attach Library</h4>
-    <div class="library-mode-switch">
-      <button type="button" [class.active]="selectionMode === 'library'" (click)="setSelectionMode('library')">
-        Whole Library
-      </button>
-      <button type="button" [class.active]="selectionMode === 'documents'" [disabled]="!documents.length"
-        (click)="setSelectionMode('documents')">
-        Specific Documents
-      </button>
-    </div>
-
-    <ng-container [ngSwitch]="selectionMode">
-      <div class="library-list" *ngSwitchCase="'library'">
-        <ng-container *ngIf="libraries.length; else emptyLibrary">
-          <label *ngFor="let library of libraries">
-            <input type="radio" name="library" [value]="library.id" [(ngModel)]="pendingLibraryId" />
-            <div class="library-meta">
-              <span class="title">{{ library.name }}</span>
-              <span class="meta">Created {{ library.created_at | date:'short' }}</span>
-            </div>
-          </label>
-        </ng-container>
-      </div>
-
-      <div class="documents-list" *ngSwitchCase="'documents'">
+    <h4>Attach Documents</h4>
+    <ng-template #documentsList>
+      <div class="documents-list">
         <ng-container *ngIf="documents.length; else emptyDocuments">
           <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
             <div class="group-title">{{ group.name }}</div>
@@ -143,7 +121,41 @@
           </div>
         </ng-container>
       </div>
+    </ng-template>
+
+    <ng-container *ngIf="hasExistingThread; else librarySelection">
+      <ng-container *ngTemplateOutlet="documentsList"></ng-container>
     </ng-container>
+
+    <ng-template #librarySelection>
+      <div class="library-mode-switch">
+        <button type="button" [class.active]="selectionMode === 'library'" (click)="setSelectionMode('library')">
+          Whole Library
+        </button>
+        <button type="button" [class.active]="selectionMode === 'documents'" [disabled]="!documents.length"
+          (click)="setSelectionMode('documents')">
+          Specific Documents
+        </button>
+      </div>
+
+      <ng-container [ngSwitch]="selectionMode">
+        <div class="library-list" *ngSwitchCase="'library'">
+          <ng-container *ngIf="libraries.length; else emptyLibrary">
+            <label *ngFor="let library of libraries">
+              <input type="radio" name="library" [value]="library.id" [(ngModel)]="pendingLibraryId" />
+              <div class="library-meta">
+                <span class="title">{{ library.name }}</span>
+                <span class="meta">Created {{ library.created_at | date:'short' }}</span>
+              </div>
+            </label>
+          </ng-container>
+        </div>
+
+        <ng-container *ngSwitchCase="'documents'">
+          <ng-container *ngTemplateOutlet="documentsList"></ng-container>
+        </ng-container>
+      </ng-container>
+    </ng-template>
 
     <ng-template #emptyLibrary>
       <p class="empty-text">Create a library in Workspace first to attach it.</p>
