@@ -70,16 +70,11 @@
           <i class="fa-solid fa-message"></i>
           <span>Prompts</span>
         </button>
-        <button type="button" [class.active]="activeSection === 'models'" (click)="setActiveSection('models')">
-          <i class="fa-solid fa-robot"></i>
-          <span>Models</span>
-        </button>
       </div>
     </div>
 
     <div class="workspace-panels">
       <app-prompts-section *ngIf="activeSection === 'prompts'"></app-prompts-section>
-      <app-models-section *ngIf="activeSection === 'models'"></app-models-section>
       <app-knowledge-section *ngIf="activeSection === 'knowledge'"></app-knowledge-section>
     </div>
   </div>

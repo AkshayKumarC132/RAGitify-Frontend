@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { SharedModule } from '../shared/shared.module';
 import { WorkspaceLayoutComponent } from './components/workspace-layout/workspace-layout.component';
-import { ModelsSectionComponent } from './components/models-section/models-section.component';
 import { KnowledgeSectionComponent } from './components/knowledge-section/knowledge-section.component';
 import { PromptsSectionComponent } from './components/prompts-section/prompts-section.component';
 import { ToolsSectionComponent } from './components/tools-section/tools-section.component';
@@ -15,7 +14,6 @@ import { WorkspaceRoutingModule } from './workspace-routing.module';
 @NgModule({
   declarations: [
     WorkspaceLayoutComponent,
-    ModelsSectionComponent,
     KnowledgeSectionComponent,
     PromptsSectionComponent,
     ToolsSectionComponent,

@@ -8,7 +8,7 @@ import { AuthService } from '../../../shared/services/auth.service';
   styleUrls: ['./workspace-layout.component.scss']
 })
 export class WorkspaceLayoutComponent {
-  activeSection: 'models' | 'knowledge' | 'prompts' = 'knowledge';
+  activeSection: 'knowledge' | 'prompts' = 'knowledge';
   sidebarCollapsed = false;
   hoveringExpandControl = false;
   private brandExpandInteraction = false;
@@ -19,7 +19,7 @@ export class WorkspaceLayoutComponent {
     private router: Router
   ) {}
 
-  setActiveSection(section: 'models' | 'knowledge' | 'prompts'): void {
+  setActiveSection(section: 'knowledge' | 'prompts'): void {
     this.activeSection = section;
   }
 

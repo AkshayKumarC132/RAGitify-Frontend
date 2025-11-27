@@ -1,0 +1,28 @@
+<div class="general-section">
+  <h2 class="section-title">General</h2>
+  
+  <div class="settings-group">
+      <div class="setting-item">
+        <label class="setting-label">Appearance</label>
+        <div class="setting-control">
+          <div class="theme-toggle-container">
+            <ng-container *ngIf="theme$ | async as theme">
+              <button 
+                type="button" 
+                class="theme-toggle" 
+                [class.active]="theme === 'dark'"
+                (click)="toggleTheme()"
+                [attr.aria-label]="'Toggle theme'"
+              >
+                <span class="toggle-track">
+                  <span class="toggle-thumb" [class.dark]="theme === 'dark'"></span>
+                </span>
+                <span class="toggle-label">{{ theme === 'dark' ? 'Dark' : 'Light' }}</span>
+              </button>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+  </div>
+</div>
+

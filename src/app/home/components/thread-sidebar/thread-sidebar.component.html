@@ -110,12 +110,6 @@
 
   <!-- Dropdown menu (expanded sidebar) -->
   <div class="profile-dropdown" *ngIf="profileMenuOpen && !collapsed">
-    <ng-container *ngIf="theme$ | async as theme">
-      <button type="button" (click)="toggleTheme($event)">
-        <i class="fa-solid" [ngClass]="theme === 'dark' ? 'fa-sun' : 'fa-moon'"></i>
-        <span>{{ theme === 'dark' ? 'Light mode' : 'Dark mode' }}</span>
-      </button>
-    </ng-container>
     <button type="button" (click)="openSettings($event)">
       <i class="fa-solid fa-gear"></i>
       <span>Settings</span>
@@ -135,12 +129,6 @@
     [class.open-left]="profileMenuOpensLeft"
     (click)="$event.stopPropagation()"
   >
-    <ng-container *ngIf="theme$ | async as theme">
-      <button type="button" (click)="toggleTheme($event)">
-        <i class="fa-solid" [ngClass]="theme === 'dark' ? 'fa-sun' : 'fa-moon'"></i>
-        <span>{{ theme === 'dark' ? 'Light mode' : 'Dark mode' }}</span>
-      </button>
-    </ng-container>
     <button type="button" (click)="openSettings($event)">
       <i class="fa-solid fa-gear"></i>
       <span>Settings</span>

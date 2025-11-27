@@ -1,0 +1,72 @@
+<div class="account-section">
+  <h2 class="section-title">Account</h2>
+  
+  <div class="settings-group">
+    <form [formGroup]="accountForm" (ngSubmit)="saveAccount()" class="account-form">
+      <div class="setting-item">
+        <label class="setting-label">First Name</label>
+        <div class="setting-control">
+          <input 
+            type="text" 
+            formControlName="first_name" 
+            class="form-input"
+            placeholder="Enter first name"
+          />
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <label class="setting-label">Last Name</label>
+        <div class="setting-control">
+          <input 
+            type="text" 
+            formControlName="last_name" 
+            class="form-input"
+            placeholder="Enter last name"
+          />
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <label class="setting-label">Email</label>
+        <div class="setting-control">
+          <input 
+            type="email" 
+            formControlName="email" 
+            class="form-input"
+            readonly
+            placeholder="email@example.com"
+          />
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <label class="setting-label">Username</label>
+        <div class="setting-control">
+          <input 
+            type="text" 
+            formControlName="username" 
+            class="form-input"
+            placeholder="Enter username"
+          />
+        </div>
+      </div>
+
+      <div *ngIf="message" class="message" [class.success]="messageType === 'success'" [class.error]="messageType === 'error'">
+        {{ message }}
+      </div>
+
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="btn-primary" 
+          [disabled]="loading || accountForm.invalid"
+        >
+          <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+          <span>{{ loading ? 'Saving...' : 'Save Changes' }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+

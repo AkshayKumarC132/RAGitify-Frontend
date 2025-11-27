@@ -118,7 +118,7 @@ export class HomeComponent implements OnInit {
   }
 
   onManageProfile(): void {
-    this.showProfilePanel = true;
+    this.router.navigate(['/settings']);
   }
 
   closeProfilePanel(): void {
