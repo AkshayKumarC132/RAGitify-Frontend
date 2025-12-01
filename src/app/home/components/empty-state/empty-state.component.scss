@@ -20,9 +20,21 @@
 
   h1 {
     color: var(--text-primary);
-    font-size: 11px;
-    font-weight: 600;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 2.5rem;
+    font-weight: 400;
     margin-bottom: 0.25rem;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    .star-icon {
+      font-size: 1.75rem;
+      color: #d97757; // Burnt orange color from screenshot
+      transform: translateY(-2px);
+    }
   }
 
   .subtitle {
@@ -30,4 +42,3 @@
     font-size: 10px;
   }
 }
-

@@ -11,7 +11,7 @@
         title="Attachments"
         aria-label="Toggle attachments"
       >
-        <span class="icon">+</span>
+        <i class="fa-solid fa-plus"></i>
       </button>
 
       <div class="attachment-menu" *ngIf="attachmentMenuOpen" (click)="$event.stopPropagation()">
@@ -72,9 +72,11 @@
         <span class="listening-pulse" *ngIf="isListening"></span>
       </button>
 
-      <button class="send-button" (click)="sendMessage()" [disabled]="!message.trim() || loading">
-        <span *ngIf="!loading">→</span>
-        <span *ngIf="loading">...</span>
+      <button class="send-button" (click)="sendMessage()" [disabled]="!message.trim() || loading" aria-label="Send message">
+        <ng-container *ngIf="!loading; else loadingDots">
+          <i class="fa-solid fa-arrow-up"></i>
+        </ng-container>
+        <ng-template #loadingDots>...</ng-template>
       </button>
     </div>
   </div>

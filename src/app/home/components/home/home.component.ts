@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { switchMap, map, catchError } from 'rxjs/operators';
-import { of, lastValueFrom, EMPTY } from 'rxjs';
+import { of, lastValueFrom, EMPTY, Subscription } from 'rxjs';
 import { ThreadService } from '../../../shared/services/thread.service';
 import { MessageService } from '../../../shared/services/message.service';
 import { RunService } from '../../../shared/services/run.service';
@@ -28,7 +28,7 @@ import { LibrarySelectionEvent } from '../chat-input/chat-input.component';
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   currentThread: Thread | null = null;
   messages: Message[] = [];
   threads: Thread[] = [];
@@ -56,6 +56,7 @@ export class HomeComponent implements OnInit {
   profileMessage = '';
   private attachmentMessageTimeout?: any;
   private enforceDocumentMode = true;
+  private runStatusSub?: Subscription;
 
   constructor(
     private router: Router,
@@ -117,6 +118,10 @@ export class HomeComponent implements OnInit {
     ).subscribe();
   }
 
+  ngOnDestroy(): void {
+    this.teardownRunPolling();
+  }
+
   onManageProfile(): void {
     this.router.navigate(['/settings']);
   }
@@ -152,6 +157,35 @@ export class HomeComponent implements OnInit {
     return !this.currentThread && this.messages.length === 0;
   }
 
+  private startRunPolling(runId: string, threadId: string): void {
+    // Stop any existing polling before starting a new one
+    this.teardownRunPolling();
+
+    this.runStatusSub = this.runService.pollRunStatus(runId).subscribe({
+      next: (updatedRun) => {
+        if (updatedRun) {
+          this.currentRun = updatedRun;
+          if (updatedRun.status === 'completed') {
+            this.loadMessages(threadId);
+            this.loadThreads();
+            this.threadService.getById(threadId).subscribe(t => this.currentThread = t);
+            this.teardownRunPolling();
+          } else if (updatedRun.status === 'failed' || updatedRun.status === 'cancelled') {
+            this.currentRun = null;
+            this.teardownRunPolling();
+          } else if (updatedRun.status === 'requires_action') {
+            console.log('Run requires action:', updatedRun.required_action);
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Error polling run:', err);
+        this.currentRun = null;
+        this.teardownRunPolling();
+      }
+    });
+  }
+
   onThreadRename(event: { thread: Thread; title: string }): void {
     this.threadService.update(event.thread.id, { title: event.title }).subscribe({
       next: (updated) => {
@@ -171,6 +205,8 @@ export class HomeComponent implements OnInit {
         if (this.currentThread?.id === thread.id) {
           this.currentThread = null;
           this.messages = [];
+          this.currentRun = null;
+          this.teardownRunPolling();
           this.router.navigate(['/home']);
         }
       },
@@ -205,9 +241,13 @@ export class HomeComponent implements OnInit {
   loadThread(threadId: string): void {
     this.threadService.getById(threadId).subscribe({
       next: (thread) => {
+        // When switching threads, clear any in-flight run state from the previous thread
+        this.teardownRunPolling();
+        this.currentRun = null;
         this.currentThread = thread;
         this.loadMessages(threadId);
         this.setCurrentVectorStore(thread.vector_store_id_read);
+        this.resumeActiveRun(threadId);
       },
       error: (err) => console.error('Error loading thread:', err)
     });
@@ -227,6 +267,9 @@ export class HomeComponent implements OnInit {
   }
 
   onThreadSelected(thread: Thread): void {
+    // Clear any active run state from the previous thread before navigation
+    this.teardownRunPolling();
+    this.currentRun = null;
     this.router.navigate(['/home/chat', thread.id]);
   }
 
@@ -246,6 +289,7 @@ export class HomeComponent implements OnInit {
       this.setCurrentVectorStore(this.selectedLibraryId);
       this.mode = 'document';
     }
+    this.teardownRunPolling();
     this.router.navigate(['/home']);
   }
 
@@ -324,7 +368,9 @@ export class HomeComponent implements OnInit {
       const created = await lastValueFrom(this.vectorStoreService.create({ name }));
       this.libraries = [created, ...this.libraries];
       this.setCurrentVectorStore(created.id);
-      this.mode = 'normal';
+      if (this.mode !== 'web') {
+        this.mode = 'normal';
+      }
       this.enforceDocumentMode = false;
       return created.id;
     } catch (error) {
@@ -455,28 +501,7 @@ export class HomeComponent implements OnInit {
     return this.runService.create(payload).pipe(
       switchMap(run => {
         this.currentRun = run;
-
-        this.runService.pollRunStatus(run.id).subscribe({
-          next: (updatedRun) => {
-            if (updatedRun) {
-              this.currentRun = updatedRun;
-              if (updatedRun.status === 'completed') {
-                this.loadMessages(threadId);
-                this.loadThreads();
-                this.threadService.getById(threadId).subscribe(t => this.currentThread = t);
-              } else if (updatedRun.status === 'failed' || updatedRun.status === 'cancelled') {
-                this.currentRun = null;
-              } else if (updatedRun.status === 'requires_action') {
-                console.log('Run requires action:', updatedRun.required_action);
-              }
-            }
-          },
-          error: (err) => {
-            console.error('Error polling run:', err);
-            this.currentRun = null;
-          }
-        });
-
+        this.startRunPolling(run.id, threadId);
         return of(undefined);
       })
     ).toPromise() as Promise<void>;
@@ -766,6 +791,50 @@ export class HomeComponent implements OnInit {
     }
     this.mode = 'normal';
     this.enforceDocumentMode = false;
+  }
+
+  private teardownRunPolling(): void {
+    if (this.runStatusSub) {
+      this.runStatusSub.unsubscribe();
+      this.runStatusSub = undefined;
+    }
+  }
+
+  private resumeActiveRun(threadId: string): void {
+    this.runService.list(threadId).pipe(
+      map(runs => runs || []),
+      catchError(err => {
+        console.error('Error loading runs for thread:', err);
+        return of([] as Run[]);
+      })
+    ).subscribe(runs => {
+      if (!runs.length) {
+        this.currentRun = null;
+        this.teardownRunPolling();
+        return;
+      }
+
+      const sorted = [...runs].sort((a, b) => {
+        const aTime = a.created_at ? new Date(a.created_at as any).getTime() : 0;
+        const bTime = b.created_at ? new Date(b.created_at as any).getTime() : 0;
+        return bTime - aTime;
+      });
+
+      const active = sorted.find(run =>
+        run.status === 'queued' ||
+        run.status === 'in_progress' ||
+        run.status === 'requires_action'
+      );
+
+      if (active) {
+        this.currentRun = active;
+        this.startRunPolling(active.id, threadId);
+      } else {
+        // No active run; keep the most recent as context but stop polling
+        this.currentRun = sorted[0];
+        this.teardownRunPolling();
+      }
+    });
   }
 
   onModelSelected(model: OpenAIKey): void {

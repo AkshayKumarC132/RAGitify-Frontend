@@ -194,8 +194,8 @@ button.thread-menu {
   gap: 0.25rem;
   overflow-y: auto;
   overflow-x: visible;
-  padding-right: 0.35rem;
-  max-height: calc(110vh - 320px);
+  // padding-right: 0.35rem;
+  max-height: calc(110vh - 345px);
 }
 
 .thread-sidebar.collapsed .threads-list {
@@ -251,7 +251,7 @@ button.thread-menu {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  width: 90%;
+  width: 95%;
   padding: 0.5rem;
   background: none;
   border: none;

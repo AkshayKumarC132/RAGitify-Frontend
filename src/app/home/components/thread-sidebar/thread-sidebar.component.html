@@ -56,7 +56,7 @@
   </div>
 
   <div class="threads-section" *ngIf="!collapsed">
-    <div class="section-title" >Today</div>
+    <div class="section-title" >Chats</div>
     <div class="threads-list" (scroll)="handleThreadsScroll()">
       <div
         *ngFor="let thread of threads; trackBy: trackByThreadId"
