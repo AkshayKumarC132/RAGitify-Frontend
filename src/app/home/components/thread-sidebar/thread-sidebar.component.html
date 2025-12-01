@@ -56,12 +56,29 @@
   </div>
 
   <div class="threads-section" *ngIf="!collapsed">
-    <div class="section-title" >Chats</div>
+    <div class="section-title">Chats</div>
+
+    <div class="threads-search">
+      <div class="search-input-wrapper">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+          type="text"
+          placeholder="Search by title or message"
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="onSearchChange($event)"
+        />
+      </div>
+    </div>
+
     <div class="threads-list" (scroll)="handleThreadsScroll()">
       <div
-        *ngFor="let thread of threads; trackBy: trackByThreadId"
+        *ngFor="let thread of filteredThreads; trackBy: trackByThreadId"
         class="thread-item"
         [class.active]="currentThread?.id === thread.id"
+        [ngClass]="{
+          'search-has-title-match': searchQuery && isTitleMatch(thread),
+          'search-has-message-match': searchQuery && isMessageMatch(thread)
+        }"
         (click)="selectThread(thread)"
         [attr.title]="collapsed ? getThreadTitle(thread) : null"
       >
@@ -73,7 +90,9 @@
           <div class="thread-title single-line">
             <app-typing-label [text]="getThreadTitle(thread)"></app-typing-label>
           </div>
-          <div class="thread-time" *ngIf="!collapsed">{{ formatTime(thread.created_at) }}</div>
+          <div class="thread-time" *ngIf="!collapsed">
+            {{ formatTime(thread.created_at) }}
+          </div>
         </div>
 
         <button

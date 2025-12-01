@@ -1,10 +1,10 @@
 .thread-sidebar {
-  height: 100%;
+  height: 100vh; // Constrain to viewport so inner area can scroll
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
   position: relative;
-  // padding-bottom: 70px; /* Make room for fixed profile */
+  padding-bottom: 80px; /* Make room for fixed profile section so last thread is fully visible */
 }
 
 // .threads-section {
@@ -174,6 +174,7 @@ button.thread-menu {
 
 .threads-section {
   flex: 1;
+  min-height: 0; // Allow inner list to shrink and scroll
   padding: 0.65rem 0.5rem 1rem;
   display: flex;
   flex-direction: column;
@@ -188,18 +189,48 @@ button.thread-menu {
   text-transform: uppercase;
 }
 
+.threads-search {
+  padding: 0 0.5rem 0.4rem;
+
+  .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    font-size: 11px;
+    color: var(--text-secondary);
+
+    i {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text-primary);
+      font-size: 11px;
+
+      &::placeholder {
+        color: var(--text-secondary);
+      }
+    }
+  }
+}
+
 .threads-list {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   overflow-y: auto;
   overflow-x: visible;
-  // padding-right: 0.35rem;
-  max-height: calc(110vh - 345px);
-}
-
-.thread-sidebar.collapsed .threads-list {
-  max-height: calc(100vh - 220px);
+  padding: 0.25rem 0.35rem 0 0.5rem; // align with search input and add a bit of breathing room
 }
 
 .thread-item {
@@ -221,6 +252,15 @@ button.thread-menu {
 
   &.active {
     border-color: var(--accent-color);
+  }
+
+  &.search-has-title-match:not(.active) {
+    border-color: var(--accent-color);
+    background: rgba(var(--accent-color-rgb, 88, 115, 255), 0.06);
+  }
+
+  &.search-has-message-match:not(.active) {
+    box-shadow: 0 0 0 1px rgba(var(--accent-color-rgb, 88, 115, 255), 0.6);
   }
 }
 

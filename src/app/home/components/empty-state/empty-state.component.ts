@@ -20,7 +20,12 @@ export class EmptyStateComponent {
         } else if (user?.first_name) {
           return user.first_name;
         } else {
-          return user?.username || 'there';
+          const raw = user?.username || user?.email;
+          if (!raw) {
+            return 'there';
+          }
+          const username = raw.includes('@') ? raw.split('@')[0] : raw;
+          return username;
         }
       })
     );

@@ -2,7 +2,9 @@ import { Component, Input, Output, EventEmitter, HostListener, OnChanges, Simple
 import { Observable } from 'rxjs';
 import { Thread } from '../../../shared/models/thread.model';
 import { User } from '../../../shared/models/user.model';
+import { Message } from '../../../shared/models/message.model';
 import { ThemeService } from '../../../shared/services/theme.service';
+import { ThreadService } from '../../../shared/services/thread.service';
 
 @Component({
   selector: 'app-thread-sidebar',
@@ -32,16 +34,35 @@ export class ThreadSidebarComponent implements OnChanges {
   menuOpensLeft = false;
   private menuTrigger: HTMLElement | null = null;
   private profileMenuTrigger: HTMLElement | null = null;
+
+  // Search state
+  searchQuery = '';
+  filteredThreads: Thread[] = [];
+  private searchDebounceTimeout: any;
+  private messagesCache = new Map<string, Message[]>();
+  private matchSourceByThreadId = new Map<string, 'title' | 'message' | 'both'>();
   hoveringExpandControl = false;
   private brandExpandInteraction = false;
   private toggleExpandInteraction = false;
   theme$: Observable<'light' | 'dark'>;
 
-  constructor(private themeService: ThemeService) {
+  constructor(
+    private themeService: ThemeService,
+    private threadService: ThreadService
+  ) {
     this.theme$ = this.themeService.theme$;
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if ('threads' in changes) {
+      // Whenever the input threads change, reset the filtered list
+      this.filteredThreads = [...this.threads];
+      // Re-apply current search query if any
+      if (this.searchQuery.trim()) {
+        this.applyFilter();
+      }
+    }
+
     if ('collapsed' in changes) {
       const wasCollapsed = changes['collapsed'].previousValue;
       const isCollapsed = changes['collapsed'].currentValue;
@@ -115,6 +136,109 @@ export class ThreadSidebarComponent implements OnChanges {
     return thread.title || 'New Conversation';
   }
 
+  isTitleMatch(thread: Thread): boolean {
+    const source = this.matchSourceByThreadId.get(thread.id);
+    return source === 'title' || source === 'both';
+  }
+
+  isMessageMatch(thread: Thread): boolean {
+    const source = this.matchSourceByThreadId.get(thread.id);
+    return source === 'message' || source === 'both';
+  }
+
+  onSearchChange(query: string): void {
+    this.searchQuery = query;
+    if (this.searchDebounceTimeout) {
+      clearTimeout(this.searchDebounceTimeout);
+    }
+    this.searchDebounceTimeout = setTimeout(() => {
+      this.applyFilter();
+    }, 200);
+  }
+
+  private applyFilter(): void {
+    const query = this.searchQuery.trim().toLowerCase();
+
+    if (!query) {
+      this.filteredThreads = [...this.threads];
+      this.matchSourceByThreadId.clear();
+      return;
+    }
+
+    this.matchSourceByThreadId.clear();
+
+    const titleMatches: Thread[] = [];
+    const remainingThreads: Thread[] = [];
+
+    for (const thread of this.threads) {
+      const title = this.getThreadTitle(thread).toLowerCase();
+      if (title.includes(query)) {
+        titleMatches.push(thread);
+        this.matchSourceByThreadId.set(thread.id, 'title');
+      } else {
+        remainingThreads.push(thread);
+      }
+    }
+
+    const messageMatches: Thread[] = [];
+    const threadsNeedingFetch: Thread[] = [];
+
+    for (const thread of remainingThreads) {
+      const cachedMessages = this.messagesCache.get(thread.id);
+      if (cachedMessages) {
+        const hasMatch = cachedMessages.some(msg =>
+          (msg.content || '').toLowerCase().includes(query)
+        );
+        if (hasMatch) {
+          messageMatches.push(thread);
+          const existing = this.matchSourceByThreadId.get(thread.id);
+          if (existing === 'title') {
+            this.matchSourceByThreadId.set(thread.id, 'both');
+          } else {
+            this.matchSourceByThreadId.set(thread.id, 'message');
+          }
+        }
+      } else {
+        threadsNeedingFetch.push(thread);
+      }
+    }
+
+    // Initial filtered list using titles and any cached message matches
+    const nextFiltered = [...titleMatches, ...messageMatches];
+    this.filteredThreads = nextFiltered;
+
+    // Fetch messages for threads we haven't loaded yet
+    if (threadsNeedingFetch.length) {
+      const currentQuery = query;
+      for (const thread of threadsNeedingFetch) {
+        this.threadService.getMessages(thread.id).subscribe({
+          next: (messages) => {
+            this.messagesCache.set(thread.id, messages);
+            // Only apply results if the search query hasn't changed
+            if (this.searchQuery.trim().toLowerCase() !== currentQuery) {
+              return;
+            }
+            const hasMatch = messages.some(msg =>
+              (msg.content || '').toLowerCase().includes(currentQuery)
+            );
+            if (hasMatch && !this.filteredThreads.some(t => t.id === thread.id)) {
+              this.filteredThreads = [...this.filteredThreads, thread];
+              const existing = this.matchSourceByThreadId.get(thread.id);
+              if (existing === 'title') {
+                this.matchSourceByThreadId.set(thread.id, 'both');
+              } else {
+                this.matchSourceByThreadId.set(thread.id, 'message');
+              }
+            }
+          },
+          error: () => {
+            // Fail silently for search; title-based filtering still works
+          }
+        });
+      }
+    }
+  }
+
   getTitleSlice(thread: Thread): string {
     const title = this.getThreadTitle(thread).trim();
     if (!title) {
@@ -150,7 +274,9 @@ export class ThreadSidebarComponent implements OnChanges {
     if (user.first_name || user.last_name) {
       return `${user.first_name || ''} ${user.last_name || ''}`.trim();
     }
-    return user.email;
+    const email = user.email || '';
+    const username = email.includes('@') ? email.split('@')[0] : email;
+    return username;
   }
 
   formatTime(timestamp: string): string {
