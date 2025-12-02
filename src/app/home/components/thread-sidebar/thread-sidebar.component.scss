@@ -482,6 +482,27 @@ button.thread-menu {
   }
 }
 
+.thread-snippet {
+  margin-top: 0.2rem;
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  max-height: 2.6em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.thread-search-highlight {
+  background-color: rgba(var(--accent-color-rgb, 88, 115, 255), 0.18);
+  color: var(--text-primary);
+  border-radius: 3px;
+  padding: 0 1px;
+  font-weight: 600;
+}
+
 .thread-time {
   color: var(--text-secondary);
   font-size: 11px;

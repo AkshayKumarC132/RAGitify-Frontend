@@ -1,4 +1,5 @@
 import { Component, Input, Output, EventEmitter, HostListener, OnChanges, SimpleChanges } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Observable } from 'rxjs';
 import { Thread } from '../../../shared/models/thread.model';
 import { User } from '../../../shared/models/user.model';
@@ -48,7 +49,8 @@ export class ThreadSidebarComponent implements OnChanges {
 
   constructor(
     private themeService: ThemeService,
-    private threadService: ThreadService
+    private threadService: ThreadService,
+    private sanitizer: DomSanitizer
   ) {
     this.theme$ = this.themeService.theme$;
   }
@@ -146,6 +148,54 @@ export class ThreadSidebarComponent implements OnChanges {
     return source === 'message' || source === 'both';
   }
 
+  getHighlightedTitle(thread: Thread): SafeHtml {
+    const title = this.getThreadTitle(thread);
+    return this.highlightText(title, this.searchQuery);
+  }
+
+  getHighlightedSnippet(thread: Thread): SafeHtml | null {
+    const query = this.searchQuery.trim().toLowerCase();
+    if (!query) {
+      return null;
+    }
+
+    const messages = this.messagesCache.get(thread.id);
+    if (!messages || !messages.length) {
+      return null;
+    }
+
+    const matchingMessage = messages.find(msg =>
+      (msg.content || '').toLowerCase().includes(query)
+    );
+
+    if (!matchingMessage || !matchingMessage.content) {
+      return null;
+    }
+
+    const content = matchingMessage.content;
+    const lowerContent = content.toLowerCase();
+    const index = lowerContent.indexOf(query);
+
+    if (index === -1) {
+      return null;
+    }
+
+    const context = 40;
+    const start = Math.max(0, index - context);
+    const end = Math.min(content.length, index + query.length + context);
+
+    let snippet = content.substring(start, end);
+
+    if (start > 0) {
+      snippet = '…' + snippet;
+    }
+    if (end < content.length) {
+      snippet = snippet + '…';
+    }
+
+    return this.highlightText(snippet, this.searchQuery);
+  }
+
   onSearchChange(query: string): void {
     this.searchQuery = query;
     if (this.searchDebounceTimeout) {
@@ -237,6 +287,23 @@ export class ThreadSidebarComponent implements OnChanges {
         });
       }
     }
+  }
+
+  private escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  private highlightText(text: string, query: string): SafeHtml {
+    const trimmedQuery = (query || '').trim();
+    if (!trimmedQuery) {
+      return this.sanitizer.bypassSecurityTrustHtml(text);
+    }
+
+    const pattern = this.escapeRegExp(trimmedQuery);
+    const regex = new RegExp(`(${pattern})`, 'gi');
+    const highlighted = text.replace(regex, '<mark class="thread-search-highlight">$1</mark>');
+
+    return this.sanitizer.bypassSecurityTrustHtml(highlighted);
   }
 
   getTitleSlice(thread: Thread): string {

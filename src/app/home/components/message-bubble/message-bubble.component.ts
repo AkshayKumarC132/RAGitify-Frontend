@@ -12,12 +12,17 @@ export class MessageBubbleComponent implements OnInit {
 
   displayContent: string = '';
   private typingSpeed = 5; // ms per character
+  // Track messages that have already played the typing animation in this session
+  private static animatedMessageIds = new Set<number>();
 
   ngOnInit() {
     if (this.shouldAnimate()) {
+      MessageBubbleComponent.animatedMessageIds.add(this.message.id);
       this.typeWriter(this.message.content);
     } else {
       this.displayContent = this.message.content;
+      // Mark as animated so it won't animate in future navigations
+      MessageBubbleComponent.animatedMessageIds.add(this.message.id);
     }
   }
 
@@ -31,9 +36,12 @@ export class MessageBubbleComponent implements OnInit {
   }
 
   private shouldAnimate(): boolean {
+    const alreadyAnimated = MessageBubbleComponent.animatedMessageIds.has(this.message.id);
+
     return !this.isUser &&
       this.isLast &&
-      this.isRecent();
+      this.isRecent() &&
+      !alreadyAnimated;
   }
 
   private isRecent(): boolean {
