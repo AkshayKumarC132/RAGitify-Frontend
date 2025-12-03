@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AssistantService } from '../../../shared/services/assistant.service';
+import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { Assistant, Tool } from '../../../shared/models/assistant.model';
 
 @Component({
@@ -18,6 +19,7 @@ export class ToolsSectionComponent implements OnInit {
 
   constructor(
     private assistantService: AssistantService,
+    private confirmDialogService: ConfirmDialogService,
     private fb: FormBuilder
   ) {
     this.toolForm = this.fb.group({
@@ -108,12 +110,20 @@ export class ToolsSectionComponent implements OnInit {
     }
   }
 
-  removeTool(index: number): void {
+  async removeTool(index: number): Promise<void> {
     if (!this.selectedAssistant) {
       return;
     }
 
-    if (!confirm('Remove this tool from the assistant?')) {
+    const tool = this.selectedAssistant.tools?.[index];
+    const toolName = tool?.function?.name || 'this tool';
+
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Remove tool?',
+      message: 'This will remove',
+      itemName: toolName
+    });
+    if (!confirmed) {
       return;
     }
 

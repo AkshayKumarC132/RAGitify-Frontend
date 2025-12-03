@@ -53,24 +53,29 @@
       <i class="fa-solid fa-briefcase"></i>
       <span class="button-text" *ngIf="!collapsed">Workspace</span>
     </button>
-  </div>
-
-  <div class="threads-section" *ngIf="!collapsed">
-    <div class="section-title">Chats</div>
-
     <div class="threads-search">
-      <div class="search-input-wrapper">
+      <div 
+        class="search-input-wrapper"
+        (click)="openSearchPopup($event)"
+        [attr.title]="'Search threads'"
+      >
         <i class="fa-solid fa-magnifying-glass"></i>
         <input
           type="text"
           placeholder="Search by title or message"
           [(ngModel)]="searchQuery"
           (ngModelChange)="onSearchChange($event)"
+          (click)="$event.stopPropagation(); openSearchPopup()"
+          readonly
         />
       </div>
     </div>
+  </div>
 
-    <div class="threads-list" (scroll)="handleThreadsScroll()">
+  <div class="threads-section" *ngIf="!collapsed">
+    <div class="section-title">Chats</div>
+
+    <div class="threads-list" [class.has-search-results]="searchQuery && filteredThreads.length > 0" (scroll)="handleThreadsScroll()">
       <div
         *ngFor="let thread of filteredThreads; trackBy: trackByThreadId"
         class="thread-item"

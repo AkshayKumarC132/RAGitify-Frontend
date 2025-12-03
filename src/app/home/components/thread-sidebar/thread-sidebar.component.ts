@@ -6,6 +6,8 @@ import { User } from '../../../shared/models/user.model';
 import { Message } from '../../../shared/models/message.model';
 import { ThemeService } from '../../../shared/services/theme.service';
 import { ThreadService } from '../../../shared/services/thread.service';
+import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
+import { ThreadSearchPopupService } from '../../../shared/services/thread-search-popup.service';
 
 @Component({
   selector: 'app-thread-sidebar',
@@ -50,7 +52,9 @@ export class ThreadSidebarComponent implements OnChanges {
   constructor(
     private themeService: ThemeService,
     private threadService: ThreadService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private confirmDialogService: ConfirmDialogService,
+    private threadSearchPopupService: ThreadSearchPopupService
   ) {
     this.theme$ = this.themeService.theme$;
   }
@@ -387,9 +391,13 @@ export class ThreadSidebarComponent implements OnChanges {
     }
   }
 
-  deleteThread(thread: Thread, event?: MouseEvent): void {
+  async deleteThread(thread: Thread, event?: MouseEvent): Promise<void> {
     event?.stopPropagation();
-    const confirmed = window.confirm('Delete this conversation?');
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete chat?',
+      message: 'This will delete',
+      itemName: thread.title || 'this conversation'
+    });
     if (confirmed) {
       this.removeThread.emit(thread);
       this.closeThreadMenu();
@@ -485,6 +493,11 @@ export class ThreadSidebarComponent implements OnChanges {
       this.closeProfileMenu();
     }
     this.sidebarToggled.emit(nextState);
+  }
+
+  openSearchPopup(event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.threadSearchPopupService.open(this.threads, this.currentThread);
   }
 
   private closeThreadMenu(): void {

@@ -4,6 +4,7 @@ import { BehaviorSubject } from 'rxjs';
 type ThemeMode = 'light' | 'dark';
 
 const STORAGE_KEY = 'ragitify-theme';
+const DEFAULT_THEME: ThemeMode = 'light';
 
 @Injectable({
   providedIn: 'root'
@@ -35,7 +36,7 @@ export class ThemeService {
     if (stored === 'light' || stored === 'dark') {
       return stored;
     }
-    return 'dark';
+    return DEFAULT_THEME;
   }
 
   private applyTheme(theme: ThemeMode): void {

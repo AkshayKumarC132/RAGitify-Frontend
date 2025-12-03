@@ -3,6 +3,7 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { Subscription, interval } from 'rxjs';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentService } from '../../../shared/services/document.service';
+import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document } from '../../../shared/models/document.model';
 
@@ -30,6 +31,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   constructor(
     private vectorStoreService: VectorStoreService,
     private documentService: DocumentService,
+    private confirmDialogService: ConfirmDialogService,
     private fb: FormBuilder
   ) {
     this.createVectorStoreForm = this.fb.group({
@@ -133,8 +135,14 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     });
   }
 
-  deleteVectorStore(store: VectorStore): void {
-    if (!confirm(`Delete library "${store.name}"? This will remove its documents.`)) {
+  async deleteVectorStore(store: VectorStore): Promise<void> {
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete library?',
+      message: 'This will delete',
+      itemName: store.name,
+      secondaryMessage: 'Note: This will remove all threads and documents associated with this library.'
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -174,8 +182,17 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     });
   }
 
-  deleteDocument(documentId: string): void {
-    if (!confirm('Delete this document? This cannot be undone.')) {
+  async deleteDocument(documentId: string): Promise<void> {
+    const document = this.documents.find(doc => doc.id === documentId);
+    const documentName = document?.title || 'this document';
+    
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete document?',
+      message: 'This will delete',
+      itemName: documentName,
+      secondaryMessage: 'This cannot be undone.'
+    });
+    if (!confirmed) {
       return;
     }
 

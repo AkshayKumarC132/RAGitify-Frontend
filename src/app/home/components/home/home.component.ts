@@ -12,6 +12,7 @@ import { OpenAIKeyService } from '../../../shared/services/openai-key.service';
 import { AuthService } from '../../../shared/services/auth.service';
 import { DocumentService } from '../../../shared/services/document.service';
 import { DocumentAccessService } from '../../../shared/services/document-access.service';
+import { ThreadSearchPopupService } from '../../../shared/services/thread-search-popup.service';
 import { Thread } from '../../../shared/models/thread.model';
 import { Message } from '../../../shared/models/message.model';
 import { Run } from '../../../shared/models/run.model';
@@ -57,6 +58,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private attachmentMessageTimeout?: any;
   private enforceDocumentMode = true;
   private runStatusSub?: Subscription;
+  private searchPopupSub?: Subscription;
 
   constructor(
     private router: Router,
@@ -70,6 +72,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private documentService: DocumentService,
     private documentAccessService: DocumentAccessService,
+    private threadSearchPopupService: ThreadSearchPopupService,
     private fb: FormBuilder,
     private location: Location
   ) {
@@ -116,10 +119,18 @@ export class HomeComponent implements OnInit, OnDestroy {
         return EMPTY;
       })
     ).subscribe();
+
+    // Listen for thread selections from search popup
+    this.searchPopupSub = this.threadSearchPopupService.getThreadSelected().subscribe(thread => {
+      this.onThreadSelected(thread);
+    });
   }
 
   ngOnDestroy(): void {
     this.teardownRunPolling();
+    if (this.searchPopupSub) {
+      this.searchPopupSub.unsubscribe();
+    }
   }
 
   onManageProfile(): void {

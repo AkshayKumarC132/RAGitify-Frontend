@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AssistantService } from '../../../shared/services/assistant.service';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
+import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { Assistant } from '../../../shared/models/assistant.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 
@@ -24,6 +25,7 @@ export class PromptsSectionComponent implements OnInit {
   constructor(
     private assistantService: AssistantService,
     private vectorStoreService: VectorStoreService,
+    private confirmDialogService: ConfirmDialogService,
     private fb: FormBuilder
   ) {
     this.createForm = this.fb.group({
@@ -151,8 +153,13 @@ export class PromptsSectionComponent implements OnInit {
     });
   }
 
-  deleteAssistant(assistant: Assistant): void {
-    if (!confirm(`Delete prompt "${assistant.name}"?`)) {
+  async deleteAssistant(assistant: Assistant): Promise<void> {
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete prompt?',
+      message: 'This will delete',
+      itemName: assistant.name
+    });
+    if (!confirmed) {
       return;
     }
 

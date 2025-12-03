@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { OpenAIKeyService } from '../../../shared/services/openai-key.service';
+import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { OpenAIKey, OpenAIKeyCreateRequest } from '../../../shared/models/openai-key.model';
 
 @Component({
@@ -33,6 +34,7 @@ export class ModelsSectionComponent implements OnInit {
 
   constructor(
     private openAIKeyService: OpenAIKeyService,
+    private confirmDialogService: ConfirmDialogService,
     private fb: FormBuilder
   ) {
     this.createForm = this.fb.group({
@@ -119,17 +121,27 @@ export class ModelsSectionComponent implements OnInit {
     });
   }
 
-  deleteModel(id: number): void {
-    if (confirm('Are you sure you want to delete this model?')) {
-      this.openAIKeyService.delete(id).subscribe({
-        next: () => {
-          this.loadModels();
-        },
-        error: (err) => {
-          console.error('Error deleting model:', err);
-        }
-      });
+  async deleteModel(id: number): Promise<void> {
+    const model = this.models.find(m => m.id === id);
+    const modelName = model?.name || (model ? `${model.provider} - ${model.model}` : 'this model');
+    
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete model?',
+      message: 'This will delete',
+      itemName: modelName
+    });
+    if (!confirmed) {
+      return;
     }
+
+    this.openAIKeyService.delete(id).subscribe({
+      next: () => {
+        this.loadModels();
+      },
+      error: (err) => {
+        console.error('Error deleting model:', err);
+      }
+    });
   }
 }
 
