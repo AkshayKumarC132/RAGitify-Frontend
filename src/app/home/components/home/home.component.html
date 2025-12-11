@@ -35,6 +35,9 @@
         *ngIf="!isConversationEmpty"
         [messages]="messages"
         [currentRun]="currentRun"
+        [runMap]="runMap"
+        [rerunLoadingMessageId]="rerunLoadingMessageId"
+        (rerunRequest)="onRerunRequest($event)"
       ></app-chat-container>
     </div>
 
@@ -42,6 +45,7 @@
       <app-chat-input
         [mode]="mode"
         [loading]="loading || attachmentsInProgress"
+        [currentRun]="currentRun"
         [libraries]="libraries"
         [selectedLibraryId]="selectedLibraryId"
         [documents]="allDocuments"
@@ -50,6 +54,7 @@
         [selectedPromptId]="selectedPromptId"
         [hasExistingThread]="!!currentThread"
         (messageSent)="onMessageSent($event)"
+        (cancelRun)="onCancelRun()"
         (modeToggle)="onModeToggle($event)"
         (filesSelected)="onFilesSelected($event)"
         (webpageAttached)="onWebpageAttach($event)"

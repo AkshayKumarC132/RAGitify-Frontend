@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { AuthService } from '../../../shared/services/auth.service';
-import { User } from '../../../shared/models/user.model';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -11,6 +10,7 @@ import { map } from 'rxjs/operators';
 })
 export class EmptyStateComponent {
   userName$: Observable<string>;
+  greeting$: Observable<string>;
 
   constructor(private authService: AuthService) {
     this.userName$ = this.authService.currentUser$.pipe(
@@ -29,6 +29,40 @@ export class EmptyStateComponent {
         }
       })
     );
+
+    this.greeting$ = this.authService.currentUser$.pipe(
+      map(user => {
+        // Same name resolution as above
+        let name: string;
+        if (user?.first_name && user?.last_name) {
+          name = `${user.first_name} ${user.last_name}`;
+        } else if (user?.first_name) {
+          name = user.first_name;
+        } else {
+          const raw = user?.username || user?.email;
+          if (!raw) {
+            name = 'there';
+          } else {
+            const username = raw.includes('@') ? raw.split('@')[0] : raw;
+            name = username;
+          }
+        }
+
+        const now = new Date();
+        const hour = now.getHours();
+
+        let baseGreeting: string;
+        if (hour < 12) {
+          baseGreeting = 'Good morning';
+        } else if (hour < 18) {
+          baseGreeting = 'Good afternoon';
+        } else {
+          baseGreeting = 'Good evening';
+        }
+
+        // Always use time-based greeting; no "welcome back" logic
+        return `${baseGreeting}, ${name}`;
+      })
+    );
   }
 }
-

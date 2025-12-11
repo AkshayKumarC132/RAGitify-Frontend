@@ -72,10 +72,21 @@
         <span class="listening-pulse" *ngIf="isListening"></span>
       </button>
 
-      <button class="send-button" (click)="sendMessage()" [disabled]="!message.trim() || loading" aria-label="Send message">
-        <ng-container *ngIf="!loading; else loadingDots">
-          <i class="fa-solid fa-arrow-up"></i>
+      <button
+        class="send-button"
+        (click)="runActive ? onCancelRun() : sendMessage()"
+        [disabled]="!runActive && (!message.trim() || loading)"
+        [title]="runActive ? 'Stop run' : 'Send message'"
+        aria-label="Send message"
+      >
+        <ng-container *ngIf="runActive; else sendState">
+          <i class="fa-solid fa-stop"></i>
         </ng-container>
+        <ng-template #sendState>
+          <ng-container *ngIf="!loading; else loadingDots">
+            <i class="fa-solid fa-arrow-up"></i>
+          </ng-container>
+        </ng-template>
         <ng-template #loadingDots>...</ng-template>
       </button>
     </div>
@@ -110,7 +121,7 @@
     <h4>Attach Documents</h4>
     <ng-template #documentsList>
       <div class="documents-list">
-        <ng-container *ngIf="documents.length; else emptyDocuments">
+        <ng-container *ngIf="availableDocuments.length; else emptyDocuments">
           <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
             <div class="group-title">{{ group.name }}</div>
             <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)">
@@ -134,7 +145,7 @@
         <button type="button" [class.active]="selectionMode === 'library'" (click)="setSelectionMode('library')">
           Whole Library
         </button>
-        <button type="button" [class.active]="selectionMode === 'documents'" [disabled]="!documents.length"
+        <button type="button" [class.active]="selectionMode === 'documents'" [disabled]="!availableDocuments.length"
           (click)="setSelectionMode('documents')">
           Specific Documents
         </button>

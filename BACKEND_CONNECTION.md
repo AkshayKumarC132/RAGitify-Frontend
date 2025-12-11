@@ -73,11 +73,11 @@ All endpoints are configured to match the Django backend URL structure:
 - `POST /run/{token}/{run_id}/submit-tool-outputs/` - Submit tool outputs
 
 ### OpenAI Keys
-- `POST /openai-key/{token}/` - Create OpenAI key
-- `GET /openai-key/{token}/list/` - List OpenAI keys
-- `GET /openai-key/{token}/{id}/` - Get OpenAI key
-- `PUT /openai-key/{token}/{id}/` - Update OpenAI key
-- `DELETE /openai-key/{token}/{id}/` - Delete OpenAI key
+- `POST /llm-config/{token}/` - Create OpenAI key
+- `GET /llm-config/{token}/list/` - List OpenAI keys
+- `GET /llm-config/{token}/{id}/` - Get OpenAI key
+- `PUT /llm-config/{token}/{id}/` - Update OpenAI key
+- `DELETE /llm-config/{token}/{id}/` - Delete OpenAI key
 
 ### Document Access
 - `POST /document-access/{token}/` - Create document access

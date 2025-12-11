@@ -34,6 +34,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   messages: Message[] = [];
   threads: Thread[] = [];
   currentRun: Run | null = null;
+  runMap: Record<number, Run> = {};
+  rerunLoadingMessageId: number | null = null;
   selectedModel: OpenAIKey | null = null;
   availableModels: OpenAIKey[] = [];
   mode: 'normal' | 'web' | 'document' = 'document';
@@ -169,6 +171,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private startRunPolling(runId: string, threadId: string): void {
+    if (!threadId) {
+      console.error('startRunPolling called without threadId', { runId });
+      return;
+    }
     // Stop any existing polling before starting a new one
     this.teardownRunPolling();
 
@@ -176,6 +182,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       next: (updatedRun) => {
         if (updatedRun) {
           this.currentRun = updatedRun;
+          this.upsertRun(updatedRun);
           if (updatedRun.status === 'completed') {
             this.loadMessages(threadId);
             this.loadThreads();
@@ -255,6 +262,8 @@ export class HomeComponent implements OnInit, OnDestroy {
         // When switching threads, clear any in-flight run state from the previous thread
         this.teardownRunPolling();
         this.currentRun = null;
+        this.runMap = {};
+        this.rerunLoadingMessageId = null;
         this.currentThread = thread;
         this.loadMessages(threadId);
         this.setCurrentVectorStore(thread.vector_store_id_read);
@@ -287,6 +296,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   onNewThread(): void {
     this.currentThread = null;
     this.currentRun = null;
+    this.runMap = {};
+    this.rerunLoadingMessageId = null;
     this.messages = [];
     this.selectedDocumentIds = [];
     this.documentSelectionVectorStoreId = null;
@@ -512,6 +523,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     return this.runService.create(payload).pipe(
       switchMap(run => {
         this.currentRun = run;
+        this.upsertRun(run);
         this.startRunPolling(run.id, threadId);
         return of(undefined);
       })
@@ -630,6 +642,40 @@ export class HomeComponent implements OnInit, OnDestroy {
   onPromptSelected(promptId: string | null): void {
     this.selectedPromptId = promptId;
     this.setAttachmentMessage(promptId ? 'Prompt selected for the next reply.' : 'Prompt selection cleared.');
+  }
+
+  onCancelRun(): void {
+    if (!this.currentRun || !['queued', 'in_progress', 'requires_action'].includes(this.currentRun.status)) {
+      return;
+    }
+
+    const runSnapshot = { ...this.currentRun };
+    this.runService.cancel(runSnapshot.id).subscribe({
+      next: () => {
+        this.upsertRun({ ...runSnapshot, status: 'cancelled' } as Run);
+        this.currentRun = null;
+        this.teardownRunPolling();
+        if (this.currentThread?.id) {
+          // Reload messages and runs to ensure everything is in sync
+          this.loadMessages(this.currentThread.id);
+          this.loadRunsForThread(this.currentThread.id);
+        }
+      },
+      error: (err) => {
+        console.error('Error cancelling run:', err);
+      }
+    });
+  }
+
+  private loadRunsForThread(threadId: string): void {
+    this.runService.list(threadId).subscribe({
+      next: (runs) => {
+        this.rebuildRunMap(runs || []);
+      },
+      error: (err) => {
+        console.error('Error loading runs:', err);
+      }
+    });
   }
 
   loadLibraries(): void {
@@ -819,6 +865,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         return of([] as Run[]);
       })
     ).subscribe(runs => {
+      this.rebuildRunMap(runs);
       if (!runs.length) {
         this.currentRun = null;
         this.teardownRunPolling();
@@ -875,5 +922,74 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.router.navigate(['/auth/login']);
     }
   }
+
+  private rebuildRunMap(runs: Run[]): void {
+    this.runMap = runs.reduce((acc, run) => {
+      const messageIds = [run.source_message_id, run.message_id].filter((id): id is number => !!id);
+      if (!messageIds.length) {
+        return acc;
+      }
+
+      const currentTime = run.created_at ? new Date(run.created_at as any).getTime() : 0;
+
+      messageIds.forEach(id => {
+        const existing = acc[id];
+        const existingTime = existing?.created_at ? new Date(existing.created_at as any).getTime() : 0;
+        if (!existing || currentTime >= existingTime) {
+          acc[id] = run;
+        }
+      });
+
+      return acc;
+    }, {} as Record<number, Run>);
+  }
+
+  private upsertRun(run: Run | null | undefined): void {
+    if (!run) {
+      return;
+    }
+
+    const messageIds = [run.source_message_id, run.message_id].filter((id): id is number => !!id);
+    if (!messageIds.length) {
+      return;
+    }
+
+    const currentTime = run.created_at ? new Date(run.created_at as any).getTime() : 0;
+    const nextMap = { ...this.runMap };
+
+    messageIds.forEach(id => {
+      const existing = nextMap[id];
+      const existingTime = existing?.created_at ? new Date(existing.created_at as any).getTime() : 0;
+      if (!existing || currentTime >= existingTime) {
+        nextMap[id] = run;
+      }
+    });
+
+    this.runMap = nextMap;
+  }
+
+  onRerunRequest(event: { message: Message, run: Run }): void {
+    const { message, run } = event;
+    this.rerunLoadingMessageId = message.id;
+    this.runService.rerun(run.id, { mode: run.mode }).subscribe({
+      next: (newRun) => {
+        this.upsertRun(newRun);
+        this.currentRun = newRun;
+        const threadId = newRun.thread_id || message.thread_id || run.thread_id || this.currentThread?.id;
+        if (!threadId) {
+          console.error('Rerun completed but threadId is missing', { run: newRun, message, currentThread: this.currentThread });
+          this.rerunLoadingMessageId = null;
+          return;
+        }
+        this.startRunPolling(newRun.id, threadId);
+        this.rerunLoadingMessageId = null;
+      },
+      error: (err) => {
+        console.error('Failed to rerun message:', err);
+        this.rerunLoadingMessageId = null;
+      }
+    });
+  }
+
 }
 

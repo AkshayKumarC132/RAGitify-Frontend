@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostL
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
 import { Document } from '../../../shared/models/document.model';
+import { Run } from '../../../shared/models/run.model';
 
 type AttachmentPanel = 'web' | 'notes' | 'library' | 'prompts' | null;
 
@@ -43,6 +44,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Input() prompts: Assistant[] = [];
   @Input() selectedPromptId: string | null = null;
   @Input() hasExistingThread = false;
+  @Input() currentRun: Run | null = null;
   @Output() messageSent = new EventEmitter<string>();
   @Output() modeToggle = new EventEmitter<'normal' | 'web' | 'document'>();
   @Output() filesSelected = new EventEmitter<FileList>();
@@ -50,6 +52,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Output() notesAttached = new EventEmitter<{ title: string; content: string }>();
   @Output() librarySelected = new EventEmitter<LibrarySelectionEvent>();
   @Output() promptSelected = new EventEmitter<string | null>();
+  @Output() cancelRun = new EventEmitter<void>();
 
   message = '';
   attachmentMenuOpen = false;
@@ -112,7 +115,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   }
 
   sendMessage(): void {
-    if (this.message.trim() && !this.loading) {
+    if (this.message.trim() && !this.loading && !this.runActive) {
       this.messageSent.emit(this.message);
       this.message = '';
       setTimeout(() => this.adjustTextareaHeight(), 0);
@@ -126,8 +129,18 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     }
   }
 
+  onCancelRun(): void {
+    if (this.runActive) {
+      this.cancelRun.emit();
+    }
+  }
+
   onInputChange(): void {
     this.adjustTextareaHeight();
+  }
+
+  get runActive(): boolean {
+    return !!this.currentRun && ['queued', 'in_progress', 'requires_action'].includes(this.currentRun.status);
   }
 
   toggleWebMode(): void {
@@ -290,7 +303,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     if (this.hasExistingThread && mode === 'library') {
       return;
     }
-    if (mode === 'documents' && !this.documents.length) {
+    if (mode === 'documents' && !this.availableDocuments.length) {
       return;
     }
     this.selectionMode = mode;
@@ -298,7 +311,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   getDocumentsByLibrary(): { libraryId: string; name: string; documents: Document[] }[] {
     const grouping = new Map<string, Document[]>();
-    (this.documents || []).forEach(doc => {
+    this.availableDocuments.forEach(doc => {
       const list = grouping.get(doc.vector_store) || [];
       list.push(doc);
       grouping.set(doc.vector_store, list);
@@ -462,5 +475,9 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   private enforceDocumentsOnlyMode(): void {
     this.selectionMode = 'documents';
     this.pendingLibraryId = null;
+  }
+
+  get availableDocuments(): Document[] {
+    return (this.documents || []).filter(doc => doc.status !== 'failed');
   }
 }
