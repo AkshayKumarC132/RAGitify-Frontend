@@ -28,6 +28,11 @@ export class AuthInterceptor implements HttpInterceptor {
   }
 
   private handleError(error: HttpErrorResponse): Observable<never> {
+    if (error.status === 403 && error.error?.code === 'LLM_SETUP_REQUIRED') {
+      this.authService.handleSetupRequirement(error.error);
+      return throwError(() => error);
+    }
+
     if (error.status === 401 || error.status === 403) {
       this.authService.forceLogout();
     }
@@ -35,4 +40,3 @@ export class AuthInterceptor implements HttpInterceptor {
     return throwError(() => error);
   }
 }
-

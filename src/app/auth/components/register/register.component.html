@@ -56,9 +56,26 @@
       <small *ngIf="registerForm.get('tenant_name')?.invalid && registerForm.get('tenant_name')?.touched">Tenant is required</small>
     </label>
 
+    <div class="two-column">
+      <label>
+        <span>LLM Provider (optional)</span>
+        <select id="llm_provider" formControlName="llm_provider">
+          <option value="">Skip for now</option>
+          <option value="openai">OpenAI (1536-dim embeddings)</option>
+          <option value="ollama">Ollama (1024-dim embeddings)</option>
+        </select>
+        <small>Selecting a provider immediately creates a collection.</small>
+      </label>
+      <label>
+        <span>Collection Name</span>
+        <input type="text" id="collection_name" formControlName="collection_name" placeholder="Optional" />
+        <small>Required only when selecting an LLM.</small>
+      </label>
+    </div>
+
     <label>
-      <span>Collection Name</span>
-      <input type="text" id="collection_name" formControlName="collection_name" placeholder="Optional" />
+      <span>Language (optional)</span>
+      <input type="text" id="language" formControlName="language" placeholder="en" />
     </label>
 
     <div class="register-actions">
@@ -70,4 +87,3 @@
     </div>
   </form>
 </div>
-

@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MarkdownModule } from 'ngx-markdown';
 import { NgModule } from '@angular/core';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { ApiService } from './services/api.service';
@@ -18,8 +17,7 @@ import { TypingLabelComponent } from './components/typing-label/typing-label.com
     CommonModule,
     HttpClientModule,
     FormsModule,
-    ReactiveFormsModule,
-    MarkdownModule.forRoot()
+    ReactiveFormsModule
   ],
   providers: [
     ApiService,
@@ -37,9 +35,7 @@ import { TypingLabelComponent } from './components/typing-label/typing-label.com
     ThemeToggleComponent,
     TypingLabelComponent,
     ConfirmDialogComponent,
-    ThreadSearchPopupComponent,
-    MarkdownModule
+    ThreadSearchPopupComponent
   ]
 })
 export class SharedModule { }
-

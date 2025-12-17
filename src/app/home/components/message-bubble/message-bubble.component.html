@@ -10,7 +10,7 @@
       </button>
     </div>
     <div *ngIf="!showEmptyState" class="message-text">
-      <markdown [data]="displayContent"></markdown>
+      <div class="text-content" [innerText]="displayContent"></div>
     </div>
     <div class="message-time" *ngIf="!showEmptyState">{{ formatTime(message.created_at) }}</div>
   </div>

@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../shared/services/auth.service';
 import { LoginRequest } from '../../../shared/models/user.model';
+import { switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-login',
@@ -42,10 +43,16 @@ export class LoginComponent implements OnInit {
         password
       };
 
-      this.authService.login(credentials).subscribe({
-        next: (response) => {
-          this.authService.setAuth(response.token, response.user);
-          this.router.navigate(['/home']);
+      this.authService.login(credentials).pipe(
+        switchMap(response => this.authService.initializeSession(response))
+      ).subscribe({
+        next: (status) => {
+          this.loading = false;
+          if (this.authService.isLlmReady(status)) {
+            this.router.navigate(['/home']);
+            return;
+          }
+          this.router.navigate(['/setup-llm']);
         },
         error: (error) => {
           this.loading = false;
@@ -65,4 +72,3 @@ export class LoginComponent implements OnInit {
   }
 
 }
-

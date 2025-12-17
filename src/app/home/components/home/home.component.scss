@@ -4,6 +4,34 @@
   background: var(--bg-primary);
 }
 
+.setup-blocker {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  padding: 2rem;
+}
+
+.blocker-content {
+  max-width: 540px;
+  text-align: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 2rem;
+  border-radius: 14px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.28);
+
+  h2 {
+    margin-bottom: 0.75rem;
+  }
+
+  p {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+}
+
 .sidebar {
   width: 260px;
   display: flex;
@@ -206,4 +234,3 @@
 .input-area.centered .attachment-status {
   text-align: center;
 }
-

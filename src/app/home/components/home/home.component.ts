@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
-import { switchMap, map, catchError } from 'rxjs/operators';
-import { of, lastValueFrom, EMPTY, Subscription } from 'rxjs';
+import { switchMap, map, catchError, takeUntil } from 'rxjs/operators';
+import { of, lastValueFrom, EMPTY, Subscription, Subject } from 'rxjs';
 import { ThreadService } from '../../../shared/services/thread.service';
 import { MessageService } from '../../../shared/services/message.service';
 import { RunService } from '../../../shared/services/run.service';
@@ -54,6 +54,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   documentSelectionVectorStoreId: string | null = null;
   isSidebarCollapsed = false;
   currentUser: User | null = null;
+  setupIncomplete = false;
+  dataInitialized = false;
+  pendingThreadId: string | null = null;
   profileForm: FormGroup;
   showProfilePanel = false;
   profileMessage = '';
@@ -61,6 +64,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private enforceDocumentMode = true;
   private runStatusSub?: Subscription;
   private searchPopupSub?: Subscription;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private router: Router,
@@ -87,36 +91,60 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.authService.restoreUserFromStorage();
-    this.loadModels();
-    this.loadThreads();
-    this.loadLibraries();
-    this.loadPrompts();
-    this.loadDocuments();
+    this.setupIncomplete = !this.authService.isLlmReady(this.authService.getCurrentStatus());
+    if (!this.setupIncomplete) {
+      this.initializeData();
+    } else {
+      this.clearLoadedState();
+    }
 
-    this.authService.currentUser$.subscribe(user => {
-      console.log('[HomeComponent] currentUser$ emitted', {
-        hasUser: !!user,
-        tokenAvailable: !!this.authService.getToken()
+    this.authService.userStatus$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(status => {
+        const isReady = this.authService.isLlmReady(status);
+        this.setupIncomplete = !isReady;
+        if (isReady && !this.dataInitialized) {
+          this.initializeData();
+          if (this.pendingThreadId) {
+            this.loadThread(this.pendingThreadId);
+          }
+        }
+        if (!isReady) {
+          this.clearLoadedState();
+          this.navigateToSetup();
+        }
       });
-      this.currentUser = user;
-      if (user) {
-        this.profileForm.patchValue({
-          first_name: user.first_name || '',
-          last_name: user.last_name || '',
-          email: user.email || ''
-        }, { emitEvent: false });
-      } else {
-        console.warn('[HomeComponent] user is null - sidebar profile cannot render', {
-          storedUser: this.authService.getStoredUser()
+
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        console.log('[HomeComponent] currentUser$ emitted', {
+          hasUser: !!user,
+          tokenAvailable: !!this.authService.getToken()
         });
-      }
-    });
+        this.currentUser = user;
+        if (user) {
+          this.profileForm.patchValue({
+            first_name: user.first_name || '',
+            last_name: user.last_name || '',
+            email: user.email || ''
+          }, { emitEvent: false });
+        } else {
+          console.warn('[HomeComponent] user is null - sidebar profile cannot render', {
+            storedUser: this.authService.getStoredUser()
+          });
+        }
+      });
 
     this.route.params.pipe(
+      takeUntil(this.destroy$),
       switchMap(params => {
         const threadId = params['threadId'];
         if (threadId) {
-          this.loadThread(threadId);
+          this.pendingThreadId = threadId;
+          if (!this.setupIncomplete) {
+            this.loadThread(threadId);
+          }
         }
         return EMPTY;
       })
@@ -133,6 +161,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (this.searchPopupSub) {
       this.searchPopupSub.unsubscribe();
     }
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   onManageProfile(): void {
@@ -168,6 +198,29 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   get isConversationEmpty(): boolean {
     return !this.currentThread && this.messages.length === 0;
+  }
+
+  get showSetupBlocker(): boolean {
+    return this.setupIncomplete;
+  }
+
+  navigateToSetup(): void {
+    this.router.navigate(['/setup-llm'], { queryParams: { reason: 'llm_required' } });
+  }
+
+  private initializeData(): void {
+    if (this.dataInitialized) {
+      return;
+    }
+    this.dataInitialized = true;
+    this.loadModels();
+    this.loadThreads();
+    this.loadLibraries();
+    this.loadPrompts();
+    this.loadDocuments();
+    if (this.pendingThreadId) {
+      this.loadThread(this.pendingThreadId);
+    }
   }
 
   private startRunPolling(runId: string, threadId: string): void {
@@ -800,6 +853,34 @@ export class HomeComponent implements OnInit, OnDestroy {
     }, 4000);
   }
 
+  private clearLoadedState(): void {
+    this.dataInitialized = false;
+    this.teardownRunPolling();
+    this.currentRun = null;
+    this.runMap = {};
+    this.rerunLoadingMessageId = null;
+    this.currentThread = null;
+    this.messages = [];
+    this.threads = [];
+    this.availableModels = [];
+    this.selectedModel = null;
+    this.libraries = [];
+    this.allDocuments = [];
+    this.knowledgeSources = [];
+    this.selectedKnowledgeId = null;
+    this.selectedLibraryId = null;
+    this.selectedDocumentIds = [];
+    this.documentSelectionVectorStoreId = null;
+    this.selectedPromptId = null;
+    this.prompts = [];
+    this.currentVectorStoreId = null;
+    this.mode = 'document';
+    this.attachmentMessage = '';
+    if (this.attachmentMessageTimeout) {
+      clearTimeout(this.attachmentMessageTimeout);
+    }
+  }
+
   private resetConversationState(): void {
     this.currentThread = null;
     this.currentRun = null;
@@ -992,4 +1073,3 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
 }
-

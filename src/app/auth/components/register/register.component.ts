@@ -27,7 +27,9 @@ export class RegisterComponent {
       first_name: [''],
       last_name: [''],
       tenant_name: ['', [Validators.required]],
-      collection_name: ['']
+      collection_name: [''],
+      llm_provider: [''],
+      language: ['']
     });
   }
 
@@ -43,8 +45,16 @@ export class RegisterComponent {
         first_name: formValue.first_name || undefined,
         last_name: formValue.last_name || undefined,
         tenant_name: formValue.tenant_name,
-        collection_name: formValue.collection_name || undefined
+        collection_name: formValue.collection_name || undefined,
+        llm_provider: formValue.llm_provider || undefined,
+        language: formValue.language || undefined
       };
+
+      if (registerData.llm_provider && !registerData.collection_name) {
+        this.loading = false;
+        this.errorMessage = 'Collection name is required when selecting an LLM provider.';
+        return;
+      }
 
       this.authService.register(registerData).subscribe({
         next: () => {
@@ -54,9 +64,21 @@ export class RegisterComponent {
             password: registerData.password
           }).subscribe({
             next: (loginResponse) => {
-              this.loading = false;
-              this.authService.setAuth(loginResponse.token, loginResponse.user);
-              this.router.navigate(['/home']);
+              this.authService.initializeSession(loginResponse).subscribe({
+                next: (status) => {
+                  this.loading = false;
+                  if (this.authService.isLlmReady(status)) {
+                    this.router.navigate(['/home']);
+                    return;
+                  }
+                  this.router.navigate(['/setup-llm']);
+                },
+                error: (statusError) => {
+                  this.loading = false;
+                  this.errorMessage = this.extractErrorMessage(statusError, 'Registration succeeded, but setup is incomplete. Please continue onboarding.');
+                  this.router.navigate(['/setup-llm']);
+                }
+              });
             },
             error: (loginError) => {
               this.loading = false;
@@ -102,4 +124,3 @@ export class RegisterComponent {
   }
 
 }
-

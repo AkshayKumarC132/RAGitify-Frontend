@@ -1,4 +1,15 @@
-<div class="home-container">
+<div class="setup-blocker" *ngIf="showSetupBlocker">
+  <div class="blocker-content">
+    <h2>LLM setup required to continue</h2>
+    <p>
+      Threads, vector stores, assistants, runs, and messages stay blocked until an LLM provider and collection
+      are configured.
+    </p>
+    <button type="button" class="btn-primary" (click)="navigateToSetup()">Open LLM Setup Wizard</button>
+  </div>
+</div>
+
+<div class="home-container" *ngIf="!showSetupBlocker">
   <div class="sidebar" [class.collapsed]="isSidebarCollapsed">
     <app-thread-sidebar
       [threads]="threads"
@@ -105,4 +116,3 @@
       </div>
     </form>
   </div>
-</div>

@@ -44,6 +44,10 @@
   line-height: 2.2;
 }
 
+.message-text .text-content {
+  white-space: pre-wrap;
+}
+
 .message-time {
   font-size: 10px;
   opacity: 0.7;

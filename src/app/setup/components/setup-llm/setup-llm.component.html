@@ -1,0 +1,100 @@
+<div class="setup-shell">
+  <div class="setup-card">
+    <div class="setup-header">
+      <div>
+        <p class="eyebrow">Onboarding</p>
+        <h1>LLM Setup Wizard</h1>
+        <p class="subtitle">
+          Complete these three steps to unlock threads, vector stores, assistants, and documents.
+        </p>
+      </div>
+      <button type="button" class="ghost-link" (click)="backToLogin()">
+        Back to login
+      </button>
+    </div>
+
+    <div *ngIf="infoMessage" class="info-banner">
+      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      <span>{{ infoMessage }}</span>
+    </div>
+    <div *ngIf="errorMessage" class="error-banner">
+      <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <form [formGroup]="setupForm" (ngSubmit)="submitSetup()" class="setup-form">
+      <section class="step">
+        <div class="step-label">
+          <span class="step-number">1</span>
+          <div>
+            <p class="eyebrow">Select provider</p>
+            <h3>Choose your LLM</h3>
+          </div>
+        </div>
+        <div class="provider-grid">
+          <button
+            type="button"
+            *ngFor="let option of providerOptions"
+            class="provider-card"
+            [class.selected]="providerIsSelected(option.value)"
+            (click)="selectProvider(option.value)"
+          >
+            <div class="provider-title">
+              <span>{{ option.label }}</span>
+              <i *ngIf="providerIsSelected(option.value)" class="fa-solid fa-check-circle" aria-hidden="true"></i>
+            </div>
+            <p>{{ option.description }}</p>
+            <small *ngIf="option.value === 'openai'">Embeddings: 1536 dimensions</small>
+            <small *ngIf="option.value === 'ollama'">Embeddings: 1024 dimensions</small>
+          </button>
+        </div>
+        <small class="hint">{{ providerDimensionHint }}</small>
+        <div class="field-error" *ngIf="setupForm.get('llm_provider')?.invalid && setupForm.get('llm_provider')?.touched">
+          LLM provider is required
+        </div>
+      </section>
+
+      <section class="step">
+        <div class="step-label">
+          <span class="step-number">2</span>
+          <div>
+            <p class="eyebrow">Name collection</p>
+            <h3>Collection name</h3>
+          </div>
+        </div>
+        <label>
+          <span>Collection name *</span>
+          <input
+            type="text"
+            formControlName="collection_name"
+            placeholder="e.g., Marketing-Docs"
+            [class.error]="setupForm.get('collection_name')?.invalid && setupForm.get('collection_name')?.touched"
+          />
+        </label>
+        <div class="field-error" *ngIf="setupForm.get('collection_name')?.invalid && setupForm.get('collection_name')?.touched">
+          Collection name is required
+        </div>
+      </section>
+
+      <section class="step">
+        <div class="step-label">
+          <span class="step-number">3</span>
+          <div>
+            <p class="eyebrow">Finalize</p>
+            <h3>Submit setup</h3>
+          </div>
+        </div>
+        <p class="step-description">
+          Backend enforcement blocks all RAG APIs until an LLM provider and collection are configured.
+        </p>
+        <div class="actions">
+          <button type="button" (click)="backToLogin()" class="ghost-button">Back</button>
+          <button type="submit" class="btn-primary" [disabled]="submitting || setupForm.invalid">
+            <span *ngIf="!submitting">Complete setup</span>
+            <span *ngIf="submitting">Saving...</span>
+          </button>
+        </div>
+      </section>
+    </form>
+  </div>
+</div>

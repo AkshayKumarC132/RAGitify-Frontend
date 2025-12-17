@@ -39,6 +39,15 @@
   font-size: 11px;
 }
 
+.register-form select {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: transparent;
+  padding: 0.45rem 0.55rem;
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
 .register-form input.error {
   border-color: var(--error-color);
 }
