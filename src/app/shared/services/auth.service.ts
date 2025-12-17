@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { catchError, switchMap, take, tap } from 'rxjs/operators';
+import { catchError, map, switchMap, take, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { User, LoginRequest, RegisterRequest, AuthResponse, UserStatus, LlmSetupRequest, SelectedLLMProvider } from '../models/user.model';
 
@@ -147,7 +147,7 @@ export class AuthService {
       return throwError(() => new Error('Authentication token is required'));
     }
     return this.api.get<UserStatus>(`/me/status/${token}/`, token).pipe(
-      map(status => this.normalizeStatus(status) as UserStatus),
+      map((status: UserStatus) => this.normalizeStatus(status) as UserStatus),
       tap(status => this.applyStatus(status))
     );
   }
