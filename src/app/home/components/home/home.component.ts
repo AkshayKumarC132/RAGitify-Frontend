@@ -20,7 +20,7 @@ import { OpenAIKey } from '../../../shared/models/openai-key.model';
 import { Document } from '../../../shared/models/document.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
-import { User } from '../../../shared/models/user.model';
+import { SelectedLLMProvider, User } from '../../../shared/models/user.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LibrarySelectionEvent } from '../chat-input/chat-input.component';
 
@@ -65,6 +65,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private runStatusSub?: Subscription;
   private searchPopupSub?: Subscription;
   private destroy$ = new Subject<void>();
+  private activeProvider: SelectedLLMProvider | null = null;
 
   constructor(
     private router: Router,
@@ -102,6 +103,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(status => {
         const isReady = this.authService.isLlmReady(status);
+        this.activeProvider = status?.selected_llm_provider || (status as any)?.active_provider || null;
         this.setupIncomplete = !isReady;
         if (isReady && !this.dataInitialized) {
           this.initializeData();
@@ -509,7 +511,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
 
         // Create new assistant
-        const model = this.selectedModel?.model || 'gpt-4o';
+        const model = this.resolveModelPreference();
         return this.assistantService.create({
           name: 'Default Assistant',
           vector_store_id: vectorStoreId,
@@ -525,7 +527,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       }),
       catchError(() => {
         // Create new assistant on error
-        const model = this.selectedModel?.model || 'gpt-4o';
+        const model = this.resolveModelPreference();
         return this.assistantService.create({
           name: 'Default Assistant',
           vector_store_id: vectorStoreId,
@@ -936,6 +938,29 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.runStatusSub.unsubscribe();
       this.runStatusSub = undefined;
     }
+  }
+
+  private resolveModelPreference(): string {
+    // If user explicitly selected a model, use it
+    if (this.selectedModel?.model) {
+      return this.selectedModel.model;
+    }
+
+    // Fallback based on active provider reported by backend status
+    if (this.activeProvider === 'Ollama') {
+      return 'llama3';
+    }
+    if (this.activeProvider === 'OpenAI') {
+      return 'gpt-4o';
+    }
+
+    // If no provider info, prefer an existing active model choice
+    if (this.availableModels.length) {
+      return this.availableModels[0].model;
+    }
+
+    // Absolute default
+    return 'gpt-4o';
   }
 
   private resumeActiveRun(threadId: string): void {
