@@ -52,7 +52,7 @@ export class LoginComponent implements OnInit {
             this.router.navigate(['/home']);
             return;
           }
-          this.router.navigate(['/setup-llm']);
+          this.router.navigate(['/setup-llm'], { queryParams: { reason: 'llm_required' } });
         },
         error: (error) => {
           this.loading = false;

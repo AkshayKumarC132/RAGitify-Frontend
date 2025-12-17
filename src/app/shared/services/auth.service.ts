@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, switchMap, take, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
-import { User, LoginRequest, RegisterRequest, AuthResponse, UserStatus, LlmSetupRequest } from '../models/user.model';
+import { User, LoginRequest, RegisterRequest, AuthResponse, UserStatus, LlmSetupRequest, SelectedLLMProvider } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root'
@@ -125,10 +125,20 @@ export class AuthService {
 
   isLlmReady(statusSnapshot?: UserStatus | User | null): boolean {
     const target = statusSnapshot || this.userStatusSubject.value || this.currentUserSubject.value;
-    return !!target &&
-      target.llm_configured === true &&
-      target.active_collection_ready === true &&
-      !!target.active_collection;
+    if (!target) {
+      return false;
+    }
+
+    const readyFlag = (target as any).ready;
+    const llmConfigured = !!(target as any).llm_configured;
+    const collectionReady = !!((target as any).active_collection_ready ?? (target as any).collection_ready);
+    const activeCollection = (target as any).active_collection;
+
+    if (readyFlag === true && llmConfigured && collectionReady && activeCollection) {
+      return true;
+    }
+
+    return llmConfigured && collectionReady && !!activeCollection;
   }
 
   refreshUserStatus(): Observable<UserStatus> {
@@ -137,6 +147,7 @@ export class AuthService {
       return throwError(() => new Error('Authentication token is required'));
     }
     return this.api.get<UserStatus>(`/me/status/${token}/`, token).pipe(
+      map(status => this.normalizeStatus(status) as UserStatus),
       tap(status => this.applyStatus(status))
     );
   }
@@ -166,8 +177,22 @@ export class AuthService {
     if (!token) {
       return throwError(() => new Error('Authentication token is required'));
     }
-    return this.api.post<UserStatus>(`/llm/setup/${token}/`, payload, token).pipe(
-      tap(status => this.applyStatus(status))
+    return this.api.post<any>(`/llm/setup/${token}/`, payload, token).pipe(
+      switchMap(response => {
+        const normalized = this.normalizeStatus({
+          ...response,
+          llm_configured: true,
+          collection_ready: true,
+          active_provider: response?.active_collection?.provider ?? (payload.llm_provider === 'openai' ? 'OpenAI' : 'Ollama'),
+          active_collection: response?.active_collection,
+          ready: true
+        });
+        if (normalized) {
+          this.applyStatus(normalized);
+          return of(normalized);
+        }
+        return this.refreshUserStatus();
+      })
     );
   }
 
@@ -201,27 +226,48 @@ export class AuthService {
   }
 
   private extractStatus(source: Partial<UserStatus & User> | null | undefined): UserStatus | null {
-    if (!source) {
-      return null;
-    }
-    const hasStatusFields = typeof source.llm_configured !== 'undefined' ||
-      typeof source.active_collection_ready !== 'undefined' ||
-      typeof source.active_collection !== 'undefined' ||
-      typeof source.selected_llm_provider !== 'undefined';
-    if (!hasStatusFields) {
-      return null;
-    }
-    return {
-      llm_configured: !!source.llm_configured,
-      active_collection_ready: !!source.active_collection_ready,
-      active_collection: typeof source.active_collection === 'undefined' ? null : source.active_collection,
-      selected_llm_provider: source.selected_llm_provider ?? null
-    };
+    return this.normalizeStatus(source);
   }
 
   private handlePossibleSetupError(error: any): void {
     if (error?.status === 403 && error?.error?.code === 'LLM_SETUP_REQUIRED') {
       this.handleSetupRequirement(error.error);
     }
+  }
+
+  private normalizeStatus(source: any): UserStatus | null {
+    if (!source) {
+      return null;
+    }
+
+    const hasStatusFields = typeof source.llm_configured !== 'undefined' ||
+      typeof source.active_collection_ready !== 'undefined' ||
+      typeof source.collection_ready !== 'undefined' ||
+      typeof source.active_collection !== 'undefined' ||
+      typeof source.selected_llm_provider !== 'undefined' ||
+      typeof source.active_provider !== 'undefined' ||
+      typeof source.ready !== 'undefined';
+
+    if (!hasStatusFields) {
+      return null;
+    }
+
+    const activeProviderRaw: string | null | undefined = source.active_provider ?? source.selected_llm_provider ?? null;
+    const provider: SelectedLLMProvider | null = activeProviderRaw === 'Ollama' || activeProviderRaw === 'OpenAI'
+      ? activeProviderRaw
+      : null;
+
+    const collection = source.active_collection ?? null;
+    const collectionReady = !!(source.active_collection_ready ?? source.collection_ready);
+    const llmConfigured = !!source.llm_configured || (!!collection && collectionReady);
+    const ready = source.ready ?? (llmConfigured && collectionReady && !!collection);
+
+    return {
+      llm_configured: llmConfigured,
+      active_collection_ready: collectionReady,
+      active_collection: collection,
+      selected_llm_provider: provider,
+      ready
+    };
   }
 }

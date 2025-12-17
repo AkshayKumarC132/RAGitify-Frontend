@@ -71,12 +71,12 @@ export class RegisterComponent {
                     this.router.navigate(['/home']);
                     return;
                   }
-                  this.router.navigate(['/setup-llm']);
+                  this.router.navigate(['/setup-llm'], { queryParams: { reason: 'llm_required' } });
                 },
                 error: (statusError) => {
                   this.loading = false;
                   this.errorMessage = this.extractErrorMessage(statusError, 'Registration succeeded, but setup is incomplete. Please continue onboarding.');
-                  this.router.navigate(['/setup-llm']);
+                  this.router.navigate(['/setup-llm'], { queryParams: { reason: 'llm_required' } });
                 }
               });
             },
