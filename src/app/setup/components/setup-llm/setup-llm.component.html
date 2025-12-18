@@ -5,7 +5,7 @@
         <p class="eyebrow">Onboarding</p>
         <h1>LLM Setup Wizard</h1>
         <p class="subtitle">
-          Complete these three steps to unlock threads, vector stores, assistants, and documents.
+          Complete these steps to unlock threads, vector stores, assistants, and documents.
         </p>
       </div>
       <button type="button" class="ghost-link" (click)="backToLogin()">
@@ -44,8 +44,6 @@
               <i *ngIf="providerIsSelected(option.value)" class="fa-solid fa-check-circle" aria-hidden="true"></i>
             </div>
             <p>{{ option.description }}</p>
-            <small *ngIf="option.value === 'openai'">Embeddings: 1536 dimensions</small>
-            <small *ngIf="option.value === 'ollama'">Embeddings: 1024 dimensions</small>
           </button>
         </div>
         <small class="hint">{{ providerDimensionHint }}</small>
@@ -76,25 +74,13 @@
         </div>
       </section>
 
-      <section class="step">
-        <div class="step-label">
-          <span class="step-number">3</span>
-          <div>
-            <p class="eyebrow">Finalize</p>
-            <h3>Submit setup</h3>
-          </div>
-        </div>
-        <p class="step-description">
-          Backend enforcement blocks all RAG APIs until an LLM provider and collection are configured.
-        </p>
-        <div class="actions">
-          <button type="button" (click)="backToLogin()" class="ghost-button">Back</button>
-          <button type="submit" class="btn-primary" [disabled]="submitting || setupForm.invalid">
-            <span *ngIf="!submitting">Complete setup</span>
-            <span *ngIf="submitting">Saving...</span>
-          </button>
-        </div>
-      </section>
+      <div class="actions">
+        <button type="button" (click)="backToLogin()" class="ghost-button">Back</button>
+        <button type="submit" class="btn-primary" [disabled]="submitting || setupForm.invalid">
+          <span *ngIf="!submitting">Complete setup</span>
+          <span *ngIf="submitting">Saving...</span>
+        </button>
+      </div>
     </form>
   </div>
 </div>

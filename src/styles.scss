@@ -22,19 +22,19 @@ html, body {
   padding: 0;
 }
 
-/* Dark Theme Variables */
+/* Light Theme Variables (default) */
 :root {
-  --bg-primary: #050b16;
-  --bg-secondary: #0f172a;
-  --bg-tertiary: #17213a;
-  --text-primary: #e5edff;
-  --text-secondary: #94a3b8;
-  --accent-color: #5de4c7;
-  --accent-hover: #49cdb0;
-  --border-color: rgba(148, 163, 184, 0.35);
-  --success-color: #4caf50;
-  --error-color: #f44336;
-  --warning-color: #ff9800;
+  --bg-primary: #e6ebf5;
+  --bg-secondary: #f5f7fb;
+  --bg-tertiary: #dfe6f2;
+  --text-primary: #111b2b;
+  --text-secondary: #4c5a73;
+  --border-color: #c5d0e6;
+  --accent-color: #2563eb;
+  --accent-hover: #1d4ed8;
+  --success-color: #0f9d58;
+  --error-color: #d32f2f;
+  --warning-color: #ed6c02;
 }
 
 body.theme-dark {
@@ -46,17 +46,6 @@ body.theme-dark {
   --border-color: rgba(148, 163, 184, 0.35);
   --accent-color: #5de4c7;
   --accent-hover: #49cdb0;
-}
-
-body.theme-light {
-  --bg-primary: #e6ebf5;
-  --bg-secondary: #f5f7fb;
-  --bg-tertiary: #dfe6f2;
-  --text-primary: #111b2b;
-  --text-secondary: #4c5a73;
-  --border-color: #c5d0e6;
-  --accent-color: #2563eb;
-  --accent-hover: #1d4ed8;
 }
 
 /* Scrollbar Styling */
@@ -176,4 +165,3 @@ button.btn-primary:hover:not(:disabled) {
   color: var(--accent-hover);
   border-color: var(--accent-hover);
 }
-

@@ -27,7 +27,7 @@ export class ModelsSectionComponent implements OnInit {
       name: 'Ollama',
       badge: 'Local',
       description: 'Run open-source models like Llama 3 locally via the Ollama runtime.',
-      defaultModel: 'llama3',
+      defaultModel: 'llama3.1:latest',
       requiresApiKey: false
     }
   ];
@@ -152,4 +152,3 @@ interface ProviderOption {
   defaultModel: string;
   requiresApiKey: boolean;
 }
-

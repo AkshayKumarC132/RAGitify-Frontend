@@ -948,7 +948,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     // Fallback based on active provider reported by backend status
     if (this.activeProvider === 'Ollama') {
-      return 'llama3';
+      return 'llama3.1:latest';
     }
     if (this.activeProvider === 'OpenAI') {
       return 'gpt-4o';

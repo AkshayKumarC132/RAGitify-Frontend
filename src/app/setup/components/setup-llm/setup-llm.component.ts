@@ -16,8 +16,8 @@ export class SetupLlmComponent implements OnInit {
   infoMessage = 'Choose a provider and collection to unlock RAG features.';
 
   providerOptions: { value: LlmProviderOption; label: string; description: string }[] = [
-    { value: 'openai', label: 'OpenAI', description: 'Cloud provider (1536-dim embeddings).' },
-    { value: 'ollama', label: 'Ollama', description: 'Local runtime (1024-dim embeddings).' }
+    { value: 'openai', label: 'OpenAI', description: 'Cloud provider.' },
+    { value: 'ollama', label: 'Ollama', description: 'Local runtime.' }
   ];
 
   constructor(
@@ -101,12 +101,12 @@ export class SetupLlmComponent implements OnInit {
   get providerDimensionHint(): string {
     const provider = this.setupForm.get('llm_provider')?.value as LlmProviderOption | '';
     if (provider === 'openai') {
-      return 'OpenAI collections are locked to 1536 embedding dimensions.';
+      return 'OpenAI requires an API-backed deployment.';
     }
     if (provider === 'ollama') {
-      return 'Ollama collections are locked to 1024 embedding dimensions.';
+      return 'Ollama runs locally via your runtime.';
     }
-    return 'Select a provider to view embedding constraints.';
+    return 'Select a provider to continue.';
   }
 
   backToLogin(): void {
