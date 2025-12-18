@@ -5,6 +5,7 @@ export interface Assistant {
   instructions?: string;
   model?: string;
   tools?: Tool[];
+  is_default?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -46,4 +47,3 @@ export interface FileSearchTool {
     score_threshold?: number;
   };
 }
-

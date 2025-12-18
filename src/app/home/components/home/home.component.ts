@@ -501,16 +501,22 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
 
     return this.assistantService.list().pipe(
+      map(assistants => assistants || []),
       switchMap(assistants => {
         // Update prompts list
-        this.prompts = assistants || [];
+        this.prompts = assistants;
 
-        const existingAssistant = assistants?.find(a => a.vector_store_id === vectorStoreId);
+        const defaultAssistant = assistants.find(a => a.is_default);
+        if (defaultAssistant) {
+          return of({ assistantId: defaultAssistant.id, threadId });
+        }
+
+        const existingAssistant = assistants.find(a => a.vector_store_id === vectorStoreId);
         if (existingAssistant) {
           return of({ assistantId: existingAssistant.id, threadId });
         }
 
-        // Create new assistant
+        // Create a single assistant only when none exist for the user
         const model = this.resolveModelPreference();
         return this.assistantService.create({
           name: 'Default Assistant',
