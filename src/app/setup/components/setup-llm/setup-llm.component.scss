@@ -3,20 +3,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3rem 1.5rem;
-  background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.08), transparent 40%),
-    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.08), transparent 35%),
-    #0f172a;
-  color: #e2e8f0;
+  padding: 2.5rem 1.25rem;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(16, 185, 129, 0.08)),
+    var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .setup-card {
   width: min(960px, 100%);
-  background: #0b1224;
-  border: 1px solid rgba(226, 232, 240, 0.08);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
-  border-radius: 20px;
-  padding: 2.5rem;
+  max-height: calc(100vh - 3rem);
+  overflow: auto;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  border-radius: 16px;
+  padding: 2rem;
 }
 
 .setup-header {
@@ -28,11 +29,11 @@
 
 .setup-header h1 {
   margin: 0.25rem 0;
-  color: #f8fafc;
+  color: var(--text-primary);
 }
 
 .setup-header .subtitle {
-  color: #cbd5e1;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -40,13 +41,13 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .ghost-link {
   background: transparent;
-  color: #93c5fd;
+  color: var(--accent-color);
   border: none;
   font-weight: 600;
   cursor: pointer;
@@ -63,9 +64,9 @@
 }
 
 .info-banner {
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: #bfdbfe;
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  color: var(--text-primary);
 }
 
 .error-banner {
@@ -81,10 +82,10 @@
 }
 
 .step {
-  border: 1px solid rgba(226, 232, 240, 0.08);
+  border: 1px solid var(--border-color);
   border-radius: 14px;
   padding: 1.25rem;
-  background: #0f172a;
+  background: var(--bg-tertiary);
 }
 
 .step-label {
@@ -113,23 +114,23 @@
 
 .provider-card {
   text-align: left;
-  background: #0b1224;
-  border: 1px solid rgba(226, 232, 240, 0.1);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1rem;
-  color: #e2e8f0;
+  color: var(--text-primary);
   cursor: pointer;
   transition: border-color 0.2s, transform 0.2s;
 }
 
 .provider-card:hover {
-  border-color: rgba(148, 163, 184, 0.4);
+  border-color: var(--accent-color);
   transform: translateY(-2px);
 }
 
 .provider-card.selected {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.3);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.15);
 }
 
 .provider-title {
@@ -141,22 +142,22 @@
 }
 
 .hint {
-  color: #cbd5e1;
+  color: var(--text-secondary);
 }
 
 label {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  color: #e2e8f0;
+  color: var(--text-secondary);
 }
 
 input {
-  background: #0b1224;
-  border: 1px solid rgba(226, 232, 240, 0.2);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 0.75rem;
-  color: #e2e8f0;
+  color: var(--text-primary);
 }
 
 input.error {
@@ -169,11 +170,6 @@ input.error {
   margin-top: 0.25rem;
 }
 
-.step-description {
-  color: #cbd5e1;
-  margin: 0.25rem 0 1rem;
-}
-
 .actions {
   display: flex;
   justify-content: flex-end;
@@ -183,8 +179,8 @@ input.error {
 
 .ghost-button {
   background: transparent;
-  border: 1px solid rgba(226, 232, 240, 0.2);
-  color: #e2e8f0;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   border-radius: 10px;
   padding: 0.6rem 1rem;
   cursor: pointer;
@@ -202,7 +198,8 @@ input.error {
 
 @media (max-width: 720px) {
   .setup-card {
-    padding: 1.75rem;
+    padding: 1.5rem;
+    max-height: calc(100vh - 2rem);
   }
 
   .setup-header {
