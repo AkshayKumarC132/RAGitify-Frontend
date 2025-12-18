@@ -68,5 +68,24 @@
         </button>
       </div>
     </form>
+
+    <div class="profile-details" *ngIf="status">
+      <div class="detail-card">
+        <p class="label">Provider</p>
+        <p class="value">{{ providerDisplay }}</p>
+      </div>
+      <div class="detail-card">
+        <p class="label">Collection</p>
+        <p class="value">{{ collectionDisplay }}</p>
+      </div>
+      <div class="detail-card">
+        <p class="label">Ready</p>
+        <p class="value">{{ readyDisplay }}</p>
+      </div>
+      <div class="detail-card">
+        <p class="label">Tenant</p>
+        <p class="value">{{ currentUser?.tenant || 'N/A' }}</p>
+      </div>
+    </div>
   </div>
 </div>

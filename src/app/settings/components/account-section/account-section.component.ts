@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../../shared/services/auth.service';
-import { User } from '../../../shared/models/user.model';
+import { User, UserStatus } from '../../../shared/models/user.model';
 
 @Component({
   selector: 'app-account-section',
@@ -10,6 +10,7 @@ import { User } from '../../../shared/models/user.model';
 })
 export class AccountSectionComponent implements OnInit {
   currentUser: User | null = null;
+  status: UserStatus | null = null;
   accountForm: FormGroup;
   loading = false;
   message = '';
@@ -38,6 +39,10 @@ export class AccountSectionComponent implements OnInit {
           username: user.username || ''
         });
       }
+    });
+
+    this.authService.ensureStatus().subscribe(status => {
+      this.status = status;
     });
   }
 
@@ -68,5 +73,24 @@ export class AccountSectionComponent implements OnInit {
     setTimeout(() => {
       this.message = '';
     }, 3000);
+  }
+
+  get providerDisplay(): string {
+    const provider = this.status?.selected_llm_provider || (this.status as any)?.active_provider;
+    return provider || 'Not configured';
+  }
+
+  get collectionDisplay(): string {
+    if (this.status?.active_collection?.name) {
+      return this.status.active_collection.name;
+    }
+    if (this.status?.active_collection?.id) {
+      return this.status.active_collection.id;
+    }
+    return 'Not created';
+  }
+
+  get readyDisplay(): string {
+    return this.status?.ready ? 'Yes' : 'No';
   }
 }

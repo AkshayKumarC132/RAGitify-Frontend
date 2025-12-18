@@ -33,7 +33,18 @@
 
       <div class="form-group">
         <label>Model</label>
-        <input type="text" formControlName="model" class="form-control" placeholder="e.g., gpt-4o" />
+        <div class="model-options" *ngIf="availableModelOptions.length">
+          <button
+            type="button"
+            class="model-chip"
+            *ngFor="let option of availableModelOptions"
+            [class.active]="createForm.get('model')?.value === option"
+            (click)="chooseModel(option)"
+          >
+            {{ option }}
+          </button>
+        </div>
+        <input type="text" formControlName="model" class="form-control" placeholder="Enter model" />
       </div>
 
       <div class="form-group" *ngIf="createForm.get('provider')?.value === 'OpenAI'">

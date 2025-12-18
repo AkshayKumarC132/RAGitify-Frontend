@@ -18,6 +18,10 @@ export class ModelsSectionComponent implements OnInit {
   loading = false;
   errorMessage = '';
   selectedProvider: 'OpenAI' | 'Ollama' | null = null;
+  modelOptions: Record<'OpenAI' | 'Ollama', string[]> = {
+    OpenAI: ['gpt-4o', 'gpt-4o-mini'],
+    Ollama: ['llama3.1:latest', 'llama3', 'mistral']
+  };
   availableProviders: ProviderOption[] = [
     {
       name: 'OpenAI',
@@ -68,7 +72,7 @@ export class ModelsSectionComponent implements OnInit {
   loadModels(): void {
     this.openAIKeyService.list().subscribe({
       next: (models) => {
-        this.models = models;
+        this.models = this.selectedProvider ? models.filter(m => m.provider === this.selectedProvider) : models;
       },
       error: (err) => {
         console.error('Error loading models:', err);
@@ -106,6 +110,17 @@ export class ModelsSectionComponent implements OnInit {
     if (this.selectedProvider) {
       this.createForm.get('provider')?.disable({ emitEvent: false });
     }
+  }
+
+  chooseModel(model: string): void {
+    this.createForm.patchValue({ model });
+  }
+
+  get availableModelOptions(): string[] {
+    if (!this.selectedProvider) {
+      return [];
+    }
+    return this.modelOptions[this.selectedProvider] || [];
   }
 
   onCreateSubmit(): void {

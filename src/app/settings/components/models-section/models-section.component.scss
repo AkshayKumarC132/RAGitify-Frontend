@@ -131,6 +131,29 @@
   font-weight: 600;
 }
 
+.model-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.model-chip {
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 0.25rem 0.6rem;
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &.active {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+  }
+}
+
 .create-form {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
