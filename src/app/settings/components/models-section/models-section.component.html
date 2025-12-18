@@ -25,10 +25,9 @@
 
       <div class="form-group">
         <label>Provider *</label>
-        <select formControlName="provider" class="form-control">
+        <select formControlName="provider" class="form-control" [disabled]="selectedProvider !== null">
           <option value="OpenAI">OpenAI</option>
           <option value="Ollama">Ollama</option>
-          <option value="Claude">Claude</option>
         </select>
       </div>
 
@@ -68,7 +67,7 @@
       <span>Available Providers</span>
     </h2>
     <div class="provider-grid">
-      <div class="provider-card" *ngFor="let provider of availableProviders">
+      <div class="provider-card" *ngFor="let provider of availableProviders" [class.disabled]="selectedProvider && provider.name !== selectedProvider">
         <div class="provider-card__header">
           <span class="provider-name">{{ provider.name }}</span>
           <span class="provider-badge">{{ provider.badge }}</span>
@@ -77,10 +76,11 @@
         <div class="provider-meta">
           <span *ngIf="provider.requiresApiKey">Requires API Key</span>
           <span *ngIf="!provider.requiresApiKey">Runs Locally</span>
+          <span *ngIf="selectedProvider === provider.name" class="active-provider">Configured</span>
         </div>
-        <button class="btn-secondary" (click)="connectProvider(provider)">
+        <button class="btn-secondary" (click)="connectProvider(provider)" [disabled]="selectedProvider && provider.name !== selectedProvider">
           <i class="fa-solid fa-plug"></i>
-          <span>Connect {{ provider.name }}</span>
+          <span>{{ selectedProvider && provider.name !== selectedProvider ? 'View only' : 'Configure ' + provider.name }}</span>
         </button>
       </div>
     </div>
@@ -112,4 +112,3 @@
     </div>
   </div>
 </div>
-

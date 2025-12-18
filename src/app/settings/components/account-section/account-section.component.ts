@@ -23,7 +23,7 @@ export class AccountSectionComponent implements OnInit {
       first_name: [''],
       last_name: [''],
       email: [{ value: '', disabled: true }],
-      username: ['']
+      username: [{ value: '', disabled: true }]
     });
   }
 
@@ -52,7 +52,8 @@ export class AccountSectionComponent implements OnInit {
     const token = this.authService.getToken();
     const updatedUser: User = {
       ...this.currentUser,
-      ...this.accountForm.getRawValue()
+      first_name: this.accountForm.get('first_name')?.value || '',
+      last_name: this.accountForm.get('last_name')?.value || ''
     };
 
     if (token) {
@@ -69,4 +70,3 @@ export class AccountSectionComponent implements OnInit {
     }, 3000);
   }
 }
-

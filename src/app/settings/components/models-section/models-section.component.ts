@@ -3,6 +3,8 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { OpenAIKeyService } from '../../../shared/services/openai-key.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { OpenAIKey, OpenAIKeyCreateRequest } from '../../../shared/models/openai-key.model';
+import { AuthService } from '../../../shared/services/auth.service';
+import { UserStatus } from '../../../shared/models/user.model';
 
 @Component({
   selector: 'app-models-section',
@@ -15,6 +17,7 @@ export class ModelsSectionComponent implements OnInit {
   createForm: FormGroup;
   loading = false;
   errorMessage = '';
+  selectedProvider: 'OpenAI' | 'Ollama' | null = null;
   availableProviders: ProviderOption[] = [
     {
       name: 'OpenAI',
@@ -35,7 +38,8 @@ export class ModelsSectionComponent implements OnInit {
   constructor(
     private openAIKeyService: OpenAIKeyService,
     private confirmDialogService: ConfirmDialogService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private authService: AuthService
   ) {
     this.createForm = this.fb.group({
       name: [''],
@@ -47,6 +51,17 @@ export class ModelsSectionComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.authService.ensureStatus().subscribe((status: UserStatus | null) => {
+      const provider = status?.selected_llm_provider || (status as any)?.active_provider || null;
+      if (provider === 'OpenAI' || provider === 'Ollama') {
+        this.selectedProvider = provider;
+        this.createForm.patchValue({
+          provider,
+          model: provider === 'Ollama' ? 'llama3.1:latest' : 'gpt-4o'
+        });
+        this.createForm.get('provider')?.disable({ emitEvent: false });
+      }
+    });
     this.loadModels();
   }
 
@@ -65,14 +80,22 @@ export class ModelsSectionComponent implements OnInit {
     this.showCreateForm = !this.showCreateForm;
     if (!this.showCreateForm) {
       this.createForm.reset({
-        provider: 'OpenAI',
-        model: 'gpt-4o',
+        provider: this.selectedProvider || 'OpenAI',
+        model: this.selectedProvider === 'Ollama' ? 'llama3.1:latest' : 'gpt-4o',
         is_active: false
       });
+      if (this.selectedProvider) {
+        this.createForm.get('provider')?.disable({ emitEvent: false });
+      } else {
+        this.createForm.get('provider')?.enable({ emitEvent: false });
+      }
     }
   }
 
   connectProvider(provider: ProviderOption): void {
+    if (this.selectedProvider && provider.name !== this.selectedProvider) {
+      return;
+    }
     this.showCreateForm = true;
     this.createForm.patchValue({
       provider: provider.name,
@@ -80,6 +103,9 @@ export class ModelsSectionComponent implements OnInit {
       api_key: provider.requiresApiKey ? '' : null,
       is_active: this.models.length === 0
     });
+    if (this.selectedProvider) {
+      this.createForm.get('provider')?.disable({ emitEvent: false });
+    }
   }
 
   onCreateSubmit(): void {

@@ -11,8 +11,6 @@
 
 .setup-card {
   width: min(960px, 100%);
-  max-height: calc(100vh - 3rem);
-  overflow: auto;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
