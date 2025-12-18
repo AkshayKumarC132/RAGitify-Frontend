@@ -64,9 +64,11 @@ export class ModelsSectionComponent implements OnInit {
           model: provider === 'Ollama' ? 'llama3.1:latest' : 'gpt-4o'
         });
         this.createForm.get('provider')?.disable({ emitEvent: false });
+      } else {
+        this.createForm.get('provider')?.enable({ emitEvent: false });
       }
+      this.loadModels();
     });
-    this.loadModels();
   }
 
   loadModels(): void {
@@ -121,6 +123,13 @@ export class ModelsSectionComponent implements OnInit {
       return [];
     }
     return this.modelOptions[this.selectedProvider] || [];
+  }
+
+  get displayedProviders(): ProviderOption[] {
+    if (this.selectedProvider) {
+      return this.availableProviders.filter(p => p.name === this.selectedProvider);
+    }
+    return this.availableProviders;
   }
 
   onCreateSubmit(): void {

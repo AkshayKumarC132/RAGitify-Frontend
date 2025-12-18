@@ -25,10 +25,18 @@
 
       <div class="form-group">
         <label>Provider *</label>
-        <select formControlName="provider" class="form-control" [disabled]="selectedProvider !== null">
-          <option value="OpenAI">OpenAI</option>
-          <option value="Ollama">Ollama</option>
-        </select>
+        <ng-container *ngIf="!selectedProvider; else lockedProvider">
+          <select formControlName="provider" class="form-control">
+            <option value="OpenAI">OpenAI</option>
+            <option value="Ollama">Ollama</option>
+          </select>
+        </ng-container>
+        <ng-template #lockedProvider>
+          <div class="locked-provider">
+            <i class="fa-solid fa-lock"></i>
+            <span>{{ selectedProvider }}</span>
+          </div>
+        </ng-template>
       </div>
 
       <div class="form-group">
@@ -72,13 +80,13 @@
     </form>
   </div>
 
-  <div class="provider-showcase">
+  <div class="provider-showcase" *ngIf="displayedProviders.length">
     <h2>
       <i class="fa-solid fa-cloud"></i>
-      <span>Available Providers</span>
+      <span>{{ selectedProvider ? 'Configured Provider' : 'Available Providers' }}</span>
     </h2>
     <div class="provider-grid">
-      <div class="provider-card" *ngFor="let provider of availableProviders" [class.disabled]="selectedProvider && provider.name !== selectedProvider">
+      <div class="provider-card" *ngFor="let provider of displayedProviders" [class.disabled]="selectedProvider && provider.name !== selectedProvider">
         <div class="provider-card__header">
           <span class="provider-name">{{ provider.name }}</span>
           <span class="provider-badge">{{ provider.badge }}</span>
@@ -97,7 +105,17 @@
     </div>
   </div>
 
-  <div class="models-list">
+  <div class="models-list" *ngIf="models.length">
+    <div class="list-heading">
+      <div>
+        <p class="label">Provider</p>
+        <p class="value">{{ selectedProvider || 'Select a provider' }}</p>
+      </div>
+      <div>
+        <p class="label">Models</p>
+        <p class="value">Choose a model to activate</p>
+      </div>
+    </div>
     <div *ngFor="let model of models" class="model-item" [class.active]="model.is_active">
       <div class="model-info">
         <div class="model-name">{{ model.name || (model.provider + ' - ' + model.model) }}</div>
@@ -118,8 +136,9 @@
       </div>
     </div>
 
-    <div *ngIf="models.length === 0" class="empty-state">
-      <p>No models found. Create your first model to get started.</p>
-    </div>
+  </div>
+
+  <div *ngIf="models.length === 0" class="empty-state">
+    <p>No models found. Create your first model to get started.</p>
   </div>
 </div>
