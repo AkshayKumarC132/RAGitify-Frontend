@@ -1,8 +1,12 @@
 <div class="prompts-section">
   <div class="section-header">
-    <h1>Prompts</h1>
+    <h1>
+      <i class="fa-solid fa-message"></i>
+      <span>Prompts</span>
+    </h1>
     <button class="btn-primary" (click)="toggleCreateForm()">
-      + New Prompt
+      <i class="fa-solid fa-plus"></i>
+      <span>{{ showCreateForm ? 'Close form' : 'New Prompt' }}</span>
     </button>
   </div>
 
@@ -11,7 +15,10 @@
   </div>
 
   <div *ngIf="showCreateForm" class="create-form">
-    <h2>Create Assistant Prompt</h2>
+    <h2>
+      <i class="fa-solid fa-square-pen"></i>
+      <span>Create Assistant Prompt</span>
+    </h2>
     <form [formGroup]="createForm" (ngSubmit)="onCreateSubmit()">
       <div class="form-group">
         <label>Name *</label>
@@ -43,10 +50,54 @@
 
       <div class="form-actions">
         <button type="submit" class="btn-primary" [disabled]="loading || createForm.invalid">
-          {{ loading ? 'Creating...' : 'Create' }}
+          <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+          <span>{{ loading ? 'Creating…' : 'Create' }}</span>
         </button>
         <button type="button" class="btn-secondary" (click)="toggleCreateForm()" [disabled]="loading">
-          Cancel
+          <i class="fa-solid fa-xmark"></i>
+          <span>Cancel</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div *ngIf="editingAssistant" class="create-form">
+    <h2>
+      <i class="fa-solid fa-pen-to-square"></i>
+      <span>Update "{{ editingAssistant.name }}"</span>
+    </h2>
+    <form [formGroup]="editForm" (ngSubmit)="onEditSubmit()">
+      <div class="form-group">
+        <label>Name *</label>
+        <input type="text" formControlName="name" class="form-control" placeholder="Assistant name" />
+      </div>
+
+      <div class="form-group">
+        <label>Library</label>
+        <select formControlName="vector_store_id" class="form-control">
+          <option value="">None</option>
+          <option *ngFor="let store of vectorStores" [value]="store.id">{{ store.name }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Instructions</label>
+        <textarea formControlName="instructions" class="form-control" rows="6"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Model</label>
+        <input type="text" formControlName="model" class="form-control" placeholder="e.g., gpt-4o" />
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="editLoading || editForm.invalid">
+          <i class="fa-solid" [ngClass]="editLoading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+          <span>{{ editLoading ? 'Saving…' : 'Save changes' }}</span>
+        </button>
+        <button type="button" class="btn-secondary" (click)="cancelEdit()" [disabled]="editLoading">
+          <i class="fa-solid fa-xmark"></i>
+          <span>Cancel</span>
         </button>
       </div>
     </form>
@@ -65,10 +116,20 @@
         </div>
       </div>
       <div class="prompt-actions">
-        <span class="prompt-date">Updated {{ assistant.updated_at | date:'mediumDate' }}</span>
-        <button class="btn-small btn-danger" (click)="deleteAssistant(assistant)">
-          Delete
-        </button>
+        <span class="prompt-date">
+          <i class="fa-solid fa-clock"></i>
+          <span>Updated {{ assistant.updated_at | date:'mediumDate' }}</span>
+        </span>
+        <div class="action-buttons">
+          <button class="btn-small" (click)="startEdit(assistant)">
+            <i class="fa-solid fa-pen"></i>
+            <span>Edit</span>
+          </button>
+          <button class="btn-small btn-danger" (click)="deleteAssistant(assistant)">
+            <i class="fa-solid fa-trash"></i>
+            <span>Delete</span>
+          </button>
+        </div>
       </div>
     </div>
     <div *ngIf="assistants.length === 0" class="empty-state">

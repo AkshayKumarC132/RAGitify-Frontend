@@ -7,55 +7,38 @@
 
 .empty-content {
   text-align: center;
-  max-width: 600px;
-  padding: 2rem;
+  max-width: 520px;
+  padding: 1rem;
+
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    font-size: 9px;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
 
   h1 {
     color: var(--text-primary);
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 2.5rem;
+    font-weight: 400;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    .star-icon {
+      font-size: 1.75rem;
+      color: #d97757; // Burnt orange color from screenshot
+      transform: translateY(-2px);
+    }
   }
 
   .subtitle {
     color: var(--text-secondary);
-    font-size: 1.1rem;
-    margin-bottom: 2rem;
+    font-size: 10px;
   }
 }
-
-.suggestions {
-  margin-top: 2rem;
-}
-
-.suggestion-title {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 1rem;
-  text-align: left;
-}
-
-.suggestion-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.suggestion-item {
-  padding: 0.75rem 1rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.9rem;
-
-  &:hover {
-    background: var(--bg-secondary);
-    border-color: var(--accent-color);
-  }
-}
-

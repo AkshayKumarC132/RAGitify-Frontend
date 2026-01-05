@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AssistantService } from '../../../shared/services/assistant.service';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
+import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { Assistant } from '../../../shared/models/assistant.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 
@@ -15,15 +16,26 @@ export class PromptsSectionComponent implements OnInit {
   vectorStores: VectorStore[] = [];
   showCreateForm = false;
   createForm: FormGroup;
+  editForm: FormGroup;
   loading = false;
+  editLoading = false;
   errorMessage = '';
+  editingAssistant: Assistant | null = null;
 
   constructor(
     private assistantService: AssistantService,
     private vectorStoreService: VectorStoreService,
+    private confirmDialogService: ConfirmDialogService,
     private fb: FormBuilder
   ) {
     this.createForm = this.fb.group({
+      name: ['', Validators.required],
+      vector_store_id: [''],
+      instructions: [''],
+      model: ['']
+    });
+
+    this.editForm = this.fb.group({
       name: ['', Validators.required],
       vector_store_id: [''],
       instructions: [''],
@@ -56,6 +68,27 @@ export class PromptsSectionComponent implements OnInit {
 
   toggleCreateForm(): void {
     this.showCreateForm = !this.showCreateForm;
+  }
+
+  startEdit(assistant: Assistant): void {
+    this.editingAssistant = assistant;
+    this.editForm.reset({
+      name: assistant.name,
+      vector_store_id: assistant.vector_store_id || '',
+      instructions: assistant.instructions || '',
+      model: assistant.model || ''
+    });
+  }
+
+  cancelEdit(): void {
+    this.editingAssistant = null;
+    this.editForm.reset({
+      name: '',
+      vector_store_id: '',
+      instructions: '',
+      model: ''
+    });
+    this.editLoading = false;
   }
 
   onCreateSubmit(): void {
@@ -91,8 +124,42 @@ export class PromptsSectionComponent implements OnInit {
     }
   }
 
-  deleteAssistant(assistant: Assistant): void {
-    if (!confirm(`Delete prompt "${assistant.name}"?`)) {
+  onEditSubmit(): void {
+    if (!this.editingAssistant || this.editForm.invalid) {
+      return;
+    }
+
+    this.editLoading = true;
+    this.errorMessage = '';
+    const formValue = this.editForm.value;
+
+    this.assistantService.update(this.editingAssistant.id, {
+      name: formValue.name,
+      vector_store_id: formValue.vector_store_id || undefined,
+      instructions: formValue.instructions || undefined,
+      model: formValue.model || undefined,
+      tools: this.editingAssistant.tools || []
+    }).subscribe({
+      next: () => {
+        this.editLoading = false;
+        this.cancelEdit();
+        this.loadAssistants();
+      },
+      error: (err) => {
+        this.editLoading = false;
+        this.errorMessage = err.error?.error || 'Failed to update prompt.';
+        console.error('Error updating assistant:', err);
+      }
+    });
+  }
+
+  async deleteAssistant(assistant: Assistant): Promise<void> {
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete prompt?',
+      message: 'This will delete',
+      itemName: assistant.name
+    });
+    if (!confirmed) {
       return;
     }
 

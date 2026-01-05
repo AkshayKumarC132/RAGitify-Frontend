@@ -1,8 +1,9 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Subscription, interval } from 'rxjs';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentService } from '../../../shared/services/document.service';
+import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document } from '../../../shared/models/document.model';
 
@@ -18,17 +19,26 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   showUploadForm = false;
   showCreateVectorStoreForm = false;
   createVectorStoreForm: FormGroup;
+  editVectorStoreForm: FormGroup;
   loadingStores = false;
   loadingDocuments = false;
   errorMessage = '';
   private statusPollSub?: Subscription;
+  editingVectorStore: VectorStore | null = null;
+  editingDocumentId: string | null = null;
+  documentTitleControl = new FormControl('', [Validators.required, Validators.minLength(3)]);
 
   constructor(
     private vectorStoreService: VectorStoreService,
     private documentService: DocumentService,
+    private confirmDialogService: ConfirmDialogService,
     private fb: FormBuilder
   ) {
     this.createVectorStoreForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(3)]]
+    });
+
+    this.editVectorStoreForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]]
     });
   }
@@ -91,6 +101,66 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     }
   }
 
+  startVectorStoreEdit(store: VectorStore): void {
+    this.editingVectorStore = store;
+    this.editVectorStoreForm.reset({ name: store.name });
+  }
+
+  cancelVectorStoreEdit(): void {
+    this.editingVectorStore = null;
+    this.editVectorStoreForm.reset();
+  }
+
+  updateVectorStore(): void {
+    if (!this.editingVectorStore || this.editVectorStoreForm.invalid) {
+      this.editVectorStoreForm.markAllAsTouched();
+      return;
+    }
+
+    const { name } = this.editVectorStoreForm.value;
+    this.vectorStoreService.update(this.editingVectorStore.id, { name }).subscribe({
+      next: (updated) => {
+        this.vectorStores = this.vectorStores.map(store =>
+          store.id === updated.id ? { ...store, name: updated.name } : store
+        );
+        if (this.selectedVectorStore?.id === updated.id) {
+          this.selectedVectorStore = { ...updated };
+        }
+        this.cancelVectorStoreEdit();
+      },
+      error: (err) => {
+        console.error('Error updating library:', err);
+        this.errorMessage = this.extractErrorMessage(err, 'Unable to update library.');
+      }
+    });
+  }
+
+  async deleteVectorStore(store: VectorStore): Promise<void> {
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete library?',
+      message: 'This will delete',
+      itemName: store.name,
+      secondaryMessage: 'Note: This will remove all threads and documents associated with this library.'
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    this.vectorStoreService.delete(store.id).subscribe({
+      next: () => {
+        this.vectorStores = this.vectorStores.filter(vs => vs.id !== store.id);
+        if (this.selectedVectorStore?.id === store.id) {
+          this.selectedVectorStore = this.vectorStores[0] || null;
+        }
+        this.loadDocuments();
+      },
+      error: (err) => {
+        console.error('Error deleting library:', err);
+        this.errorMessage = this.extractErrorMessage(err, 'Unable to delete library.');
+      }
+    });
+  }
+
   createVectorStore(): void {
     if (this.createVectorStoreForm.invalid) {
       this.createVectorStoreForm.markAllAsTouched();
@@ -112,8 +182,17 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     });
   }
 
-  deleteDocument(documentId: string): void {
-    if (!confirm('Delete this document? This cannot be undone.')) {
+  async deleteDocument(documentId: string): Promise<void> {
+    const document = this.documents.find(doc => doc.id === documentId);
+    const documentName = document?.title || 'this document';
+    
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete document?',
+      message: 'This will delete',
+      itemName: documentName,
+      secondaryMessage: 'This cannot be undone.'
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -131,6 +210,37 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       return this.documents;
     }
     return this.documents.filter(doc => doc.vector_store === this.selectedVectorStore?.id);
+  }
+
+  startDocumentRename(document: Document): void {
+    this.editingDocumentId = document.id;
+    this.documentTitleControl.setValue(document.title || '');
+  }
+
+  cancelDocumentRename(): void {
+    this.editingDocumentId = null;
+    this.documentTitleControl.reset('');
+  }
+
+  saveDocumentTitle(document: Document): void {
+    if (this.documentTitleControl.invalid) {
+      this.documentTitleControl.markAsTouched();
+      return;
+    }
+
+    const title = this.documentTitleControl.value?.trim();
+    this.documentService.update(document.id, { title }).subscribe({
+      next: (updated) => {
+        this.documents = this.documents.map(doc =>
+          doc.id === updated.id ? { ...doc, title: updated.title } : doc
+        );
+        this.cancelDocumentRename();
+      },
+      error: (err) => {
+        console.error('Error renaming document:', err);
+        this.errorMessage = this.extractErrorMessage(err, 'Unable to rename document.');
+      }
+    });
   }
 
   getStatusBadgeClass(status: Document['status']): string {

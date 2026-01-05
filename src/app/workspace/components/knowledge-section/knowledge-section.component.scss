@@ -13,6 +13,10 @@
 
   h1 {
     margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 11px;
   }
 
   p {
@@ -24,6 +28,12 @@
 .header-actions {
   display: flex;
   gap: 0.75rem;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
 }
 
 .knowledge-grid {
@@ -42,6 +52,12 @@
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1.25rem;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
 }
 
 .panel-header {
@@ -57,7 +73,7 @@
 
   span {
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 11px;
   }
 }
 
@@ -77,7 +93,7 @@
 
   small {
     color: var(--error-color);
-    font-size: 0.8rem;
+    font-size: 10px;
   }
 }
 
@@ -92,13 +108,16 @@
 
 .loading-state {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 11px;
 }
 
 .documents-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
 }
 
 .document-item {
@@ -107,8 +126,8 @@
   border-radius: 8px;
   padding: 0.85rem 1rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.75rem;
 
   .document-meta {
     display: flex;
@@ -123,7 +142,7 @@
 
   .document-date {
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: 10px;
   }
 }
 
@@ -131,7 +150,7 @@
   padding: 0.15rem 0.65rem;
   border-radius: 100px;
   text-transform: capitalize;
-  font-size: 0.8rem;
+  font-size: 10px;
   font-weight: 600;
 
   &.status-completed {
@@ -161,10 +180,38 @@
   color: var(--accent-color);
   cursor: pointer;
   padding: 0.25rem 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
 
   &.danger {
     color: var(--error-color);
   }
+}
+
+.document-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.document-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  input {
+    padding: 0.5rem 0.65rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .error-message {

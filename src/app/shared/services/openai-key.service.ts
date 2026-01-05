@@ -23,27 +23,27 @@ export class OpenAIKeyService {
 
   create(data: OpenAIKeyCreateRequest): Observable<OpenAIKey> {
     const token = this.getToken();
-    return this.api.post<OpenAIKey>(`/openai-key/${token}/`, data, token);
+    return this.api.post<OpenAIKey>(`/llm-config/${token}/`, data, token);
   }
 
   list(): Observable<OpenAIKey[]> {
     const token = this.getToken();
-    return this.api.get<OpenAIKey[]>(`/openai-key/${token}/list/`, token);
+    return this.api.get<OpenAIKey[]>(`/llm-config/${token}/list/`, token);
   }
 
   getById(id: number): Observable<OpenAIKey> {
     const token = this.getToken();
-    return this.api.get<OpenAIKey>(`/openai-key/${token}/${id}/`, token);
+    return this.api.get<OpenAIKey>(`/llm-config/${token}/${id}/`, token);
   }
 
   update(id: number, data: Partial<OpenAIKeyCreateRequest>): Observable<OpenAIKey> {
     const token = this.getToken();
-    return this.api.put<OpenAIKey>(`/openai-key/${token}/${id}/`, data, token);
+    return this.api.put<OpenAIKey>(`/llm-config/${token}/${id}/`, data, token);
   }
 
   delete(id: number): Observable<void> {
     const token = this.getToken();
-    return this.api.delete<void>(`/openai-key/${token}/${id}/`, token);
+    return this.api.delete<void>(`/llm-config/${token}/${id}/`, token);
   }
 }
 

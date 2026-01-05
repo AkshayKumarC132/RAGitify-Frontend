@@ -1,0 +1,54 @@
+<div class="dialog-backdrop" (click)="onBackdropClick($event)">
+  <div #dialogElement class="search-popup" tabindex="0" role="dialog" aria-labelledby="search-title" aria-modal="true">
+    <!-- <div class="search-header">
+      <h2 id="search-title" class="search-title">Search threads</h2>
+      <button type="button" class="close-button" (click)="close()" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div> -->
+
+    <div class="search-input-container">
+      <div class="search-input-wrapper">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+          #searchInput
+          type="text"
+          placeholder="Search by title or message"
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="onSearchChange($event)"
+        />
+      </div>
+    </div>
+
+    <div #resultsContainer class="search-results" *ngIf="filteredThreads.length > 0">
+      <div
+        *ngFor="let thread of filteredThreads; trackBy: trackByThreadId"
+        class="result-item"
+        [class.active]="currentThread?.id === thread.id"
+        (click)="selectThread(thread)"
+      >
+        <div class="result-content">
+          <div class="result-title">
+            <span [innerHTML]="getHighlightedTitle(thread)"></span>
+          </div>
+          <div class="result-time">{{ formatTime(thread.created_at) }}</div>
+        </div>
+        <div
+          class="result-snippet"
+          *ngIf="searchQuery && isMessageMatch(thread)"
+        >
+          <span [innerHTML]="getHighlightedSnippet(thread)"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-empty" *ngIf="searchQuery && filteredThreads.length === 0">
+      <p>No title or message found matching "{{ searchQuery }}"</p>
+    </div>
+
+    <div class="search-empty" *ngIf="!searchQuery">
+      <!-- <p>Start typing to search threads</p> -->
+    </div>
+  </div>
+</div>
+

@@ -1,46 +1,71 @@
-<div class="home-container">
-  <div class="sidebar">
+<div class="setup-blocker" *ngIf="showSetupBlocker">
+  <div class="blocker-content">
+    <h2>LLM setup required to continue</h2>
+    <p>
+      Threads, vector stores, assistants, runs, and messages stay blocked until an LLM provider and collection
+      are configured.
+    </p>
+    <button type="button" class="btn-primary" (click)="navigateToSetup()">Open LLM Setup Wizard</button>
+  </div>
+</div>
+
+<div class="home-container" *ngIf="!showSetupBlocker">
+  <div class="sidebar" [class.collapsed]="isSidebarCollapsed">
     <app-thread-sidebar
       [threads]="threads"
       [currentThread]="currentThread"
+      [user]="currentUser"
       (threadSelected)="onThreadSelected($event)"
       (newThread)="onNewThread()"
       (workspaceNavigate)="onWorkspaceNavigate()"
+      [collapsed]="isSidebarCollapsed"
+      (sidebarToggled)="onSidebarToggled($event)"
+      (manageProfile)="onManageProfile()"
+      (logoutRequested)="logout()"
+      (renameThread)="onThreadRename($event)"
+      (removeThread)="onThreadRemove($event)"
     ></app-thread-sidebar>
-    
-    <div class="sidebar-footer">
-      <button class="logout-button" (click)="logout()">Logout</button>
-    </div>
   </div>
 
-  <div class="main-content">
-    <div class="header">
-      <app-model-selector
-        [models]="availableModels"
-        [selectedModel]="selectedModel"
-        (modelSelected)="onModelSelected($event)"
-      ></app-model-selector>
-    </div>
-
+  <div class="main-content" [class.empty-mode]="isConversationEmpty">
     <div class="chat-area">
-      <app-empty-state *ngIf="!currentThread && messages.length === 0"></app-empty-state>
-      
+      <!-- <div class="chat-toolbar">
+        <div class="toolbar-label">
+          <i class="fa-solid fa-robot" aria-hidden="true"></i>
+          <span>{{ selectedModel?.name || selectedModel?.model || 'Default Model' }}</span>
+        </div>
+        <div class="toolbar-label">
+          <i class="fa-regular fa-clock" aria-hidden="true"></i>
+          <span>{{ selectedModel?.provider || 'Auto' }}</span>
+        </div>
+      </div> -->
+
+      <app-empty-state *ngIf="isConversationEmpty"></app-empty-state>
+
       <app-chat-container
-        *ngIf="currentThread || messages.length > 0"
+        *ngIf="!isConversationEmpty"
         [messages]="messages"
         [currentRun]="currentRun"
+        [runMap]="runMap"
+        [rerunLoadingMessageId]="rerunLoadingMessageId"
+        (rerunRequest)="onRerunRequest($event)"
       ></app-chat-container>
     </div>
 
-    <div class="input-area">
+    <div class="input-area" [class.centered]="isConversationEmpty">
       <app-chat-input
         [mode]="mode"
         [loading]="loading || attachmentsInProgress"
+        [currentRun]="currentRun"
         [libraries]="libraries"
         [selectedLibraryId]="selectedLibraryId"
+        [documents]="allDocuments"
+        [selectedDocumentIds]="selectedDocumentIds"
         [prompts]="prompts"
         [selectedPromptId]="selectedPromptId"
+        [hasExistingThread]="!!currentThread"
         (messageSent)="onMessageSent($event)"
+        (cancelRun)="onCancelRun()"
         (modeToggle)="onModeToggle($event)"
         (filesSelected)="onFilesSelected($event)"
         (webpageAttached)="onWebpageAttach($event)"
@@ -55,3 +80,39 @@
     </div>
   </div>
 </div>
+
+<div class="profile-panel" *ngIf="showProfilePanel" (click)="closeProfilePanel()">
+  <div class="profile-card" (click)="$event.stopPropagation()">
+    <div class="profile-card-header">
+      <div>
+        <h3>User Profile</h3>
+        <p>Review and update your workspace identity</p>
+      </div>
+      <button type="button" class="icon-button" (click)="closeProfilePanel()">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="profile-form">
+      <label>
+        <span>First Name</span>
+        <input type="text" formControlName="first_name" placeholder="First name" />
+      </label>
+      <label>
+        <span>Last Name</span>
+        <input type="text" formControlName="last_name" placeholder="Last name" />
+      </label>
+      <label>
+        <span>Email</span>
+        <input type="email" formControlName="email" placeholder="email@ragitify.ai" readonly />
+        <small *ngIf="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">Enter a valid email</small>
+      </label>
+
+      <div class="profile-message" *ngIf="profileMessage">{{ profileMessage }}</div>
+
+      <div class="profile-actions">
+        <button type="button" (click)="closeProfilePanel()">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="profileForm.invalid">Save Changes</button>
+      </div>
+    </form>
+  </div>

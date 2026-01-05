@@ -12,7 +12,7 @@ export class ThreadService {
   constructor(
     private api: ApiService,
     private auth: AuthService
-  ) {}
+  ) { }
 
   private getToken(): string {
     const token = this.auth.getToken();

@@ -1,117 +1,89 @@
-<div>
-  <div class="auth-header">
-    <h1>Create Account</h1>
-    <p>Sign up to get started</p>
+<div class="register-wrapper">
+  <div class="register-copy">
+    <h2>Create your workspace seat</h2>
+    <p>Every new seat includes access to prompts, models, and document libraries.</p>
   </div>
 
   <div *ngIf="errorMessage" class="error-message">
     {{ errorMessage }}
   </div>
 
-  <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-    <div class="form-group">
-      <label for="email">Email *</label>
+  <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+    <label>
+      <span>Email *</span>
       <input
         type="email"
         id="email"
         formControlName="email"
-        class="form-control"
         [class.error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
-        placeholder="Enter your email"
+        placeholder="you@ragitify.ai"
       />
-      <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" class="error-text">
-        Please enter a valid email
-      </div>
-    </div>
+      <small *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">Valid email required</small>
+    </label>
 
-    <div class="form-group">
-      <label for="username">Username *</label>
-      <input
-        type="text"
-        id="username"
-        formControlName="username"
-        class="form-control"
-        [class.error]="registerForm.get('username')?.invalid && registerForm.get('username')?.touched"
-        placeholder="Choose a username"
-      />
-      <div *ngIf="registerForm.get('username')?.invalid && registerForm.get('username')?.touched" class="error-text">
-        Username is required
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label for="password">Password *</label>
+    <label>
+      <span>Password *</span>
       <input
         type="password"
         id="password"
         formControlName="password"
-        class="form-control"
         [class.error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
-        placeholder="Enter your password"
+        placeholder="••••••"
       />
-      <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched" class="error-text">
-        Password must be at least 6 characters
-      </div>
+      <small *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">Minimum 6 characters</small>
+    </label>
+
+    <div class="two-column">
+      <label>
+        <span>First Name</span>
+        <input type="text" id="first_name" formControlName="first_name" placeholder="First name" />
+      </label>
+      <label>
+        <span>Last Name</span>
+        <input type="text" id="last_name" formControlName="last_name" placeholder="Last name" />
+      </label>
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label for="first_name">First Name</label>
-        <input
-          type="text"
-          id="first_name"
-          formControlName="first_name"
-          class="form-control"
-          placeholder="First name"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="last_name">Last Name</label>
-        <input
-          type="text"
-          id="last_name"
-          formControlName="last_name"
-          class="form-control"
-          placeholder="Last name"
-        />
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label for="tenant_name">Tenant Name *</label>
+    <label>
+      <span>Tenant Name *</span>
       <input
         type="text"
         id="tenant_name"
         formControlName="tenant_name"
-        class="form-control"
         [class.error]="registerForm.get('tenant_name')?.invalid && registerForm.get('tenant_name')?.touched"
-        placeholder="Enter tenant name"
+        placeholder="Acme Labs"
       />
-      <div *ngIf="registerForm.get('tenant_name')?.invalid && registerForm.get('tenant_name')?.touched" class="error-text">
-        Tenant name is required
-      </div>
+      <small *ngIf="registerForm.get('tenant_name')?.invalid && registerForm.get('tenant_name')?.touched">Tenant is required</small>
+    </label>
+
+    <div class="two-column">
+      <label>
+        <span>LLM Provider (optional)</span>
+        <select id="llm_provider" formControlName="llm_provider">
+          <option value="">Skip for now</option>
+          <option value="openai">OpenAI</option>
+          <option value="ollama">Ollama</option>
+        </select>
+        <small>Selecting a provider immediately creates a collection.</small>
+      </label>
+      <label>
+        <span>Collection Name</span>
+        <input type="text" id="collection_name" formControlName="collection_name" placeholder="Optional" />
+        <small>Required only when selecting an LLM.</small>
+      </label>
     </div>
 
-    <div class="form-group">
-      <label for="collection_name">Collection Name</label>
-      <input
-        type="text"
-        id="collection_name"
-        formControlName="collection_name"
-        class="form-control"
-        placeholder="Collection name (optional)"
-      />
-    </div>
+    <label>
+      <span>Language (optional)</span>
+      <input type="text" id="language" formControlName="language" placeholder="en" />
+    </label>
 
-    <button type="submit" class="btn-primary" [disabled]="loading || registerForm.invalid">
-      <span *ngIf="!loading">Sign Up</span>
-      <span *ngIf="loading">Creating account...</span>
-    </button>
+    <div class="register-actions">
+      <button type="button" (click)="goBack()">Back to login</button>
+      <button type="submit" class="btn-primary" [disabled]="loading || registerForm.invalid">
+        <span *ngIf="!loading">Create workspace</span>
+        <span *ngIf="loading">Creating account...</span>
+      </button>
+    </div>
   </form>
-
-  <div class="auth-footer">
-    <p>Already have an account? <a (click)="goBack()" class="link">Sign in</a></p>
-  </div>
 </div>
-

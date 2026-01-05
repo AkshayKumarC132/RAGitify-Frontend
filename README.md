@@ -113,11 +113,11 @@ The frontend integrates with the following backend APIs:
 - `POST /run/{token}/{id}/submit-tool-outputs/` - Submit tool outputs
 
 ### OpenAI Keys (Models)
-- `POST /openai-key/{token}/` - Create API key/model
-- `GET /openai-key/{token}/list/` - List models
-- `GET /openai-key/{token}/{id}/` - Get model
-- `PUT /openai-key/{token}/{id}/` - Update model
-- `DELETE /openai-key/{token}/{id}/` - Delete model
+- `POST /llm-config/{token}/` - Create API key/model
+- `GET /llm-config/{token}/list/` - List models
+- `GET /llm-config/{token}/{id}/` - Get model
+- `PUT /llm-config/{token}/{id}/` - Update model
+- `DELETE /llm-config/{token}/{id}/` - Delete model
 
 ### Document Access
 - `POST /document-access/{token}/` - Grant document access

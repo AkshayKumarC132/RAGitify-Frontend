@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { switchMap, map, catchError } from 'rxjs/operators';
-import { of, lastValueFrom } from 'rxjs';
+import { Location } from '@angular/common';
+import { switchMap, map, catchError, takeUntil } from 'rxjs/operators';
+import { of, lastValueFrom, EMPTY, Subscription, Subject } from 'rxjs';
 import { ThreadService } from '../../../shared/services/thread.service';
 import { MessageService } from '../../../shared/services/message.service';
 import { RunService } from '../../../shared/services/run.service';
@@ -11,6 +12,7 @@ import { OpenAIKeyService } from '../../../shared/services/openai-key.service';
 import { AuthService } from '../../../shared/services/auth.service';
 import { DocumentService } from '../../../shared/services/document.service';
 import { DocumentAccessService } from '../../../shared/services/document-access.service';
+import { ThreadSearchPopupService } from '../../../shared/services/thread-search-popup.service';
 import { Thread } from '../../../shared/models/thread.model';
 import { Message } from '../../../shared/models/message.model';
 import { Run } from '../../../shared/models/run.model';
@@ -18,31 +20,52 @@ import { OpenAIKey } from '../../../shared/models/openai-key.model';
 import { Document } from '../../../shared/models/document.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
+import { SelectedLLMProvider, User } from '../../../shared/models/user.model';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { LibrarySelectionEvent } from '../chat-input/chat-input.component';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   currentThread: Thread | null = null;
   messages: Message[] = [];
   threads: Thread[] = [];
   currentRun: Run | null = null;
+  runMap: Record<number, Run> = {};
+  rerunLoadingMessageId: number | null = null;
   selectedModel: OpenAIKey | null = null;
   availableModels: OpenAIKey[] = [];
-  mode: 'normal' | 'web' = 'normal';
+  mode: 'normal' | 'web' | 'document' = 'document';
   loading = false;
   knowledgeSources: Document[] = [];
+  allDocuments: Document[] = [];
   selectedKnowledgeId: string | null = null;
   libraries: VectorStore[] = [];
   selectedLibraryId: string | null = null;
+  selectedDocumentIds: string[] = [];
   prompts: Assistant[] = [];
   selectedPromptId: string | null = null;
   attachmentsInProgress = false;
   attachmentMessage = '';
   currentVectorStoreId: string | null = null;
+  documentSelectionVectorStoreId: string | null = null;
+  isSidebarCollapsed = false;
+  currentUser: User | null = null;
+  setupIncomplete = false;
+  dataInitialized = false;
+  pendingThreadId: string | null = null;
+  profileForm: FormGroup;
+  showProfilePanel = false;
+  profileMessage = '';
   private attachmentMessageTimeout?: any;
+  private enforceDocumentMode = true;
+  private runStatusSub?: Subscription;
+  private searchPopupSub?: Subscription;
+  private destroy$ = new Subject<void>();
+  private activeProvider: SelectedLLMProvider | null = null;
 
   constructor(
     private router: Router,
@@ -55,20 +78,212 @@ export class HomeComponent implements OnInit {
     private openAIKeyService: OpenAIKeyService,
     private authService: AuthService,
     private documentService: DocumentService,
-    private documentAccessService: DocumentAccessService
-  ) {}
+    private documentAccessService: DocumentAccessService,
+    private threadSearchPopupService: ThreadSearchPopupService,
+    private fb: FormBuilder,
+    private location: Location
+  ) {
+    this.profileForm = this.fb.group({
+      first_name: [''],
+      last_name: [''],
+      email: ['', [Validators.email]]
+    });
+  }
 
   ngOnInit(): void {
+    this.authService.restoreUserFromStorage();
+    this.setupIncomplete = !this.authService.isLlmReady(this.authService.getCurrentStatus());
+    if (!this.setupIncomplete) {
+      this.initializeData();
+    } else {
+      this.clearLoadedState();
+    }
+
+    this.authService.userStatus$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(status => {
+        const isReady = this.authService.isLlmReady(status);
+        this.activeProvider = status?.selected_llm_provider || (status as any)?.active_provider || null;
+        this.setupIncomplete = !isReady;
+        if (isReady && !this.dataInitialized) {
+          this.initializeData();
+          if (this.pendingThreadId) {
+            this.loadThread(this.pendingThreadId);
+          }
+        }
+        if (!isReady) {
+          this.clearLoadedState();
+          this.navigateToSetup();
+        }
+      });
+
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        console.log('[HomeComponent] currentUser$ emitted', {
+          hasUser: !!user,
+          tokenAvailable: !!this.authService.getToken()
+        });
+        this.currentUser = user;
+        if (user) {
+          this.profileForm.patchValue({
+            first_name: user.first_name || '',
+            last_name: user.last_name || '',
+            email: user.email || ''
+          }, { emitEvent: false });
+        } else {
+          console.warn('[HomeComponent] user is null - sidebar profile cannot render', {
+            storedUser: this.authService.getStoredUser()
+          });
+        }
+      });
+
+    this.route.params.pipe(
+      takeUntil(this.destroy$),
+      switchMap(params => {
+        const threadId = params['threadId'];
+        if (threadId) {
+          this.pendingThreadId = threadId;
+          if (!this.setupIncomplete) {
+            this.loadThread(threadId);
+          }
+        }
+        return EMPTY;
+      })
+    ).subscribe();
+
+    // Listen for thread selections from search popup
+    this.searchPopupSub = this.threadSearchPopupService.getThreadSelected().subscribe(thread => {
+      this.onThreadSelected(thread);
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.teardownRunPolling();
+    if (this.searchPopupSub) {
+      this.searchPopupSub.unsubscribe();
+    }
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  onManageProfile(): void {
+    this.router.navigate(['/settings']);
+  }
+
+  closeProfilePanel(): void {
+    this.showProfilePanel = false;
+    this.profileMessage = '';
+  }
+
+  saveProfile(): void {
+    if (!this.currentUser || this.profileForm.invalid) {
+      return;
+    }
+
+    const token = this.authService.getToken();
+    const updatedUser: User = {
+      ...this.currentUser,
+      ...this.profileForm.value
+    };
+
+    if (token) {
+      this.authService.setAuth(token, updatedUser);
+    }
+
+    this.currentUser = updatedUser;
+    this.profileMessage = 'Profile updated locally';
+    setTimeout(() => {
+      this.profileMessage = '';
+    }, 2500);
+  }
+
+  get isConversationEmpty(): boolean {
+    return !this.currentThread && this.messages.length === 0;
+  }
+
+  get showSetupBlocker(): boolean {
+    return this.setupIncomplete;
+  }
+
+  navigateToSetup(): void {
+    this.router.navigate(['/setup-llm'], { queryParams: { reason: 'llm_required' } });
+  }
+
+  private initializeData(): void {
+    if (this.dataInitialized) {
+      return;
+    }
+    this.dataInitialized = true;
     this.loadModels();
     this.loadThreads();
     this.loadLibraries();
     this.loadPrompts();
-    
-    this.route.params.subscribe(params => {
-      const threadId = params['threadId'];
-      if (threadId) {
-        this.loadThread(threadId);
+    this.loadDocuments();
+    if (this.pendingThreadId) {
+      this.loadThread(this.pendingThreadId);
+    }
+  }
+
+  private startRunPolling(runId: string, threadId: string): void {
+    if (!threadId) {
+      console.error('startRunPolling called without threadId', { runId });
+      return;
+    }
+    // Stop any existing polling before starting a new one
+    this.teardownRunPolling();
+
+    this.runStatusSub = this.runService.pollRunStatus(runId).subscribe({
+      next: (updatedRun) => {
+        if (updatedRun) {
+          this.currentRun = updatedRun;
+          this.upsertRun(updatedRun);
+          if (updatedRun.status === 'completed') {
+            this.loadMessages(threadId);
+            this.loadThreads();
+            this.threadService.getById(threadId).subscribe(t => this.currentThread = t);
+            this.teardownRunPolling();
+          } else if (updatedRun.status === 'failed' || updatedRun.status === 'cancelled') {
+            this.currentRun = null;
+            this.teardownRunPolling();
+          } else if (updatedRun.status === 'requires_action') {
+            console.log('Run requires action:', updatedRun.required_action);
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Error polling run:', err);
+        this.currentRun = null;
+        this.teardownRunPolling();
       }
+    });
+  }
+
+  onThreadRename(event: { thread: Thread; title: string }): void {
+    this.threadService.update(event.thread.id, { title: event.title }).subscribe({
+      next: (updated) => {
+        this.threads = this.threads.map(t => (t.id === updated.id ? updated : t));
+        if (this.currentThread?.id === updated.id) {
+          this.currentThread = updated;
+        }
+      },
+      error: (err) => console.error('Unable to update thread title', err)
+    });
+  }
+
+  onThreadRemove(thread: Thread): void {
+    this.threadService.delete(thread.id).subscribe({
+      next: () => {
+        this.threads = this.threads.filter(t => t.id !== thread.id);
+        if (this.currentThread?.id === thread.id) {
+          this.currentThread = null;
+          this.messages = [];
+          this.currentRun = null;
+          this.teardownRunPolling();
+          this.router.navigate(['/home']);
+        }
+      },
+      error: (err) => console.error('Unable to delete thread', err)
     });
   }
 
@@ -99,9 +314,15 @@ export class HomeComponent implements OnInit {
   loadThread(threadId: string): void {
     this.threadService.getById(threadId).subscribe({
       next: (thread) => {
+        // When switching threads, clear any in-flight run state from the previous thread
+        this.teardownRunPolling();
+        this.currentRun = null;
+        this.runMap = {};
+        this.rerunLoadingMessageId = null;
         this.currentThread = thread;
         this.loadMessages(threadId);
         this.setCurrentVectorStore(thread.vector_store_id_read);
+        this.resumeActiveRun(threadId);
       },
       error: (err) => console.error('Error loading thread:', err)
     });
@@ -116,23 +337,55 @@ export class HomeComponent implements OnInit {
     });
   }
 
+  onSidebarToggled(collapsed: boolean): void {
+    this.isSidebarCollapsed = collapsed;
+  }
+
   onThreadSelected(thread: Thread): void {
+    // Clear any active run state from the previous thread before navigation
+    this.teardownRunPolling();
+    this.currentRun = null;
     this.router.navigate(['/home/chat', thread.id]);
   }
 
   onNewThread(): void {
     this.currentThread = null;
+    this.currentRun = null;
+    this.runMap = {};
+    this.rerunLoadingMessageId = null;
     this.messages = [];
+    this.selectedDocumentIds = [];
+    this.documentSelectionVectorStoreId = null;
+    this.selectedKnowledgeId = null;
+    this.selectedPromptId = null;
+    if (!this.selectedLibraryId) {
+      this.currentVectorStoreId = null;
+      this.mode = 'normal';
+      this.enforceDocumentMode = false;
+    } else {
+      this.setCurrentVectorStore(this.selectedLibraryId);
+      this.mode = 'document';
+    }
+    this.teardownRunPolling();
     this.router.navigate(['/home']);
   }
 
   onMessageSent(content: string): void {
     if (!content.trim()) return;
 
-    this.loading = true;
+    const optimisticMessage: Message = {
+      id: Date.now(),
+      thread_id: '',
+      user: '',
+      content: content,
+      role: 'user',
+      created_at: new Date().toISOString()
+    };
 
-    // Auto-create flow: VectorStore -> Thread -> Assistant -> Message -> Run
+    this.messages.push(optimisticMessage);
+
     this.ensureVectorStoreAndThread().then(({ vectorStoreId, threadId }) => {
+      optimisticMessage.thread_id = threadId;
       return this.ensureAssistant(vectorStoreId, threadId);
     }).then(({ assistantId, threadId }) => {
       return this.createMessage(threadId, content).then(({ messageId }) => ({
@@ -144,59 +397,96 @@ export class HomeComponent implements OnInit {
       return this.createRun(threadId, assistantId, messageId);
     }).catch((error) => {
       console.error('Error in message flow:', error);
-      this.loading = false;
+      this.currentRun = null;
     });
   }
 
-  private ensureVectorStoreAndThread(): Promise<{ vectorStoreId: string; threadId: string }> {
-    // If a library is selected, we still use the current thread's vector store
-    // but grant access to documents from the selected library via Document Access API
-    // This allows using documents from multiple libraries in the same thread
+  private async ensureVectorStoreAndThread(): Promise<{ vectorStoreId: string; threadId: string }> {
+    const vectorStoreId = await this.getDesiredVectorStoreId();
 
-    if (this.currentThread) {
-      const vectorStoreId = this.currentThread.vector_store_id_read;
+    if (this.currentThread && this.currentThread.vector_store_id_read === vectorStoreId) {
       this.setCurrentVectorStore(vectorStoreId);
-      return Promise.resolve({ vectorStoreId, threadId: this.currentThread.id });
+      return { vectorStoreId, threadId: this.currentThread.id };
     }
 
-    // Get or create vector store
-    return this.vectorStoreService.list().pipe(
-      switchMap(vectorStores => {
-        this.libraries = vectorStores || [];
-        if (vectorStores && vectorStores.length > 0) {
-          const existingId = vectorStores[0].id;
-          this.setCurrentVectorStore(existingId);
-          return of(existingId);
-        } else {
-          return this.vectorStoreService.create({ name: 'Default' }).pipe(
-            map(vs => {
-              this.libraries = [vs, ...this.libraries];
-              return vs.id;
-            })
-          );
-        }
-      }),
-      catchError(() => {
-        return this.vectorStoreService.create({ name: 'Default' }).pipe(
-          map(vs => {
-            this.libraries = [vs, ...this.libraries];
-            return vs.id;
-          })
-        );
-      }),
-      switchMap(vectorStoreId => {
-        this.setCurrentVectorStore(vectorStoreId);
-        // Create thread
-        return this.threadService.create({ vector_store_id: vectorStoreId }).pipe(
-          map(thread => {
-            this.currentThread = thread;
-            this.router.navigate(['/home/chat', thread.id]);
-            this.loadThreads();
-            return { vectorStoreId, threadId: thread.id };
-          })
-        );
-      })
-    ).toPromise() as Promise<{ vectorStoreId: string; threadId: string }>;
+    const thread = await lastValueFrom(
+      this.threadService.create({ vector_store_id: vectorStoreId })
+    );
+    this.currentThread = thread;
+    this.setCurrentVectorStore(vectorStoreId);
+
+    // Update URL without triggering navigation/component destruction
+    this.location.replaceState(`/home/chat/${thread.id}`);
+
+    this.loadThreads();
+    return { vectorStoreId, threadId: thread.id };
+  }
+
+  private async getDesiredVectorStoreId(): Promise<string> {
+    if (this.selectedDocumentIds.length) {
+      return this.ensureDocumentSelectionVectorStore();
+    }
+
+    if (this.selectedLibraryId) {
+      this.setCurrentVectorStore(this.selectedLibraryId);
+      return this.selectedLibraryId;
+    }
+
+    if (this.currentVectorStoreId) {
+      return this.currentVectorStoreId;
+    }
+
+    return this.ensureDefaultVectorStore();
+  }
+
+  private async ensureDefaultVectorStore(): Promise<string> {
+    const name = `Chat-${Date.now()}`;
+    try {
+      const created = await lastValueFrom(this.vectorStoreService.create({ name }));
+      this.libraries = [created, ...this.libraries];
+      this.setCurrentVectorStore(created.id);
+      if (this.mode !== 'web') {
+        this.mode = 'normal';
+      }
+      this.enforceDocumentMode = false;
+      return created.id;
+    } catch (error) {
+      console.error('Error creating default vector store:', error);
+      const fallback = await lastValueFrom(this.vectorStoreService.list());
+      if (fallback?.length) {
+        const existingId = fallback[0].id;
+        this.setCurrentVectorStore(existingId);
+        return existingId;
+      }
+      throw error;
+    }
+  }
+
+  private async ensureDocumentSelectionVectorStore(): Promise<string> {
+    if (!this.selectedDocumentIds.length) {
+      throw new Error('No documents selected for attachment');
+    }
+
+    const activeThreadVectorStore = this.currentThread?.vector_store_id_read;
+    if (activeThreadVectorStore) {
+      if (this.documentSelectionVectorStoreId !== activeThreadVectorStore) {
+        await this.grantDocumentAccessToVectorStore(this.selectedDocumentIds, activeThreadVectorStore);
+      }
+      this.documentSelectionVectorStoreId = activeThreadVectorStore;
+      this.setCurrentVectorStore(activeThreadVectorStore);
+      return activeThreadVectorStore;
+    }
+
+    const vectorStore = await lastValueFrom(
+      this.vectorStoreService.create({ name: `DocChat-${Date.now()}` })
+    );
+
+    await this.grantDocumentAccessToVectorStore(this.selectedDocumentIds, vectorStore.id);
+
+    this.documentSelectionVectorStoreId = vectorStore.id;
+    this.setCurrentVectorStore(vectorStore.id);
+    this.loadLibraries();
+    return vectorStore.id;
   }
 
   private ensureAssistant(vectorStoreId: string, threadId: string): Promise<{ assistantId: string; threadId: string }> {
@@ -211,17 +501,23 @@ export class HomeComponent implements OnInit {
     }
 
     return this.assistantService.list().pipe(
+      map(assistants => assistants || []),
       switchMap(assistants => {
         // Update prompts list
-        this.prompts = assistants || [];
-        
-        const existingAssistant = assistants?.find(a => a.vector_store_id === vectorStoreId);
+        this.prompts = assistants;
+
+        const defaultAssistant = assistants.find(a => a.is_default);
+        if (defaultAssistant) {
+          return of({ assistantId: defaultAssistant.id, threadId });
+        }
+
+        const existingAssistant = assistants.find(a => a.vector_store_id === vectorStoreId);
         if (existingAssistant) {
           return of({ assistantId: existingAssistant.id, threadId });
         }
-        
-        // Create new assistant
-        const model = this.selectedModel?.model || 'gpt-4o';
+
+        // Create a single assistant only when none exist for the user
+        const model = this.resolveModelPreference();
         return this.assistantService.create({
           name: 'Default Assistant',
           vector_store_id: vectorStoreId,
@@ -237,7 +533,7 @@ export class HomeComponent implements OnInit {
       }),
       catchError(() => {
         // Create new assistant on error
-        const model = this.selectedModel?.model || 'gpt-4o';
+        const model = this.resolveModelPreference();
         return this.assistantService.create({
           name: 'Default Assistant',
           vector_store_id: vectorStoreId,
@@ -257,8 +553,17 @@ export class HomeComponent implements OnInit {
   private createMessage(threadId: string, content: string): Promise<{ messageId: number; threadId: string }> {
     return this.messageService.create({ thread_id: threadId, content }).pipe(
       map(message => {
-        this.messages.push(message);
-        this.loadMessages(threadId);
+        // Update the optimistic message with the real message
+        // Find by content and role since the optimistic message has a temporary timestamp ID
+        const optimisticIndex = this.messages.findIndex(m =>
+          m.role === 'user' &&
+          m.content === content &&
+          typeof m.id === 'number' &&
+          m.id > 1000000000000 // timestamp-based ID
+        );
+        if (optimisticIndex !== -1) {
+          this.messages[optimisticIndex] = message;
+        }
         return { messageId: message.id, threadId };
       })
     ).toPromise() as Promise<{ messageId: number; threadId: string }>;
@@ -279,27 +584,8 @@ export class HomeComponent implements OnInit {
     return this.runService.create(payload).pipe(
       switchMap(run => {
         this.currentRun = run;
-        this.loading = false;
-
-        // Poll for run status
-        this.runService.pollRunStatus(run.id).subscribe({
-          next: (updatedRun) => {
-            if (updatedRun) {
-              this.currentRun = updatedRun;
-              if (updatedRun.status === 'completed') {
-                this.loadMessages(threadId);
-              } else if (updatedRun.status === 'requires_action') {
-                // Handle tool calls if needed
-                console.log('Run requires action:', updatedRun.required_action);
-              }
-            }
-          },
-          error: (err) => {
-            console.error('Error polling run:', err);
-            this.loading = false;
-          }
-        });
-
+        this.upsertRun(run);
+        this.startRunPolling(run.id, threadId);
         return of(undefined);
       })
     ).toPromise() as Promise<void>;
@@ -325,7 +611,7 @@ export class HomeComponent implements OnInit {
         this.documentService.ingest({ s3_file_url: payload.url, vector_store_id: vectorStoreId })
       );
       this.setAttachmentMessage('Webpage attached successfully.');
-      this.refreshKnowledge(vectorStoreId);
+      this.loadDocuments(vectorStoreId);
       if (response?.id) {
         this.selectedKnowledgeId = response.id;
       }
@@ -356,110 +642,101 @@ export class HomeComponent implements OnInit {
     this.setAttachmentMessage(documentId ? 'Knowledge pinned for the next reply.' : 'Knowledge selection cleared.');
   }
 
-  async onLibrarySelected(libraryId: string | null): Promise<void> {
-    if (!libraryId) {
+  async onLibrarySelected(selection: LibrarySelectionEvent): Promise<void> {
+    if (!selection || selection.type === 'clear' || (selection.type === 'library' && !selection.libraryId)) {
       this.selectedLibraryId = null;
+      this.selectedDocumentIds = [];
+      this.documentSelectionVectorStoreId = null;
+      this.setCurrentVectorStore(this.currentThread?.vector_store_id_read || null);
       this.setAttachmentMessage('Library selection cleared.');
+      this.updateModeFromSelection(true);
       return;
     }
 
-    try {
-      this.selectedLibraryId = libraryId;
-      this.attachmentsInProgress = true;
-      this.setAttachmentMessage('Attaching library...');
-
-      const selectedLibrary = this.libraries.find(l => l.id === libraryId);
-      if (!selectedLibrary) {
-        this.setAttachmentMessage('Library not found.');
-        this.attachmentsInProgress = false;
-        return;
-      }
-
-      // Get all documents from the selected library
-      const allDocuments = await lastValueFrom(this.documentService.list());
-      const libraryDocuments = allDocuments.filter(doc => doc.vector_store === libraryId);
-      
-      if (libraryDocuments.length === 0) {
-        this.setAttachmentMessage('Selected library has no documents.');
-        this.attachmentsInProgress = false;
-        return;
-      }
-
-      // Get or ensure we have a thread with a vector store
-      const { vectorStoreId, threadId } = await this.ensureVectorStoreAndThread();
-      
-      console.log('Attaching library:', libraryId, 'to vector store:', vectorStoreId, 'with', libraryDocuments.length, 'documents');
-      
-      // Grant access to all documents from the selected library to the current thread's vector store
-      // Ensure document IDs are strings (backend expects strings)
-      const documentIds = libraryDocuments.map(doc => String(doc.id));
-      console.log('Library documents to grant access:', documentIds);
-      
-      // Check for existing access to avoid duplicate errors
-      let existingAccessIds: string[] = [];
-      try {
-        const existingAccess = await lastValueFrom(this.documentAccessService.list());
-        existingAccessIds = existingAccess
-          .filter(access => String(access.vector_store) === String(vectorStoreId))
-          .map(access => String(access.document));
-        console.log('Existing access IDs for vector store', vectorStoreId, ':', existingAccessIds);
-      } catch (err) {
-        console.warn('Could not check existing access, proceeding anyway:', err);
-      }
-
-      // Filter out documents that already have access
-      const newDocumentIds = documentIds.filter(id => !existingAccessIds.includes(id));
-      console.log('New document IDs to grant access:', newDocumentIds, 'out of', documentIds.length, 'total');
-      
-      if (newDocumentIds.length === 0) {
-        this.setAttachmentMessage(`Library already attached. ${libraryDocuments.length} document(s) accessible.`);
-        this.attachmentsInProgress = false;
-        return;
-      }
-
-      try {
-        const response = await lastValueFrom(
-          this.documentAccessService.create({
-            document_ids: newDocumentIds,
-            vector_store_id: vectorStoreId
-          })
-        );
-        console.log('Document access granted:', response);
-        
-        // Backend returns a message with access_details
-        const message = (response as any)?.message || '';
-        const alreadyAttached = libraryDocuments.length - newDocumentIds.length;
-        if (alreadyAttached > 0) {
-          this.setAttachmentMessage(`${newDocumentIds.length} new document(s) attached. ${alreadyAttached} already accessible.`);
-        } else {
-          this.setAttachmentMessage(message || `Library attached. ${newDocumentIds.length} document(s) now accessible.`);
-        }
-      } catch (accessError: any) {
-        console.error('Document access error:', accessError);
-        // Check if error is about duplicate access (which is fine - backend uses update_or_create)
-        const errorMsg = accessError?.error?.document_ids || accessError?.error?.detail || '';
-        const errorStr = typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg);
-        
-        if (errorStr.includes('already granted') || errorStr.includes('already exists') || 
-            errorStr.includes('Access already granted')) {
-          this.setAttachmentMessage(`Library already attached. ${libraryDocuments.length} document(s) accessible.`);
-        } else {
-          // Re-throw to be caught by outer catch
-          throw accessError;
-        }
-      }
-    } catch (error: any) {
-      console.error('Error attaching library:', error);
-      const errorMsg = error?.error?.message || error?.error?.document_ids || error?.error?.detail || 'Failed to attach library.';
-      this.setAttachmentMessage(`Error: ${errorMsg}`);
-    } finally {
-      this.attachmentsInProgress = false;
+    if (selection.type === 'library') {
+      this.selectedLibraryId = selection.libraryId;
+      this.selectedDocumentIds = [];
+      this.documentSelectionVectorStoreId = null;
+      this.setAttachmentMessage('Library selected for the next reply.');
+      this.resetConversationState();
+      this.setCurrentVectorStore(selection.libraryId);
+      this.updateModeFromSelection();
+      return;
     }
+
+    const documentIds = (selection.documentIds || []).map(id => String(id));
+    this.selectedDocumentIds = documentIds;
+    this.selectedLibraryId = null;
+
+    if (!documentIds.length) {
+      this.documentSelectionVectorStoreId = null;
+      this.setCurrentVectorStore(this.currentThread?.vector_store_id_read || null);
+      this.setAttachmentMessage('Document selection cleared.');
+      this.updateModeFromSelection(true);
+      return;
+    }
+
+    if (this.currentThread) {
+      const targetVectorStore = this.currentThread.vector_store_id_read;
+      this.documentSelectionVectorStoreId = targetVectorStore;
+      this.setCurrentVectorStore(targetVectorStore);
+      this.setAttachmentMessage(`${documentIds.length} document(s) selected for this chat.`);
+      try {
+        await this.grantDocumentAccessToVectorStore(documentIds, targetVectorStore);
+      } catch (error) {
+        console.error('Unable to grant document access for current thread:', error);
+        this.selectedDocumentIds = [];
+        this.documentSelectionVectorStoreId = null;
+        this.setAttachmentMessage('Failed to attach documents. Please try again.');
+      }
+      this.updateModeFromSelection();
+      return;
+    }
+
+    this.documentSelectionVectorStoreId = null;
+    this.setCurrentVectorStore(null);
+    this.setAttachmentMessage(`${documentIds.length} document(s) selected.`);
+    this.resetConversationState();
+    this.updateModeFromSelection();
   }
 
   onPromptSelected(promptId: string | null): void {
     this.selectedPromptId = promptId;
     this.setAttachmentMessage(promptId ? 'Prompt selected for the next reply.' : 'Prompt selection cleared.');
+  }
+
+  onCancelRun(): void {
+    if (!this.currentRun || !['queued', 'in_progress', 'requires_action'].includes(this.currentRun.status)) {
+      return;
+    }
+
+    const runSnapshot = { ...this.currentRun };
+    this.runService.cancel(runSnapshot.id).subscribe({
+      next: () => {
+        this.upsertRun({ ...runSnapshot, status: 'cancelled' } as Run);
+        this.currentRun = null;
+        this.teardownRunPolling();
+        if (this.currentThread?.id) {
+          // Reload messages and runs to ensure everything is in sync
+          this.loadMessages(this.currentThread.id);
+          this.loadRunsForThread(this.currentThread.id);
+        }
+      },
+      error: (err) => {
+        console.error('Error cancelling run:', err);
+      }
+    });
+  }
+
+  private loadRunsForThread(threadId: string): void {
+    this.runService.list(threadId).subscribe({
+      next: (runs) => {
+        this.rebuildRunMap(runs || []);
+      },
+      error: (err) => {
+        console.error('Error loading runs:', err);
+      }
+    });
   }
 
   loadLibraries(): void {
@@ -486,6 +763,20 @@ export class HomeComponent implements OnInit {
     });
   }
 
+  loadDocuments(vectorStoreId?: string): void {
+    this.documentService.list().subscribe({
+      next: (docs) => {
+        this.allDocuments = docs || [];
+        this.applyKnowledgeFilter(vectorStoreId);
+      },
+      error: (err) => {
+        console.error('Error loading documents:', err);
+        this.allDocuments = [];
+        this.knowledgeSources = [];
+      }
+    });
+  }
+
   private async uploadFiles(files: File[], vectorStoreId: string): Promise<void> {
     if (!files.length) {
       return;
@@ -496,7 +787,7 @@ export class HomeComponent implements OnInit {
         files.map(file => lastValueFrom(this.documentService.ingest({ file, vector_store_id: vectorStoreId })))
       );
       this.setAttachmentMessage(`Attached ${createdDocs.length} item(s) successfully.`);
-      this.refreshKnowledge(vectorStoreId);
+      this.loadDocuments(vectorStoreId);
       const latest = createdDocs[createdDocs.length - 1];
       if (latest?.id) {
         this.selectedKnowledgeId = latest.id;
@@ -506,8 +797,16 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  private setCurrentVectorStore(vectorStoreId: string): void {
+  private setCurrentVectorStore(vectorStoreId: string | null): void {
+    if (!vectorStoreId) {
+      this.currentVectorStoreId = null;
+      this.selectedKnowledgeId = null;
+      this.knowledgeSources = [];
+      return;
+    }
+
     if (this.currentVectorStoreId === vectorStoreId) {
+      this.refreshKnowledge(vectorStoreId);
       return;
     }
     this.currentVectorStoreId = vectorStoreId;
@@ -520,17 +819,36 @@ export class HomeComponent implements OnInit {
   private refreshKnowledge(vectorStoreId?: string): void {
     const targetId = vectorStoreId || this.currentVectorStoreId;
     if (!targetId) {
+      this.knowledgeSources = [];
       return;
     }
-    this.documentService.list().subscribe({
-      next: (docs) => {
-        this.knowledgeSources = docs.filter(doc => doc.vector_store === targetId);
-      },
-      error: (err) => {
-        console.error('Error loading knowledge sources:', err);
-        this.knowledgeSources = [];
-      }
-    });
+
+    if (!this.allDocuments.length) {
+      this.loadDocuments(targetId);
+      return;
+    }
+
+    this.applyKnowledgeFilter(targetId);
+  }
+
+  private applyKnowledgeFilter(vectorStoreId: string | undefined): void {
+    if (!vectorStoreId) {
+      this.knowledgeSources = [];
+      return;
+    }
+    this.knowledgeSources = this.allDocuments.filter(doc => doc.vector_store === vectorStoreId);
+  }
+
+  private async grantDocumentAccessToVectorStore(documentIds: string[], vectorStoreId: string): Promise<void> {
+    if (!documentIds.length || !vectorStoreId) {
+      return;
+    }
+    await lastValueFrom(
+      this.documentAccessService.create({
+        document_ids: documentIds.map(id => String(id)),
+        vector_store_id: vectorStoreId
+      })
+    );
   }
 
   private setAttachmentMessage(message: string): void {
@@ -543,6 +861,64 @@ export class HomeComponent implements OnInit {
     }, 4000);
   }
 
+  private clearLoadedState(): void {
+    this.dataInitialized = false;
+    this.teardownRunPolling();
+    this.currentRun = null;
+    this.runMap = {};
+    this.rerunLoadingMessageId = null;
+    this.currentThread = null;
+    this.messages = [];
+    this.threads = [];
+    this.availableModels = [];
+    this.selectedModel = null;
+    this.libraries = [];
+    this.allDocuments = [];
+    this.knowledgeSources = [];
+    this.selectedKnowledgeId = null;
+    this.selectedLibraryId = null;
+    this.selectedDocumentIds = [];
+    this.documentSelectionVectorStoreId = null;
+    this.selectedPromptId = null;
+    this.prompts = [];
+    this.currentVectorStoreId = null;
+    this.mode = 'document';
+    this.attachmentMessage = '';
+    if (this.attachmentMessageTimeout) {
+      clearTimeout(this.attachmentMessageTimeout);
+    }
+  }
+
+  private resetConversationState(): void {
+    this.currentThread = null;
+    this.currentRun = null;
+    this.messages = [];
+    this.router.navigate(['/home']);
+  }
+
+  private updateModeFromSelection(forceNormal = false): void {
+    if (this.selectedLibraryId || this.selectedDocumentIds.length) {
+      if (!forceNormal) {
+        this.mode = 'document';
+        this.enforceDocumentMode = false;
+        return;
+      }
+    }
+
+    if (forceNormal) {
+      this.enforceDocumentMode = false;
+      this.mode = 'normal';
+      return;
+    }
+    if (this.enforceDocumentMode) {
+      this.mode = 'document';
+      return;
+    }
+    if (this.mode === 'document') {
+      this.mode = 'normal';
+    }
+  }
+
   private buildRunFilters(): Record<string, any> | undefined {
     if (this.selectedKnowledgeId) {
       return { document_id: this.selectedKnowledgeId };
@@ -550,8 +926,85 @@ export class HomeComponent implements OnInit {
     return undefined;
   }
 
-  onModeToggle(mode: 'normal' | 'web'): void {
-    this.mode = mode;
+  onModeToggle(mode: 'normal' | 'web' | 'document'): void {
+    if (mode === 'web') {
+      this.mode = 'web';
+      return;
+    }
+    if (mode === 'document') {
+      this.mode = 'document';
+      return;
+    }
+    this.mode = 'normal';
+    this.enforceDocumentMode = false;
+  }
+
+  private teardownRunPolling(): void {
+    if (this.runStatusSub) {
+      this.runStatusSub.unsubscribe();
+      this.runStatusSub = undefined;
+    }
+  }
+
+  private resolveModelPreference(): string {
+    // If user explicitly selected a model, use it
+    if (this.selectedModel?.model) {
+      return this.selectedModel.model;
+    }
+
+    // Fallback based on active provider reported by backend status
+    if (this.activeProvider === 'Ollama') {
+      return 'llama3.1:latest';
+    }
+    if (this.activeProvider === 'OpenAI') {
+      return 'gpt-4o';
+    }
+
+    // If no provider info, prefer an existing active model choice
+    if (this.availableModels.length) {
+      return this.availableModels[0].model;
+    }
+
+    // Absolute default
+    return 'gpt-4o';
+  }
+
+  private resumeActiveRun(threadId: string): void {
+    this.runService.list(threadId).pipe(
+      map(runs => runs || []),
+      catchError(err => {
+        console.error('Error loading runs for thread:', err);
+        return of([] as Run[]);
+      })
+    ).subscribe(runs => {
+      this.rebuildRunMap(runs);
+      if (!runs.length) {
+        this.currentRun = null;
+        this.teardownRunPolling();
+        return;
+      }
+
+      const sorted = [...runs].sort((a, b) => {
+        const aTime = a.created_at ? new Date(a.created_at as any).getTime() : 0;
+        const bTime = b.created_at ? new Date(b.created_at as any).getTime() : 0;
+        return bTime - aTime;
+      });
+
+      const active = sorted.find(run =>
+        run.status === 'queued' ||
+        run.status === 'in_progress' ||
+        run.status === 'requires_action'
+      );
+
+      if (active) {
+        this.currentRun = active;
+        this.startRunPolling(active.id, threadId);
+      } else {
+        // No active run; keep the most recent as context but stop polling
+        this.currentRun = sorted[0];
+        this.teardownRunPolling();
+      }
+    });
   }
 
   onModelSelected(model: OpenAIKey): void {
@@ -581,5 +1034,73 @@ export class HomeComponent implements OnInit {
       this.router.navigate(['/auth/login']);
     }
   }
-}
 
+  private rebuildRunMap(runs: Run[]): void {
+    this.runMap = runs.reduce((acc, run) => {
+      const messageIds = [run.source_message_id, run.message_id].filter((id): id is number => !!id);
+      if (!messageIds.length) {
+        return acc;
+      }
+
+      const currentTime = run.created_at ? new Date(run.created_at as any).getTime() : 0;
+
+      messageIds.forEach(id => {
+        const existing = acc[id];
+        const existingTime = existing?.created_at ? new Date(existing.created_at as any).getTime() : 0;
+        if (!existing || currentTime >= existingTime) {
+          acc[id] = run;
+        }
+      });
+
+      return acc;
+    }, {} as Record<number, Run>);
+  }
+
+  private upsertRun(run: Run | null | undefined): void {
+    if (!run) {
+      return;
+    }
+
+    const messageIds = [run.source_message_id, run.message_id].filter((id): id is number => !!id);
+    if (!messageIds.length) {
+      return;
+    }
+
+    const currentTime = run.created_at ? new Date(run.created_at as any).getTime() : 0;
+    const nextMap = { ...this.runMap };
+
+    messageIds.forEach(id => {
+      const existing = nextMap[id];
+      const existingTime = existing?.created_at ? new Date(existing.created_at as any).getTime() : 0;
+      if (!existing || currentTime >= existingTime) {
+        nextMap[id] = run;
+      }
+    });
+
+    this.runMap = nextMap;
+  }
+
+  onRerunRequest(event: { message: Message, run: Run }): void {
+    const { message, run } = event;
+    this.rerunLoadingMessageId = message.id;
+    this.runService.rerun(run.id, { mode: run.mode }).subscribe({
+      next: (newRun) => {
+        this.upsertRun(newRun);
+        this.currentRun = newRun;
+        const threadId = newRun.thread_id || message.thread_id || run.thread_id || this.currentThread?.id;
+        if (!threadId) {
+          console.error('Rerun completed but threadId is missing', { run: newRun, message, currentThread: this.currentThread });
+          this.rerunLoadingMessageId = null;
+          return;
+        }
+        this.startRunPolling(newRun.id, threadId);
+        this.rerunLoadingMessageId = null;
+      },
+      error: (err) => {
+        console.error('Failed to rerun message:', err);
+        this.rerunLoadingMessageId = null;
+      }
+    });
+  }
+
+}

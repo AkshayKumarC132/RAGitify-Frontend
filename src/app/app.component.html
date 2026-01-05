@@ -1,2 +1,23 @@
 <router-outlet></router-outlet>
 
+<ng-container *ngIf="dialogState$ | async as dialogState">
+  <app-confirm-dialog
+    *ngIf="dialogState.show"
+    [title]="dialogState.options?.title || ''"
+    [message]="dialogState.options?.message || ''"
+    [itemName]="dialogState.options?.itemName || ''"
+    [secondaryMessage]="dialogState.options?.secondaryMessage || ''"
+    (confirmed)="onDialogConfirmed($event)">
+  </app-confirm-dialog>
+</ng-container>
+
+<ng-container *ngIf="searchPopupState$ | async as popupState">
+  <app-thread-search-popup
+    *ngIf="popupState.show"
+    [threads]="popupState.threads"
+    [currentThread]="popupState.currentThread"
+    (threadSelected)="onThreadSelected($event)"
+    (closed)="onSearchPopupClosed()">
+  </app-thread-search-popup>
+</ng-container>
+

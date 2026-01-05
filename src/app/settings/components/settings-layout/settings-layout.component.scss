@@ -1,0 +1,122 @@
+.settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 2rem;
+}
+
+body.theme-light .settings-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.settings-panel {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.close-button {
+  position: absolute;
+  top: 0.62rem;
+  left: 1rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0px solid var(--border-color);
+  border-radius: 57px;
+  color: var(--text-primary);
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+  }
+
+  i {
+    font-size: 14px;
+  }
+}
+
+.settings-layout {
+  display: flex;
+  height: 100%;
+  min-height: 600px;
+}
+
+.settings-sidebar {
+  width: 200px;
+  padding: 3rem 0 2rem 0;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+
+  i {
+    font-size: 14px;
+    width: 16px;
+    text-align: center;
+  }
+
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+  }
+
+  &.active {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    border-left-color: var(--accent-color);
+    font-weight: 500;
+  }
+}
+
+.settings-content {
+  flex: 1;
+  padding: 3rem 2.5rem 2.5rem 2.5rem;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+}
+
+.tab-content {
+  width: 100%;
+  max-width: 600px;
+}
+

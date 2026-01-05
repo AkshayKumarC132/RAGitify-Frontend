@@ -1,0 +1,6 @@
+<button class="theme-toggle" (click)="toggleTheme()" [attr.aria-label]="'Toggle color theme'">
+  <ng-container *ngIf="(theme$ | async) as theme">
+    <i class="fa-solid" [ngClass]="theme === 'dark' ? 'fa-sun' : 'fa-moon'"></i>
+    <span>{{ theme === 'dark' ? 'Light mode' : 'Dark mode' }}</span>
+  </ng-container>
+</button>

@@ -1,0 +1,144 @@
+<div class="models-section">
+  <h2 class="section-title">Models</h2>
+  
+  <div class="section-header">
+    <button class="btn-primary" (click)="toggleCreateForm()">
+      <i class="fa-solid fa-plus"></i>
+      <span>New Model</span>
+    </button>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="showCreateForm" class="create-form">
+    <h2>
+      <i class="fa-solid fa-square-pen"></i>
+      <span>Create New Model</span>
+    </h2>
+    <form [formGroup]="createForm" (ngSubmit)="onCreateSubmit()">
+      <div class="form-group">
+        <label>Name (Optional)</label>
+        <input type="text" formControlName="name" class="form-control" placeholder="Model name" />
+      </div>
+
+      <div class="form-group">
+        <label>Provider *</label>
+        <ng-container *ngIf="!selectedProvider; else lockedProvider">
+          <select formControlName="provider" class="form-control">
+            <option value="OpenAI">OpenAI</option>
+            <option value="Ollama">Ollama</option>
+          </select>
+        </ng-container>
+        <ng-template #lockedProvider>
+          <div class="locked-provider">
+            <i class="fa-solid fa-lock"></i>
+            <span>{{ selectedProvider }}</span>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="form-group">
+        <label>Model</label>
+        <div class="model-options" *ngIf="availableModelOptions.length">
+          <button
+            type="button"
+            class="model-chip"
+            *ngFor="let option of availableModelOptions"
+            [class.active]="createForm.get('model')?.value === option"
+            (click)="chooseModel(option)"
+          >
+            {{ option }}
+          </button>
+        </div>
+        <input type="text" formControlName="model" class="form-control" placeholder="Enter model" />
+      </div>
+
+      <div class="form-group" *ngIf="createForm.get('provider')?.value === 'OpenAI'">
+        <label>API Key *</label>
+        <input type="password" formControlName="api_key" class="form-control" placeholder="Enter API key" />
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" formControlName="is_active" />
+          Set as active
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="loading || createForm.invalid">
+          <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+          <span>{{ loading ? 'Creating…' : 'Create' }}</span>
+        </button>
+        <button type="button" class="btn-secondary" (click)="toggleCreateForm()" [disabled]="loading">
+          <i class="fa-solid fa-xmark"></i>
+          <span>Cancel</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="provider-showcase" *ngIf="displayedProviders.length">
+    <h2>
+      <i class="fa-solid fa-cloud"></i>
+      <span>{{ selectedProvider ? 'Configured Provider' : 'Available Providers' }}</span>
+    </h2>
+    <div class="provider-grid">
+      <div class="provider-card" *ngFor="let provider of displayedProviders" [class.disabled]="selectedProvider && provider.name !== selectedProvider">
+        <div class="provider-card__header">
+          <span class="provider-name">{{ provider.name }}</span>
+          <span class="provider-badge">{{ provider.badge }}</span>
+        </div>
+        <p class="provider-description">{{ provider.description }}</p>
+        <div class="provider-meta">
+          <span *ngIf="provider.requiresApiKey">Requires API Key</span>
+          <span *ngIf="!provider.requiresApiKey">Runs Locally</span>
+          <span *ngIf="selectedProvider === provider.name" class="active-provider">Configured</span>
+        </div>
+        <button class="btn-secondary" (click)="connectProvider(provider)" [disabled]="selectedProvider && provider.name !== selectedProvider">
+          <i class="fa-solid fa-plug"></i>
+          <span>{{ selectedProvider && provider.name !== selectedProvider ? 'View only' : 'Configure ' + provider.name }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="models-list" *ngIf="models.length">
+    <div class="list-heading">
+      <div>
+        <p class="label">Provider</p>
+        <p class="value">{{ selectedProvider || 'Select a provider' }}</p>
+      </div>
+      <div>
+        <p class="label">Models</p>
+        <p class="value">Choose a model to activate</p>
+      </div>
+    </div>
+    <div *ngFor="let model of models" class="model-item" [class.active]="model.is_active">
+      <div class="model-info">
+        <div class="model-name">{{ model.name || (model.provider + ' - ' + model.model) }}</div>
+        <div class="model-details">
+          <span>{{ model.provider }}</span> • <span>{{ model.model }}</span>
+          <span *ngIf="model.is_active" class="active-badge">Active</span>
+        </div>
+      </div>
+      <div class="model-actions">
+        <button *ngIf="!model.is_active" class="btn-small" (click)="setActive(model)">
+          <i class="fa-solid fa-check"></i>
+          <span>Set Active</span>
+        </button>
+        <button class="btn-small btn-danger" (click)="deleteModel(model.id)">
+          <i class="fa-solid fa-trash"></i>
+          <span>Delete</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <div *ngIf="models.length === 0" class="empty-state">
+    <p>No models found. Create your first model to get started.</p>
+  </div>
+</div>

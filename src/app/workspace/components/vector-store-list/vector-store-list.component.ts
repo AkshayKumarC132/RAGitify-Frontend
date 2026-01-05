@@ -10,6 +10,8 @@ export class VectorStoreListComponent {
   @Input() vectorStores: VectorStore[] = [];
   @Input() selectedVectorStore: VectorStore | null = null;
   @Output() vectorStoreSelected = new EventEmitter<VectorStore>();
+  @Output() editRequested = new EventEmitter<VectorStore>();
+  @Output() deleteRequested = new EventEmitter<VectorStore>();
 
   selectStore(store: VectorStore): void {
     this.vectorStoreSelected.emit(store);
@@ -17,5 +19,15 @@ export class VectorStoreListComponent {
 
   formatDate(date: string): string {
     return new Date(date).toLocaleDateString();
+  }
+
+  requestEdit(store: VectorStore, event: MouseEvent): void {
+    event.stopPropagation();
+    this.editRequested.emit(store);
+  }
+
+  requestDelete(store: VectorStore, event: MouseEvent): void {
+    event.stopPropagation();
+    this.deleteRequested.emit(store);
   }
 }

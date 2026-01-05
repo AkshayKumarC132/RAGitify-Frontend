@@ -1,0 +1,53 @@
+<div class="settings-overlay" (click)="goToHome()">
+  <div class="settings-panel" (click)="$event.stopPropagation()">
+    <button class="close-button" (click)="goToHome()" aria-label="Close settings">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    
+    <div class="settings-layout">
+      <nav class="settings-sidebar">
+        <button 
+          class="nav-item" 
+          [class.active]="activeTab === 'general'"
+          (click)="setActiveTab('general')"
+        >
+          <i class="fa-solid fa-gear"></i>
+          <span>General</span>
+        </button>
+        
+        <button 
+          class="nav-item" 
+          [class.active]="activeTab === 'models'"
+          (click)="setActiveTab('models')"
+        >
+          <i class="fa-solid fa-robot"></i>
+          <span>Models</span>
+        </button>
+        
+        <button 
+          class="nav-item" 
+          [class.active]="activeTab === 'account'"
+          (click)="setActiveTab('account')"
+        >
+          <i class="fa-solid fa-user"></i>
+          <span>Account</span>
+        </button>
+      </nav>
+
+      <div class="settings-content">
+        <div *ngIf="activeTab === 'general'" class="tab-content">
+          <app-general-section></app-general-section>
+        </div>
+        
+        <div *ngIf="activeTab === 'models'" class="tab-content">
+          <app-models-section></app-models-section>
+        </div>
+        
+        <div *ngIf="activeTab === 'account'" class="tab-content">
+          <app-account-section></app-account-section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
