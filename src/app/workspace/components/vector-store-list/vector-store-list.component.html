@@ -3,15 +3,16 @@
     <i class="fa-solid fa-folder-tree"></i>
     <span>Library</span>
   </h2>
-  <div *ngFor="let store of vectorStores"
-       class="store-item"
-       [class.selected]="selectedVectorStore?.id === store.id"
-       (click)="selectStore(store)">
+  <div *ngFor="let store of vectorStores" class="store-item" [class.selected]="selectedVectorStore?.id === store.id"
+    (click)="selectStore(store)">
     <div class="store-meta">
       <div class="store-name">{{ store.name }}</div>
       <div class="store-date">Created: {{ formatDate(store.created_at) }}</div>
     </div>
     <div class="store-actions">
+      <button type="button" (click)="requestChat(store, $event)" title="Chat with library">
+        <i class="fa-solid fa-comments"></i>
+      </button>
       <button type="button" (click)="requestEdit(store, $event)" title="Rename library">
         <i class="fa-solid fa-pen"></i>
       </button>
@@ -24,4 +25,3 @@
     No library entries found.
   </div>
 </div>
-

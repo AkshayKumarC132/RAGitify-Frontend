@@ -1,0 +1,126 @@
+<div class="playground-container" [class.has-messages]="messages.length > 0">
+    <button class="close-btn" (click)="closed.emit()" title="Exit Play Ground">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <div class="playground-header" *ngIf="messages.length === 0">
+        <h1>Play Ground</h1>
+        <p>Messages in this chat are not saved and do not use memory.</p>
+    </div>
+
+    <div class="chat-messages" #messagesContainer>
+        <div *ngFor="let msg of messages" class="message-bubble" [class.user]="msg.role === 'user'"
+            [class.assistant]="msg.role === 'assistant'">
+            <div class="message-content">
+                <div class="message-text" [innerText]="msg.content"></div>
+            </div>
+        </div>
+
+        <div *ngIf="loading" class="loading-indicator">
+            <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-area-wrapper">
+        <div class="input-card">
+            <div class="attachment-controls">
+                <button class="add-button" [class.active]="attachmentMenuOpen" title="Attach Documents"
+                    (click)="toggleAttachmentMenu()">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+
+                <div class="attachment-menu" *ngIf="attachmentMenuOpen" (click)="$event.stopPropagation()">
+                    <button type="button" (click)="openLibraryPanel()" [disabled]="!libraries.length">
+                        <i class="fa-solid fa-book"></i> Attach Documents
+                    </button>
+                </div>
+            </div>
+
+            <textarea [(ngModel)]="inputMessage" (keydown)="onKeyPress($event)" placeholder="How can I help you today?"
+                [disabled]="loading || !conversationId" rows="1"></textarea>
+
+            <div class="right-actions">
+                <button class="send-btn" (click)="sendMessage()" [disabled]="!inputMessage.trim() || loading">
+                    <i class="fa-solid fa-arrow-up"></i>
+                </button>
+            </div>
+
+            <!-- Library/Document Selection Panel -->
+            <div class="attachment-panel" *ngIf="libraryPanelOpen" (click)="$event.stopPropagation()">
+                <h4>Attach Documents</h4>
+
+                <div class="library-mode-switch">
+                    <button type="button" [class.active]="selectionMode === 'library'"
+                        (click)="setSelectionMode('library')">
+                        Whole Library
+                    </button>
+                    <button type="button" [class.active]="selectionMode === 'documents'" [disabled]="!documents.length"
+                        (click)="setSelectionMode('documents')">
+                        Specific Documents
+                    </button>
+                </div>
+
+                <ng-container [ngSwitch]="selectionMode">
+                    <div class="library-list" *ngSwitchCase="'library'">
+                        <ng-container *ngIf="libraries.length; else emptyLibrary">
+                            <label *ngFor="let library of libraries">
+                                <input type="radio" name="library" [value]="library.id"
+                                    [(ngModel)]="pendingLibraryId" />
+                                <div class="library-meta">
+                                    <span class="title">{{ library.name }}</span>
+                                    <span class="meta">Created {{ library.created_at | date:'short' }}</span>
+                                </div>
+                            </label>
+                        </ng-container>
+                    </div>
+
+                    <div class="documents-list" *ngSwitchCase="'documents'">
+                        <ng-container *ngIf="documents.length; else emptyDocuments">
+                            <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
+                                <div class="group-title">{{ group.name }}</div>
+                                <label *ngFor="let doc of group.documents"
+                                    (click)="toggleDocumentSelection(doc.id, $event)">
+                                    <input type="checkbox" [checked]="isDocumentSelected(doc.id)" />
+                                    <div class="library-meta">
+                                        <span class="title">{{ doc.title || ('Document ' + doc.id) }}</span>
+                                        <span class="meta">Uploaded {{ doc.uploaded_at | date:'short' }}</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </ng-container>
+                    </div>
+                </ng-container>
+
+                <ng-template #emptyLibrary>
+                    <p class="empty-text">Create a library in Workspace first to attach it.</p>
+                </ng-template>
+                <ng-template #emptyDocuments>
+                    <p class="empty-text">No documents available. Upload knowledge in Workspace.</p>
+                </ng-template>
+
+                <div class="panel-actions">
+                    <button type="button" (click)="confirmSelection()"
+                        [disabled]="(selectionMode === 'library' && !pendingLibraryId) || (selectionMode === 'documents' && !pendingDocumentIds.size)">
+                        Apply
+                    </button>
+                    <button type="button" (click)="clearSelection()">Clear</button>
+                    <button type="button" (click)="closePanel()">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="attachment-pill" *ngIf="selectionCount > 0">
+            <span>{{ selectionLabel }}</span>
+            <button type="button" (click)="clearSelection()">×</button>
+        </div>
+
+        <div class="mode-indicator" [class.document]="mode === 'document'">
+            {{ mode === 'normal' ? 'Play Ground Active' : 'Document Mode Active' }}
+        </div>
+        <div class="error-toast" *ngIf="errorMessage">{{ errorMessage }}</div>
+    </div>
+</div>

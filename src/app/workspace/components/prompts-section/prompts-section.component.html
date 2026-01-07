@@ -35,12 +35,8 @@
 
       <div class="form-group">
         <label>Instructions</label>
-        <textarea
-          formControlName="instructions"
-          class="form-control"
-          rows="8"
-          placeholder="Enter assistant instructions (system prompt)..."
-        ></textarea>
+        <textarea formControlName="instructions" class="form-control" rows="8"
+          placeholder="Enter assistant instructions (system prompt)..."></textarea>
       </div>
 
       <div class="form-group">
@@ -121,6 +117,10 @@
           <span>Updated {{ assistant.updated_at | date:'mediumDate' }}</span>
         </span>
         <div class="action-buttons">
+          <button class="btn-small" (click)="testAssistant(assistant)" title="Test this prompt">
+            <i class="fa-solid fa-play"></i>
+            <span>Test</span>
+          </button>
           <button class="btn-small" (click)="startEdit(assistant)">
             <i class="fa-solid fa-pen"></i>
             <span>Edit</span>
@@ -136,5 +136,7 @@
       No prompts created yet.
     </div>
   </div>
-</div>
 
+  <app-assistant-chat *ngIf="testingAssistant" [assistant]="testingAssistant"
+    (closed)="closeTestChat()"></app-assistant-chat>
+</div>

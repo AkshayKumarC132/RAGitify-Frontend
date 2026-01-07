@@ -27,6 +27,8 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   editingVectorStore: VectorStore | null = null;
   editingDocumentId: string | null = null;
   documentTitleControl = new FormControl('', [Validators.required, Validators.minLength(3)]);
+  chatDocument: Document | null = null;
+  chatLibrary: VectorStore | null = null;
 
   constructor(
     private vectorStoreService: VectorStoreService,
@@ -185,7 +187,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   async deleteDocument(documentId: string): Promise<void> {
     const document = this.documents.find(doc => doc.id === documentId);
     const documentName = document?.title || 'this document';
-    
+
     const confirmed = await this.confirmDialogService.confirm({
       title: 'Delete document?',
       message: 'This will delete',
@@ -270,6 +272,22 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
 
   formatDate(date: string): string {
     return new Date(date).toLocaleDateString();
+  }
+
+  openDocumentChat(document: Document): void {
+    this.chatDocument = document;
+  }
+
+  closeDocumentChat(): void {
+    this.chatDocument = null;
+  }
+
+  openLibraryChat(store: VectorStore): void {
+    this.chatLibrary = store;
+  }
+
+  closeLibraryChat(): void {
+    this.chatLibrary = null;
   }
 
   private extractErrorMessage(error: any, fallback: string): string {

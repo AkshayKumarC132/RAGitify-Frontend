@@ -12,6 +12,7 @@ export class VectorStoreListComponent {
   @Output() vectorStoreSelected = new EventEmitter<VectorStore>();
   @Output() editRequested = new EventEmitter<VectorStore>();
   @Output() deleteRequested = new EventEmitter<VectorStore>();
+  @Output() chatRequested = new EventEmitter<VectorStore>();
 
   selectStore(store: VectorStore): void {
     this.vectorStoreSelected.emit(store);
@@ -29,5 +30,10 @@ export class VectorStoreListComponent {
   requestDelete(store: VectorStore, event: MouseEvent): void {
     event.stopPropagation();
     this.deleteRequested.emit(store);
+  }
+
+  requestChat(store: VectorStore, event: MouseEvent): void {
+    event.stopPropagation();
+    this.chatRequested.emit(store);
   }
 }

@@ -1,7 +1,18 @@
 <div class="empty-state">
   <div class="empty-content">
     <!-- <h4 class="eyebrow">Start a new conversation</h4> -->
-    <h1>{{ greeting$ | async }}</h1>
+    <!-- <h4 class="eyebrow">Start a new conversation</h4> -->
+    <div class="empty-state-content" *ngIf="isTemporaryChat; else normalGreeting">
+      <h1>Temporary Chat</h1>
+      <p>Messages in this chat are not saved and do not use memory.</p>
+    </div>
+
+    <ng-template #normalGreeting>
+      <div class="empty-state-content">
+        <h1>{{ greeting$ | async }}</h1>
+        <p>How can I help you today?</p>
+      </div>
+    </ng-template>
     <!-- <p class="subtitle">Type a prompt below to begin.</p> -->
   </div>
 </div>

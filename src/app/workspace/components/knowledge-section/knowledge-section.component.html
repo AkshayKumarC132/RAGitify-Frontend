@@ -12,9 +12,7 @@
         <i class="fa-solid" [ngClass]="showCreateVectorStoreForm ? 'fa-xmark' : 'fa-folder-plus'"></i>
         <span>{{ showCreateVectorStoreForm ? 'Close' : 'New Library' }}</span>
       </button>
-      <button class="btn-primary"
-              [disabled]="vectorStores.length === 0"
-              (click)="showUploadForm = !showUploadForm">
+      <button class="btn-primary" [disabled]="vectorStores.length === 0" (click)="showUploadForm = !showUploadForm">
         <i class="fa-solid" [ngClass]="showUploadForm ? 'fa-xmark' : 'fa-cloud-arrow-up'"></i>
         <span>{{ showUploadForm ? 'Close upload' : 'Upload Documents' }}</span>
       </button>
@@ -75,12 +73,8 @@
   </div>
 
   <div *ngIf="showUploadForm" class="panel upload-panel">
-    <app-document-upload
-      [vectorStores]="vectorStores"
-      [defaultVectorStoreId]="selectedVectorStore?.id || null"
-      (uploaded)="onDocumentUploaded()"
-      (cancel)="showUploadForm = false"
-    ></app-document-upload>
+    <app-document-upload [vectorStores]="vectorStores" [defaultVectorStoreId]="selectedVectorStore?.id || null"
+      (uploaded)="onDocumentUploaded()" (cancel)="showUploadForm = false"></app-document-upload>
   </div>
 
   <div class="knowledge-grid">
@@ -91,14 +85,10 @@
           <span>{{ vectorStores.length }} total</span>
         </div>
         <div *ngIf="loadingStores" class="loading-state">Loading library...</div>
-        <app-vector-store-list
-          *ngIf="!loadingStores"
-          [vectorStores]="vectorStores"
-          [selectedVectorStore]="selectedVectorStore"
-          (vectorStoreSelected)="onVectorStoreSelected($event)"
-          (editRequested)="startVectorStoreEdit($event)"
-          (deleteRequested)="deleteVectorStore($event)"
-        ></app-vector-store-list>
+        <app-vector-store-list *ngIf="!loadingStores" [vectorStores]="vectorStores"
+          [selectedVectorStore]="selectedVectorStore" (vectorStoreSelected)="onVectorStoreSelected($event)"
+          (editRequested)="startVectorStoreEdit($event)" (deleteRequested)="deleteVectorStore($event)"
+          (chatRequested)="openLibraryChat($event)"></app-vector-store-list>
         <div *ngIf="!loadingStores && vectorStores.length === 0" class="empty-state">
           Create a library to begin uploading documents.
         </div>
@@ -148,6 +138,10 @@
               </span>
             </div>
             <div class="document-actions">
+              <button class="btn-link" (click)="openDocumentChat(doc)" [disabled]="doc.status !== 'completed'">
+                <i class="fa-solid fa-comments"></i>
+                <span>Chat</span>
+              </button>
               <button class="btn-link" (click)="startDocumentRename(doc)" [disabled]="editingDocumentId === doc.id">
                 <i class="fa-solid fa-pen"></i>
                 <span>Rename</span>
@@ -162,5 +156,8 @@
       </div>
     </div>
   </div>
-</div>
 
+  <app-document-chat *ngIf="chatDocument" [document]="chatDocument" (closed)="closeDocumentChat()"></app-document-chat>
+
+  <app-library-chat *ngIf="chatLibrary" [vectorStore]="chatLibrary" (closed)="closeLibraryChat()"></app-library-chat>
+</div>

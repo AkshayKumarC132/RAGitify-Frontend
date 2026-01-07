@@ -44,6 +44,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Input() prompts: Assistant[] = [];
   @Input() selectedPromptId: string | null = null;
   @Input() hasExistingThread = false;
+  @Input() isTemporaryChat = false;
   @Input() currentRun: Run | null = null;
   @Output() messageSent = new EventEmitter<string>();
   @Output() modeToggle = new EventEmitter<'normal' | 'web' | 'document'>();

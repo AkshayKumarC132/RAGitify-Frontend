@@ -3,14 +3,8 @@
 
   <div class="input-wrapper">
     <div class="attachment-controls">
-      <button
-        type="button"
-        class="attachment-toggle"
-        (click)="toggleAttachmentMenu()"
-        [class.active]="attachmentMenuOpen"
-        title="Attachments"
-        aria-label="Toggle attachments"
-      >
+      <button type="button" class="attachment-toggle" (click)="toggleAttachmentMenu()"
+        [class.active]="attachmentMenuOpen" title="Attachments" aria-label="Toggle attachments">
         <i class="fa-solid fa-plus"></i>
       </button>
 
@@ -35,50 +29,27 @@
     </div>
 
     <div class="chat-input-shell">
-      <textarea
-        #messageArea
-        [(ngModel)]="message"
-        (keydown)="onKeyPress($event)"
-        (input)="onInputChange()"
-        placeholder="How can I help you today?"
-        class="chat-input"
-        [class.overflowing]="isOverflowing"
-        [disabled]="loading"
-        rows="1"
-      ></textarea>
+      <textarea #messageArea [(ngModel)]="message" (keydown)="onKeyPress($event)" (input)="onInputChange()"
+        placeholder="How can I help you today?" class="chat-input" [class.overflowing]="isOverflowing"
+        [disabled]="loading" rows="1"></textarea>
     </div>
 
     <div class="input-actions">
-      <button
-        type="button"
-        class="web-mode-button"
-        [class.active]="mode === 'web'"
-        (click)="toggleWebMode()"
-        [title]="mode === 'web' ? 'Disable Web Mode' : 'Enable Web Mode'"
-      >
+      <button type="button" class="web-mode-button" [class.active]="mode === 'web'" (click)="toggleWebMode()"
+        [title]="mode === 'web' ? 'Disable Web Mode' : 'Enable Web Mode'">
         <i class="fa-solid fa-globe"></i>
       </button>
 
-      <button
-        type="button"
-        class="mic-button"
-        [class.active]="isListening"
-        [disabled]="loading || !speechSupported"
-        (click)="toggleVoiceInput()"
-        [title]="isListening ? 'Stop voice input' : 'Voice dictation'"
-        aria-label="Toggle voice dictation"
-      >
+      <button type="button" class="mic-button" [class.active]="isListening" [disabled]="loading || !speechSupported"
+        (click)="toggleVoiceInput()" [title]="isListening ? 'Stop voice input' : 'Voice dictation'"
+        aria-label="Toggle voice dictation">
         <i class="fa-solid" [ngClass]="isListening ? 'fa-microphone-slash' : 'fa-microphone'"></i>
         <span class="listening-pulse" *ngIf="isListening"></span>
       </button>
 
-      <button
-        class="send-button"
-        (click)="runActive ? onCancelRun() : sendMessage()"
-        [disabled]="!runActive && (!message.trim() || loading)"
-        [title]="runActive ? 'Stop run' : 'Send message'"
-        aria-label="Send message"
-      >
+      <button class="send-button" (click)="runActive ? onCancelRun() : sendMessage()"
+        [disabled]="!runActive && (!message.trim() || loading)" [title]="runActive ? 'Stop run' : 'Send message'"
+        aria-label="Send message">
         <ng-container *ngIf="runActive; else sendState">
           <i class="fa-solid fa-stop"></i>
         </ng-container>
@@ -211,7 +182,10 @@
   <div class="mode-indicator" *ngIf="mode === 'web'">
     <span>Web Mode Active</span>
   </div>
-  <div class="mode-indicator document" *ngIf="mode === 'document'">
+  <div class="mode-indicator document" *ngIf="isTemporaryChat">
+    <span>Temporary Mode Active</span>
+  </div>
+  <div class="mode-indicator document" *ngIf="mode === 'document' && !isTemporaryChat">
     <span>Documents Mode Active</span>
   </div>
 

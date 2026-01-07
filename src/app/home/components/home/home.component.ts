@@ -6,6 +6,7 @@ import { of, lastValueFrom, EMPTY, Subscription, Subject } from 'rxjs';
 import { ThreadService } from '../../../shared/services/thread.service';
 import { MessageService } from '../../../shared/services/message.service';
 import { RunService } from '../../../shared/services/run.service';
+import { ResponseService } from '../../../shared/services/response.service';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { AssistantService } from '../../../shared/services/assistant.service';
 import { OpenAIKeyService } from '../../../shared/services/openai-key.service';
@@ -16,6 +17,7 @@ import { ThreadSearchPopupService } from '../../../shared/services/thread-search
 import { Thread } from '../../../shared/models/thread.model';
 import { Message } from '../../../shared/models/message.model';
 import { Run } from '../../../shared/models/run.model';
+import { ResponseRecord, ResponseCreateRequest } from '../../../shared/models/response.model';
 import { OpenAIKey } from '../../../shared/models/openai-key.model';
 import { Document } from '../../../shared/models/document.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
@@ -67,12 +69,14 @@ export class HomeComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private activeProvider: SelectedLLMProvider | null = null;
 
+
   constructor(
     private router: Router,
     private route: ActivatedRoute,
     private threadService: ThreadService,
     private messageService: MessageService,
     private runService: RunService,
+    private responseService: ResponseService,
     private vectorStoreService: VectorStoreService,
     private assistantService: AssistantService,
     private openAIKeyService: OpenAIKeyService,
@@ -152,6 +156,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       })
     ).subscribe();
 
+    // Listen for thread selections from search popup
     // Listen for thread selections from search popup
     this.searchPopupSub = this.threadSearchPopupService.getThreadSelected().subscribe(thread => {
       this.onThreadSelected(thread);
@@ -321,7 +326,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.rerunLoadingMessageId = null;
         this.currentThread = thread;
         this.loadMessages(threadId);
-        this.setCurrentVectorStore(thread.vector_store_id_read);
+        this.setCurrentVectorStore(thread.vector_store_id_read || null);
         this.resumeActiveRun(threadId);
       },
       error: (err) => console.error('Error loading thread:', err)
@@ -370,8 +375,26 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.router.navigate(['/home']);
   }
 
+  isTemporaryChat = false;
+
+  toggleTemporaryChat(): void {
+    if (this.currentRun || this.loading) return; // Prevent toggling while active
+    this.isTemporaryChat = !this.isTemporaryChat;
+    // We don't need to clear messages or thread context because the Playground handles its own state
+    // and when we toggle back, we might want to restore the previous state (or better yet, Home usually manages one state).
+    // If isTemporaryChat is true, the template will hide the main chat.
+  }
+
   onMessageSent(content: string): void {
     if (!content.trim()) return;
+
+    if (this.isTemporaryChat) {
+      // Playground handles its own input, this messageSent event might come from the main chat input
+      // But if we are in temporary chat mode, we shouldn't be seeing the main chat input?
+      // We'll see in the template. If the main chat input is hidden, this won't be called.
+      // Just in case:
+      return;
+    }
 
     const optimisticMessage: Message = {
       id: Date.now(),
@@ -401,7 +424,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 
-  private async ensureVectorStoreAndThread(): Promise<{ vectorStoreId: string; threadId: string }> {
+
+
+  private async ensureVectorStoreAndThread(): Promise<{ vectorStoreId: string | null; threadId: string }> {
     const vectorStoreId = await this.getDesiredVectorStoreId();
 
     if (this.currentThread && this.currentThread.vector_store_id_read === vectorStoreId) {
@@ -409,8 +434,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       return { vectorStoreId, threadId: this.currentThread.id };
     }
 
+    const createRequest: { vector_store_id?: string; title?: string } = {};
+    if (vectorStoreId) {
+      createRequest.vector_store_id = vectorStoreId;
+    }
+
     const thread = await lastValueFrom(
-      this.threadService.create({ vector_store_id: vectorStoreId })
+      this.threadService.create(createRequest)
     );
     this.currentThread = thread;
     this.setCurrentVectorStore(vectorStoreId);
@@ -422,7 +452,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     return { vectorStoreId, threadId: thread.id };
   }
 
-  private async getDesiredVectorStoreId(): Promise<string> {
+  private async getDesiredVectorStoreId(): Promise<string | null> {
     if (this.selectedDocumentIds.length) {
       return this.ensureDocumentSelectionVectorStore();
     }
@@ -439,7 +469,14 @@ export class HomeComponent implements OnInit, OnDestroy {
     return this.ensureDefaultVectorStore();
   }
 
-  private async ensureDefaultVectorStore(): Promise<string> {
+  private async ensureDefaultVectorStore(): Promise<string | null> {
+    // Don't create a vector store automatically - return null instead
+    // Vector stores will only be created when explicitly needed (e.g., documents selected)
+    return null;
+  }
+
+  private async createVectorStoreForUpload(): Promise<string> {
+    // Create a vector store when files/documents are being uploaded
     const name = `Chat-${Date.now()}`;
     try {
       const created = await lastValueFrom(this.vectorStoreService.create({ name }));
@@ -451,7 +488,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.enforceDocumentMode = false;
       return created.id;
     } catch (error) {
-      console.error('Error creating default vector store:', error);
+      console.error('Error creating vector store for upload:', error);
       const fallback = await lastValueFrom(this.vectorStoreService.list());
       if (fallback?.length) {
         const existingId = fallback[0].id;
@@ -489,7 +526,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     return vectorStore.id;
   }
 
-  private ensureAssistant(vectorStoreId: string, threadId: string): Promise<{ assistantId: string; threadId: string }> {
+  private ensureAssistant(vectorStoreId: string | null, threadId: string): Promise<{ assistantId: string; threadId: string }> {
     // If a prompt is selected, use it
     if (this.selectedPromptId) {
       const selectedPrompt = this.prompts.find(p => p.id === this.selectedPromptId);
@@ -511,20 +548,26 @@ export class HomeComponent implements OnInit, OnDestroy {
           return of({ assistantId: defaultAssistant.id, threadId });
         }
 
-        const existingAssistant = assistants.find(a => a.vector_store_id === vectorStoreId);
-        if (existingAssistant) {
-          return of({ assistantId: existingAssistant.id, threadId });
+        // Only match by vector_store_id if vectorStoreId is not null
+        if (vectorStoreId) {
+          const existingAssistant = assistants.find(a => a.vector_store_id === vectorStoreId);
+          if (existingAssistant) {
+            return of({ assistantId: existingAssistant.id, threadId });
+          }
         }
 
         // Create a single assistant only when none exist for the user
         const model = this.resolveModelPreference();
-        return this.assistantService.create({
+        const createRequest: any = {
           name: 'Default Assistant',
-          vector_store_id: vectorStoreId,
           instructions: 'You are a helpful assistant.',
           model: model,
           tools: []
-        }).pipe(
+        };
+        if (vectorStoreId) {
+          createRequest.vector_store_id = vectorStoreId;
+        }
+        return this.assistantService.create(createRequest).pipe(
           map(assistant => {
             this.prompts = [...this.prompts, assistant];
             return { assistantId: assistant.id, threadId };
@@ -534,13 +577,16 @@ export class HomeComponent implements OnInit, OnDestroy {
       catchError(() => {
         // Create new assistant on error
         const model = this.resolveModelPreference();
-        return this.assistantService.create({
+        const createRequest: any = {
           name: 'Default Assistant',
-          vector_store_id: vectorStoreId,
           instructions: 'You are a helpful assistant.',
           model: model,
           tools: []
-        }).pipe(
+        };
+        if (vectorStoreId) {
+          createRequest.vector_store_id = vectorStoreId;
+        }
+        return this.assistantService.create(createRequest).pipe(
           map(assistant => {
             this.prompts = [...this.prompts, assistant];
             return { assistantId: assistant.id, threadId };
@@ -594,7 +640,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   async onFilesSelected(files: FileList): Promise<void> {
     if (!files || !files.length) return;
     try {
-      const { vectorStoreId } = await this.ensureVectorStoreAndThread();
+      let { vectorStoreId } = await this.ensureVectorStoreAndThread();
+      // Files require a vector store - create one if it doesn't exist
+      if (!vectorStoreId) {
+        vectorStoreId = await this.createVectorStoreForUpload();
+      }
       await this.uploadFiles(Array.from(files), vectorStoreId);
     } catch (error) {
       console.error('Error uploading files:', error);
@@ -605,7 +655,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   async onWebpageAttach(payload: { url: string; title?: string }): Promise<void> {
     if (!payload?.url) return;
     try {
-      const { vectorStoreId } = await this.ensureVectorStoreAndThread();
+      let { vectorStoreId } = await this.ensureVectorStoreAndThread();
+      // Webpage attachment requires a vector store - create one if it doesn't exist
+      if (!vectorStoreId) {
+        vectorStoreId = await this.createVectorStoreForUpload();
+      }
       this.attachmentsInProgress = true;
       const response = await lastValueFrom(
         this.documentService.ingest({ s3_file_url: payload.url, vector_store_id: vectorStoreId })
@@ -626,7 +680,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   async onNotesAttach(note: { title: string; content: string }): Promise<void> {
     if (!note?.content?.trim()) return;
     try {
-      const { vectorStoreId } = await this.ensureVectorStoreAndThread();
+      let { vectorStoreId } = await this.ensureVectorStoreAndThread();
+      // Note attachment requires a vector store - create one if it doesn't exist
+      if (!vectorStoreId) {
+        vectorStoreId = await this.createVectorStoreForUpload();
+      }
       const sanitizedTitle = (note.title || 'note').trim().replace(/\s+/g, '-');
       const filename = `${sanitizedTitle || 'note'}-${Date.now()}.txt`;
       const file = new File([note.content], filename, { type: 'text/plain' });
@@ -676,7 +734,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.currentThread) {
+    if (this.currentThread && this.currentThread.vector_store_id_read) {
       const targetVectorStore = this.currentThread.vector_store_id_read;
       this.documentSelectionVectorStoreId = targetVectorStore;
       this.setCurrentVectorStore(targetVectorStore);

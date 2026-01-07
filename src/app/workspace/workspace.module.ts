@@ -9,6 +9,9 @@ import { ToolsSectionComponent } from './components/tools-section/tools-section.
 import { DocumentUploadComponent } from './components/document-upload/document-upload.component';
 import { VectorStoreListComponent } from './components/vector-store-list/vector-store-list.component';
 import { AssistantFormComponent } from './components/assistant-form/assistant-form.component';
+import { DocumentChatComponent } from './components/document-chat/document-chat.component';
+import { AssistantChatComponent } from './components/assistant-chat/assistant-chat.component';
+import { LibraryChatComponent } from './components/library-chat/library-chat.component';
 import { WorkspaceRoutingModule } from './workspace-routing.module';
 
 @NgModule({
@@ -19,7 +22,11 @@ import { WorkspaceRoutingModule } from './workspace-routing.module';
     ToolsSectionComponent,
     DocumentUploadComponent,
     VectorStoreListComponent,
-    AssistantFormComponent
+    AssistantFormComponent,
+    AssistantFormComponent,
+    DocumentChatComponent,
+    AssistantChatComponent,
+    LibraryChatComponent
   ],
   imports: [
     CommonModule,

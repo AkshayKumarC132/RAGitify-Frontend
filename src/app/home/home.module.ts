@@ -9,6 +9,7 @@ import { MessageBubbleComponent } from './components/message-bubble/message-bubb
 import { ModelSelectorComponent } from './components/model-selector/model-selector.component';
 import { ThreadSidebarComponent } from './components/thread-sidebar/thread-sidebar.component';
 import { EmptyStateComponent } from './components/empty-state/empty-state.component';
+import { PlaygroundComponent } from './components/playground/playground.component';
 import { HomeRoutingModule } from './home-routing.module';
 
 @NgModule({
@@ -19,7 +20,8 @@ import { HomeRoutingModule } from './home-routing.module';
     MessageBubbleComponent,
     ModelSelectorComponent,
     ThreadSidebarComponent,
-    EmptyStateComponent
+    EmptyStateComponent,
+    PlaygroundComponent
   ],
   imports: [
     CommonModule,

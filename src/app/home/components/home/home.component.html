@@ -11,73 +11,47 @@
 
 <div class="home-container" *ngIf="!showSetupBlocker">
   <div class="sidebar" [class.collapsed]="isSidebarCollapsed">
-    <app-thread-sidebar
-      [threads]="threads"
-      [currentThread]="currentThread"
-      [user]="currentUser"
-      (threadSelected)="onThreadSelected($event)"
-      (newThread)="onNewThread()"
-      (workspaceNavigate)="onWorkspaceNavigate()"
-      [collapsed]="isSidebarCollapsed"
-      (sidebarToggled)="onSidebarToggled($event)"
-      (manageProfile)="onManageProfile()"
-      (logoutRequested)="logout()"
-      (renameThread)="onThreadRename($event)"
-      (removeThread)="onThreadRemove($event)"
-    ></app-thread-sidebar>
+    <app-thread-sidebar [threads]="threads" [currentThread]="currentThread" [user]="currentUser"
+      (threadSelected)="onThreadSelected($event)" (newThread)="onNewThread()"
+      (workspaceNavigate)="onWorkspaceNavigate()" [collapsed]="isSidebarCollapsed"
+      (sidebarToggled)="onSidebarToggled($event)" (manageProfile)="onManageProfile()" (logoutRequested)="logout()"
+      (renameThread)="onThreadRename($event)" (removeThread)="onThreadRemove($event)"></app-thread-sidebar>
   </div>
 
   <div class="main-content" [class.empty-mode]="isConversationEmpty">
-    <div class="chat-area">
-      <!-- <div class="chat-toolbar">
-        <div class="toolbar-label">
-          <i class="fa-solid fa-robot" aria-hidden="true"></i>
-          <span>{{ selectedModel?.name || selectedModel?.model || 'Default Model' }}</span>
+    <ng-container *ngIf="!isTemporaryChat">
+      <div class="chat-area">
+        <div class="chat-actions" *ngIf="!currentThread">
+          <button class="icon-button" (click)="toggleTemporaryChat()" [class.active]="isTemporaryChat"
+            title="Play Ground">
+            <i class="fa-solid fa-dice"></i>
+          </button>
         </div>
-        <div class="toolbar-label">
-          <i class="fa-regular fa-clock" aria-hidden="true"></i>
-          <span>{{ selectedModel?.provider || 'Auto' }}</span>
-        </div>
-      </div> -->
 
-      <app-empty-state *ngIf="isConversationEmpty"></app-empty-state>
+        <app-empty-state *ngIf="isConversationEmpty" [isTemporaryChat]="isTemporaryChat"></app-empty-state>
 
-      <app-chat-container
-        *ngIf="!isConversationEmpty"
-        [messages]="messages"
-        [currentRun]="currentRun"
-        [runMap]="runMap"
-        [rerunLoadingMessageId]="rerunLoadingMessageId"
-        (rerunRequest)="onRerunRequest($event)"
-      ></app-chat-container>
-    </div>
-
-    <div class="input-area" [class.centered]="isConversationEmpty">
-      <app-chat-input
-        [mode]="mode"
-        [loading]="loading || attachmentsInProgress"
-        [currentRun]="currentRun"
-        [libraries]="libraries"
-        [selectedLibraryId]="selectedLibraryId"
-        [documents]="allDocuments"
-        [selectedDocumentIds]="selectedDocumentIds"
-        [prompts]="prompts"
-        [selectedPromptId]="selectedPromptId"
-        [hasExistingThread]="!!currentThread"
-        (messageSent)="onMessageSent($event)"
-        (cancelRun)="onCancelRun()"
-        (modeToggle)="onModeToggle($event)"
-        (filesSelected)="onFilesSelected($event)"
-        (webpageAttached)="onWebpageAttach($event)"
-        (notesAttached)="onNotesAttach($event)"
-        (librarySelected)="onLibrarySelected($event)"
-        (promptSelected)="onPromptSelected($event)"
-      ></app-chat-input>
-
-      <div class="attachment-status" *ngIf="attachmentMessage">
-        {{ attachmentMessage }}
+        <app-chat-container *ngIf="!isConversationEmpty" [messages]="messages" [currentRun]="currentRun"
+          [runMap]="runMap" [rerunLoadingMessageId]="rerunLoadingMessageId"
+          (rerunRequest)="onRerunRequest($event)"></app-chat-container>
       </div>
-    </div>
+
+      <div class="input-area" [class.centered]="isConversationEmpty">
+        <app-chat-input [mode]="mode" [loading]="loading || attachmentsInProgress" [currentRun]="currentRun"
+          [isTemporaryChat]="isTemporaryChat" [libraries]="libraries" [selectedLibraryId]="selectedLibraryId"
+          [documents]="allDocuments" [selectedDocumentIds]="selectedDocumentIds" [prompts]="prompts"
+          [selectedPromptId]="selectedPromptId" [hasExistingThread]="!!currentThread"
+          (messageSent)="onMessageSent($event)" (cancelRun)="onCancelRun()" (modeToggle)="onModeToggle($event)"
+          (filesSelected)="onFilesSelected($event)" (webpageAttached)="onWebpageAttach($event)"
+          (notesAttached)="onNotesAttach($event)" (librarySelected)="onLibrarySelected($event)"
+          (promptSelected)="onPromptSelected($event)"></app-chat-input>
+
+        <div class="attachment-status" *ngIf="attachmentMessage">
+          {{ attachmentMessage }}
+        </div>
+      </div>
+    </ng-container>
+
+    <app-playground *ngIf="isTemporaryChat" (closed)="toggleTemporaryChat()"></app-playground>
   </div>
 </div>
 
@@ -105,7 +79,8 @@
       <label>
         <span>Email</span>
         <input type="email" formControlName="email" placeholder="email@ragitify.ai" readonly />
-        <small *ngIf="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">Enter a valid email</small>
+        <small *ngIf="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">Enter a valid
+          email</small>
       </label>
 
       <div class="profile-message" *ngIf="profileMessage">{{ profileMessage }}</div>

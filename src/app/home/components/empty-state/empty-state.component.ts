@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { AuthService } from '../../../shared/services/auth.service';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -9,6 +9,7 @@ import { map } from 'rxjs/operators';
   styleUrls: ['./empty-state.component.scss']
 })
 export class EmptyStateComponent {
+  @Input() isTemporaryChat = false;
   userName$: Observable<string>;
   greeting$: Observable<string>;
 

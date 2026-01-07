@@ -1,0 +1,95 @@
+<div class="document-chat-overlay" (click)="close()">
+  <div class="document-chat-panel" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="header-content">
+        <i class="fa-solid fa-comments"></i>
+        <div class="header-text">
+          <h3>{{ document?.title || 'Document Chat' }}</h3>
+          <span class="document-status" *ngIf="document">
+            <span class="status-badge" [ngClass]="'status-' + document.status">
+              {{ document.status }}
+            </span>
+          </span>
+        </div>
+      </div>
+      <button type="button" class="close-button" (click)="close()" aria-label="Close chat">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Error Message -->
+    <div class="error-banner" *ngIf="errorMessage">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="messages-container" #messagesContainer>
+      <div *ngIf="messages.length === 0" class="empty-state">
+        <i class="fa-solid fa-comments"></i>
+        <p>Ask questions about this document</p>
+        <span class="empty-state-hint">Start a conversation to get answers based on the document content</span>
+      </div>
+
+      <div *ngFor="let message of messages" class="message-bubble" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
+        <div class="message-content">
+          <div class="message-text">
+            <div class="text-content" [innerText]="message.content"></div>
+          </div>
+          <div class="message-time">{{ formatTime(message.created_at) }}</div>
+        </div>
+      </div>
+
+      <!-- Typing Indicator -->
+      <div *ngIf="isResponseInProgress" class="message-bubble assistant typing-indicator">
+        <div class="message-content">
+          <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea
+          #messageInput
+          [(ngModel)]="messageInputText"
+          (keydown)="onKeyPress($event)"
+          placeholder="Ask a question about this document..."
+          class="chat-input"
+          [disabled]="loading || isResponseInProgress"
+          rows="1"
+        ></textarea>
+        <div class="input-actions">
+          <button
+            *ngIf="isResponseInProgress"
+            type="button"
+            class="cancel-button"
+            (click)="cancelResponse()"
+            title="Cancel response"
+            aria-label="Cancel response"
+          >
+            <i class="fa-solid fa-stop"></i>
+          </button>
+          <button
+            type="button"
+            class="send-button"
+            (click)="sendMessage()"
+            [disabled]="!messageInputText.trim() || loading || isResponseInProgress"
+            title="Send message"
+            aria-label="Send message"
+          >
+            <i *ngIf="!loading && !isResponseInProgress" class="fa-solid fa-arrow-up"></i>
+            <i *ngIf="loading || isResponseInProgress" class="fa-solid fa-spinner fa-spin"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AssistantService } from '../../../shared/services/assistant.service';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
@@ -21,12 +22,14 @@ export class PromptsSectionComponent implements OnInit {
   editLoading = false;
   errorMessage = '';
   editingAssistant: Assistant | null = null;
+  testingAssistant: Assistant | null = null;
 
   constructor(
     private assistantService: AssistantService,
     private vectorStoreService: VectorStoreService,
     private confirmDialogService: ConfirmDialogService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private router: Router
   ) {
     this.createForm = this.fb.group({
       name: ['', Validators.required],
@@ -96,7 +99,7 @@ export class PromptsSectionComponent implements OnInit {
       this.loading = true;
       this.errorMessage = '';
       const formValue = this.createForm.value;
-      
+
       this.assistantService.create({
         name: formValue.name,
         vector_store_id: formValue.vector_store_id || undefined,
@@ -182,6 +185,15 @@ export class PromptsSectionComponent implements OnInit {
     }
     const store = this.vectorStores.find(vs => vs.id === vectorStoreId);
     return store ? store.name : vectorStoreId;
+  }
+
+  testAssistant(assistant: Assistant): void {
+    this.editingAssistant = null; // Close edit form if open
+    this.testingAssistant = assistant;
+  }
+
+  closeTestChat(): void {
+    this.testingAssistant = null;
   }
 }
 
