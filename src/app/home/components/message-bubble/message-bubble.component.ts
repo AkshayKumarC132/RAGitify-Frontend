@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
 import { Message } from '../../../shared/models/message.model';
 import { Run } from '../../../shared/models/run.model';
 
@@ -7,7 +7,7 @@ import { Run } from '../../../shared/models/run.model';
   templateUrl: './message-bubble.component.html',
   styleUrls: ['./message-bubble.component.scss']
 })
-export class MessageBubbleComponent implements OnInit, OnDestroy {
+export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   @Input() message!: Message;
   @Input() isLast: boolean = false;
   @Input() canRerun: boolean = false;
@@ -28,10 +28,24 @@ export class MessageBubbleComponent implements OnInit, OnDestroy {
   copied = false;
   private copyResetTimeout?: ReturnType<typeof setTimeout>;
 
+  get isFailedRun(): boolean {
+    return !this.isUser && this.run?.status === 'failed';
+  }
+
+  get runErrorMessage(): string {
+    const msg = this.run?.metadata?.['error_message'];
+    return typeof msg === 'string' ? msg : '';
+  }
+
+  get showRunErrorInfo(): boolean {
+    return this.isFailedRun && !!this.runErrorMessage;
+  }
+
   ngOnInit() {
     const safeContent = this.sanitizeContent(this.message.content);
     if (this.shouldAnimate()) {
       MessageBubbleComponent.animatedMessageIds.add(this.message.id);
+      this.displayContent = '';
       this.typeWriter(safeContent);
     } else {
       this.displayContent = safeContent;
@@ -40,22 +54,27 @@ export class MessageBubbleComponent implements OnInit, OnDestroy {
     }
   }
 
-  private sanitizeContent(content: string): string {
+  ngOnChanges(changes: SimpleChanges): void {
+    // When run status updates (e.g. in_progress -> failed), recompute displayed content
+    // so we show "Oops! Server error." in the bubble.
+    if (changes['run'] || changes['message']) {
+      const safeContent = this.sanitizeContent(this.message?.content);
+      this.displayContent = safeContent;
+    }
+  }
+
+  private sanitizeContent(content?: string): string {
     if (!content) {
-      return content;
+      return content || '';
     }
 
-    const lower = content.toLowerCase();
-    const patterns = [
-      'run processing failed',
-      'failed to answer question',
-      'failed to initialize qdrant',
-      'qdrant',
-      'target machine actively refused'
-    ];
+    // Prefer run status over brittle text matching.
+    // If the backend marks the run as failed, show a consistent error response.
+    if (this.message?.role === 'assistant' && this.run?.status === 'failed') {
+      return 'Oops!';
+    }
 
-    const hasServerFailure = patterns.some(p => lower.includes(p));
-    return hasServerFailure ? 'Oops! Server error.' : content;
+    return content;
   }
 
   ngOnDestroy(): void {
@@ -69,11 +88,11 @@ export class MessageBubbleComponent implements OnInit, OnDestroy {
   }
 
   get isCancelledRun(): boolean {
-    const hasEmptyContent = !this.message.content || 
-                           (typeof this.message.content === 'string' && this.message.content.trim() === '');
-    return !this.isUser && 
-           this.run?.status === 'cancelled' && 
-           hasEmptyContent;
+    const hasEmptyContent = !this.message.content ||
+      (typeof this.message.content === 'string' && this.message.content.trim() === '');
+    return !this.isUser &&
+      this.run?.status === 'cancelled' &&
+      hasEmptyContent;
   }
 
   get showEmptyState(): boolean {
@@ -168,5 +187,14 @@ export class MessageBubbleComponent implements OnInit, OnDestroy {
     if (this.pagerHasNext) {
       this.pagerNext.emit();
     }
+  }
+
+  getDocumentIds(message: Message): string[] {
+    if (!message.metadata || !message.metadata['used_document_ids']) {
+      return [];
+    }
+    return Array.isArray(message.metadata['used_document_ids'])
+      ? message.metadata['used_document_ids']
+      : [];
   }
 }

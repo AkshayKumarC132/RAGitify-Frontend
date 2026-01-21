@@ -11,6 +11,7 @@ const routes: Routes = [
   { path: 'auth', loadChildren: () => import('./auth/auth.module').then(m => m.AuthModule) },
   { path: 'setup-llm', loadChildren: () => import('./setup/setup.module').then(m => m.SetupModule), canActivate: [AuthGuard] },
   { path: 'home', loadChildren: () => import('./home/home.module').then(m => m.HomeModule), canActivate: [AuthGuard, LlmReadyGuard] },
+  { path: 'temporary-chat', loadChildren: () => import('./home/home.module').then(m => m.HomeModule), canActivate: [AuthGuard, LlmReadyGuard] },
   { path: 'workspace', loadChildren: () => import('./workspace/workspace.module').then(m => m.WorkspaceModule), canActivate: [AuthGuard, LlmReadyGuard] },
   { path: 'settings', loadChildren: () => import('./settings/settings.module').then(m => m.SettingsModule), canActivate: [AuthGuard, LlmReadyGuard] },
   { path: '**', redirectTo: '/auth' }

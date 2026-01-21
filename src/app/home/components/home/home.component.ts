@@ -161,6 +161,21 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.searchPopupSub = this.threadSearchPopupService.getThreadSelected().subscribe(thread => {
       this.onThreadSelected(thread);
     });
+
+    // Check if we are on the playground route initially
+    this.checkPlaygroundRoute(this.router.url);
+
+    // Listen to route changes to sync isTemporaryChat
+    this.router.events.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      this.checkPlaygroundRoute(this.router.url);
+    });
+  }
+
+  private checkPlaygroundRoute(url: string): void {
+    // Correctly check if the current path is /playground
+    this.isTemporaryChat = url.includes('/temporary-chat');
   }
 
   ngOnDestroy(): void {
@@ -250,6 +265,8 @@ export class HomeComponent implements OnInit, OnDestroy {
             this.teardownRunPolling();
           } else if (updatedRun.status === 'failed' || updatedRun.status === 'cancelled') {
             this.currentRun = null;
+            this.loadMessages(threadId);
+            this.loadThreads();
             this.teardownRunPolling();
           } else if (updatedRun.status === 'requires_action') {
             console.log('Run requires action:', updatedRun.required_action);
@@ -379,10 +396,12 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   toggleTemporaryChat(): void {
     if (this.currentRun || this.loading) return; // Prevent toggling while active
-    this.isTemporaryChat = !this.isTemporaryChat;
-    // We don't need to clear messages or thread context because the Playground handles its own state
-    // and when we toggle back, we might want to restore the previous state (or better yet, Home usually manages one state).
-    // If isTemporaryChat is true, the template will hide the main chat.
+
+    if (this.isTemporaryChat) {
+      this.router.navigate(['/home']);
+    } else {
+      this.router.navigate(['/temporary-chat']);
+    }
   }
 
   onMessageSent(content: string): void {

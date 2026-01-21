@@ -1,11 +1,16 @@
 <div class="playground-container" [class.has-messages]="messages.length > 0">
-    <button class="close-btn" (click)="closed.emit()" title="Exit Play Ground">
+    <div class="top-indicator">
+        <i class="fa-solid fa-dice"></i>
+        <span>Temporary Chat</span>
+    </div>
+
+    <button class="close-btn" (click)="closed.emit()" title="Exit Temporary Chat">
         <i class="fa-solid fa-xmark"></i>
     </button>
 
     <div class="playground-header" *ngIf="messages.length === 0">
-        <h1>Play Ground</h1>
-        <p>Messages in this chat are not saved and do not use memory.</p>
+        <h1>Temporary Chat</h1>
+        <p>Messages in this chat are not saved.</p>
     </div>
 
     <div class="chat-messages" #messagesContainer>
@@ -118,9 +123,9 @@
             <button type="button" (click)="clearSelection()">×</button>
         </div>
 
-        <div class="mode-indicator" [class.document]="mode === 'document'">
+        <!-- <div class="mode-indicator" [class.document]="mode === 'document'">
             {{ mode === 'normal' ? 'Play Ground Active' : 'Document Mode Active' }}
-        </div>
+        </div> -->
         <div class="error-toast" *ngIf="errorMessage">{{ errorMessage }}</div>
     </div>
 </div>

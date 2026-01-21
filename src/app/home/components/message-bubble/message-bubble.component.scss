@@ -39,6 +39,65 @@
   position: relative;
 }
 
+.message-content.has-run-error {
+  // Reserve space for the top-right info badge so it doesn't overlap the text.
+  padding-right: 2.25rem;
+}
+
+.run-error-info {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; // non-clickable
+}
+
+.run-error-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  color: #b42318;
+  background: rgba(217, 45, 32, 0.14);
+  border: 1px solid rgba(217, 45, 32, 0.5);
+}
+
+.run-error-tooltip {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  right: auto;
+  min-width: 200px;
+  max-width: 320px;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.92);
+  color: white;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  z-index: 10;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-2px);
+  transition: opacity 0.15s ease, visibility 0.15s ease, transform 0.15s ease;
+}
+
+.message-content:hover .run-error-tooltip,
+.message-content:focus-within .run-error-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
 .message-text {
   margin-bottom: 0.25rem;
   line-height: 2.2;

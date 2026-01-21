@@ -192,7 +192,8 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
           id: output.message_id || 'msg-' + Date.now(),
           role: 'assistant',
           content: output.content[0].text || '',
-          created_at: response.completed_at || response.created_at
+          created_at: response.completed_at || response.created_at,
+          metadata: output.metadata || {}
         };
         this.messages.push(assistantMessage);
       }
@@ -201,6 +202,15 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
     // Reload messages from conversation to get all messages
     this.loadConversationMessages();
     this.scrollToBottom();
+  }
+
+  getDocumentIds(message: ConversationMessage): string[] {
+    if (!message.metadata || !message.metadata['used_document_ids']) {
+      return [];
+    }
+    return Array.isArray(message.metadata['used_document_ids']) 
+      ? message.metadata['used_document_ids'] 
+      : [];
   }
 
   loadConversationMessages(): void {

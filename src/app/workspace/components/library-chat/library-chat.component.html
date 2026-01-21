@@ -40,6 +40,10 @@
                     <div class="message-text">
                         <div class="text-content" [innerText]="message.content"></div>
                     </div>
+                    <app-message-sources 
+                        *ngIf="message.role === 'assistant'"
+                        [documentIds]="getDocumentIds(message)">
+                    </app-message-sources>
                     <div class="message-time">{{ formatTime(message.created_at) }}</div>
                 </div>
             </div>

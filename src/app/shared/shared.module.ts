@@ -8,11 +8,12 @@ import { AuthService } from './services/auth.service';
 import { ThemeToggleComponent } from './components/theme-toggle/theme-toggle.component';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { ThreadSearchPopupComponent } from './components/thread-search-popup/thread-search-popup.component';
+import { MessageSourcesComponent } from './components/message-sources/message-sources.component';
 
 import { TypingLabelComponent } from './components/typing-label/typing-label.component';
 
 @NgModule({
-  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent],
+  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent],
   imports: [
     CommonModule,
     HttpClientModule,
@@ -35,7 +36,8 @@ import { TypingLabelComponent } from './components/typing-label/typing-label.com
     ThemeToggleComponent,
     TypingLabelComponent,
     ConfirmDialogComponent,
-    ThreadSearchPopupComponent
+    ThreadSearchPopupComponent,
+    MessageSourcesComponent
   ]
 })
 export class SharedModule { }

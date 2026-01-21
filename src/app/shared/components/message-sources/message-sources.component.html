@@ -1,0 +1,31 @@
+<div class="message-sources" *ngIf="documentIds && documentIds.length > 0">
+  <div class="sources-header" (click)="toggleExpanded()">
+    <i class="fa-solid fa-folder"></i>
+    <span>Sources - {{ getDocumentCount() }} {{ getDocumentCount() === 1 ? 'document' : 'documents' }}</span>
+    <i class="fa-solid fa-chevron-down toggle-icon" [class.expanded]="isExpanded"></i>
+  </div>
+  
+  <div class="sources-content" *ngIf="isExpanded">
+    <div class="sources-list" *ngIf="!loading">
+      <div 
+        class="source-item" 
+        *ngFor="let doc of documents; let i = index"
+        [class.loading]="doc === null"
+      >
+        <i 
+          class="fa-solid" 
+          [ngClass]="doc ? getFileIcon(doc.title) : 'fa-file'"
+          [class]="doc ? getFileIconColor(doc.title) : ''"
+        ></i>
+        <span class="source-name">
+          {{ doc ? doc.title : 'Loading...' }}
+        </span>
+      </div>
+    </div>
+    
+    <div class="sources-loading" *ngIf="loading">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <span>Loading sources...</span>
+    </div>
+  </div>
+</div>

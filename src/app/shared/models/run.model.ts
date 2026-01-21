@@ -4,6 +4,7 @@ export interface Run {
   status: 'queued' | 'in_progress' | 'requires_action' | 'completed' | 'failed' | 'cancelled';
   assistant_id: string;
   mode: 'document' | 'normal' | 'web';
+  metadata?: Record<string, any>;
   required_action?: RequiredAction;
   tool_outputs?: ToolOutput[];
   created_at: string;
