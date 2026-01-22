@@ -17,6 +17,18 @@
   }
 }
 
+.header-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.section-subtitle {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
 .error-message {
   margin-bottom: 1rem;
 }
@@ -39,6 +51,13 @@
   justify-content: space-between;
   gap: 1rem;
   align-items: flex-start;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    border-color: rgba(111, 142, 255, 0.4);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+    transform: translateY(-1px);
+  }
 }
 
 .prompt-name {
@@ -82,3 +101,29 @@
   gap: 0.5rem;
 }
 
+.empty-state {
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  display: grid;
+  gap: 0.75rem;
+
+  i {
+    font-size: 24px;
+    color: var(--accent-color);
+  }
+
+  h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 13px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 11px;
+  }
+}

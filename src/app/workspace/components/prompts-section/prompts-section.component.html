@@ -1,9 +1,12 @@
 <div class="prompts-section">
   <div class="section-header">
-    <h1>
-      <i class="fa-solid fa-message"></i>
-      <span>Prompts</span>
-    </h1>
+    <div class="header-copy">
+      <h1>
+        <i class="fa-solid fa-message"></i>
+        <span>Prompts</span>
+      </h1>
+      <p class="section-subtitle">Design assistants, connect them to libraries, and test responses quickly.</p>
+    </div>
     <button class="btn-primary" (click)="toggleCreateForm()">
       <i class="fa-solid fa-plus"></i>
       <span>{{ showCreateForm ? 'Close form' : 'New Prompt' }}</span>
@@ -14,7 +17,7 @@
     {{ errorMessage }}
   </div>
 
-  <div *ngIf="showCreateForm" class="create-form">
+  <div *ngIf="showCreateForm" class="create-form panel">
     <h2>
       <i class="fa-solid fa-square-pen"></i>
       <span>Create Assistant Prompt</span>
@@ -57,7 +60,7 @@
     </form>
   </div>
 
-  <div *ngIf="editingAssistant" class="create-form">
+  <div *ngIf="editingAssistant" class="create-form panel">
     <h2>
       <i class="fa-solid fa-pen-to-square"></i>
       <span>Update "{{ editingAssistant.name }}"</span>
@@ -99,7 +102,7 @@
     </form>
   </div>
 
-  <div class="prompts-list">
+  <div class="prompts-list" *ngIf="assistants.length > 0; else emptyPrompts">
     <div *ngFor="let assistant of assistants" class="prompt-item">
       <div class="prompt-info">
         <div class="prompt-name">{{ assistant.name }}</div>
@@ -132,10 +135,15 @@
         </div>
       </div>
     </div>
-    <div *ngIf="assistants.length === 0" class="empty-state">
-      No prompts created yet.
-    </div>
   </div>
+  <ng-template #emptyPrompts>
+    <div class="empty-state">
+      <i class="fa-solid fa-sparkles"></i>
+      <h3>No prompts created yet</h3>
+      <p>Create your first assistant prompt to guide responses and tool usage.</p>
+      <button class="btn-primary" (click)="toggleCreateForm()">Create prompt</button>
+    </div>
+  </ng-template>
 
   <app-assistant-chat *ngIf="testingAssistant" [assistant]="testingAssistant"
     (closed)="closeTestChat()"></app-assistant-chat>

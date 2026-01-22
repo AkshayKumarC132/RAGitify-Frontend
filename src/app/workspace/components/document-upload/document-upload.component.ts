@@ -1,4 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { HttpEvent, HttpEventType } from '@angular/common/http';
+import { Document } from '../../../shared/models/document.model';
 import { DocumentService } from '../../../shared/services/document.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 
@@ -17,6 +19,7 @@ export class DocumentUploadComponent implements OnChanges {
   selectedVectorStoreId = '';
   loading = false;
   uploadProgress = 0;
+  uploadStatus = '';
   errorMessage = '';
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -45,18 +48,32 @@ export class DocumentUploadComponent implements OnChanges {
     this.loading = true;
     this.errorMessage = '';
     this.uploadProgress = 0;
+    this.uploadStatus = 'Uploading...';
 
-    this.documentService.ingest({
+    this.documentService.ingestWithProgress({
       file: this.selectedFile,
       vector_store_id: this.selectedVectorStoreId
     }).subscribe({
-      next: () => {
-        this.loading = false;
-        this.uploadProgress = 100;
-        this.uploaded.emit();
+      next: (event: HttpEvent<Document>) => {
+        if (event.type === HttpEventType.UploadProgress) {
+          const total = event.total || 0;
+          if (total > 0) {
+            this.uploadProgress = Math.round((event.loaded / total) * 100);
+            this.uploadStatus = `Uploading... ${this.uploadProgress}%`;
+          }
+          return;
+        }
+
+        if (event.type === HttpEventType.Response) {
+          this.uploadProgress = 100;
+          this.uploadStatus = 'Upload complete.';
+          this.loading = false;
+          this.uploaded.emit();
+        }
       },
       error: (err) => {
         this.loading = false;
+        this.uploadStatus = '';
         this.errorMessage = err.error?.error || 'Upload failed';
       }
     });
@@ -68,4 +85,3 @@ export class DocumentUploadComponent implements OnChanges {
 
   constructor(private documentService: DocumentService) {}
 }
-

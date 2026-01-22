@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { HttpEvent } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { Document, DocumentIngestRequest, DocumentStatus } from '../models/document.model';
@@ -35,6 +36,21 @@ export class DocumentService {
     formData.append('vector_store_id', data.vector_store_id);
     
     return this.api.postFormData<Document>(`/document/${token}/ingest/`, formData, token);
+  }
+
+  ingestWithProgress(data: DocumentIngestRequest): Observable<HttpEvent<Document>> {
+    const token = this.getToken();
+    const formData = new FormData();
+
+    if (data.file) {
+      formData.append('file', data.file);
+    }
+    if (data.s3_file_url) {
+      formData.append('s3_file_url', data.s3_file_url);
+    }
+    formData.append('vector_store_id', data.vector_store_id);
+
+    return this.api.postFormDataWithProgress<Document>(`/document/${token}/ingest/`, formData, token);
   }
 
   list(): Observable<Document[]> {

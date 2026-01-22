@@ -37,3 +37,11 @@
   transition: width 0.3s;
 }
 
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 11px;
+  margin-bottom: 0.75rem;
+}

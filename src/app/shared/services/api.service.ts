@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -58,5 +58,17 @@ export class ApiService {
       headers
     });
   }
-}
 
+  postFormDataWithProgress<T>(endpoint: string, formData: FormData, token?: string): Observable<HttpEvent<T>> {
+    let headers = new HttpHeaders();
+    if (token) {
+      headers = headers.set('Authorization', `Token ${token}`);
+    }
+
+    return this.http.post<T>(`${this.baseUrl}${endpoint}`, formData, {
+      headers,
+      observe: 'events',
+      reportProgress: true
+    });
+  }
+}
