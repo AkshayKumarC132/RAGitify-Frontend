@@ -1,4 +1,7 @@
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import { Message } from '../../../shared/models/message.model';
 import { Run } from '../../../shared/models/run.model';
 
@@ -22,11 +25,14 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   @Output() pagerNext = new EventEmitter<void>();
 
   displayContent: string = '';
+  renderedContent: SafeHtml | null = null;
   private typingSpeed = 5; // ms per character
   // Track messages that have already played the typing animation in this session
   private static animatedMessageIds = new Set<number>();
   copied = false;
   private copyResetTimeout?: ReturnType<typeof setTimeout>;
+
+  constructor(private sanitizer: DomSanitizer) {}
 
   get isFailedRun(): boolean {
     return !this.isUser && this.run?.status === 'failed';
@@ -52,6 +58,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
       // Mark as animated so it won't animate in future navigations
       MessageBubbleComponent.animatedMessageIds.add(this.message.id);
     }
+    this.updateRenderedContent();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -60,6 +67,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     if (changes['run'] || changes['message']) {
       const safeContent = this.sanitizeContent(this.message?.content);
       this.displayContent = safeContent;
+      this.updateRenderedContent();
     }
   }
 
@@ -122,10 +130,23 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   private typeWriter(text: string, index: number = 0) {
     if (index < text.length) {
       this.displayContent += text.charAt(index);
+      this.updateRenderedContent();
       setTimeout(() => {
         this.typeWriter(text, index + 1);
       }, this.typingSpeed);
     }
+  }
+
+  private updateRenderedContent(): void {
+    if (this.isUser) {
+      this.renderedContent = null;
+      return;
+    }
+
+    const raw = this.displayContent || '';
+    const html = marked.parse(raw) as string;
+    const sanitized = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+    this.renderedContent = this.sanitizer.bypassSecurityTrustHtml(sanitized);
   }
 
   async copyMessage(): Promise<void> {

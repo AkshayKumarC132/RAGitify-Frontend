@@ -14,7 +14,10 @@
       </button>
     </div>
     <div *ngIf="!showEmptyState" class="message-text">
-      <div class="text-content" [innerText]="displayContent"></div>
+      <div *ngIf="isUser; else assistantContent" class="text-content" [innerText]="displayContent"></div>
+      <ng-template #assistantContent>
+        <div class="text-content markdown" [innerHTML]="renderedContent"></div>
+      </ng-template>
     </div>
     <app-message-sources 
       *ngIf="!showEmptyState && !isUser"

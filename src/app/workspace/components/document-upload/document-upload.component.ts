@@ -58,8 +58,12 @@ export class DocumentUploadComponent implements OnChanges {
         if (event.type === HttpEventType.UploadProgress) {
           const total = event.total || 0;
           if (total > 0) {
-            this.uploadProgress = Math.round((event.loaded / total) * 100);
+            const computed = Math.round((event.loaded / total) * 100);
+            this.uploadProgress = Math.min(95, computed);
             this.uploadStatus = `Uploading... ${this.uploadProgress}%`;
+          } else {
+            this.uploadProgress = 0;
+            this.uploadStatus = 'Uploading...';
           }
           return;
         }
