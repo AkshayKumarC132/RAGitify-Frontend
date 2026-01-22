@@ -4,7 +4,7 @@ export interface Document {
   vector_store: string;
   user: string;
   uploaded_at: string;
-  status: 'queued' | 'in_progress' | 'completed' | 'failed';
+  status: 'queued' | 'processing' | 'in_progress' | 'completed' | 'failed';
 }
 
 export interface DocumentIngestRequest {

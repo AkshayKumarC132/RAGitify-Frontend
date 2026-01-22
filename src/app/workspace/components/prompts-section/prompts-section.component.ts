@@ -48,7 +48,6 @@ export class PromptsSectionComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAssistants();
-    this.loadVectorStores();
   }
 
   loadAssistants(): void {
@@ -71,6 +70,9 @@ export class PromptsSectionComponent implements OnInit {
 
   toggleCreateForm(): void {
     this.showCreateForm = !this.showCreateForm;
+    if (this.showCreateForm && !this.vectorStores.length) {
+      this.loadVectorStores();
+    }
   }
 
   startEdit(assistant: Assistant): void {
@@ -81,6 +83,9 @@ export class PromptsSectionComponent implements OnInit {
       instructions: assistant.instructions || '',
       model: assistant.model || ''
     });
+    if (!this.vectorStores.length) {
+      this.loadVectorStores();
+    }
   }
 
   cancelEdit(): void {
@@ -196,4 +201,3 @@ export class PromptsSectionComponent implements OnInit {
     this.testingAssistant = null;
   }
 }
-

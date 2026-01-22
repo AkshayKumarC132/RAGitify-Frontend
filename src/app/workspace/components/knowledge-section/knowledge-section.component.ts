@@ -254,6 +254,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       case 'failed':
         return 'status-failed';
       case 'in_progress':
+      case 'processing':
         return 'status-in-progress';
       default:
         return 'status-queued';
@@ -264,7 +265,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.statusPollSub?.unsubscribe();
     this.statusPollSub = interval(5000).subscribe(() => {
       const pendingDocuments = this.documents.filter(doc =>
-        doc.status === 'queued' || doc.status === 'in_progress'
+        doc.status === 'queued' || doc.status === 'in_progress' || doc.status === 'processing'
       );
 
       if (!pendingDocuments.length && this.statusCheckInFlight.size === 0) {
