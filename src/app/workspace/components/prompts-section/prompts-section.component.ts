@@ -20,6 +20,7 @@ export class PromptsSectionComponent implements OnInit {
   editForm: FormGroup;
   loading = false;
   editLoading = false;
+  loadingAssistants = false;
   errorMessage = '';
   editingAssistant: Assistant | null = null;
   testingAssistant: Assistant | null = null;
@@ -51,11 +52,16 @@ export class PromptsSectionComponent implements OnInit {
   }
 
   loadAssistants(): void {
+    this.loadingAssistants = true;
     this.assistantService.list().subscribe({
       next: (assistants) => {
         this.assistants = assistants;
+        this.loadingAssistants = false;
       },
-      error: (err) => console.error('Error loading assistants:', err)
+      error: (err) => {
+        console.error('Error loading assistants:', err);
+        this.loadingAssistants = false;
+      }
     });
   }
 
