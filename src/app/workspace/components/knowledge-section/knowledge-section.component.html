@@ -12,7 +12,7 @@
         <i class="fa-solid" [ngClass]="showCreateVectorStoreForm ? 'fa-xmark' : 'fa-folder-plus'"></i>
         <span>{{ showCreateVectorStoreForm ? 'Close' : 'New Library' }}</span>
       </button>
-      <button class="btn-primary" [disabled]="vectorStores.length === 0" (click)="showUploadForm = !showUploadForm">
+      <button class="btn-primary" [disabled]="vectorStores.length === 0" (click)="toggleUploadForm()">
         <i class="fa-solid" [ngClass]="showUploadForm ? 'fa-xmark' : 'fa-cloud-arrow-up'"></i>
         <span>{{ showUploadForm ? 'Close upload' : 'Upload Documents' }}</span>
       </button>

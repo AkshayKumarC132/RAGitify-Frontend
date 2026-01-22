@@ -95,13 +95,24 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   onDocumentUploaded(): void {
     this.loadDocuments();
     this.showUploadForm = false;
+    this.showCreateVectorStoreForm = false;
     this.startStatusPolling();
   }
 
   toggleVectorStoreForm(): void {
     this.showCreateVectorStoreForm = !this.showCreateVectorStoreForm;
+    if (this.showCreateVectorStoreForm) {
+      this.showUploadForm = false;
+    }
     if (!this.showCreateVectorStoreForm) {
       this.createVectorStoreForm.reset();
+    }
+  }
+
+  toggleUploadForm(): void {
+    this.showUploadForm = !this.showUploadForm;
+    if (this.showUploadForm) {
+      this.showCreateVectorStoreForm = false;
     }
   }
 
