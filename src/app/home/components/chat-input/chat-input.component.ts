@@ -54,6 +54,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Output() librarySelected = new EventEmitter<LibrarySelectionEvent>();
   @Output() promptSelected = new EventEmitter<string | null>();
   @Output() cancelRun = new EventEmitter<void>();
+  @Output() attachmentPanelOpened = new EventEmitter<Exclude<AttachmentPanel, null>>();
 
   message = '';
   attachmentMenuOpen = false;
@@ -204,6 +205,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     console.log('Prompts:', this.prompts.length);
 
     this.attachmentMenuOpen = false;
+    this.attachmentPanelOpened.emit(panel);
 
     setTimeout(() => {
       this.activePanel = panel;

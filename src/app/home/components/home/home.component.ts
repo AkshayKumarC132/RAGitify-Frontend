@@ -68,6 +68,16 @@ export class HomeComponent implements OnInit, OnDestroy {
   private searchPopupSub?: Subscription;
   private destroy$ = new Subject<void>();
   private activeProvider: SelectedLLMProvider | null = null;
+  private librariesLoaded = false;
+  private librariesLoading = false;
+  private promptsLoaded = false;
+  private promptsLoading = false;
+  private promptsLoadingPromise?: Promise<void>;
+  private documentsLoaded = false;
+  private documentsLoading = false;
+  private modelsLoaded = false;
+  private modelsLoading = false;
+  private modelsLoadingPromise?: Promise<void>;
 
 
   constructor(
@@ -235,11 +245,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       return;
     }
     this.dataInitialized = true;
-    this.loadModels();
     this.loadThreads();
-    this.loadLibraries();
-    this.loadPrompts();
-    this.loadDocuments();
     if (this.pendingThreadId) {
       this.loadThread(this.pendingThreadId);
     }
@@ -309,19 +315,57 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadModels(): void {
-    this.openAIKeyService.list().subscribe({
-      next: (models) => {
-        this.availableModels = models;
-        const activeModel = models.find(m => m.is_active);
-        if (activeModel) {
-          this.selectedModel = activeModel;
-        } else if (models.length > 0) {
-          this.selectedModel = models[0];
-        }
-      },
-      error: (err) => console.error('Error loading models:', err)
+  private loadModels(): Promise<void> {
+    if (this.modelsLoading) {
+      return this.modelsLoadingPromise || Promise.resolve();
+    }
+    this.modelsLoading = true;
+    const loadPromise = lastValueFrom(this.openAIKeyService.list()).then(models => {
+      this.availableModels = models;
+      const activeModel = models.find(m => m.is_active);
+      if (activeModel) {
+        this.selectedModel = activeModel;
+      } else if (models.length > 0) {
+        this.selectedModel = models[0];
+      }
+      this.modelsLoaded = true;
+    }).catch((err) => {
+      console.error('Error loading models:', err);
+      this.modelsLoaded = false;
+    }).finally(() => {
+      this.modelsLoading = false;
+      this.modelsLoadingPromise = undefined;
     });
+    this.modelsLoadingPromise = loadPromise;
+    return loadPromise;
+  }
+
+  private async ensureModelsLoaded(): Promise<void> {
+    if (this.modelsLoaded) {
+      return;
+    }
+    await this.loadModels();
+  }
+
+  private ensureLibrariesLoaded(): void {
+    if (this.librariesLoaded || this.librariesLoading) {
+      return;
+    }
+    this.loadLibraries();
+  }
+
+  private async ensurePromptsLoaded(): Promise<void> {
+    if (this.promptsLoaded) {
+      return;
+    }
+    await this.loadPrompts();
+  }
+
+  private ensureDocumentsLoaded(): void {
+    if (this.documentsLoaded || this.documentsLoading) {
+      return;
+    }
+    this.loadDocuments(this.currentVectorStoreId || undefined);
   }
 
   loadThreads(): void {
@@ -390,6 +434,16 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
     this.teardownRunPolling();
     this.router.navigate(['/home']);
+  }
+
+  onAttachmentPanelOpened(panel: 'library' | 'prompts' | 'web' | 'notes'): void {
+    if (panel === 'library') {
+      this.ensureLibrariesLoaded();
+      this.ensureDocumentsLoaded();
+    }
+    if (panel === 'prompts') {
+      this.ensurePromptsLoaded();
+    }
   }
 
   isTemporaryChat = false;
@@ -499,7 +553,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     const name = `Chat-${Date.now()}`;
     try {
       const created = await lastValueFrom(this.vectorStoreService.create({ name }));
-      this.libraries = [created, ...this.libraries];
+      this.upsertLibrary(created);
       this.setCurrentVectorStore(created.id);
       if (this.mode !== 'web') {
         this.mode = 'normal';
@@ -541,11 +595,14 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     this.documentSelectionVectorStoreId = vectorStore.id;
     this.setCurrentVectorStore(vectorStore.id);
-    this.loadLibraries();
+    this.upsertLibrary(vectorStore);
     return vectorStore.id;
   }
 
-  private ensureAssistant(vectorStoreId: string | null, threadId: string): Promise<{ assistantId: string; threadId: string }> {
+  private async ensureAssistant(vectorStoreId: string | null, threadId: string): Promise<{ assistantId: string; threadId: string }> {
+    await this.ensureModelsLoaded();
+    await this.ensurePromptsLoaded();
+    const assistants = this.prompts || [];
     // If a prompt is selected, use it
     if (this.selectedPromptId) {
       const selectedPrompt = this.prompts.find(p => p.id === this.selectedPromptId);
@@ -556,63 +613,33 @@ export class HomeComponent implements OnInit, OnDestroy {
       }
     }
 
-    return this.assistantService.list().pipe(
-      map(assistants => assistants || []),
-      switchMap(assistants => {
-        // Update prompts list
-        this.prompts = assistants;
+    const defaultAssistant = assistants.find(a => a.is_default);
+    if (defaultAssistant) {
+      return { assistantId: defaultAssistant.id, threadId };
+    }
 
-        const defaultAssistant = assistants.find(a => a.is_default);
-        if (defaultAssistant) {
-          return of({ assistantId: defaultAssistant.id, threadId });
-        }
+    // Only match by vector_store_id if vectorStoreId is not null
+    if (vectorStoreId) {
+      const existingAssistant = assistants.find(a => a.vector_store_id === vectorStoreId);
+      if (existingAssistant) {
+        return { assistantId: existingAssistant.id, threadId };
+      }
+    }
 
-        // Only match by vector_store_id if vectorStoreId is not null
-        if (vectorStoreId) {
-          const existingAssistant = assistants.find(a => a.vector_store_id === vectorStoreId);
-          if (existingAssistant) {
-            return of({ assistantId: existingAssistant.id, threadId });
-          }
-        }
-
-        // Create a single assistant only when none exist for the user
-        const model = this.resolveModelPreference();
-        const createRequest: any = {
-          name: 'Default Assistant',
-          instructions: 'You are a helpful assistant.',
-          model: model,
-          tools: []
-        };
-        if (vectorStoreId) {
-          createRequest.vector_store_id = vectorStoreId;
-        }
-        return this.assistantService.create(createRequest).pipe(
-          map(assistant => {
-            this.prompts = [...this.prompts, assistant];
-            return { assistantId: assistant.id, threadId };
-          })
-        );
-      }),
-      catchError(() => {
-        // Create new assistant on error
-        const model = this.resolveModelPreference();
-        const createRequest: any = {
-          name: 'Default Assistant',
-          instructions: 'You are a helpful assistant.',
-          model: model,
-          tools: []
-        };
-        if (vectorStoreId) {
-          createRequest.vector_store_id = vectorStoreId;
-        }
-        return this.assistantService.create(createRequest).pipe(
-          map(assistant => {
-            this.prompts = [...this.prompts, assistant];
-            return { assistantId: assistant.id, threadId };
-          })
-        );
-      })
-    ).toPromise() as Promise<{ assistantId: string; threadId: string }>;
+    // Create a single assistant only when none exist for the user
+    const model = this.resolveModelPreference();
+    const createRequest: any = {
+      name: 'Default Assistant',
+      instructions: 'You are a helpful assistant.',
+      model: model,
+      tools: []
+    };
+    if (vectorStoreId) {
+      createRequest.vector_store_id = vectorStoreId;
+    }
+    const assistant = await lastValueFrom(this.assistantService.create(createRequest));
+    this.prompts = [...this.prompts, assistant];
+    return { assistantId: assistant.id, threadId };
   }
 
   private createMessage(threadId: string, content: string): Promise<{ messageId: number; threadId: string }> {
@@ -816,42 +843,77 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadLibraries(): void {
+  private loadLibraries(): void {
+    if (this.librariesLoading) {
+      return;
+    }
+    this.librariesLoading = true;
     this.vectorStoreService.list().subscribe({
       next: (libraries) => {
         this.libraries = libraries || [];
+        this.librariesLoaded = true;
+        this.librariesLoading = false;
       },
       error: (err) => {
         console.error('Error loading libraries:', err);
         this.libraries = [];
+        this.librariesLoaded = false;
+        this.librariesLoading = false;
       }
     });
   }
 
-  loadPrompts(): void {
-    this.assistantService.list().subscribe({
-      next: (prompts) => {
-        this.prompts = prompts || [];
-      },
-      error: (err) => {
-        console.error('Error loading prompts:', err);
-        this.prompts = [];
-      }
+  private loadPrompts(): Promise<void> {
+    if (this.promptsLoading) {
+      return this.promptsLoadingPromise || Promise.resolve();
+    }
+    this.promptsLoading = true;
+    const loadPromise = lastValueFrom(this.assistantService.list()).then((prompts) => {
+      this.prompts = prompts || [];
+      this.promptsLoaded = true;
+    }).catch((err) => {
+      console.error('Error loading prompts:', err);
+      this.prompts = [];
+      this.promptsLoaded = false;
+    }).finally(() => {
+      this.promptsLoading = false;
+      this.promptsLoadingPromise = undefined;
     });
+    this.promptsLoadingPromise = loadPromise;
+    return loadPromise;
   }
 
   loadDocuments(vectorStoreId?: string): void {
+    if (this.documentsLoading) {
+      return;
+    }
+    this.documentsLoading = true;
     this.documentService.list().subscribe({
       next: (docs) => {
         this.allDocuments = docs || [];
+        this.documentsLoaded = true;
+        this.documentsLoading = false;
         this.applyKnowledgeFilter(vectorStoreId);
       },
       error: (err) => {
         console.error('Error loading documents:', err);
         this.allDocuments = [];
         this.knowledgeSources = [];
+        this.documentsLoaded = false;
+        this.documentsLoading = false;
       }
     });
+  }
+
+  private upsertLibrary(vectorStore: VectorStore): void {
+    const existingIndex = this.libraries.findIndex(lib => lib.id === vectorStore.id);
+    if (existingIndex === -1) {
+      this.libraries = [vectorStore, ...this.libraries];
+      return;
+    }
+    const next = [...this.libraries];
+    next[existingIndex] = vectorStore;
+    this.libraries = next;
   }
 
   private async uploadFiles(files: File[], vectorStoreId: string): Promise<void> {
@@ -889,8 +951,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.currentVectorStoreId = vectorStoreId;
     this.selectedKnowledgeId = null;
     this.refreshKnowledge(vectorStoreId);
-    // Reload libraries to ensure we have the latest list
-    this.loadLibraries();
   }
 
   private refreshKnowledge(vectorStoreId?: string): void {
@@ -900,8 +960,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.allDocuments.length) {
-      this.loadDocuments(targetId);
+    if (!this.documentsLoaded || !this.allDocuments.length) {
+      this.knowledgeSources = [];
       return;
     }
 
@@ -961,6 +1021,14 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.currentVectorStoreId = null;
     this.mode = 'document';
     this.attachmentMessage = '';
+    this.librariesLoaded = false;
+    this.librariesLoading = false;
+    this.promptsLoaded = false;
+    this.promptsLoading = false;
+    this.documentsLoaded = false;
+    this.documentsLoading = false;
+    this.modelsLoaded = false;
+    this.modelsLoading = false;
     if (this.attachmentMessageTimeout) {
       clearTimeout(this.attachmentMessageTimeout);
     }
