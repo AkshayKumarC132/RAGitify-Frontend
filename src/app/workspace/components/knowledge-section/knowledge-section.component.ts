@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { Subscription, interval } from 'rxjs';
-import { finalize } from 'rxjs/operators';
+import { Subscription, interval, of } from 'rxjs';
+import { catchError, finalize, timeout } from 'rxjs/operators';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentService } from '../../../shared/services/document.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
@@ -279,15 +279,19 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         }
         this.statusCheckInFlight.add(doc.id);
         this.documentService.getStatus(doc.id).pipe(
+          timeout(10000),
+          catchError(err => {
+            console.error('Error loading document status:', err);
+            return of(null as DocumentStatus | null);
+          }),
           finalize(() => {
             this.statusCheckInFlight.delete(doc.id);
           })
         ).subscribe({
           next: (status: DocumentStatus) => {
-            this.updateDocumentStatus(status);
-          },
-          error: (err) => {
-            console.error('Error loading document status:', err);
+            if (status) {
+              this.updateDocumentStatus(status);
+            }
           }
         });
       });
