@@ -1,5 +1,13 @@
 <router-outlet></router-outlet>
 
+<div class="global-loader" *ngIf="loading$ | async">
+  <div class="loader-backdrop"></div>
+  <div class="loader-card" role="status" aria-live="polite">
+    <span class="spinner" aria-hidden="true"></span>
+    <span>Loading...</span>
+  </div>
+</div>
+
 <ng-container *ngIf="dialogState$ | async as dialogState">
   <app-confirm-dialog
     *ngIf="dialogState.show"
@@ -20,4 +28,3 @@
     (closed)="onSearchPopupClosed()">
   </app-thread-search-popup>
 </ng-container>
-

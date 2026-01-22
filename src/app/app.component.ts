@@ -5,6 +5,7 @@ import { ThreadSearchPopupService } from './shared/services/thread-search-popup.
 import { Observable } from 'rxjs';
 import { ConfirmDialogOptions } from './shared/components/confirm-dialog/confirm-dialog.component';
 import { Thread } from './shared/models/thread.model';
+import { LoadingService } from './shared/services/loading.service';
 
 @Component({
   selector: 'app-root',
@@ -15,14 +16,17 @@ export class AppComponent implements OnInit {
   title = 'RAG Application';
   dialogState$: Observable<{ show: boolean; options: ConfirmDialogOptions | null }>;
   searchPopupState$: Observable<{ show: boolean; threads: Thread[]; currentThread: Thread | null }>;
+  loading$: Observable<boolean>;
 
   constructor(
     private authService: AuthService,
     private confirmDialogService: ConfirmDialogService,
-    private threadSearchPopupService: ThreadSearchPopupService
+    private threadSearchPopupService: ThreadSearchPopupService,
+    private loadingService: LoadingService
   ) {
     this.dialogState$ = this.confirmDialogService.getDialogState();
     this.searchPopupState$ = this.threadSearchPopupService.getPopupState();
+    this.loading$ = this.loadingService.loading$;
   }
 
   ngOnInit(): void {
@@ -41,4 +45,3 @@ export class AppComponent implements OnInit {
     this.threadSearchPopupService.selectThread(thread);
   }
 }
-
