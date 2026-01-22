@@ -76,7 +76,8 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
 
   loadDocuments(): void {
     this.loadingDocuments = true;
-    this.documentService.list().subscribe({
+    const vectorStoreId = this.selectedVectorStore?.id || undefined;
+    this.documentService.list(vectorStoreId).subscribe({
       next: (docs: Document[]) => {
         this.documents = docs;
         this.loadingDocuments = false;
@@ -90,6 +91,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
 
   onVectorStoreSelected(store: VectorStore): void {
     this.selectedVectorStore = store;
+    this.loadDocuments();
   }
 
   onDocumentUploaded(): void {

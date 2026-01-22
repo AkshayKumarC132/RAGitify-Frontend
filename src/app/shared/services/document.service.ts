@@ -53,9 +53,13 @@ export class DocumentService {
     return this.api.postFormDataWithProgress<Document>(`/document/${token}/ingest/`, formData, token);
   }
 
-  list(): Observable<Document[]> {
+  list(vectorStoreId?: string): Observable<Document[]> {
     const token = this.getToken();
-    return this.api.get<Document[]>(`/document/${token}/list/`, token);
+    let params = new HttpParams();
+    if (vectorStoreId) {
+      params = params.set('vector_store_id', vectorStoreId);
+    }
+    return this.api.get<Document[]>(`/document/${token}/list/`, token, params);
   }
 
   getById(id: string): Observable<Document> {

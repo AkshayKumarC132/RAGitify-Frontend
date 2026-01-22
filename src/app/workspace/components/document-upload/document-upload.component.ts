@@ -20,6 +20,7 @@ export class DocumentUploadComponent implements OnChanges {
   loading = false;
   uploadProgress = 0;
   uploadStatus = '';
+  private hasProgressEvents = false;
   errorMessage = '';
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -49,6 +50,7 @@ export class DocumentUploadComponent implements OnChanges {
     this.errorMessage = '';
     this.uploadProgress = 0;
     this.uploadStatus = 'Uploading...';
+    this.hasProgressEvents = false;
 
     this.documentService.ingestWithProgress({
       file: this.selectedFile,
@@ -56,15 +58,11 @@ export class DocumentUploadComponent implements OnChanges {
     }).subscribe({
       next: (event: HttpEvent<Document>) => {
         if (event.type === HttpEventType.UploadProgress) {
+          this.hasProgressEvents = true;
           const total = event.total || 0;
-          if (total > 0) {
-            const computed = Math.round((event.loaded / total) * 100);
-            this.uploadProgress = Math.min(95, computed);
-            this.uploadStatus = `Uploading... ${this.uploadProgress}%`;
-          } else {
-            this.uploadProgress = 0;
-            this.uploadStatus = 'Uploading...';
-          }
+          const computed = total > 0 ? Math.round((event.loaded / total) * 100) : 0;
+          this.uploadProgress = this.calculateProgressStep(computed);
+          this.uploadStatus = `Uploading... ${this.uploadProgress}%`;
           return;
         }
 
@@ -81,6 +79,25 @@ export class DocumentUploadComponent implements OnChanges {
         this.errorMessage = err.error?.error || 'Upload failed';
       }
     });
+  }
+
+  private calculateProgressStep(rawPercent: number): number {
+    if (this.hasProgressEvents && rawPercent === 0) {
+      return 0;
+    }
+    if (rawPercent < 25) {
+      return 25;
+    }
+    if (rawPercent < 50) {
+      return 50;
+    }
+    if (rawPercent < 70) {
+      return 70;
+    }
+    if (rawPercent < 95) {
+      return 95;
+    }
+    return 95;
   }
 
   onCancel(): void {
