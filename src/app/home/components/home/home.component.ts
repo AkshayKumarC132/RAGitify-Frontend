@@ -266,13 +266,11 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.upsertRun(updatedRun);
           if (updatedRun.status === 'completed') {
             this.loadMessages(threadId);
-            this.loadThreads();
             this.threadService.getById(threadId).subscribe(t => this.currentThread = t);
             this.teardownRunPolling();
           } else if (updatedRun.status === 'failed' || updatedRun.status === 'cancelled') {
             this.currentRun = null;
             this.loadMessages(threadId);
-            this.loadThreads();
             this.teardownRunPolling();
           } else if (updatedRun.status === 'requires_action') {
             console.log('Run requires action:', updatedRun.required_action);
@@ -533,7 +531,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Update URL without triggering navigation/component destruction
     this.location.replaceState(`/home/chat/${thread.id}`);
 
-    this.loadThreads();
+    this.upsertThread(thread);
     return { vectorStoreId, threadId: thread.id };
   }
 
@@ -1217,6 +1215,17 @@ export class HomeComponent implements OnInit, OnDestroy {
 
       return acc;
     }, {} as Record<number, Run>);
+  }
+
+  private upsertThread(thread: Thread): void {
+    const existingIndex = this.threads.findIndex(t => t.id === thread.id);
+    if (existingIndex === -1) {
+      this.threads = [thread, ...this.threads];
+      return;
+    }
+    const nextThreads = [...this.threads];
+    nextThreads[existingIndex] = thread;
+    this.threads = nextThreads;
   }
 
   private upsertRun(run: Run | null | undefined): void {
