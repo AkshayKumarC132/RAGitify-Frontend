@@ -288,7 +288,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
             this.statusCheckInFlight.delete(doc.id);
           })
         ).subscribe({
-          next: (status: DocumentStatus) => {
+          next: (status: DocumentStatus | null) => {
             if (status) {
               this.updateDocumentStatus(status);
             }
