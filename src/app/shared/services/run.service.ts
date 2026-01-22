@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable, interval, of } from 'rxjs';
-import { switchMap, takeWhile, catchError, filter } from 'rxjs/operators';
+import { Observable, timer, of } from 'rxjs';
+import { exhaustMap, takeWhile, catchError, filter } from 'rxjs/operators';
 import { HttpParams } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
@@ -58,8 +58,8 @@ export class RunService {
   }
 
   pollRunStatus(runId: string, intervalMs: number = 2000): Observable<Run> {
-    return interval(intervalMs).pipe(
-      switchMap(() =>
+    return timer(0, intervalMs).pipe(
+      exhaustMap(() =>
         this.getById(runId).pipe(
           catchError(err => {
             console.error('Error polling run status:', err);
