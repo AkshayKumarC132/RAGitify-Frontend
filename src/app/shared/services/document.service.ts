@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
-import { Document, DocumentIngestRequest } from '../models/document.model';
+import { Document, DocumentIngestRequest, DocumentStatus } from '../models/document.model';
 import { HttpParams } from '@angular/common/http';
 
 @Injectable({
@@ -47,9 +47,9 @@ export class DocumentService {
     return this.api.get<Document>(`/document/${token}/${id}/`, token);
   }
 
-  getStatus(documentId: string): Observable<Document> {
+  getStatus(documentId: string): Observable<DocumentStatus> {
     const token = this.getToken();
-    return this.api.get<Document>(`/document/${token}/${documentId}/status/`, token);
+    return this.api.get<DocumentStatus>(`/document/${token}/${documentId}/status/`, token);
   }
 
   update(id: string, data: Partial<Document>): Observable<Document> {
@@ -62,4 +62,3 @@ export class DocumentService {
     return this.api.delete<void>(`/document/${token}/${id}/`, token);
   }
 }
-

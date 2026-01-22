@@ -13,3 +13,8 @@ export interface DocumentIngestRequest {
   vector_store_id: string;
 }
 
+export interface DocumentStatus {
+  document_id: string;
+  status: Document['status'];
+  qdrant_points?: number;
+}

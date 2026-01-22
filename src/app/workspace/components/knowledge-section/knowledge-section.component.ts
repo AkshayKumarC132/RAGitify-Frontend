@@ -1,11 +1,12 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Subscription, interval } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentService } from '../../../shared/services/document.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
-import { Document } from '../../../shared/models/document.model';
+import { Document, DocumentStatus } from '../../../shared/models/document.model';
 
 @Component({
   selector: 'app-knowledge-section',
@@ -24,6 +25,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   loadingDocuments = false;
   errorMessage = '';
   private statusPollSub?: Subscription;
+  private statusCheckInFlight = new Set<string>();
   editingVectorStore: VectorStore | null = null;
   editingDocumentId: string | null = null;
   documentTitleControl = new FormControl('', [Validators.required, Validators.minLength(3)]);
@@ -261,13 +263,48 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   private startStatusPolling(): void {
     this.statusPollSub?.unsubscribe();
     this.statusPollSub = interval(5000).subscribe(() => {
-      const hasPending = this.documents.some(doc =>
+      const pendingDocuments = this.documents.filter(doc =>
         doc.status === 'queued' || doc.status === 'in_progress'
       );
-      if (hasPending) {
-        this.loadDocuments();
+
+      if (!pendingDocuments.length && this.statusCheckInFlight.size === 0) {
+        this.statusPollSub?.unsubscribe();
+        return;
       }
+
+      pendingDocuments.forEach(doc => {
+        if (this.statusCheckInFlight.has(doc.id)) {
+          return;
+        }
+        this.statusCheckInFlight.add(doc.id);
+        this.documentService.getStatus(doc.id).pipe(
+          finalize(() => {
+            this.statusCheckInFlight.delete(doc.id);
+          })
+        ).subscribe({
+          next: (status: DocumentStatus) => {
+            this.updateDocumentStatus(status);
+          },
+          error: (err) => {
+            console.error('Error loading document status:', err);
+          }
+        });
+      });
     });
+  }
+
+  private updateDocumentStatus(status: DocumentStatus): void {
+    const docIndex = this.documents.findIndex(doc => doc.id === status.document_id);
+    if (docIndex === -1) {
+      return;
+    }
+    const doc = this.documents[docIndex];
+    if (doc.status === status.status) {
+      return;
+    }
+    const next = [...this.documents];
+    next[docIndex] = { ...doc, status: status.status };
+    this.documents = next;
   }
 
   formatDate(date: string): string {
