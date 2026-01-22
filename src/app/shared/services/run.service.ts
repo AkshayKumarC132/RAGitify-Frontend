@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, interval, of } from 'rxjs';
-import { switchMap, takeWhile, catchError } from 'rxjs/operators';
+import { switchMap, takeWhile, catchError, filter } from 'rxjs/operators';
 import { HttpParams } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
@@ -59,7 +59,15 @@ export class RunService {
 
   pollRunStatus(runId: string, intervalMs: number = 2000): Observable<Run> {
     return interval(intervalMs).pipe(
-      switchMap(() => this.getById(runId)),
+      switchMap(() =>
+        this.getById(runId).pipe(
+          catchError(err => {
+            console.error('Error polling run status:', err);
+            return of(null as any);
+          })
+        )
+      ),
+      filter((run): run is Run => !!run),
       takeWhile((run: Run) => 
         run.status === 'queued' || 
         run.status === 'in_progress' || 
@@ -73,4 +81,3 @@ export class RunService {
     );
   }
 }
-

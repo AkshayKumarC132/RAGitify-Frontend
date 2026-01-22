@@ -46,6 +46,9 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Input() hasExistingThread = false;
   @Input() isTemporaryChat = false;
   @Input() currentRun: Run | null = null;
+  @Input() librariesLoading = false;
+  @Input() documentsLoading = false;
+  @Input() promptsLoading = false;
   @Output() messageSent = new EventEmitter<string>();
   @Output() modeToggle = new EventEmitter<'normal' | 'web' | 'document'>();
   @Output() filesSelected = new EventEmitter<FileList>();

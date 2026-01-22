@@ -368,6 +368,18 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.loadDocuments(this.currentVectorStoreId || undefined);
   }
 
+  get librariesLoadingState(): boolean {
+    return this.librariesLoading;
+  }
+
+  get documentsLoadingState(): boolean {
+    return this.documentsLoading;
+  }
+
+  get promptsLoadingState(): boolean {
+    return this.promptsLoading;
+  }
+
   loadThreads(): void {
     this.threadService.list().subscribe({
       next: (threads) => {
@@ -600,7 +612,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private async ensureAssistant(vectorStoreId: string | null, threadId: string): Promise<{ assistantId: string; threadId: string }> {
-    await this.ensureModelsLoaded();
+    if (!this.selectedModel && !this.availableModels.length && !this.activeProvider) {
+      await this.ensureModelsLoaded();
+    }
     await this.ensurePromptsLoaded();
     const assistants = this.prompts || [];
     // If a prompt is selected, use it
@@ -624,6 +638,10 @@ export class HomeComponent implements OnInit, OnDestroy {
       if (existingAssistant) {
         return { assistantId: existingAssistant.id, threadId };
       }
+    }
+
+    if (assistants.length) {
+      return { assistantId: assistants[0].id, threadId };
     }
 
     // Create a single assistant only when none exist for the user

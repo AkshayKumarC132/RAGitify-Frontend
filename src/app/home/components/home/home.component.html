@@ -40,6 +40,8 @@
           [isTemporaryChat]="isTemporaryChat" [libraries]="libraries" [selectedLibraryId]="selectedLibraryId"
           [documents]="allDocuments" [selectedDocumentIds]="selectedDocumentIds" [prompts]="prompts"
           [selectedPromptId]="selectedPromptId" [hasExistingThread]="!!currentThread"
+          [librariesLoading]="librariesLoadingState" [documentsLoading]="documentsLoadingState"
+          [promptsLoading]="promptsLoadingState"
           (messageSent)="onMessageSent($event)" (cancelRun)="onCancelRun()" (modeToggle)="onModeToggle($event)"
           (filesSelected)="onFilesSelected($event)" (webpageAttached)="onWebpageAttach($event)"
           (notesAttached)="onNotesAttach($event)" (librarySelected)="onLibrarySelected($event)"

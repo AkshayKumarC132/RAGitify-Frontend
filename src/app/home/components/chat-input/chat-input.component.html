@@ -19,10 +19,10 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <button type="button" (click)="openPanel('library'); $event.stopPropagation()" [disabled]="!libraries.length">
+        <button type="button" (click)="openPanel('library'); $event.stopPropagation()">
           Attach Documents
         </button>
-        <button type="button" (click)="openPanel('prompts'); $event.stopPropagation()" [disabled]="!prompts.length">
+        <button type="button" (click)="openPanel('prompts'); $event.stopPropagation()">
           Use Prompts
         </button>
       </div>
@@ -92,7 +92,11 @@
     <h4>Attach Documents</h4>
     <ng-template #documentsList>
       <div class="documents-list">
-        <ng-container *ngIf="availableDocuments.length; else emptyDocuments">
+        <ng-container *ngIf="documentsLoading; else documentsReady">
+          <p class="empty-text">Loading documents...</p>
+        </ng-container>
+        <ng-template #documentsReady>
+          <ng-container *ngIf="availableDocuments.length; else emptyDocuments">
           <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
             <div class="group-title">{{ group.name }}</div>
             <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)">
@@ -103,7 +107,8 @@
               </div>
             </label>
           </div>
-        </ng-container>
+          </ng-container>
+        </ng-template>
       </div>
     </ng-template>
 
@@ -124,7 +129,11 @@
 
       <ng-container [ngSwitch]="selectionMode">
         <div class="library-list" *ngSwitchCase="'library'">
-          <ng-container *ngIf="libraries.length; else emptyLibrary">
+          <ng-container *ngIf="librariesLoading; else libraryReady">
+            <p class="empty-text">Loading libraries...</p>
+          </ng-container>
+          <ng-template #libraryReady>
+            <ng-container *ngIf="libraries.length; else emptyLibrary">
             <label *ngFor="let library of libraries">
               <input type="radio" name="library" [value]="library.id" [(ngModel)]="pendingLibraryId" />
               <div class="library-meta">
@@ -132,7 +141,8 @@
                 <span class="meta">Created {{ library.created_at | date:'short' }}</span>
               </div>
             </label>
-          </ng-container>
+            </ng-container>
+          </ng-template>
         </div>
 
         <ng-container *ngSwitchCase="'documents'">
@@ -159,7 +169,11 @@
 
   <div class="attachment-panel" *ngIf="activePanel === 'prompts'" (click)="$event.stopPropagation()">
     <h4>Use Prompts</h4>
-    <div class="prompt-list" *ngIf="prompts.length; else emptyPrompts">
+    <ng-container *ngIf="promptsLoading; else promptsReady">
+      <p class="empty-text">Loading prompts...</p>
+    </ng-container>
+    <ng-template #promptsReady>
+      <div class="prompt-list" *ngIf="prompts.length; else emptyPrompts">
       <label *ngFor="let prompt of prompts">
         <input type="radio" name="prompt" [value]="prompt.id" [(ngModel)]="pendingPromptId" />
         <div class="prompt-meta">
@@ -168,7 +182,8 @@
             prompt.instructions.length > 60 ? '...' : '' }}</span>
         </div>
       </label>
-    </div>
+      </div>
+    </ng-template>
     <ng-template #emptyPrompts>
       <p class="empty-text">Create prompts in Workspace ➜ Prompts to see them here.</p>
     </ng-template>
