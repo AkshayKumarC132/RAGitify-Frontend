@@ -106,8 +106,9 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.authService.restoreUserFromStorage();
+    this.checkPlaygroundRoute(this.router.url);
     this.setupIncomplete = !this.authService.isLlmReady(this.authService.getCurrentStatus());
-    if (!this.setupIncomplete) {
+    if (!this.setupIncomplete && !this.isTemporaryChat) {
       this.initializeData();
     } else {
       this.clearLoadedState();
@@ -119,7 +120,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         const isReady = this.authService.isLlmReady(status);
         this.activeProvider = status?.selected_llm_provider || (status as any)?.active_provider || null;
         this.setupIncomplete = !isReady;
-        if (isReady && !this.dataInitialized) {
+        if (isReady && !this.dataInitialized && !this.isTemporaryChat) {
           this.initializeData();
           if (this.pendingThreadId) {
             this.loadThread(this.pendingThreadId);
@@ -158,7 +159,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         const threadId = params['threadId'];
         if (threadId) {
           this.pendingThreadId = threadId;
-          if (!this.setupIncomplete) {
+          if (!this.setupIncomplete && !this.isTemporaryChat) {
             this.loadThread(threadId);
           }
         }
@@ -172,9 +173,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.onThreadSelected(thread);
     });
 
-    // Check if we are on the playground route initially
-    this.checkPlaygroundRoute(this.router.url);
-
     // Listen to route changes to sync isTemporaryChat
     this.router.events.pipe(
       takeUntil(this.destroy$)
@@ -185,7 +183,19 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private checkPlaygroundRoute(url: string): void {
     // Correctly check if the current path is /playground
+    const wasTemporary = this.isTemporaryChat;
     this.isTemporaryChat = url.includes('/temporary-chat');
+    if (this.isTemporaryChat) {
+      return;
+    }
+    if (!this.setupIncomplete && !this.dataInitialized) {
+      this.initializeData();
+      if (this.pendingThreadId) {
+        this.loadThread(this.pendingThreadId);
+      }
+    } else if (wasTemporary && this.pendingThreadId && !this.currentThread) {
+      this.loadThread(this.pendingThreadId);
+    }
   }
 
   ngOnDestroy(): void {
@@ -241,7 +251,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private initializeData(): void {
-    if (this.dataInitialized) {
+    if (this.dataInitialized || this.isTemporaryChat) {
       return;
     }
     this.dataInitialized = true;

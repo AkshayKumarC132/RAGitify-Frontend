@@ -36,6 +36,10 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     pendingLibraryId: string | null = null;
     pendingDocumentIds = new Set<string>();
     selectionMode: 'library' | 'documents' = 'library';
+    librariesLoaded = false;
+    private librariesLoading = false;
+    private documentsLoaded = false;
+    private documentsLoading = false;
 
     constructor(
         private conversationService: ConversationService,
@@ -46,8 +50,6 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
 
     ngOnInit(): void {
         this.createTemporaryConversation();
-        this.loadLibraries();
-        this.loadDocuments();
     }
 
     ngOnDestroy(): void {
@@ -59,16 +61,40 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     private loadLibraries(): void {
+        if (this.librariesLoaded || this.librariesLoading) {
+            return;
+        }
+        this.librariesLoading = true;
         this.vectorStoreService.list().subscribe({
-            next: (libs) => this.libraries = libs,
-            error: (err) => console.error('Failed to load libraries', err)
+            next: (libs) => {
+                this.libraries = libs;
+                this.librariesLoaded = true;
+                this.librariesLoading = false;
+            },
+            error: (err) => {
+                console.error('Failed to load libraries', err);
+                this.librariesLoaded = false;
+                this.librariesLoading = false;
+            }
         });
     }
 
     private loadDocuments(): void {
+        if (this.documentsLoaded || this.documentsLoading) {
+            return;
+        }
+        this.documentsLoading = true;
         this.documentService.list().subscribe({
-            next: (docs) => this.documents = docs.filter(d => d.status !== 'failed'),
-            error: (err) => console.error('Failed to load documents', err)
+            next: (docs) => {
+                this.documents = docs.filter(d => d.status !== 'failed');
+                this.documentsLoaded = true;
+                this.documentsLoading = false;
+            },
+            error: (err) => {
+                console.error('Failed to load documents', err);
+                this.documentsLoaded = false;
+                this.documentsLoading = false;
+            }
         });
     }
 
@@ -80,6 +106,8 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     openLibraryPanel(): void {
+        this.loadLibraries();
+        this.loadDocuments();
         this.attachmentMenuOpen = false;
         this.libraryPanelOpen = true;
         this.pendingLibraryId = this.selectedLibraryId;

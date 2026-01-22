@@ -20,14 +20,6 @@
                 <div class="message-text" [innerText]="msg.content"></div>
             </div>
         </div>
-
-        <div *ngIf="loading" class="loading-indicator">
-            <div class="typing-indicator">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </div>
     </div>
 
     <div class="input-area-wrapper">
@@ -39,7 +31,7 @@
                 </button>
 
                 <div class="attachment-menu" *ngIf="attachmentMenuOpen" (click)="$event.stopPropagation()">
-                    <button type="button" (click)="openLibraryPanel()" [disabled]="!libraries.length">
+                    <button type="button" (click)="openLibraryPanel()" [disabled]="librariesLoaded && !libraries.length">
                         <i class="fa-solid fa-book"></i> Attach Documents
                     </button>
                 </div>

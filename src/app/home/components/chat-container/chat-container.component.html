@@ -16,14 +16,6 @@
       (rerun)="onRerun(message)"
     ></app-message-bubble>
 
-    <div *ngIf="currentRun && (currentRun.status === 'queued' || currentRun.status === 'in_progress')"
-      class="loading-indicator">
-      <div class="typing-indicator">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
-    </div>
   </div>
 
   <button
