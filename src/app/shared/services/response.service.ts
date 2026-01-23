@@ -15,11 +15,10 @@ export class ResponseService {
   ) {}
 
   getDefaultModel(): string {
-    const status = this.auth.getCurrentStatus() || this.auth.getStoredUser();
-    const statusSnapshot = status as any;
-    const provider = statusSnapshot?.active_provider
-      || statusSnapshot?.selected_llm_provider
-      || statusSnapshot?.active_collection?.provider
+    const storedUser = this.auth.getStoredUser() as any;
+    const provider = storedUser?.active_provider
+      || storedUser?.selected_llm_provider
+      || storedUser?.active_collection?.provider
       || null;
 
     if (provider === 'Ollama') {

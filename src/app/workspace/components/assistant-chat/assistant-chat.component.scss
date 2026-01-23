@@ -198,11 +198,30 @@
         }
     }
 
-    .message-time {
-        font-size: 0.7rem;
-        margin-top: 0.25rem;
-        padding: 0 0.25rem;
-    }
+.message-time {
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
+    padding: 0 0.25rem;
+}
+}
+
+.typing-message {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.typing-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+.typing-dots {
+    letter-spacing: 0.1em;
 }
 
 .input-area {

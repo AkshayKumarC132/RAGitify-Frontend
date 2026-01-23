@@ -20,6 +20,10 @@
                 <div class="message-text" [innerText]="msg.content"></div>
             </div>
         </div>
+
+        <div *ngIf="loading" class="typing-message">
+            <span class="typing-text">Typing<span class="typing-dots">...</span></span>
+        </div>
     </div>
 
     <div class="input-area-wrapper">

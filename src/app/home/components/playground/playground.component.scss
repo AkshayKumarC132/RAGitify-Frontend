@@ -206,6 +206,25 @@
     white-space: pre-wrap;
 }
 
+.typing-message {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.typing-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+.typing-dots {
+    letter-spacing: 0.1em;
+}
+
 .input-area-wrapper {
     width: 100%;
     display: flex;

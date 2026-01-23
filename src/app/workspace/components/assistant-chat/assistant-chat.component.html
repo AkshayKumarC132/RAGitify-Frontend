@@ -50,6 +50,9 @@
                 </div>
             </div>
 
+            <div *ngIf="isResponseInProgress" class="typing-message">
+                <span class="typing-text">Typing<span class="typing-dots">...</span></span>
+            </div>
         </div>
 
         <!-- Input Area -->
