@@ -205,31 +205,6 @@
     }
 }
 
-.typing-indicator {
-    .typing-dots {
-        display: flex;
-        gap: 4px;
-        padding: 0.25rem 0;
-    }
-
-    .typing-dots span {
-        width: 6px;
-        height: 6px;
-        background: var(--text-secondary);
-        border-radius: 50%;
-        animation: bounce 1.4s infinite ease-in-out;
-        opacity: 0.6;
-    }
-
-    .typing-dots span:nth-child(1) {
-        animation-delay: -0.32s;
-    }
-
-    .typing-dots span:nth-child(2) {
-        animation-delay: -0.16s;
-    }
-}
-
 .input-area {
     padding: 1rem 1.25rem;
     border-top: 1px solid var(--border-color);
@@ -335,18 +310,5 @@
     to {
         transform: translateY(0);
         opacity: 1;
-    }
-}
-
-@keyframes bounce {
-
-    0%,
-    80%,
-    100% {
-        transform: scale(0);
-    }
-
-    40% {
-        transform: scale(1);
     }
 }

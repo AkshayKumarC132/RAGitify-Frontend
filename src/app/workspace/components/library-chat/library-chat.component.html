@@ -48,16 +48,6 @@
                 </div>
             </div>
 
-            <!-- Typing Indicator -->
-            <div *ngIf="isResponseInProgress" class="message-bubble assistant typing-indicator">
-                <div class="message-content">
-                    <div class="typing-dots">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Input Area -->
@@ -74,8 +64,7 @@
                     <button type="button" class="send-button" (click)="sendMessage()"
                         [disabled]="!messageInputText.trim() || loading || isResponseInProgress" title="Send message"
                         aria-label="Send message">
-                        <i *ngIf="!loading && !isResponseInProgress" class="fa-solid fa-arrow-up"></i>
-                        <i *ngIf="loading || isResponseInProgress" class="fa-solid fa-spinner fa-spin"></i>
+                        <i class="fa-solid fa-arrow-up"></i>
                     </button>
                 </div>
             </div>

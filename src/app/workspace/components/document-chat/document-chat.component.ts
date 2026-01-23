@@ -115,7 +115,7 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const request: ResponseCreateRequest = {
       conversation: this.conversation.id,
-      model: 'gpt-5.1', // Default model
+      model: this.responseService.getDefaultModel(),
       input: [
         {
           role: 'user',
@@ -278,4 +278,3 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.currentResponse?.status === 'in_progress';
   }
 }
-

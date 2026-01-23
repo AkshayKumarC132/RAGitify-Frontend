@@ -72,7 +72,7 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
         if (!this.assistant) return;
 
         const request: ResponseCreateRequest = {
-            model: this.assistant.model || 'gpt-4o',
+            model: this.assistant.model || this.responseService.getDefaultModel(),
             input: [
                 {
                     role: 'user',

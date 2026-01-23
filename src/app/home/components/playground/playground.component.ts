@@ -246,7 +246,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
 
         const request: ResponseCreateRequest = {
             conversation: this.conversationId,
-            model: 'gpt-4o',
+            model: this.responseService.getDefaultModel(),
             input: [{
                 role: 'user',
                 content: [{ type: 'input_text', text: content }]

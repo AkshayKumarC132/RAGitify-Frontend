@@ -72,7 +72,7 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
         if (!this.vectorStore) return;
 
         const request: ResponseCreateRequest = {
-            model: 'gpt-4o', // Default model for library chat
+            model: this.responseService.getDefaultModel(),
             input: [
                 {
                     role: 'user',

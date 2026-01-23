@@ -14,6 +14,24 @@ export class ResponseService {
     private auth: AuthService
   ) {}
 
+  getDefaultModel(): string {
+    const status = this.auth.getCurrentStatus() || this.auth.getStoredUser();
+    const statusSnapshot = status as any;
+    const provider = statusSnapshot?.active_provider
+      || statusSnapshot?.selected_llm_provider
+      || statusSnapshot?.active_collection?.provider
+      || null;
+
+    if (provider === 'Ollama') {
+      return 'llama3.1:latest';
+    }
+    if (provider === 'OpenAI') {
+      return 'gpt-4.1';
+    }
+
+    return 'gpt-4.1';
+  }
+
   private getToken(): string {
     const token = this.auth.getToken();
     if (!token) {
@@ -24,7 +42,8 @@ export class ResponseService {
 
   create(data: ResponseCreateRequest): Observable<ResponseRecord> {
     const token = this.getToken();
-    return this.api.post<ResponseRecord>(`/response/chat/${token}/`, data, token);
+    const payload = data.model ? data : { ...data, model: this.getDefaultModel() };
+    return this.api.post<ResponseRecord>(`/response/chat/${token}/`, payload, token);
   }
 
   getById(id: string): Observable<ResponseRecord> {
@@ -56,4 +75,3 @@ export class ResponseService {
     );
   }
 }
-
