@@ -17,6 +17,22 @@ export class ThemeService {
     this.applyTheme(this.themeSubject.value);
   }
 
+  /**
+   * Removes the persisted theme from storage without changing
+   * the currently applied UI theme (preserves current UI state).
+   */
+  clearThemeCache(): void {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
+  /**
+   * Force the theme to Light Mode (and persist it).
+   * Used to ensure a consistent default theme upon login.
+   */
+  forceLightTheme(): void {
+    this.setTheme('light');
+  }
+
   toggleTheme(): void {
     const nextTheme: ThemeMode = this.themeSubject.value === 'dark' ? 'light' : 'dark';
     this.setTheme(nextTheme);

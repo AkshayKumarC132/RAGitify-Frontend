@@ -1,4 +1,6 @@
 /* Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -6,7 +8,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
   font-size: 11px;
   line-height: 1.45;
   background-color: var(--bg-primary);
@@ -14,6 +16,9 @@ body {
   height: 100vh;
   overflow: hidden;
   transition: background 0.3s ease, color 0.3s ease;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html,
@@ -25,7 +30,7 @@ body {
 
 /* Light Theme Variables (default) */
 :root {
-  --bg-primary: #e6ebf5;
+  --bg-primary: #fcfcfd;
   --bg-secondary: #f5f7fb;
   --bg-tertiary: #dfe6f2;
   --text-primary: #111b2b;

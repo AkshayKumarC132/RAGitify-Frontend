@@ -1,16 +1,14 @@
 <div class="playground-container" [class.has-messages]="messages.length > 0">
-    <div class="top-indicator">
-        <i class="fa-solid fa-dice"></i>
-        <span>Temporary Chat</span>
+    <div class="playground-topbar">
+        <button class="close-btn" type="button" (click)="closed.emit()" title="Exit Playground"
+            aria-label="Exit Playground">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
     </div>
 
-    <button class="close-btn" (click)="closed.emit()" title="Exit Temporary Chat">
-        <i class="fa-solid fa-xmark"></i>
-    </button>
-
     <div class="playground-header" *ngIf="messages.length === 0">
-        <h1>Temporary Chat</h1>
-        <p>Messages in this chat are not saved.</p>
+        <h1><i class="fa-brands fa-rocketchat" aria-hidden="true"></i> Playground</h1>
+        <p>Feel free to try prompts — messages here are not saved.</p>
     </div>
 
     <div class="chat-messages" #messagesContainer>

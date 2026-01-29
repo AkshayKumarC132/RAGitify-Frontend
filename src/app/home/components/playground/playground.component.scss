@@ -66,32 +66,26 @@
 }
 
 .top-indicator {
-    position: absolute;
-    top: 1.25rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1001;
+    position: static;
+    transform: none;
+    z-index: auto;
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    padding: 0.4rem 1rem;
-    // background: #1a1a1a;
-    // border: 1px solid rgba(255, 255, 255, 0.1);
-    // border-radius: 999px;
-    // color: #ffffff;
-    // box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    // pointer-events: none;
-    // animation: fadeInDown 0.4s ease;
+    color: var(--text-secondary);
+    padding: 15px 0px;
 
     i {
-        font-size: 0.9rem;
-        opacity: 0.8;
+        font-size: 0.95rem;
+        color: var(--accent-color);
+        opacity: 0.95;
     }
 
     span {
         font-size: 11px;
         font-weight: 600;
-        letter-spacing: 0.02em;
+        letter-spacing: -0.01em;
+        color: var(--text-primary);
     }
 }
 
@@ -107,28 +101,30 @@
     }
 }
 
+// Close button stays pinned to the viewport top-right
 .close-btn {
     position: fixed;
     top: 1rem;
     right: 1rem;
-    z-index: 1000;
-    width: 36px;
-    height: 36px;
-    border: none;
-    border-radius: 50%;
-    background: var(--bg-tertiary, #e8e8e8);
+    z-index: 1100;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-tertiary);
     color: var(--text-secondary);
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
-    transition: all 0.2s;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    font-size: 1rem;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    box-shadow: none;
 
     &:hover {
-        background: var(--bg-secondary, #ddd);
+        background: var(--bg-secondary);
         color: var(--text-primary);
+        border-color: rgba(var(--accent-color-rgb, 37, 99, 235), 0.35);
     }
 }
 
@@ -167,6 +163,11 @@
     &::-webkit-scrollbar {
         display: none;
     }
+}
+
+// Ensure message list never sits under the topbar
+.playground-container .chat-messages {
+    padding-top: 1rem;
 }
 
 

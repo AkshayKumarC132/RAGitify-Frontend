@@ -84,27 +84,59 @@ app-playground {
   justify-content: flex-end;
   margin-bottom: 0;
 
-  .icon-button {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    display: flex;
+  .playground-launch {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-    transition: all 0.2s ease;
-    background: transparent;
-    border: none;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-primary);
     cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    backdrop-filter: blur(10px);
 
-    &.active {
+    i {
+      font-size: 14px;
       color: var(--accent-color);
-      background: rgba(var(--accent-color-rgb, 37, 99, 235), 0.1);
+      flex-shrink: 0;
+    }
+
+    &__text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+      text-align: left;
+    }
+
+    &__title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+    }
+
+    &__subtitle {
+      margin-top: 2px;
+      font-size: 10px;
+      color: var(--text-secondary);
+      opacity: 0.9;
+      white-space: nowrap;
     }
 
     &:hover {
-      color: var(--text-primary);
       background: var(--bg-tertiary);
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &.active {
+      border-color: rgba(var(--accent-color-rgb, 37, 99, 235), 0.45);
+      background: rgba(var(--accent-color-rgb, 37, 99, 235), 0.08);
     }
   }
 }

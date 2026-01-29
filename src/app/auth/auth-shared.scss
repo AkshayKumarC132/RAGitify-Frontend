@@ -1,0 +1,323 @@
+// Variables specifically for Auth (scoped)
+$auth-bg: #0f172a;
+$card-bg: rgba(30, 41, 59, 0.7);
+$primary-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+$text-main: #f8fafc;
+$text-muted: #94a3b8;
+$border-color: rgba(148, 163, 184, 0.1);
+$input-bg: rgba(15, 23, 42, 0.6);
+$error-color: #ef4444;
+
+// Common styles
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: $text-muted;
+    }
+
+    small {
+        color: $error-color;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    i {
+        position: absolute;
+        left: 1rem;
+        color: $text-muted;
+        font-size: 1rem;
+        transition: color 0.3s ease;
+    }
+
+    input,
+    select {
+        width: 100%;
+        background: $input-bg;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 0.85rem 1rem 0.85rem 2.8rem;
+        /* padding left for icon */
+        color: $text-main;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        appearance: none;
+        /* remove default arrow for select */
+
+        &::placeholder {
+            color: rgba(148, 163, 184, 0.5);
+        }
+
+        &:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+
+        &.error {
+            border-color: $error-color;
+
+            &:focus {
+                box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+            }
+        }
+    }
+
+    /* Highlight icon on focus */
+    input:focus+i,
+    input:focus~i,
+    select:focus+i,
+    select:focus~i {
+        color: #3b82f6;
+    }
+
+    /* Password wrapper with toggle button */
+    &.password-wrapper {
+        .password-toggle {
+            position: absolute;
+            right: 2rem;
+            background: transparent;
+            border: none;
+            color: $text-muted;
+            cursor: pointer;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.3s ease;
+            z-index: 1;
+
+            &:hover {
+                color: $text-main;
+            }
+
+            &:focus {
+                outline: none;
+                color: #3b82f6;
+            }
+
+            i {
+                font-size: 1rem;
+            }
+        }
+
+        input {
+            padding-right: 3rem; // Make room for toggle button (1rem right + 0.5rem button padding + 1rem icon + 0.5rem spacing)
+        }
+    }
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -0.5rem;
+
+    .forgot-password {
+        color: #3b82f6;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: text-decoration 0.2s;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.btn-primary {
+    background: $primary-gradient;
+    border: none;
+    color: white;
+    padding: 0.85rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+
+    &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.4);
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    &.btn-block {
+        width: 100%;
+    }
+
+    &.btn-ghost {
+        background: transparent;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        color: $text-muted;
+        box-shadow: none;
+
+        &:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.05);
+            color: $text-main;
+            transform: translateY(-1px);
+        }
+    }
+}
+
+// Unified Card Layout
+.auth-shell {
+    height: 100dvh;
+    min-height: 100dvh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: $auth-bg;
+    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Allow page scrolling */
+    padding: 2rem;
+}
+
+.auth-container-standard {
+    display: grid;
+    width: 100%;
+    max-width: 1000px;
+    min-height: 600px;
+    /* Consistent height */
+    background: $card-bg;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    /* Internal elements shouldn't spill out */
+    position: relative;
+    z-index: 10;
+    transition: all 0.3s ease;
+
+    &.centered-single {
+        grid-template-columns: 1fr;
+        max-width: 600px;
+        /* Narrower for single column setup */
+        padding: 3rem;
+    }
+}
+
+// Background Blobs (Shared)
+.background-blobs {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+
+    .blob {
+        position: absolute;
+        filter: blur(80px);
+        opacity: 0.4;
+        animation: float 20s infinite ease-in-out alternate;
+    }
+
+    .blob-1 {
+        top: -10%;
+        left: -10%;
+        width: 600px;
+        height: 600px;
+        background: #4f46e5;
+        animation-delay: 0s;
+    }
+
+    .blob-2 {
+        bottom: -10%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: #06b6d4;
+        animation-delay: -5s;
+    }
+
+    .blob-3 {
+        top: 40%;
+        left: 40%;
+        width: 400px;
+        height: 400px;
+        background: #8b5cf6;
+        animation-delay: -10s;
+    }
+}
+
+@keyframes float {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    100% {
+        transform: translate(100px, 50px) rotate(20deg);
+    }
+}
+
+@media (max-width: 768px) {
+    .auth-shell {
+        padding: 1rem;
+        align-items: flex-start;
+        /* Allow scrolling from top on mobile */
+    }
+
+    .auth-container-standard {
+        min-height: auto;
+        overflow-y: auto;
+    }
+}
+
+// Height-based responsiveness (handles browser zoom / short viewports)
+@media (max-height: 820px) {
+    .auth-shell {
+        padding: 1rem;
+        align-items: flex-start;
+    }
+
+    .auth-container-standard {
+        min-height: auto;
+    }
+}
+
+@media (max-height: 700px) {
+    .auth-shell {
+        padding: 0.75rem;
+    }
+
+    .auth-container-standard {
+        border-radius: 18px;
+    }
+}

@@ -15,6 +15,7 @@ export class LoginComponent implements OnInit {
   showRegister = false;
   errorMessage = '';
   loading = false;
+  showPassword = false;
 
   constructor(
     private fb: FormBuilder,

@@ -22,9 +22,13 @@
     <ng-container *ngIf="!isTemporaryChat">
       <div class="chat-area">
         <div class="chat-actions" *ngIf="!currentThread">
-          <button class="icon-button" (click)="toggleTemporaryChat()" [class.active]="isTemporaryChat"
-            title="Play Ground">
-            <i class="fa-solid fa-dice"></i>
+          <button class="playground-launch" type="button" (click)="toggleTemporaryChat()"
+            [class.active]="isTemporaryChat" title="Playground (temporary chat - not saved)"
+            aria-label="Open Playground (temporary chat not saved)">
+            <i class="fa-brands fa-rocketchat"></i>
+            <span class="playground-launch__text">
+              <span class="playground-launch__title">Playground</span>
+            </span>
           </button>
         </div>
 
@@ -41,11 +45,10 @@
           [documents]="allDocuments" [selectedDocumentIds]="selectedDocumentIds" [prompts]="prompts"
           [selectedPromptId]="selectedPromptId" [hasExistingThread]="!!currentThread"
           [librariesLoading]="librariesLoadingState" [documentsLoading]="documentsLoadingState"
-          [promptsLoading]="promptsLoadingState"
-          (messageSent)="onMessageSent($event)" (cancelRun)="onCancelRun()" (modeToggle)="onModeToggle($event)"
-          (filesSelected)="onFilesSelected($event)" (webpageAttached)="onWebpageAttach($event)"
-          (notesAttached)="onNotesAttach($event)" (librarySelected)="onLibrarySelected($event)"
-          (attachmentPanelOpened)="onAttachmentPanelOpened($event)"
+          [promptsLoading]="promptsLoadingState" (messageSent)="onMessageSent($event)" (cancelRun)="onCancelRun()"
+          (modeToggle)="onModeToggle($event)" (filesSelected)="onFilesSelected($event)"
+          (webpageAttached)="onWebpageAttach($event)" (notesAttached)="onNotesAttach($event)"
+          (librarySelected)="onLibrarySelected($event)" (attachmentPanelOpened)="onAttachmentPanelOpened($event)"
           (promptSelected)="onPromptSelected($event)"></app-chat-input>
 
         <div class="attachment-status" *ngIf="attachmentMessage">

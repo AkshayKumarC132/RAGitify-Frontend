@@ -1,15 +1,22 @@
-<div class="setup-shell">
-  <div class="setup-card">
+<div class="auth-shell">
+  <!-- Dynamic Background Elements -->
+  <div class="background-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <div class="auth-container-standard centered-single">
     <div class="setup-header">
-      <div>
+      <div class="header-content">
         <p class="eyebrow">Onboarding</p>
         <h1>LLM Setup Wizard</h1>
         <p class="subtitle">
-          Complete these steps to unlock threads, vector stores, assistants, and documents.
+          Complete these steps to unlock 🔓 Workspace.
         </p>
       </div>
-      <button type="button" class="ghost-link" (click)="backToLogin()">
-        Back to login
+      <button type="button" class="btn-primary btn-ghost" (click)="backToLogin()">
+        <i class="fa-solid fa-arrow-left"></i> Back to login
       </button>
     </div>
 
@@ -22,9 +29,9 @@
       <span>{{ errorMessage }}</span>
     </div>
 
-    <form [formGroup]="setupForm" (ngSubmit)="submitSetup()" class="setup-form">
-      <section class="step">
-        <div class="step-label">
+    <form [formGroup]="setupForm" (ngSubmit)="submitSetup()" class="auth-form">
+      <section class="step-section">
+        <div class="step-header">
           <span class="step-number">1</span>
           <div>
             <p class="eyebrow">Select provider</p>
@@ -32,13 +39,8 @@
           </div>
         </div>
         <div class="provider-grid">
-          <button
-            type="button"
-            *ngFor="let option of providerOptions"
-            class="provider-card"
-            [class.selected]="providerIsSelected(option.value)"
-            (click)="selectProvider(option.value)"
-          >
+          <button type="button" *ngFor="let option of providerOptions" class="provider-card"
+            [class.selected]="providerIsSelected(option.value)" (click)="selectProvider(option.value)">
             <div class="provider-title">
               <span>{{ option.label }}</span>
               <i *ngIf="providerIsSelected(option.value)" class="fa-solid fa-check-circle" aria-hidden="true"></i>
@@ -47,38 +49,39 @@
           </button>
         </div>
         <small class="hint">{{ providerDimensionHint }}</small>
-        <div class="field-error" *ngIf="setupForm.get('llm_provider')?.invalid && setupForm.get('llm_provider')?.touched">
+        <div class="field-error"
+          *ngIf="setupForm.get('llm_provider')?.invalid && setupForm.get('llm_provider')?.touched">
           LLM provider is required
         </div>
       </section>
 
-      <section class="step">
-        <div class="step-label">
+      <section class="step-section">
+        <div class="step-header">
           <span class="step-number">2</span>
           <div>
             <p class="eyebrow">Name collection</p>
             <h3>Collection name</h3>
           </div>
         </div>
-        <label>
-          <span>Collection name *</span>
-          <input
-            type="text"
-            formControlName="collection_name"
-            placeholder="e.g., Marketing-Docs"
-            [class.error]="setupForm.get('collection_name')?.invalid && setupForm.get('collection_name')?.touched"
-          />
-        </label>
-        <div class="field-error" *ngIf="setupForm.get('collection_name')?.invalid && setupForm.get('collection_name')?.touched">
+        <div class="form-group">
+          <label for="collection_name">Collection name <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-database"></i>
+            <input type="text" id="collection_name" formControlName="collection_name" placeholder="e.g., Marketing-Docs"
+              [class.error]="setupForm.get('collection_name')?.invalid && setupForm.get('collection_name')?.touched" />
+          </div>
+        </div>
+        <div class="field-error"
+          *ngIf="setupForm.get('collection_name')?.invalid && setupForm.get('collection_name')?.touched">
           Collection name is required
         </div>
       </section>
 
       <div class="actions">
-        <button type="button" (click)="backToLogin()" class="ghost-button">Back</button>
+        <button type="button" class="btn-primary btn-ghost" (click)="backToLogin()">Back</button>
         <button type="submit" class="btn-primary" [disabled]="submitting || setupForm.invalid">
-          <span *ngIf="!submitting">Complete setup</span>
-          <span *ngIf="submitting">Saving...</span>
+          <span *ngIf="!submitting">Complete Setup <i class="fa-solid fa-check"></i></span>
+          <span *ngIf="submitting"><i class="fa-solid fa-circle-notch fa-spin"></i> Saving...</span>
         </button>
       </div>
     </form>

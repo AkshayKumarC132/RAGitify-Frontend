@@ -1,89 +1,164 @@
 <div class="register-wrapper">
-  <div class="register-copy">
-    <h2>Create your workspace seat</h2>
-    <p>Every new seat includes access to prompts, models, and document libraries.</p>
+  <!-- Step Indicator -->
+  <div class="step-indicator">
+    <div class="step" [class.active]="currentStep === 1" [class.completed]="currentStep > 1">
+      <span class="step-number">1</span>
+      <span class="step-label">Basic Info</span>
+    </div>
+    <div class="step-connector" [class.active]="currentStep > 1"></div>
+    <div class="step" [class.active]="currentStep === 2">
+      <span class="step-number">2</span>
+      <span class="step-label">LLM Setup</span>
+    </div>
   </div>
 
+  <!-- Error Message -->
   <div *ngIf="errorMessage" class="error-message">
-    {{ errorMessage }}
+    <i class="fa-solid fa-circle-exclamation"></i>
+    <span>{{ errorMessage }}</span>
   </div>
 
-  <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
-    <label>
-      <span>Email *</span>
-      <input
-        type="email"
-        id="email"
-        formControlName="email"
-        [class.error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
-        placeholder="you@ragitify.ai"
-      />
-      <small *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">Valid email required</small>
-    </label>
+  <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
 
-    <label>
-      <span>Password *</span>
-      <input
-        type="password"
-        id="password"
-        formControlName="password"
-        [class.error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
-        placeholder="••••••"
-      />
-      <small *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">Minimum 6 characters</small>
-    </label>
+    <!-- Step 1: Basic Info -->
+    <div *ngIf="currentStep === 1" class="step-content fade-in">
+      <div class="form-group">
+        <label for="reg-email">Email Address <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <i class="fa-regular fa-envelope"></i>
+          <input type="email" id="reg-email" formControlName="email"
+            [class.error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
+            placeholder="you@ragitify.ai" />
+        </div>
+        <small *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">Valid email
+          required</small>
+      </div>
 
-    <div class="two-column">
-      <label>
-        <span>First Name</span>
-        <input type="text" id="first_name" formControlName="first_name" placeholder="First name" />
-      </label>
-      <label>
-        <span>Last Name</span>
-        <input type="text" id="last_name" formControlName="last_name" placeholder="Last name" />
-      </label>
+      <div class="form-group">
+        <label for="reg-password">Password <span class="required">*</span></label>
+        <div class="input-wrapper password-wrapper">
+          <i class="fa-solid fa-lock"></i>
+          <input [type]="showPassword ? 'text' : 'password'" id="reg-password" formControlName="password"
+            [class.error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+            placeholder="••••••••" (input)="onPasswordChange()" />
+          <button type="button" class="password-toggle" (click)="showPassword = !showPassword" tabindex="-1">
+            <i [class]="showPassword ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye'"></i>
+          </button>
+        </div>
+        <!-- Password Strength Indicator -->
+        <div *ngIf="registerForm.get('password')?.value" class="password-strength">
+          <div class="strength-bar">
+            <div class="strength-fill" [class]="'strength-' + passwordStrength"
+              [style.width.%]="getStrengthPercentage()"></div>
+          </div>
+          <div class="strength-label">
+            <span [class]="'strength-text strength-' + passwordStrength">{{ getStrengthLabel() }}</span>
+          </div>
+        </div>
+        <small *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">Minimum 6
+          characters</small>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="first_name">First Name</label>
+          <div class="input-wrapper">
+            <i class="fa-regular fa-user"></i>
+            <input type="text" id="first_name" formControlName="first_name" placeholder="Jane" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="last_name">Last Name</label>
+          <div class="input-wrapper">
+            <i class="fa-regular fa-user"></i>
+            <input type="text" id="last_name" formControlName="last_name" placeholder="Doe" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group tenant-autocomplete">
+        <label for="tenant_name">Workspace Name <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <i class="fa-solid fa-building"></i>
+          <input type="text" id="tenant_name" formControlName="tenant_name"
+            [class.error]="registerForm.get('tenant_name')?.invalid && registerForm.get('tenant_name')?.touched"
+            placeholder="Select or create a workspace..." (input)="onTenantInput($event)" (focus)="onTenantFocus()"
+            (blur)="onTenantBlur()" autocomplete="off" />
+          <i *ngIf="loadingTenants" class="fa-solid fa-circle-notch fa-spin loading-icon"></i>
+        </div>
+
+        <!-- Tenant Dropdown -->
+        <div class="tenant-dropdown" *ngIf="showTenantDropdown && (filteredTenants.length > 0 || isNewTenant)">
+          <div *ngFor="let tenant of filteredTenants" class="tenant-option" (mousedown)="selectTenant(tenant)">
+            <i class="fa-solid fa-building"></i>
+            <span>{{ tenant.name }}</span>
+          </div>
+          <div *ngIf="isNewTenant" class="tenant-option new-tenant">
+            <i class="fa-solid fa-plus"></i>
+            <span>Create "{{ registerForm.get('tenant_name')?.value }}"</span>
+          </div>
+        </div>
+
+        <small *ngIf="registerForm.get('tenant_name')?.invalid && registerForm.get('tenant_name')?.touched">
+          Workspace name is required
+        </small>
+        <small *ngIf="isNewTenant && registerForm.get('tenant_name')?.value" class="helper-text">
+          <i class="fa-solid fa-circle-info"></i> A new workspace will be created.
+        </small>
+      </div>
+
+      <div class="register-actions">
+        <button type="button" class="btn-primary btn-ghost" (click)="goBack()">
+          <i class="fa-solid fa-arrow-left"></i> Back to Login
+        </button>
+        <button type="button" class="btn-primary" (click)="nextStep()">
+          Next Step <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
     </div>
 
-    <label>
-      <span>Tenant Name *</span>
-      <input
-        type="text"
-        id="tenant_name"
-        formControlName="tenant_name"
-        [class.error]="registerForm.get('tenant_name')?.invalid && registerForm.get('tenant_name')?.touched"
-        placeholder="Acme Labs"
-      />
-      <small *ngIf="registerForm.get('tenant_name')?.invalid && registerForm.get('tenant_name')?.touched">Tenant is required</small>
-    </label>
+    <!-- Step 2: LLM Setup (Optional) -->
+    <div *ngIf="currentStep === 2" class="step-content fade-in">
+      <div class="optional-header">
+        <h3>LLM Configuration</h3>
+        <p>Configure your AI provider now or skip and set up later.</p>
+      </div>
 
-    <div class="two-column">
-      <label>
-        <span>LLM Provider (optional)</span>
-        <select id="llm_provider" formControlName="llm_provider">
-          <option value="">Skip for now</option>
-          <option value="openai">OpenAI</option>
-          <option value="ollama">Ollama</option>
-        </select>
-        <small>Selecting a provider immediately creates a collection.</small>
-      </label>
-      <label>
-        <span>Collection Name</span>
-        <input type="text" id="collection_name" formControlName="collection_name" placeholder="Optional" />
-        <small>Required only when selecting an LLM.</small>
-      </label>
-    </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="llm_provider">LLM Provider</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-microchip"></i>
+            <select id="llm_provider" formControlName="llm_provider">
+              <option value="">Skip for now</option>
+              <option value="openai">OpenAI</option>
+              <option value="ollama">Ollama</option>
+            </select>
+          </div>
+        </div>
 
-    <label>
-      <span>Language (optional)</span>
-      <input type="text" id="language" formControlName="language" placeholder="en" />
-    </label>
+        <div class="form-group">
+          <label for="collection_name">Collection Name</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-database"></i>
+            <input type="text" id="collection_name" formControlName="collection_name" placeholder="my-collection" />
+          </div>
+        </div>
+      </div>
 
-    <div class="register-actions">
-      <button type="button" (click)="goBack()">Back to login</button>
-      <button type="submit" class="btn-primary" [disabled]="loading || registerForm.invalid">
-        <span *ngIf="!loading">Create workspace</span>
-        <span *ngIf="loading">Creating account...</span>
-      </button>
+      <small class="helper-text" *ngIf="registerForm.get('llm_provider')?.value">
+        <i class="fa-solid fa-circle-info"></i> Collection name is required when selecting an LLM provider.
+      </small>
+
+      <div class="register-actions">
+        <button type="button" class="btn-primary btn-ghost" (click)="prevStep()">
+          <i class="fa-solid fa-arrow-left"></i> Previous
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="loading || registerForm.invalid">
+          <span *ngIf="!loading">Create Account <i class="fa-solid fa-rocket"></i></span>
+          <span *ngIf="loading"><i class="fa-solid fa-circle-notch fa-spin"></i> Creating...</span>
+        </button>
+      </div>
     </div>
   </form>
 </div>

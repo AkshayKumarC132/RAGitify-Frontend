@@ -1,78 +1,300 @@
+@import '../../auth-shared.scss';
+
 .register-wrapper {
+  width: 100%;
+}
+
+// Password Strength Indicator
+.password-strength {
+  margin-top: 0.5rem;
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
+
+  .strength-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+
+    .strength-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s ease, background-color 0.3s ease;
+
+      &.strength-weak {
+        background: linear-gradient(to right, #ef4444, #f87171);
+      }
+
+      &.strength-fair {
+        background: linear-gradient(to right, #f59e0b, #fbbf24);
+      }
+
+      &.strength-good {
+        background: linear-gradient(to right, #3b82f6, #60a5fa);
+      }
+
+      &.strength-strong {
+        background: linear-gradient(to right, #10b981, #34d399);
+      }
+    }
+  }
+
+  .strength-label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    .strength-text {
+      font-size: 0.75rem;
+      font-weight: 500;
+      transition: color 0.3s ease;
+
+      &.strength-weak {
+        color: #f87171;
+      }
+
+      &.strength-fair {
+        color: #fbbf24;
+      }
+
+      &.strength-good {
+        color: #60a5fa;
+      }
+
+      &.strength-strong {
+        color: #34d399;
+      }
+    }
+  }
+}
+
+// Step Indicator
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+
+    &.active,
+    &.completed {
+      opacity: 1;
+    }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      color: $text-muted;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    &.active .step-number {
+      background: $primary-gradient;
+      color: white;
+    }
+
+    &.completed .step-number {
+      background: #10b981; // Green for completed
+      color: white;
+    }
+
+    .step-label {
+      font-size: 0.85rem;
+      color: $text-muted;
+    }
+
+    &.active .step-label {
+      color: $text-main;
+      font-weight: 500;
+    }
+  }
+
+  .step-connector {
+    width: 40px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    transition: background 0.3s ease;
+
+    &.active {
+      background: #10b981;
+    }
+  }
+}
+
+// Error Message (scoped override if needed, but mostly from shared)
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+
+  i {
+    font-size: 1rem;
+  }
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
 
-.register-copy {
-  h2 {
-    font-size: 14px;
-    color: var(--text-primary);
+.optional-header {
+  text-align: center;
+  margin-bottom: 1rem;
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: $text-main;
+    margin-bottom: 0.25rem;
   }
 
   p {
-    font-size: 10px;
-    color: var(--text-secondary);
+    font-size: 0.9rem;
+    color: $text-muted;
   }
 }
 
-.register-form {
+.helper-text {
   display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+  align-items: center;
+  gap: 0.4rem;
+  color: #38bdf8;
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+
+  i {
+    font-size: 0.85rem;
+  }
 }
 
-.register-form label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 10px;
-  color: var(--text-secondary);
+// Tenant Autocomplete
+.tenant-autocomplete {
+  position: relative;
+
+  .input-wrapper {
+    .loading-icon {
+      position: absolute;
+      right: rem;
+      left: auto;
+      color: $text-muted;
+    }
+  }
 }
 
-.register-form input {
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: transparent;
-  padding: 0.45rem 0.55rem;
-  color: var(--text-primary);
-  font-size: 11px;
-}
+.tenant-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  margin-top: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
 
-.register-form select {
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: transparent;
-  padding: 0.45rem 0.55rem;
-  color: var(--text-primary);
-  font-size: 11px;
-}
+  .tenant-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: $text-main;
+    cursor: pointer;
+    transition: background 0.2s ease;
 
-.register-form input.error {
-  border-color: var(--error-color);
-}
+    i {
+      font-size: 0.9rem;
+      color: $text-muted;
+    }
 
-.register-form small {
-  color: var(--error-color);
-  font-size: 9px;
-}
+    &:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
 
-.two-column {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+    &.new-tenant {
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      color: #38bdf8;
+
+      i {
+        color: #38bdf8;
+      }
+    }
+  }
 }
 
 .register-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  gap: 1rem;
 }
 
-.error-message {
-  border: 1px solid var(--error-color);
-  color: var(--error-color);
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px;
-  font-size: 10px;
+// Fade Animation
+.fade-in {
+  animation: fadeUp 0.4s ease-out forwards;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .step-indicator .step-label {
+    display: none;
+  }
+
+  .register-actions {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+    }
+  }
 }

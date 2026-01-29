@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, map, switchMap, take, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { User, LoginRequest, RegisterRequest, AuthResponse, UserStatus, LlmSetupRequest, SelectedLLMProvider } from '../models/user.model';
+import { ThemeService } from './theme.service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +12,7 @@ import { User, LoginRequest, RegisterRequest, AuthResponse, UserStatus, LlmSetup
 export class AuthService {
   private readonly TOKEN_KEY = 'auth_token';
   private readonly USER_KEY = 'current_user';
-  
+
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
   private userStatusSubject = new BehaviorSubject<UserStatus | null>(null);
@@ -19,7 +20,8 @@ export class AuthService {
 
   constructor(
     private api: ApiService,
-    private router: Router
+    private router: Router,
+    private themeService: ThemeService
   ) {
     this.restoreUserFromStorage();
   }
@@ -30,6 +32,10 @@ export class AuthService {
 
   register(data: RegisterRequest): Observable<User> {
     return this.api.post<User>('/register/', data);
+  }
+
+  getTenants(): Observable<{ id: number; name: string }[]> {
+    return this.api.get<{ id: number; name: string }[]>('/tenant/list/');
   }
 
   logout(token: string): Observable<any> {
@@ -79,6 +85,8 @@ export class AuthService {
     localStorage.removeItem(this.USER_KEY);
     this.currentUserSubject.next(null);
     this.userStatusSubject.next(null);
+    // Remove persisted theme preference on logout, but keep current UI as-is.
+    this.themeService.clearThemeCache();
   }
 
   forceLogout(): void {
@@ -102,6 +110,8 @@ export class AuthService {
           if (response === null) {
             return of(null);
           }
+          // Session exists/valid: ensure Light Mode is the default for this login.
+          this.themeService.forceLightTheme();
           return this.refreshUserStatus().pipe(
             catchError((error) => {
               this.handlePossibleSetupError(error);
@@ -164,6 +174,8 @@ export class AuthService {
 
   initializeSession(response: AuthResponse): Observable<UserStatus | null> {
     this.setAuth(response.token, response.user);
+    // Always default to Light Mode upon login.
+    this.themeService.forceLightTheme();
     return this.refreshUserStatus().pipe(
       catchError((error) => {
         this.handlePossibleSetupError(error);
