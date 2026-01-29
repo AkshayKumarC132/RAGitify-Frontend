@@ -34,23 +34,10 @@
                 </span>
             </div>
 
-            <div *ngFor="let message of messages" class="message-bubble" [class.user]="message.role === 'user'"
-                [class.assistant]="message.role === 'assistant'">
-                <div class="message-content">
-                    <div class="message-text">
-                        <div class="text-content" [innerText]="message.content"></div>
-                    </div>
-                    <app-message-sources 
-                        *ngIf="message.role === 'assistant'"
-                        [documentIds]="getDocumentIds(message)">
-                    </app-message-sources>
-                    <div class="message-time">{{ formatTime(message.created_at) }}</div>
-                </div>
-            </div>
+            <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last">
+            </app-message-bubble>
 
-            <div *ngIf="isResponseInProgress" class="typing-message">
-                <span class="typing-text">Typing<span class="typing-dots">...</span></span>
-            </div>
+            <app-typing-indicator *ngIf="isResponseInProgress"></app-typing-indicator>
         </div>
 
         <!-- Input Area -->

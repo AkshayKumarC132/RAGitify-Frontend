@@ -276,7 +276,10 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.upsertRun(updatedRun);
           if (updatedRun.status === 'completed') {
             this.loadMessages(threadId);
-            this.threadService.getById(threadId).subscribe(t => this.currentThread = t);
+            this.threadService.getById(threadId).subscribe(t => {
+              this.currentThread = t;
+              this.upsertThread(t);
+            });
             this.teardownRunPolling();
           } else if (updatedRun.status === 'failed' || updatedRun.status === 'cancelled') {
             this.currentRun = null;
@@ -620,7 +623,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private async ensureAssistant(vectorStoreId: string | null, threadId: string): Promise<{ assistantId: string; threadId: string }> {
-    if (!this.selectedModel && !this.availableModels.length && !this.activeProvider) {
+    // Optimization: If we already know the active provider or have a selected model, skip ensuring models
+    // This prevents an unnecessary API call during every message send if the user is already set up
+    if (!this.selectedModel && !this.availableModels.length && !this.activeProvider && !this.currentUser?.selected_llm_provider) {
       await this.ensureModelsLoaded();
     }
     await this.ensurePromptsLoaded();
@@ -1128,7 +1133,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       return 'llama3.1:latest';
     }
     if (this.activeProvider === 'OpenAI') {
-      return 'gpt-4o';
+      return 'gpt-4.1';
     }
 
     // If no provider info, prefer an existing active model choice
@@ -1137,7 +1142,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
 
     // Absolute default
-    return 'gpt-4o';
+    return 'gpt-4.1';
   }
 
   private resumeActiveRun(threadId: string): void {

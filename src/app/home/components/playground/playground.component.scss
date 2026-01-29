@@ -169,61 +169,7 @@
     }
 }
 
-.message-bubble {
-    margin-bottom: 1rem;
-    display: flex;
-    flex-direction: column;
 
-    &.user {
-        align-items: flex-end;
-
-        .message-content {
-            background: var(--accent-color, #4a90e2);
-            color: white;
-            border-radius: 1rem 1rem 0.25rem 1rem;
-            max-width: 70%;
-            padding: 0.75rem 1rem;
-            word-wrap: break-word;
-        }
-    }
-
-    &.assistant {
-        align-items: flex-start;
-
-        .message-content {
-            background: var(--bg-tertiary, #e8e8e8);
-            color: var(--text-primary);
-            border-radius: 1rem 1rem 1rem 0.25rem;
-            max-width: 70%;
-            padding: 0.75rem 1rem;
-            word-wrap: break-word;
-        }
-    }
-}
-
-.message-text {
-    line-height: 1.6;
-    white-space: pre-wrap;
-}
-
-.typing-message {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 0;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    font-style: italic;
-}
-
-.typing-text {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.15rem;
-}
-
-.typing-dots {
-    letter-spacing: 0.1em;
-}
 
 .input-area-wrapper {
     width: 100%;

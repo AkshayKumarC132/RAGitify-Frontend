@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Observable, timer, of } from 'rxjs';
 import { exhaustMap, takeWhile, catchError, filter } from 'rxjs/operators';
-import { HttpParams } from '@angular/common/http';
+import { HttpParams, HttpContext } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
+import { SKIP_LOADING } from '../interceptors/loading.interceptor';
 import { Run, RunCreateRequest } from '../models/run.model';
 
 @Injectable({
@@ -13,7 +14,7 @@ export class RunService {
   constructor(
     private api: ApiService,
     private auth: AuthService
-  ) {}
+  ) { }
 
   private getToken(): string {
     const token = this.auth.getToken();
@@ -37,9 +38,10 @@ export class RunService {
     return this.api.get<Run[]>(`/run/${token}/list/`, token, params);
   }
 
-  getById(id: string): Observable<Run> {
+  getById(id: string, skipLoading: boolean = false): Observable<Run> {
     const token = this.getToken();
-    return this.api.get<Run>(`/run/${token}/${id}/`, token);
+    const context = new HttpContext().set(SKIP_LOADING, skipLoading);
+    return this.api.get<Run>(`/run/${token}/${id}/`, token, undefined, context);
   }
 
   cancel(runId: string): Observable<any> {
@@ -60,7 +62,7 @@ export class RunService {
   pollRunStatus(runId: string, intervalMs: number = 2000): Observable<Run> {
     return timer(0, intervalMs).pipe(
       exhaustMap(() =>
-        this.getById(runId).pipe(
+        this.getById(runId, true).pipe(
           catchError(err => {
             console.error('Error polling run status:', err);
             return of(null as any);
@@ -68,9 +70,9 @@ export class RunService {
         )
       ),
       filter((run): run is Run => !!run),
-      takeWhile((run: Run) => 
-        run.status === 'queued' || 
-        run.status === 'in_progress' || 
+      takeWhile((run: Run) =>
+        run.status === 'queued' ||
+        run.status === 'in_progress' ||
         run.status === 'requires_action',
         true
       ),

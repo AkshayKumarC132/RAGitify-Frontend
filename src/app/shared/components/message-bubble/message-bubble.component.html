@@ -1,0 +1,52 @@
+<div class="message-bubble" [class.user]="isUser" [class.assistant]="!isUser" [class.empty-state]="showEmptyState">
+    <div class="message-content" [class.has-run-error]="showRunErrorInfo">
+        <div *ngIf="showRunErrorInfo" class="run-error-info" aria-hidden="true">
+            <span class="run-error-icon">i</span>
+            <div class="run-error-tooltip">{{ runErrorMessage }}</div>
+        </div>
+        <div *ngIf="showEmptyState" class="empty-state-content">
+            <div class="empty-state-message">Response was stopped</div>
+            <button type="button" class="rerun-button-large" (click)="onRerunClick()" [disabled]="rerunLoading"
+                [attr.aria-label]="rerunLoading ? 'Rerunning message' : 'Re-run message'"
+                [title]="rerunLoading ? 'Rerunning...' : 'Re-run message'">
+                <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+                <span>{{ rerunLoading ? 'Rerunning...' : 'Re-run' }}</span>
+            </button>
+        </div>
+        <div *ngIf="!showEmptyState" class="message-text">
+            <div *ngIf="isUser; else assistantContent" class="text-content" [innerText]="displayContent"></div>
+            <ng-template #assistantContent>
+                <div class="text-content markdown" [innerHTML]="renderedContent"></div>
+            </ng-template>
+        </div>
+        <app-message-sources *ngIf="!showEmptyState && !isUser" [documentIds]="getDocumentIds(message)">
+        </app-message-sources>
+        <div class="message-time" *ngIf="!showEmptyState">{{ formatTime(message.created_at) }}</div>
+    </div>
+    <div class="message-actions" *ngIf="!showEmptyState">
+        <button type="button" class="action-button copy-button" (click)="copyMessage()"
+            [attr.aria-label]="copied ? 'Message copied' : 'Copy message'"
+            [title]="copied ? 'Copied!' : 'Copy message'">
+            <i *ngIf="!copied" class="fa-regular fa-copy" aria-hidden="true"></i>
+            <i *ngIf="copied" class="fa-solid fa-check" aria-hidden="true"></i>
+        </button>
+
+        <button *ngIf="canRerun" type="button" class="action-button rerun-button" (click)="onRerunClick()"
+            [disabled]="rerunLoading" [attr.aria-label]="rerunLoading ? 'Rerunning message' : 'Rerun message'"
+            [title]="rerunLoading ? 'Rerunning...' : 'Rerun message'">
+            <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+        </button>
+
+        <div *ngIf="showPager" class="pager">
+            <button type="button" class="pager-btn" (click)="onPagerPrev()" [disabled]="!pagerHasPrev"
+                aria-label="Previous assistant response">
+                <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+            </button>
+            <span class="pager-label">{{ pageLabel }}</span>
+            <button type="button" class="pager-btn" (click)="onPagerNext()" [disabled]="!pagerHasNext"
+                aria-label="Next assistant response">
+                <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
+        </div>
+    </div>
+</div>

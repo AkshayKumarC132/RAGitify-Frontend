@@ -12,9 +12,11 @@ import { ThreadSearchPopupComponent } from './components/thread-search-popup/thr
 import { MessageSourcesComponent } from './components/message-sources/message-sources.component';
 
 import { TypingLabelComponent } from './components/typing-label/typing-label.component';
+import { TypingIndicatorComponent } from './components/typing-indicator/typing-indicator.component';
+import { MessageBubbleComponent } from './components/message-bubble/message-bubble.component';
 
 @NgModule({
-  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent],
+  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent],
   imports: [
     CommonModule,
     HttpClientModule,
@@ -43,7 +45,9 @@ import { TypingLabelComponent } from './components/typing-label/typing-label.com
     TypingLabelComponent,
     ConfirmDialogComponent,
     ThreadSearchPopupComponent,
-    MessageSourcesComponent
+    MessageSourcesComponent,
+    TypingIndicatorComponent,
+    MessageBubbleComponent
   ]
 })
 export class SharedModule { }

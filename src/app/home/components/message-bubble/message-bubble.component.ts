@@ -32,7 +32,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   copied = false;
   private copyResetTimeout?: ReturnType<typeof setTimeout>;
 
-  constructor(private sanitizer: DomSanitizer) {}
+  constructor(private sanitizer: DomSanitizer) { }
 
   get isFailedRun(): boolean {
     return !this.isUser && this.run?.status === 'failed';

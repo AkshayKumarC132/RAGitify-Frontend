@@ -29,6 +29,10 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
   private activeRerunIndices: Map<number, number> = new Map();
   pagedMessages: Message[] = [];
 
+  get isTyping(): boolean {
+    return this.currentRun?.status === 'in_progress' || this.currentRun?.status === 'queued';
+  }
+
   ngAfterViewInit(): void {
     this.queueScrollToBottom();
   }
@@ -98,7 +102,7 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
 
   onRerun(message: Message): void {
     let run = this.getRunForMessage(message);
-    
+
     // For placeholder messages, get the run from the previous user message
     if (!run && message.id < 0 && message.role === 'assistant') {
       const userMessage = this.messages[this.messages.length - 1];
@@ -111,7 +115,7 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
         }
       }
     }
-    
+
     if (run) {
       this.rerunRequest.emit({ message, run });
     }
@@ -163,7 +167,7 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
 
     // Group assistant messages by their source user message ID
     const assistantMessages = this.messages.filter(m => m.role === 'assistant');
-    
+
     for (const assistantMsg of assistantMessages) {
       const sourceMessageId = this.getSourceMessageIdForAssistant(assistantMsg);
       if (sourceMessageId !== undefined) {
@@ -183,9 +187,9 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
         const timeB = new Date(b.created_at).getTime();
         return timeA - timeB;
       });
-      
+
       const previousSize = previousGroupSizes.get(sourceId) || 0;
-      
+
       // If the group has grown (new rerun added), automatically show the newest message
       if (group.length > previousSize) {
         this.activeRerunIndices.set(sourceId, group.length - 1);
@@ -215,7 +219,7 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
 
     // Build a map of which assistant message to show for each source message ID
     const assistantMessageToShow = new Map<number, Message>();
-    
+
     this.rerunGroups.forEach((group, sourceId) => {
       const activeIndex = this.activeRerunIndices.get(sourceId) ?? (group.length - 1);
       if (activeIndex >= 0 && activeIndex < group.length) {
@@ -296,16 +300,16 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
     }
 
     const lastMessage = this.messages[this.messages.length - 1];
-    
+
     // If the last message is a user message, check if it has a cancelled run
     if (lastMessage.role === 'user') {
       const run = this.getRunForMessage(lastMessage);
       if (run && run.status === 'cancelled') {
         // Check if there's already an assistant message after this user message
-        const hasAssistantAfter = this.messages.some((m, index) => 
+        const hasAssistantAfter = this.messages.some((m, index) =>
           index > this.messages.indexOf(lastMessage) && m.role === 'assistant'
         );
-        
+
         if (!hasAssistantAfter) {
           // Create a placeholder empty assistant message
           const placeholderMessage: Message = {
@@ -330,7 +334,7 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
       return undefined;
     }
     const run = this.runMap?.[sourceMessageId];
-    
+
     // For placeholder messages (negative ID), get the run from the previous user message
     if (message.id < 0 && message.role === 'assistant') {
       const userMessage = this.messages[this.messages.length - 1];
@@ -338,7 +342,7 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
         return this.runMap?.[userMessage.id];
       }
     }
-    
+
     return run;
   }
 

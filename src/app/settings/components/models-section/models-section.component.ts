@@ -19,15 +19,15 @@ export class ModelsSectionComponent implements OnInit {
   errorMessage = '';
   selectedProvider: 'OpenAI' | 'Ollama' | null = null;
   modelOptions: Record<'OpenAI' | 'Ollama', string[]> = {
-    OpenAI: ['gpt-4o', 'gpt-4o-mini'],
+    OpenAI: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-3.5-turbo'],
     Ollama: ['llama3.1:latest', 'llama3', 'mistral']
   };
   availableProviders: ProviderOption[] = [
     {
       name: 'OpenAI',
       badge: 'Cloud',
-      description: 'Access GPT-4o and GPT-4o mini through the official OpenAI API.',
-      defaultModel: 'gpt-4o',
+      description: 'Access GPT-4.1 through the official OpenAI API.',
+      defaultModel: 'gpt-4.1',
       requiresApiKey: true
     },
     {
@@ -48,7 +48,7 @@ export class ModelsSectionComponent implements OnInit {
     this.createForm = this.fb.group({
       name: [''],
       provider: ['OpenAI', Validators.required],
-      model: ['gpt-4o'],
+      model: ['gpt-4.1'],
       api_key: [''],
       is_active: [false]
     });
@@ -61,7 +61,7 @@ export class ModelsSectionComponent implements OnInit {
         this.selectedProvider = provider;
         this.createForm.patchValue({
           provider,
-          model: provider === 'Ollama' ? 'llama3.1:latest' : 'gpt-4o'
+          model: provider === 'Ollama' ? 'llama3.1:latest' : 'gpt-4.1'
         });
         this.createForm.get('provider')?.disable({ emitEvent: false });
       } else {
@@ -87,7 +87,7 @@ export class ModelsSectionComponent implements OnInit {
     if (!this.showCreateForm) {
       this.createForm.reset({
         provider: this.selectedProvider || 'OpenAI',
-        model: this.selectedProvider === 'Ollama' ? 'llama3.1:latest' : 'gpt-4o',
+        model: this.selectedProvider === 'Ollama' ? 'llama3.1:latest' : 'gpt-4.1',
         is_active: false
       });
       if (this.selectedProvider) {

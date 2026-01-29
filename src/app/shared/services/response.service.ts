@@ -3,6 +3,8 @@ import { Observable, interval, of } from 'rxjs';
 import { switchMap, takeWhile, catchError } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
+import { HttpContext } from '@angular/common/http';
+import { SKIP_LOADING } from '../interceptors/loading.interceptor';
 import { ResponseRecord, ResponseCreateRequest } from '../models/response.model';
 
 @Injectable({
@@ -12,22 +14,22 @@ export class ResponseService {
   constructor(
     private api: ApiService,
     private auth: AuthService
-  ) {}
+  ) { }
 
   getDefaultModel(): string {
     const storedUser = this.auth.getStoredUser() as any;
+
+    // Prioritize active_provider then selected_llm_provider
     const provider = storedUser?.active_provider
       || storedUser?.selected_llm_provider
-      || storedUser?.active_collection?.provider
+      || (typeof storedUser?.active_collection === 'object' ? storedUser?.active_collection?.provider : null)
       || null;
 
     if (provider === 'Ollama') {
       return 'llama3.1:latest';
     }
-    if (provider === 'OpenAI') {
-      return 'gpt-4.1';
-    }
 
+    // Default to gpt-4o for OpenAI or fallback
     return 'gpt-4.1';
   }
 
@@ -45,9 +47,10 @@ export class ResponseService {
     return this.api.post<ResponseRecord>(`/response/chat/${token}/`, payload, token);
   }
 
-  getById(id: string): Observable<ResponseRecord> {
+  getById(id: string, skipLoading: boolean = false): Observable<ResponseRecord> {
     const token = this.getToken();
-    return this.api.get<ResponseRecord>(`/response/${token}/${id}/`, token);
+    const context = new HttpContext().set(SKIP_LOADING, skipLoading);
+    return this.api.get<ResponseRecord>(`/response/${token}/${id}/`, token, undefined, context);
   }
 
   delete(id: string): Observable<void> {
@@ -62,9 +65,9 @@ export class ResponseService {
 
   pollResponseStatus(responseId: string): Observable<ResponseRecord> {
     return interval(2000).pipe(
-      switchMap(() => this.getById(responseId)),
+      switchMap(() => this.getById(responseId, true)),
       takeWhile(
-        (response) => response.status === 'in_progress',
+        (response) => response?.status === 'in_progress',
         true // inclusive - emit the last value even if it doesn't match
       ),
       catchError((error) => {

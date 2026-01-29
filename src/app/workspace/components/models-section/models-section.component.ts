@@ -19,8 +19,8 @@ export class ModelsSectionComponent implements OnInit {
     {
       name: 'OpenAI',
       badge: 'Cloud',
-      description: 'Access GPT-4o and GPT-4o mini through the official OpenAI API.',
-      defaultModel: 'gpt-4o',
+      description: 'Access GPT-4.1 through the official OpenAI API.',
+      defaultModel: 'gpt-4.1',
       requiresApiKey: true
     },
     {
@@ -40,7 +40,7 @@ export class ModelsSectionComponent implements OnInit {
     this.createForm = this.fb.group({
       name: [''],
       provider: ['OpenAI', Validators.required],
-      model: ['gpt-4o'],
+      model: ['gpt-4.1'],
       api_key: [''],
       is_active: [false]
     });
@@ -66,7 +66,7 @@ export class ModelsSectionComponent implements OnInit {
     if (!this.showCreateForm) {
       this.createForm.reset({
         provider: 'OpenAI',
-        model: 'gpt-4o',
+        model: 'gpt-4.1',
         is_active: false
       });
     }

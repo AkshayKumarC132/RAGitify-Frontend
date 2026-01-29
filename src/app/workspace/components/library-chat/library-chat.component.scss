@@ -148,77 +148,18 @@
     }
 }
 
-.message-bubble {
-    display: flex;
-    flex-direction: column;
-    max-width: 85%;
-    animation: fadeIn 0.3s ease;
 
-    &.user {
-        align-self: flex-end;
-        align-items: flex-end;
 
-        .message-content {
-            background: var(--accent-color);
-            color: white;
-            border-radius: 12px 12px 2px 12px;
-        }
-
-        .message-time {
-            color: rgba(255, 255, 255, 0.7);
-        }
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
     }
 
-    &.assistant {
-        align-self: flex-start;
-
-        .message-content {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border-radius: 12px 12px 12px 2px;
-            border: 1px solid var(--border-color);
-        }
-
-        .message-time {
-            color: var(--text-secondary);
-        }
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
-
-    .message-content {
-        padding: 0.75rem 1rem;
-        position: relative;
-        word-break: break-word;
-
-        .message-text {
-            line-height: 1.5;
-            font-size: 0.95rem;
-        }
-    }
-
-.message-time {
-    font-size: 0.7rem;
-    margin-top: 0.25rem;
-    padding: 0 0.25rem;
-}
-}
-
-.typing-message {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 0.25rem;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    font-style: italic;
-}
-
-.typing-text {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.15rem;
-}
-
-.typing-dots {
-    letter-spacing: 0.1em;
 }
 
 .input-area {
@@ -304,27 +245,5 @@
 
     &:hover:not(:disabled) {
         background: rgba(var(--text-primary-rgb), 0.2);
-    }
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-}
-
-@keyframes slideUp {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
     }
 }
