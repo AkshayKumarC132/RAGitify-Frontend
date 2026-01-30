@@ -32,62 +32,36 @@
         <span class="empty-state-hint">Start a conversation to get answers based on the document content</span>
       </div>
 
-      <div *ngFor="let message of messages" class="message-bubble" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
+      <div *ngFor="let message of messages" class="message-bubble" [class.user]="message.role === 'user'"
+        [class.assistant]="message.role === 'assistant'">
         <div class="message-content">
           <div class="message-text">
             <div class="text-content" [innerText]="message.content"></div>
           </div>
-          <app-message-sources 
-            *ngIf="message.role === 'assistant'"
-            [documentIds]="getDocumentIds(message)">
+          <app-message-sources *ngIf="message.role === 'assistant'" [documentIds]="getDocumentIds(message)">
           </app-message-sources>
           <div class="message-time">{{ formatTime(message.created_at) }}</div>
         </div>
       </div>
 
       <!-- Typing Indicator -->
-      <div *ngIf="isResponseInProgress" class="message-bubble assistant typing-indicator">
-        <div class="message-content">
-          <div class="typing-dots">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        </div>
-      </div>
+      <app-typing-indicator *ngIf="isResponseInProgress" [cycle]="true"></app-typing-indicator>
     </div>
 
     <!-- Input Area -->
     <div class="input-area">
       <div class="input-wrapper">
-        <textarea
-          #messageInput
-          [(ngModel)]="messageInputText"
-          (keydown)="onKeyPress($event)"
-          placeholder="Ask a question about this document..."
-          class="chat-input"
-          [disabled]="loading || isResponseInProgress"
-          rows="1"
-        ></textarea>
+        <textarea #messageInput [(ngModel)]="messageInputText" (keydown)="onKeyPress($event)"
+          placeholder="Ask a question about this document..." class="chat-input"
+          [disabled]="loading || isResponseInProgress" rows="1"></textarea>
         <div class="input-actions">
-          <button
-            *ngIf="isResponseInProgress"
-            type="button"
-            class="cancel-button"
-            (click)="cancelResponse()"
-            title="Cancel response"
-            aria-label="Cancel response"
-          >
+          <button *ngIf="isResponseInProgress" type="button" class="cancel-button" (click)="cancelResponse()"
+            title="Cancel response" aria-label="Cancel response">
             <i class="fa-solid fa-stop"></i>
           </button>
-          <button
-            type="button"
-            class="send-button"
-            (click)="sendMessage()"
-            [disabled]="!messageInputText.trim() || loading || isResponseInProgress"
-            title="Send message"
-            aria-label="Send message"
-          >
+          <button type="button" class="send-button" (click)="sendMessage()"
+            [disabled]="!messageInputText.trim() || loading || isResponseInProgress" title="Send message"
+            aria-label="Send message">
             <i *ngIf="!loading && !isResponseInProgress" class="fa-solid fa-arrow-up"></i>
             <i *ngIf="loading || isResponseInProgress" class="fa-solid fa-spinner fa-spin"></i>
           </button>
@@ -96,4 +70,3 @@
     </div>
   </div>
 </div>
-

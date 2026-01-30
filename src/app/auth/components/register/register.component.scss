@@ -2,6 +2,9 @@
 
 .register-wrapper {
   width: 100%;
+  // Prevent the register content from forcing its own scroll container.
+  // The outer .auth-shell already handles overflow for small viewports.
+  overflow: visible;
 }
 
 // Password Strength Indicator

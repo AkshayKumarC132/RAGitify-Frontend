@@ -11,7 +11,7 @@
       (pagerPrev)="onPagerPrevForMessage(message)" (pagerNext)="onPagerNextForMessage(message)"
       (rerun)="onRerun(message)"></app-message-bubble>
 
-    <app-typing-indicator *ngIf="isTyping"></app-typing-indicator>
+    <app-typing-indicator *ngIf="isTyping" [cycle]="true"></app-typing-indicator>
 
   </div>
 

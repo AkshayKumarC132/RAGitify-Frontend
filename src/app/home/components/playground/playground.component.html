@@ -15,7 +15,7 @@
         <app-message-bubble *ngFor="let msg of messages; let last = last" [message]="msg" [isLast]="last">
         </app-message-bubble>
 
-        <app-typing-indicator *ngIf="loading"></app-typing-indicator>
+        <app-typing-indicator *ngIf="loading" [cycle]="true"></app-typing-indicator>
     </div>
 
     <div class="input-area-wrapper">

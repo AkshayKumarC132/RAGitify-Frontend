@@ -23,26 +23,29 @@
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.75rem 1rem;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.75rem;
   border-radius: 999px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
-  font-size: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  color: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.20);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(15, 23, 42, 0.2);
-  border-top-color: var(--accent-color);
+.loader-ring {
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  animation: spin 0.9s linear infinite;
+  border: 2px solid rgba(15, 23, 42, 0.18);
+  border-top-color: var(--accent-color);
+  border-right-color: rgba(87, 153, 255, 0.35);
+  animation: ringSpin 0.9s linear infinite;
 }
 
-@keyframes spin {
+@keyframes ringSpin {
   to {
     transform: rotate(360deg);
   }

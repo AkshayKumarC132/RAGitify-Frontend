@@ -206,6 +206,14 @@ $error-color: #ef4444;
     padding: 2rem;
 }
 
+// Ensure the card is truly centered on normal/desktop heights.
+// On short viewports, media queries below will switch to top-aligned so the page can scroll naturally.
+@media (min-height: 821px) {
+    .auth-shell {
+        align-items: center;
+    }
+}
+
 .auth-container-standard {
     display: grid;
     width: 100%;

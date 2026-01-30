@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, HostListener, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Subscription } from 'rxjs';
+import { Subscription, from } from 'rxjs';
+import { mergeMap } from 'rxjs/operators';
 import { Thread } from '../../models/thread.model';
 import { Message } from '../../models/message.model';
 import { ThreadService } from '../../services/thread.service';
@@ -26,11 +27,12 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
   private messagesCache = new Map<string, Message[]>();
   private matchSourceByThreadId = new Map<string, 'title' | 'message' | 'both'>();
   private messageSubscriptions: Subscription[] = [];
+  private readonly maxConcurrentMessageFetches = 4;
 
   constructor(
     private sanitizer: DomSanitizer,
     private threadService: ThreadService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.filteredThreads = [...this.threads];
@@ -55,8 +57,8 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
   }
 
   @HostListener('keydown.escape', ['$event'])
-  onEscapeKey(event: KeyboardEvent): void {
-    event.preventDefault();
+  onEscapeKey(event: Event): void {
+    event.preventDefault?.();
     this.close();
   }
 
@@ -122,32 +124,52 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
     this.filteredThreads = nextFiltered;
 
     if (threadsNeedingFetch.length) {
-      for (const thread of threadsNeedingFetch) {
-        const sub = this.threadService.getMessages(thread.id).subscribe({
-          next: (messages) => {
-            this.messagesCache.set(thread.id, messages);
-            if (this.searchQuery.trim().toLowerCase() !== currentQuery) {
-              return;
-            }
-            const hasMatch = messages.some(msg =>
-              (msg.content || '').toLowerCase().includes(currentQuery)
-            );
-            if (hasMatch && !this.filteredThreads.some(t => t.id === thread.id)) {
-              this.filteredThreads = [...this.filteredThreads, thread];
-              const existing = this.matchSourceByThreadId.get(thread.id);
-              if (existing === 'title') {
-                this.matchSourceByThreadId.set(thread.id, 'both');
-              } else {
-                this.matchSourceByThreadId.set(thread.id, 'message');
-              }
-            }
-          },
-          error: () => {
-            // Ignore errors silently for search
+      // Avoid firing N parallel API calls for large thread lists.
+      // Limit concurrency to keep network + server load reasonable.
+      const sub = from(threadsNeedingFetch).pipe(
+        mergeMap(thread =>
+          this.threadService.getMessages(thread.id),
+          this.maxConcurrentMessageFetches
+        )
+      ).subscribe({
+        next: (messages) => {
+          // NOTE: we don't get the threadId here from the response directly.
+          // Our Message model includes thread_id; use it to map back.
+          const threadId = String((messages?.[0] as any)?.thread_id || '');
+          if (threadId) {
+            this.messagesCache.set(threadId, messages);
           }
-        });
-        this.messageSubscriptions.push(sub);
-      }
+
+          if (this.searchQuery.trim().toLowerCase() !== currentQuery) {
+            return;
+          }
+
+          if (!threadId) {
+            return;
+          }
+          const thread = this.threads.find(t => t.id === threadId);
+          if (!thread) {
+            return;
+          }
+
+          const hasMatch = messages.some(msg =>
+            (msg.content || '').toLowerCase().includes(currentQuery)
+          );
+          if (hasMatch && !this.filteredThreads.some(t => t.id === thread.id)) {
+            this.filteredThreads = [...this.filteredThreads, thread];
+            const existing = this.matchSourceByThreadId.get(thread.id);
+            if (existing === 'title') {
+              this.matchSourceByThreadId.set(thread.id, 'both');
+            } else {
+              this.matchSourceByThreadId.set(thread.id, 'message');
+            }
+          }
+        },
+        error: () => {
+          // Ignore errors silently for search
+        }
+      });
+      this.messageSubscriptions.push(sub);
     }
   }
 
@@ -157,7 +179,7 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
 
   isTitleMatch(thread: Thread): boolean {
     return this.matchSourceByThreadId.get(thread.id) === 'title' ||
-           this.matchSourceByThreadId.get(thread.id) === 'both';
+      this.matchSourceByThreadId.get(thread.id) === 'both';
   }
 
   isMessageMatch(thread: Thread): boolean {
@@ -240,7 +262,7 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    
+
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
   }
 

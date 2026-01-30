@@ -5,15 +5,18 @@ import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { Document, DocumentIngestRequest, DocumentStatus } from '../models/document.model';
 import { HttpParams } from '@angular/common/http';
+import { shareReplay, tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DocumentService {
+  private listCache = new Map<string, Observable<Document[]>>();
+
   constructor(
     private api: ApiService,
     private auth: AuthService
-  ) {}
+  ) { }
 
   private getToken(): string {
     const token = this.auth.getToken();
@@ -26,7 +29,7 @@ export class DocumentService {
   ingest(data: DocumentIngestRequest): Observable<Document> {
     const token = this.getToken();
     const formData = new FormData();
-    
+
     if (data.file) {
       formData.append('file', data.file);
     }
@@ -34,8 +37,10 @@ export class DocumentService {
       formData.append('s3_file_url', data.s3_file_url);
     }
     formData.append('vector_store_id', data.vector_store_id);
-    
-    return this.api.postFormData<Document>(`/document/${token}/ingest/`, formData, token);
+
+    return this.api.postFormData<Document>(`/document/${token}/ingest/`, formData, token).pipe(
+      tap(() => this.invalidateListCache())
+    );
   }
 
   ingestWithProgress(data: DocumentIngestRequest): Observable<HttpEvent<Document>> {
@@ -50,6 +55,9 @@ export class DocumentService {
     }
     formData.append('vector_store_id', data.vector_store_id);
 
+    // When ingest completes, the caller typically refreshes lists; we still clear caches up-front
+    // so subsequent list() calls won't reuse stale data.
+    this.invalidateListCache();
     return this.api.postFormDataWithProgress<Document>(`/document/${token}/ingest/`, formData, token);
   }
 
@@ -59,7 +67,18 @@ export class DocumentService {
     if (vectorStoreId) {
       params = params.set('vector_store_id', vectorStoreId);
     }
-    return this.api.get<Document[]>(`/document/${token}/list/`, token, params);
+
+    const cacheKey = vectorStoreId ? `vectorStore:${vectorStoreId}` : 'all';
+    const existing = this.listCache.get(cacheKey);
+    if (existing) {
+      return existing;
+    }
+
+    const req$ = this.api.get<Document[]>(`/document/${token}/list/`, token, params).pipe(
+      shareReplay({ bufferSize: 1, refCount: true })
+    );
+    this.listCache.set(cacheKey, req$);
+    return req$;
   }
 
   getById(id: string): Observable<Document> {
@@ -74,11 +93,19 @@ export class DocumentService {
 
   update(id: string, data: Partial<Document>): Observable<Document> {
     const token = this.getToken();
-    return this.api.put<Document>(`/document/${token}/${id}/`, data, token);
+    return this.api.put<Document>(`/document/${token}/${id}/`, data, token).pipe(
+      tap(() => this.invalidateListCache())
+    );
   }
 
   delete(id: string): Observable<void> {
     const token = this.getToken();
-    return this.api.delete<void>(`/document/${token}/${id}/`, token);
+    return this.api.delete<void>(`/document/${token}/${id}/`, token).pipe(
+      tap(() => this.invalidateListCache())
+    );
+  }
+
+  invalidateListCache(): void {
+    this.listCache.clear();
   }
 }

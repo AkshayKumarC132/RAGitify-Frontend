@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { shareReplay, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { OpenAIKey, OpenAIKeyCreateRequest } from '../models/openai-key.model';
@@ -8,10 +9,12 @@ import { OpenAIKey, OpenAIKeyCreateRequest } from '../models/openai-key.model';
   providedIn: 'root'
 })
 export class OpenAIKeyService {
+  private listCache$?: Observable<OpenAIKey[]>;
+
   constructor(
     private api: ApiService,
     private auth: AuthService
-  ) {}
+  ) { }
 
   private getToken(): string {
     const token = this.auth.getToken();
@@ -23,12 +26,19 @@ export class OpenAIKeyService {
 
   create(data: OpenAIKeyCreateRequest): Observable<OpenAIKey> {
     const token = this.getToken();
-    return this.api.post<OpenAIKey>(`/llm-config/${token}/`, data, token);
+    return this.api.post<OpenAIKey>(`/llm-config/${token}/`, data, token).pipe(
+      tap(() => this.invalidateListCache())
+    );
   }
 
   list(): Observable<OpenAIKey[]> {
     const token = this.getToken();
-    return this.api.get<OpenAIKey[]>(`/llm-config/${token}/list/`, token);
+    if (!this.listCache$) {
+      this.listCache$ = this.api.get<OpenAIKey[]>(`/llm-config/${token}/list/`, token).pipe(
+        shareReplay({ bufferSize: 1, refCount: true })
+      );
+    }
+    return this.listCache$;
   }
 
   getById(id: number): Observable<OpenAIKey> {
@@ -38,12 +48,20 @@ export class OpenAIKeyService {
 
   update(id: number, data: Partial<OpenAIKeyCreateRequest>): Observable<OpenAIKey> {
     const token = this.getToken();
-    return this.api.put<OpenAIKey>(`/llm-config/${token}/${id}/`, data, token);
+    return this.api.put<OpenAIKey>(`/llm-config/${token}/${id}/`, data, token).pipe(
+      tap(() => this.invalidateListCache())
+    );
   }
 
   delete(id: number): Observable<void> {
     const token = this.getToken();
-    return this.api.delete<void>(`/llm-config/${token}/${id}/`, token);
+    return this.api.delete<void>(`/llm-config/${token}/${id}/`, token).pipe(
+      tap(() => this.invalidateListCache())
+    );
+  }
+
+  invalidateListCache(): void {
+    this.listCache$ = undefined;
   }
 }
 

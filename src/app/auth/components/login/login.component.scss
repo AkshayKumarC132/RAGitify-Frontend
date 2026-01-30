@@ -98,8 +98,9 @@
   justify-content: center;
   position: relative;
   background: transparent;
-  overflow-y: auto; // Enable scrolling for form content
-  max-height: 100%;
+  // Prefer fitting within the viewport; allow the page shell to scroll if needed.
+  overflow-y: visible;
+  max-height: none;
 }
 
 .auth-header {

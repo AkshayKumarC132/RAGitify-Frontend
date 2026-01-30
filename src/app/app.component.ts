@@ -17,6 +17,7 @@ export class AppComponent implements OnInit {
   dialogState$: Observable<{ show: boolean; options: ConfirmDialogOptions | null }>;
   searchPopupState$: Observable<{ show: boolean; threads: Thread[]; currentThread: Thread | null }>;
   loading$: Observable<boolean>;
+  loaderLabel$: Observable<string>;
 
   constructor(
     private authService: AuthService,
@@ -27,6 +28,7 @@ export class AppComponent implements OnInit {
     this.dialogState$ = this.confirmDialogService.getDialogState();
     this.searchPopupState$ = this.threadSearchPopupService.getPopupState();
     this.loading$ = this.loadingService.loading$;
+    this.loaderLabel$ = this.loadingService.label$;
   }
 
   ngOnInit(): void {
