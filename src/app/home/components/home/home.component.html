@@ -49,7 +49,7 @@
           (modeToggle)="onModeToggle($event)" (filesSelected)="onFilesSelected($event)"
           (webpageAttached)="onWebpageAttach($event)" (notesAttached)="onNotesAttach($event)"
           (librarySelected)="onLibrarySelected($event)" (attachmentPanelOpened)="onAttachmentPanelOpened($event)"
-          (promptSelected)="onPromptSelected($event)"></app-chat-input>
+          (promptSelected)="onPromptSelected($event)" (attachmentMenuToggled)="onAttachmentMenuToggled($event)"></app-chat-input>
 
         <div class="attachment-status" *ngIf="attachmentMessage">
           {{ attachmentMessage }}

@@ -82,6 +82,10 @@ export class PromptsSectionComponent implements OnInit {
   }
 
   startEdit(assistant: Assistant): void {
+    // Prevent editing default prompts
+    if (assistant.is_default === true) {
+      return;
+    }
     this.editingAssistant = assistant;
     this.editForm.reset({
       name: assistant.name,
@@ -143,6 +147,12 @@ export class PromptsSectionComponent implements OnInit {
       return;
     }
 
+    // Prevent editing default prompts
+    if (this.editingAssistant.is_default === true) {
+      this.errorMessage = 'Default prompt cannot be edited.';
+      return;
+    }
+
     this.editLoading = true;
     this.errorMessage = '';
     const formValue = this.editForm.value;
@@ -168,6 +178,11 @@ export class PromptsSectionComponent implements OnInit {
   }
 
   async deleteAssistant(assistant: Assistant): Promise<void> {
+    // Prevent deleting default prompts
+    if (assistant.is_default === true) {
+      return;
+    }
+    
     const confirmed = await this.confirmDialogService.confirm({
       title: 'Delete prompt?',
       message: 'This will delete',

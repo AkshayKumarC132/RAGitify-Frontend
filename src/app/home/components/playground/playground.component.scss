@@ -403,7 +403,7 @@
             background: var(--bg-secondary);
         }
 
-        input[type="radio"] {
+        input[type="checkbox"] {
             margin-top: 0.15rem;
             cursor: pointer;
             flex-shrink: 0;
@@ -951,7 +951,7 @@
             background: var(--bg-secondary);
         }
 
-        input[type="radio"] {
+        input[type="checkbox"] {
             margin-top: 0.15rem;
             cursor: pointer;
             flex-shrink: 0;
@@ -1122,8 +1122,14 @@
     opacity: 0.8;
 }
 
-.attachment-pill {
+.selection-pills {
     margin-top: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.attachment-pill {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -1136,6 +1142,39 @@
 
     span {
         flex: 1;
+    }
+
+    &--secondary {
+        font-size: 10px;
+        opacity: 0.95;
+    }
+
+    .pill-title {
+        flex: 0 0 auto;
+        opacity: 0.85;
+        font-weight: 600;
+        margin-right: 0.25rem;
+    }
+
+    .pill-chip {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 999px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        max-width: 180px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        button {
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+        }
     }
 
     button {

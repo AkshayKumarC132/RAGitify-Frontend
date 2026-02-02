@@ -78,6 +78,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   private modelsLoaded = false;
   private modelsLoading = false;
   private modelsLoadingPromise?: Promise<void>;
+  private threadsLoaded = false;
+  private threadsLoading = false;
 
 
   constructor(
@@ -188,6 +190,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (this.isTemporaryChat) {
       return;
     }
+    // Only initialize if not already initialized - don't reload threads when switching between /home and /home/chat/:id
     if (!this.setupIncomplete && !this.dataInitialized) {
       this.initializeData();
       if (this.pendingThreadId) {
@@ -392,29 +395,46 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   loadThreads(): void {
+    // Prevent multiple simultaneous calls and avoid reloading if already loaded
+    if (this.threadsLoading || (this.threadsLoaded && this.threads.length > 0)) {
+      return;
+    }
+    this.threadsLoading = true;
     this.threadService.list().subscribe({
       next: (threads) => {
         this.threads = threads;
+        this.threadsLoaded = true;
+        this.threadsLoading = false;
       },
-      error: (err) => console.error('Error loading threads:', err)
+      error: (err) => {
+        console.error('Error loading threads:', err);
+        this.threadsLoading = false;
+      }
     });
   }
 
   loadThread(threadId: string): void {
-    this.threadService.getById(threadId).subscribe({
-      next: (thread) => {
-        // When switching threads, clear any in-flight run state from the previous thread
-        this.teardownRunPolling();
-        this.currentRun = null;
-        this.runMap = {};
-        this.rerunLoadingMessageId = null;
-        this.currentThread = thread;
-        this.loadMessages(threadId);
-        this.setCurrentVectorStore(thread.vector_store_id_read || null);
-        this.resumeActiveRun(threadId);
-      },
-      error: (err) => console.error('Error loading thread:', err)
-    });
+    // Get thread from existing threads array instead of calling API
+    const thread = this.threads.find(t => t.id === threadId);
+    
+    // When switching threads, clear any in-flight run state from the previous thread
+    this.teardownRunPolling();
+    this.currentRun = null;
+    this.runMap = {};
+    this.rerunLoadingMessageId = null;
+    
+    if (thread) {
+      this.currentThread = thread;
+      this.setCurrentVectorStore(thread.vector_store_id_read || null);
+    } else {
+      // Fallback: if thread not found in array, set currentThread to null
+      // This should rarely happen if threads are loaded properly
+      this.currentThread = null;
+      console.warn(`Thread ${threadId} not found in threads array`);
+    }
+    
+    // Only call the messages API - no thread retrieve or run list APIs
+    this.loadMessages(threadId);
   }
 
   loadMessages(threadId: string): void {
@@ -457,6 +477,15 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
     this.teardownRunPolling();
     this.router.navigate(['/home']);
+  }
+
+  onAttachmentMenuToggled(opened: boolean): void {
+    // When the + button is clicked (menu opened), load all data immediately
+    if (opened) {
+      this.ensureLibrariesLoaded();
+      this.ensureDocumentsLoaded();
+      this.ensurePromptsLoaded();
+    }
   }
 
   onAttachmentPanelOpened(panel: 'library' | 'prompts' | 'web' | 'notes'): void {
@@ -1060,6 +1089,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.documentsLoading = false;
     this.modelsLoaded = false;
     this.modelsLoading = false;
+    this.threadsLoaded = false;
+    this.threadsLoading = false;
     if (this.attachmentMessageTimeout) {
       clearTimeout(this.attachmentMessageTimeout);
     }
@@ -1236,6 +1267,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     const existingIndex = this.threads.findIndex(t => t.id === thread.id);
     if (existingIndex === -1) {
       this.threads = [thread, ...this.threads];
+      // Mark as loaded since we now have threads
+      if (!this.threadsLoaded) {
+        this.threadsLoaded = true;
+      }
       return;
     }
     const nextThreads = [...this.threads];

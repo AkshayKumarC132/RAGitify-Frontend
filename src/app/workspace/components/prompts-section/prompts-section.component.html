@@ -125,11 +125,13 @@
             <i class="fa-solid fa-play"></i>
             <span>Test</span>
           </button>
-          <button class="btn-small" (click)="startEdit(assistant)">
+          <button class="btn-small" (click)="startEdit(assistant)" [disabled]="assistant.is_default === true" 
+            [title]="assistant.is_default === true ? 'Default prompt cannot be edited' : 'Edit prompt'">
             <i class="fa-solid fa-pen"></i>
             <span>Edit</span>
           </button>
-          <button class="btn-small btn-danger" (click)="deleteAssistant(assistant)">
+          <button class="btn-small btn-danger" (click)="deleteAssistant(assistant)" [disabled]="assistant.is_default === true"
+            [title]="assistant.is_default === true ? 'Default prompt cannot be deleted' : 'Delete prompt'">
             <i class="fa-solid fa-trash"></i>
             <span>Delete</span>
           </button>

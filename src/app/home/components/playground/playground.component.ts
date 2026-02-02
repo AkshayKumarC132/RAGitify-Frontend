@@ -4,9 +4,7 @@ import { ResponseService } from '../../../shared/services/response.service';
 import { ConversationMessage } from '../../../shared/models/conversation.model';
 import { ResponseRecord, ResponseCreateRequest } from '../../../shared/models/response.model';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
-import { DocumentService } from '../../../shared/services/document.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
-import { Document } from '../../../shared/models/document.model';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -26,26 +24,24 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     mode: 'normal' | 'document' = 'normal';
     private responsePollSub?: Subscription;
 
-    // Library/Document selection
+    // Library selection
     libraries: VectorStore[] = [];
-    documents: Document[] = [];
     attachmentMenuOpen = false;
     libraryPanelOpen = false;
-    selectedLibraryId: string | null = null;
-    selectedDocumentIds: string[] = [];
-    pendingLibraryId: string | null = null;
-    pendingDocumentIds = new Set<string>();
-    selectionMode: 'library' | 'documents' = 'library';
+    /**
+     * Multi-vector-store selection (libraries) for temporary chat.
+     * This enables sending multiple vector_store_ids in a single request.
+     */
+    selectedVectorStoreIds: string[] = [];
+    pendingVectorStoreIds = new Set<string>();
     librariesLoaded = false;
     private librariesLoading = false;
-    private documentsLoaded = false;
-    private documentsLoading = false;
+    showVectorStoreHoverDetails = false;
 
     constructor(
         private conversationService: ConversationService,
         private responseService: ResponseService,
-        private vectorStoreService: VectorStoreService,
-        private documentService: DocumentService
+        private vectorStoreService: VectorStoreService
     ) { }
 
     ngOnInit(): void {
@@ -79,39 +75,19 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         });
     }
 
-    private loadDocuments(): void {
-        if (this.documentsLoaded || this.documentsLoading) {
-            return;
-        }
-        this.documentsLoading = true;
-        this.documentService.list().subscribe({
-            next: (docs) => {
-                this.documents = docs.filter(d => d.status !== 'failed');
-                this.documentsLoaded = true;
-                this.documentsLoading = false;
-            },
-            error: (err) => {
-                console.error('Failed to load documents', err);
-                this.documentsLoaded = false;
-                this.documentsLoading = false;
-            }
-        });
-    }
 
     toggleAttachmentMenu(): void {
         this.attachmentMenuOpen = !this.attachmentMenuOpen;
         if (this.attachmentMenuOpen) {
+            this.loadLibraries();
             this.libraryPanelOpen = false;
         }
     }
 
     openLibraryPanel(): void {
-        this.loadLibraries();
-        this.loadDocuments();
         this.attachmentMenuOpen = false;
         this.libraryPanelOpen = true;
-        this.pendingLibraryId = this.selectedLibraryId;
-        this.pendingDocumentIds = new Set(this.selectedDocumentIds);
+        this.pendingVectorStoreIds = new Set(this.selectedVectorStoreIds || []);
     }
 
     closePanel(): void {
@@ -127,83 +103,86 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         }
     }
 
-    setSelectionMode(mode: 'library' | 'documents'): void {
-        this.selectionMode = mode;
+
+    isLibrarySelected(libraryId: string): boolean {
+        return this.pendingVectorStoreIds.has(String(libraryId));
     }
 
-    getDocumentsByLibrary(): { libraryId: string; name: string; documents: Document[] }[] {
-        const grouping = new Map<string, Document[]>();
-        this.documents.forEach(doc => {
-            const list = grouping.get(doc.vector_store) || [];
-            list.push(doc);
-            grouping.set(doc.vector_store, list);
-        });
-
-        return Array.from(grouping.entries()).map(([libraryId, docs]) => ({
-            libraryId,
-            name: this.getLibraryName(libraryId),
-            documents: docs
-        }));
-    }
-
-    private getLibraryName(libraryId: string): string {
-        const match = this.libraries.find(lib => lib.id === libraryId);
-        return match ? match.name : 'Unknown Library';
-    }
-
-    isDocumentSelected(docId: string): boolean {
-        return this.pendingDocumentIds.has(String(docId));
-    }
-
-    toggleDocumentSelection(docId: string, event: MouseEvent): void {
+    toggleLibrarySelectionClick(libraryId: string, event: MouseEvent): void {
         event.preventDefault();
         event.stopPropagation();
-        const id = String(docId);
-        if (this.pendingDocumentIds.has(id)) {
-            this.pendingDocumentIds.delete(id);
+
+        const id = String(libraryId);
+        const isSelected = this.pendingVectorStoreIds.has(id);
+        const next = new Set(this.pendingVectorStoreIds);
+
+        if (isSelected) {
+            next.delete(id);
         } else {
-            this.pendingDocumentIds.add(id);
+            next.add(id);
+        }
+
+        this.pendingVectorStoreIds = next;
+
+        // Keep the visual checkbox state in sync immediately
+        const label = event.currentTarget as HTMLElement;
+        const checkbox = label.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
+        if (checkbox) {
+            checkbox.checked = !isSelected;
         }
     }
 
     confirmSelection(): void {
-        if (this.selectionMode === 'documents') {
-            this.selectedDocumentIds = Array.from(this.pendingDocumentIds);
-            this.selectedLibraryId = null;
-        } else {
-            this.selectedLibraryId = this.pendingLibraryId;
-            this.selectedDocumentIds = [];
-        }
+        this.selectedVectorStoreIds = Array.from(this.pendingVectorStoreIds);
 
-        if (this.selectedLibraryId || this.selectedDocumentIds.length > 0) {
+        if (this.selectedVectorStoreIds.length > 0) {
             this.mode = 'document';
         }
         this.libraryPanelOpen = false;
     }
 
     clearSelection(): void {
-        this.selectedLibraryId = null;
-        this.selectedDocumentIds = [];
-        this.pendingLibraryId = null;
-        this.pendingDocumentIds.clear();
+        this.selectedVectorStoreIds = [];
+        this.pendingVectorStoreIds.clear();
         this.mode = 'normal';
         this.libraryPanelOpen = false;
     }
 
     get selectionCount(): number {
-        if (this.selectedLibraryId) return 1;
-        return this.selectedDocumentIds.length;
+        return this.selectedVectorStoreIds.length;
     }
 
     get selectionLabel(): string {
-        if (this.selectedLibraryId) {
-            const lib = this.libraries.find(l => l.id === this.selectedLibraryId);
-            return lib ? lib.name : '1 library selected';
+        if (this.selectedVectorStoreIds.length === 0) {
+            return '';
         }
-        if (this.selectedDocumentIds.length > 0) {
-            return `${this.selectedDocumentIds.length} document${this.selectedDocumentIds.length === 1 ? '' : 's'} selected`;
+        return `${this.selectedVectorStoreIds.length} librar${this.selectedVectorStoreIds.length === 1 ? 'y' : 'ies'} selected`;
+    }
+
+    get selectedVectorStores(): VectorStore[] {
+        const ids = new Set((this.selectedVectorStoreIds || []).map(String));
+        return (this.libraries || []).filter(l => ids.has(String(l.id)));
+    }
+
+    removeSelectedVectorStore(id: string, event?: MouseEvent): void {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
         }
-        return '';
+        const next = new Set((this.selectedVectorStoreIds || []).map(String));
+        next.delete(String(id));
+        this.selectedVectorStoreIds = Array.from(next);
+        if (!this.selectedVectorStoreIds.length) {
+            this.mode = 'normal';
+        }
+    }
+
+    onSelectionPillEnter(): void {
+        this.showVectorStoreHoverDetails = true;
+    }
+
+    onSelectionPillLeave(): void {
+        this.showVectorStoreHoverDetails = false;
     }
 
     private createTemporaryConversation(): void {
@@ -253,23 +232,13 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
             }]
         };
 
-        // Add tools if library or documents selected
-        if (this.mode === 'document') {
-            const vectorStoreIds: string[] = [];
-            if (this.selectedLibraryId) {
-                vectorStoreIds.push(this.selectedLibraryId);
-            }
-            if (this.selectedDocumentIds.length > 0) {
-                // Get unique vector store IDs from selected documents
-                const docVectorStores = this.documents
-                    .filter(d => this.selectedDocumentIds.includes(String(d.id)))
-                    .map(d => d.vector_store);
-                vectorStoreIds.push(...new Set(docVectorStores));
-            }
-            if (vectorStoreIds.length > 0) {
+        // Add tools if libraries selected
+        if (this.mode === 'document' && this.selectedVectorStoreIds.length > 0) {
+            const uniqueIds = Array.from(new Set(this.selectedVectorStoreIds.filter(Boolean).map(String)));
+            if (uniqueIds.length > 0) {
                 request.tools = [{
                     type: 'document',
-                    vector_store_ids: vectorStoreIds
+                    vector_store_ids: uniqueIds
                 }];
             }
         }

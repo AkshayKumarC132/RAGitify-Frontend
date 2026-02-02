@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { HttpEvent } from '@angular/common/http';
+import { HttpEvent, HttpContext } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { Document, DocumentIngestRequest, DocumentStatus } from '../models/document.model';
 import { HttpParams } from '@angular/common/http';
 import { shareReplay, tap } from 'rxjs/operators';
+import { SKIP_LOADING } from '../interceptors/loading.interceptor';
 
 @Injectable({
   providedIn: 'root'
@@ -88,7 +89,8 @@ export class DocumentService {
 
   getStatus(documentId: string): Observable<DocumentStatus> {
     const token = this.getToken();
-    return this.api.get<DocumentStatus>(`/document/${token}/${documentId}/status/`, token);
+    const context = new HttpContext().set(SKIP_LOADING, true);
+    return this.api.get<DocumentStatus>(`/document/${token}/${documentId}/status/`, token, undefined, context);
   }
 
   update(id: string, data: Partial<Document>): Observable<Document> {

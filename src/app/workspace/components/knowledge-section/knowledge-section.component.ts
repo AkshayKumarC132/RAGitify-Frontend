@@ -74,8 +74,10 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadDocuments(): void {
-    this.loadingDocuments = true;
+  loadDocuments(skipLoading = false): void {
+    if (!skipLoading) {
+      this.loadingDocuments = true;
+    }
     const vectorStoreId = this.selectedVectorStore?.id || undefined;
     this.documentService.list(vectorStoreId).subscribe({
       next: (docs: Document[]) => {
@@ -95,7 +97,9 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   }
 
   onDocumentUploaded(): void {
-    this.loadDocuments();
+    // Reload documents without showing loading animation (skipLoading = true)
+    // The upload component already showed loading during the upload process
+    this.loadDocuments(true);
     this.showUploadForm = false;
     this.showCreateVectorStoreForm = false;
     this.startStatusPolling();

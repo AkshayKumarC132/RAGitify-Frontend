@@ -43,62 +43,30 @@
                 </button>
             </div>
 
-            <!-- Library/Document Selection Panel -->
+            <!-- Library Selection Panel -->
             <div class="attachment-panel" *ngIf="libraryPanelOpen" (click)="$event.stopPropagation()">
                 <h4>Attach Documents</h4>
 
-                <div class="library-mode-switch">
-                    <button type="button" [class.active]="selectionMode === 'library'"
-                        (click)="setSelectionMode('library')">
-                        Whole Library
-                    </button>
-                    <button type="button" [class.active]="selectionMode === 'documents'" [disabled]="!documents.length"
-                        (click)="setSelectionMode('documents')">
-                        Specific Documents
-                    </button>
-                </div>
-
-                <ng-container [ngSwitch]="selectionMode">
-                    <div class="library-list" *ngSwitchCase="'library'">
-                        <ng-container *ngIf="libraries.length; else emptyLibrary">
-                            <label *ngFor="let library of libraries">
-                                <input type="radio" name="library" [value]="library.id"
-                                    [(ngModel)]="pendingLibraryId" />
-                                <div class="library-meta">
-                                    <span class="title">{{ library.name }}</span>
-                                    <span class="meta">Created {{ library.created_at | date:'short' }}</span>
-                                </div>
-                            </label>
-                        </ng-container>
-                    </div>
-
-                    <div class="documents-list" *ngSwitchCase="'documents'">
-                        <ng-container *ngIf="documents.length; else emptyDocuments">
-                            <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
-                                <div class="group-title">{{ group.name }}</div>
-                                <label *ngFor="let doc of group.documents"
-                                    (click)="toggleDocumentSelection(doc.id, $event)">
-                                    <input type="checkbox" [checked]="isDocumentSelected(doc.id)" />
-                                    <div class="library-meta">
-                                        <span class="title">{{ doc.title || ('Document ' + doc.id) }}</span>
-                                        <span class="meta">Uploaded {{ doc.uploaded_at | date:'short' }}</span>
-                                    </div>
-                                </label>
+                <div class="library-list">
+                    <ng-container *ngIf="libraries.length; else emptyLibrary">
+                        <label *ngFor="let library of libraries"
+                               (click)="toggleLibrarySelectionClick(library.id, $event)">
+                            <input type="checkbox" [checked]="isLibrarySelected(library.id)" />
+                            <div class="library-meta">
+                                <span class="title">{{ library.name }}</span>
+                                <span class="meta">Created {{ library.created_at | date:'short' }}</span>
                             </div>
-                        </ng-container>
-                    </div>
-                </ng-container>
+                        </label>
+                    </ng-container>
+                </div>
 
                 <ng-template #emptyLibrary>
                     <p class="empty-text">Create a library in Workspace first to attach it.</p>
                 </ng-template>
-                <ng-template #emptyDocuments>
-                    <p class="empty-text">No documents available. Upload knowledge in Workspace.</p>
-                </ng-template>
 
                 <div class="panel-actions">
                     <button type="button" (click)="confirmSelection()"
-                        [disabled]="(selectionMode === 'library' && !pendingLibraryId) || (selectionMode === 'documents' && !pendingDocumentIds.size)">
+                        [disabled]="!pendingVectorStoreIds.size">
                         Apply
                     </button>
                     <button type="button" (click)="clearSelection()">Clear</button>
@@ -107,9 +75,23 @@
             </div>
         </div>
 
-        <div class="attachment-pill" *ngIf="selectionCount > 0">
-            <span>{{ selectionLabel }}</span>
-            <button type="button" (click)="clearSelection()">×</button>
+        <div class="selection-pills" *ngIf="selectionCount > 0"
+             (mouseenter)="onSelectionPillEnter()"
+             (mouseleave)="onSelectionPillLeave()">
+            <div class="attachment-pill">
+                <span>{{ selectionLabel }}</span>
+                <button type="button" (click)="clearSelection()">×</button>
+            </div>
+
+            <!-- Current vector store selections (shown to the right while hovering) -->
+            <div class="attachment-pill attachment-pill--secondary"
+                 *ngIf="showVectorStoreHoverDetails && selectedVectorStores.length > 0">
+                <span class="pill-title">Libraries:</span>
+                <span class="pill-chip" *ngFor="let store of selectedVectorStores">
+                    {{ store.name }}
+                    <button type="button" (click)="removeSelectedVectorStore(store.id, $event)" aria-label="Remove vector store">×</button>
+                </span>
+            </div>
         </div>
 
         <!-- <div class="mode-indicator" [class.document]="mode === 'document'">

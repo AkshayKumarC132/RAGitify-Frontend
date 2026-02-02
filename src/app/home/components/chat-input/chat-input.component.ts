@@ -58,6 +58,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Output() promptSelected = new EventEmitter<string | null>();
   @Output() cancelRun = new EventEmitter<void>();
   @Output() attachmentPanelOpened = new EventEmitter<Exclude<AttachmentPanel, null>>();
+  @Output() attachmentMenuToggled = new EventEmitter<boolean>();
 
   message = '';
   attachmentMenuOpen = false;
@@ -166,6 +167,8 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     this.attachmentMenuOpen = !this.attachmentMenuOpen;
     if (this.attachmentMenuOpen) {
       this.activePanel = null;
+      // Emit event when menu is opened to trigger data loading
+      this.attachmentMenuToggled.emit(true);
     }
   }
 
