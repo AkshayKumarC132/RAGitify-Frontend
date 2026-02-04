@@ -62,8 +62,11 @@ export class DocumentService {
     return this.api.postFormDataWithProgress<Document>(`/document/${token}/ingest/`, formData, token);
   }
 
-  list(vectorStoreId?: string): Observable<Document[]> {
+  list(vectorStoreId?: string, forceRefresh = false): Observable<Document[]> {
     const token = this.getToken();
+    if (forceRefresh) {
+      this.invalidateListCache();
+    }
     let params = new HttpParams();
     if (vectorStoreId) {
       params = params.set('vector_store_id', vectorStoreId);

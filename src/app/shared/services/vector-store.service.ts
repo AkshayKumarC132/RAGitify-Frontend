@@ -31,8 +31,11 @@ export class VectorStoreService {
     );
   }
 
-  list(): Observable<VectorStore[]> {
+  list(forceRefresh = false): Observable<VectorStore[]> {
     const token = this.getToken();
+    if (forceRefresh) {
+      this.invalidateListCache();
+    }
     if (!this.listCache$) {
       this.listCache$ = this.api.get<VectorStore[]>(`/vector-store/${token}/list/`, token).pipe(
         shareReplay({ bufferSize: 1, refCount: true })

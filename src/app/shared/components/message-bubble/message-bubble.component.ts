@@ -146,6 +146,11 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         }
 
         const raw = this.displayContent || '';
+        // Configure marked options
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
         const html = marked.parse(raw) as string;
         const sanitized = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
         this.renderedContent = this.sanitizer.bypassSecurityTrustHtml(sanitized);

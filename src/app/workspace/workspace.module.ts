@@ -23,7 +23,6 @@ import { WorkspaceRoutingModule } from './workspace-routing.module';
     DocumentUploadComponent,
     VectorStoreListComponent,
     AssistantFormComponent,
-    AssistantFormComponent,
     DocumentChatComponent,
     AssistantChatComponent,
     LibraryChatComponent

@@ -48,8 +48,8 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.loadVectorStores();
-    this.loadDocuments();
+    this.loadVectorStores(true);
+    this.loadDocuments(false, true);
     this.startStatusPolling();
   }
 
@@ -57,9 +57,9 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.statusPollSub?.unsubscribe();
   }
 
-  loadVectorStores(): void {
+  loadVectorStores(forceRefresh = false): void {
     this.loadingStores = true;
-    this.vectorStoreService.list().subscribe({
+    this.vectorStoreService.list(forceRefresh).subscribe({
       next: (stores: VectorStore[]) => {
         this.vectorStores = stores;
         if (stores.length > 0 && !this.selectedVectorStore) {
@@ -74,12 +74,12 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadDocuments(skipLoading = false): void {
+  loadDocuments(skipLoading = false, forceRefresh = false): void {
     if (!skipLoading) {
       this.loadingDocuments = true;
     }
     const vectorStoreId = this.selectedVectorStore?.id || undefined;
-    this.documentService.list(vectorStoreId).subscribe({
+    this.documentService.list(vectorStoreId, forceRefresh).subscribe({
       next: (docs: Document[]) => {
         this.documents = docs;
         this.loadingDocuments = false;
