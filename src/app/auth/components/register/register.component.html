@@ -117,38 +117,46 @@
       </div>
     </div>
 
-    <!-- Step 2: LLM Setup (Optional) -->
+    <!-- Step 2: LLM Setup -->
     <div *ngIf="currentStep === 2" class="step-content fade-in">
       <div class="optional-header">
         <h3>LLM Configuration</h3>
-        <p>Configure your AI provider now or skip and set up later.</p>
+        <p>Configure your AI provider to get started.</p>
       </div>
 
       <div class="form-row">
         <div class="form-group">
-          <label for="llm_provider">LLM Provider</label>
+          <label for="llm_provider">LLM Provider <span class="required">*</span></label>
           <div class="input-wrapper">
             <i class="fa-solid fa-microchip"></i>
-            <select id="llm_provider" formControlName="llm_provider">
-              <option value="">Skip for now</option>
+            <select id="llm_provider" formControlName="llm_provider"
+              [class.error]="registerForm.get('llm_provider')?.invalid && registerForm.get('llm_provider')?.touched">
+              <option value="" disabled selected>Select Provider</option>
               <option value="openai">OpenAI</option>
               <option value="ollama">Ollama</option>
             </select>
           </div>
+          <small *ngIf="registerForm.get('llm_provider')?.invalid && registerForm.get('llm_provider')?.touched">
+            Provider is required
+          </small>
         </div>
 
         <div class="form-group">
-          <label for="collection_name">Collection Name</label>
+          <label for="collection_name">Collection Name <span class="required">*</span></label>
           <div class="input-wrapper">
             <i class="fa-solid fa-database"></i>
-            <input type="text" id="collection_name" formControlName="collection_name" placeholder="my-collection" />
+            <input type="text" id="collection_name" formControlName="collection_name" placeholder="my-collection"
+              [class.error]="registerForm.get('collection_name')?.invalid && registerForm.get('collection_name')?.touched" />
           </div>
+          <small *ngIf="registerForm.get('collection_name')?.invalid && registerForm.get('collection_name')?.touched">
+            Collection name is required
+          </small>
         </div>
       </div>
 
-      <small class="helper-text" *ngIf="registerForm.get('llm_provider')?.value">
+      <!-- <small class="helper-text" *ngIf="registerForm.get('llm_provider')?.value">
         <i class="fa-solid fa-circle-info"></i> Collection name is required when selecting an LLM provider.
-      </small>
+      </small> -->
 
       <div class="register-actions">
         <button type="button" class="btn-primary btn-ghost" (click)="prevStep()">

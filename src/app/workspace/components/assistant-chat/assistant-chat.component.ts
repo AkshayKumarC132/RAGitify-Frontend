@@ -164,8 +164,8 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
         if (!message.metadata || !message.metadata['used_document_ids']) {
             return [];
         }
-        return Array.isArray(message.metadata['used_document_ids']) 
-            ? message.metadata['used_document_ids'] 
+        return Array.isArray(message.metadata['used_document_ids'])
+            ? message.metadata['used_document_ids']
             : [];
     }
 
@@ -217,6 +217,6 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
     }
 
     get isResponseInProgress(): boolean {
-        return this.currentResponse?.status === 'in_progress';
+        return this.loading || this.currentResponse?.status === 'in_progress';
     }
 }

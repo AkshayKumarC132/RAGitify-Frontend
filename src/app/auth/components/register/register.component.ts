@@ -37,8 +37,8 @@ export class RegisterComponent implements OnInit {
       first_name: [''],
       last_name: [''],
       tenant_name: ['', [Validators.required]],
-      collection_name: [''],
-      llm_provider: [''],
+      collection_name: ['', [Validators.required]],
+      llm_provider: ['', [Validators.required]],
       language: ['']
     });
   }

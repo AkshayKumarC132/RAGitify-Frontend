@@ -210,6 +210,6 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     get isResponseInProgress(): boolean {
-        return this.currentResponse?.status === 'in_progress';
+        return this.loading || this.currentResponse?.status === 'in_progress';
     }
 }
