@@ -30,7 +30,14 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.authService.isAuthenticated()) {
-      this.authService.clearAuth();
+      const status = this.authService.getCurrentStatus();
+      if (status && this.authService.isLlmReady(status)) {
+        this.router.navigate(['/home']);
+      } else {
+        // Fallback to home if status is not fully ready but user is authenticated,
+        // or let the guards handle specific redirects if needed.
+        this.router.navigate(['/home']);
+      }
     }
   }
 
