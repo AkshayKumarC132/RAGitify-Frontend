@@ -59,7 +59,10 @@ export class DocumentService {
     // When ingest completes, the caller typically refreshes lists; we still clear caches up-front
     // so subsequent list() calls won't reuse stale data.
     this.invalidateListCache();
-    return this.api.postFormDataWithProgress<Document>(`/document/${token}/ingest/`, formData, token);
+
+    // Skip global loading spinner to prevent flickering during multi-file uploads
+    const context = new HttpContext().set(SKIP_LOADING, true);
+    return this.api.postFormDataWithProgress<Document>(`/document/${token}/ingest/`, formData, token, context);
   }
 
   list(vectorStoreId?: string, forceRefresh = false): Observable<Document[]> {

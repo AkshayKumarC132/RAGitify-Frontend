@@ -63,7 +63,7 @@ export class ApiService {
     });
   }
 
-  postFormDataWithProgress<T>(endpoint: string, formData: FormData, token?: string): Observable<HttpEvent<T>> {
+  postFormDataWithProgress<T>(endpoint: string, formData: FormData, token?: string, context?: HttpContext): Observable<HttpEvent<T>> {
     let headers = new HttpHeaders();
     if (token) {
       headers = headers.set('Authorization', `Token ${token}`);
@@ -72,7 +72,8 @@ export class ApiService {
     return this.http.post<T>(`${this.baseUrl}${endpoint}`, formData, {
       headers,
       observe: 'events',
-      reportProgress: true
+      reportProgress: true,
+      context: context || new HttpContext()
     });
   }
 }
