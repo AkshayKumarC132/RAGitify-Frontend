@@ -17,25 +17,65 @@
   </div>
 
   <div class="form-group">
-    <label>File</label>
-    <input type="file" (change)="onFileSelected($event)" class="form-control" />
-    <div *ngIf="selectedFile" class="file-info">
-      Selected: {{ selectedFile.name }}
+    <label>File(s)</label>
+    <input type="file" (change)="onFileSelected($event)" class="form-control" multiple />
+  </div>
+
+  <!-- File List -->
+  <div *ngIf="fileStatuses.length > 0" class="file-list">
+    <div *ngFor="let fileStatus of fileStatuses; let i = index" class="file-item">
+      <div class="file-info-row">
+        <div class="file-details">
+          <i class="fa-solid file-icon" 
+             [ngClass]="{
+               'fa-file': fileStatus.status === 'pending',
+               'fa-spinner fa-spin': fileStatus.status === 'uploading',
+               'fa-circle-check': fileStatus.status === 'completed',
+               'fa-circle-xmark': fileStatus.status === 'failed'
+             }"
+             [style.color]="
+               fileStatus.status === 'completed' ? 'var(--success-color)' :
+               fileStatus.status === 'failed' ? 'var(--error-color)' :
+               fileStatus.status === 'uploading' ? 'var(--accent-color)' :
+               'var(--text-secondary)'
+             ">
+          </i>
+          <div class="file-name-size">
+            <span class="file-name">{{ fileStatus.file.name }}</span>
+            <span class="file-size">{{ (fileStatus.file.size / 1024 / 1024).toFixed(2) }} MB</span>
+          </div>
+        </div>
+        
+        <button 
+          *ngIf="fileStatus.status === 'pending' && !loading" 
+          class="remove-btn" 
+          (click)="removeFile(i)"
+          title="Remove file">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Individual file progress bar -->
+      <div *ngIf="fileStatus.status === 'uploading'" class="file-progress">
+        <div class="progress-bar" [style.width.%]="fileStatus.progress"></div>
+      </div>
+
+      <!-- Error message for failed uploads -->
+      <div *ngIf="fileStatus.status === 'failed' && fileStatus.errorMessage" class="file-error">
+        {{ fileStatus.errorMessage }}
+      </div>
     </div>
   </div>
 
-  <div *ngIf="loading" class="progress">
-    <div class="progress-bar" [style.width.%]="uploadProgress"></div>
-  </div>
-  <div *ngIf="loading || uploadProgress === 100" class="progress-meta">
-    <span>{{ uploadStatus || 'Preparing upload...' }}</span>
-    <span *ngIf="uploadProgress">{{ uploadProgress }}%</span>
+  <!-- Overall Progress -->
+  <div *ngIf="loading" class="overall-status">
+    {{ getOverallStatus() }}
   </div>
 
   <div class="form-actions">
-    <button class="btn-primary" (click)="onUpload()" [disabled]="loading || !selectedFile || !selectedVectorStoreId">
+    <button class="btn-primary" (click)="onUpload()" [disabled]="loading || fileStatuses.length === 0 || !selectedVectorStoreId">
       <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
-      <span>{{ loading ? 'Uploading…' : 'Upload' }}</span>
+      <span>{{ loading ? 'Uploading…' : getUploadButtonText() }}</span>
     </button>
     <button class="btn-secondary" (click)="onCancel()" [disabled]="loading">
       <i class="fa-solid fa-xmark"></i>

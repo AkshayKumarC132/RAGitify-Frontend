@@ -4,6 +4,13 @@ import { Document } from '../../../shared/models/document.model';
 import { DocumentService } from '../../../shared/services/document.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 
+interface FileUploadStatus {
+  file: File;
+  status: 'pending' | 'uploading' | 'completed' | 'failed';
+  progress: number;
+  errorMessage?: string;
+}
+
 @Component({
   selector: 'app-document-upload',
   templateUrl: './document-upload.component.html',
@@ -15,11 +22,10 @@ export class DocumentUploadComponent implements OnChanges {
   @Output() uploaded = new EventEmitter<void>();
   @Output() cancel = new EventEmitter<void>();
 
-  selectedFile: File | null = null;
+  fileStatuses: FileUploadStatus[] = [];
   selectedVectorStoreId = '';
   loading = false;
-  uploadProgress = 0;
-  uploadStatus = '';
+  currentUploadIndex = -1;
   private hasProgressEvents = false;
   errorMessage = '';
 
@@ -36,24 +42,50 @@ export class DocumentUploadComponent implements OnChanges {
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      this.selectedFile = input.files[0];
+      // Convert FileList to array and create status objects
+      this.fileStatuses = Array.from(input.files).map(file => ({
+        file,
+        status: 'pending',
+        progress: 0
+      }));
+      this.errorMessage = '';
+    }
+  }
+
+  removeFile(index: number): void {
+    if (!this.loading) {
+      this.fileStatuses.splice(index, 1);
     }
   }
 
   onUpload(): void {
-    if (!this.selectedFile || !this.selectedVectorStoreId) {
-      this.errorMessage = 'Please select a file and library destination';
+    if (this.fileStatuses.length === 0 || !this.selectedVectorStoreId) {
+      this.errorMessage = 'Please select file(s) and library destination';
       return;
     }
 
     this.loading = true;
     this.errorMessage = '';
-    this.uploadProgress = 0;
-    this.uploadStatus = 'Uploading...';
+    this.currentUploadIndex = 0;
+    this.uploadNextFile();
+  }
+
+  private uploadNextFile(): void {
+    if (this.currentUploadIndex >= this.fileStatuses.length) {
+      // All files processed
+      this.loading = false;
+      this.currentUploadIndex = -1;
+      this.uploaded.emit();
+      return;
+    }
+
+    const fileStatus = this.fileStatuses[this.currentUploadIndex];
+    fileStatus.status = 'uploading';
+    fileStatus.progress = 0;
     this.hasProgressEvents = false;
 
     this.documentService.ingestWithProgress({
-      file: this.selectedFile,
+      file: fileStatus.file,
       vector_store_id: this.selectedVectorStoreId
     }).subscribe({
       next: (event: HttpEvent<Document>) => {
@@ -61,22 +93,30 @@ export class DocumentUploadComponent implements OnChanges {
           this.hasProgressEvents = true;
           const total = event.total || 0;
           const computed = total > 0 ? Math.round((event.loaded / total) * 100) : 0;
-          this.uploadProgress = this.calculateProgressStep(computed);
-          this.uploadStatus = `Uploading... ${this.uploadProgress}%`;
+          fileStatus.progress = this.calculateProgressStep(computed);
           return;
         }
 
         if (event.type === HttpEventType.Response) {
-          this.uploadProgress = 100;
-          this.uploadStatus = 'Upload complete.';
-          this.loading = false;
-          this.uploaded.emit();
+          fileStatus.progress = 100;
+          fileStatus.status = 'completed';
+
+          // Move to next file after a brief delay
+          setTimeout(() => {
+            this.currentUploadIndex++;
+            this.uploadNextFile();
+          }, 300);
         }
       },
       error: (err) => {
-        this.loading = false;
-        this.uploadStatus = '';
-        this.errorMessage = err.error?.error || 'Upload failed';
+        fileStatus.status = 'failed';
+        fileStatus.errorMessage = err.error?.error || 'Upload failed';
+
+        // Continue with next file even if this one failed
+        setTimeout(() => {
+          this.currentUploadIndex++;
+          this.uploadNextFile();
+        }, 300);
       }
     });
   }
@@ -100,9 +140,29 @@ export class DocumentUploadComponent implements OnChanges {
     return 95;
   }
 
+  getOverallStatus(): string {
+    if (!this.loading) return '';
+
+    const completed = this.fileStatuses.filter(f => f.status === 'completed').length;
+    const total = this.fileStatuses.length;
+
+    if (this.currentUploadIndex >= 0 && this.currentUploadIndex < total) {
+      return `Uploading file ${this.currentUploadIndex + 1} of ${total}...`;
+    }
+
+    return `Processing ${completed} of ${total} files...`;
+  }
+
+  getUploadButtonText(): string {
+    const count = this.fileStatuses.length;
+    if (count === 0) return 'Upload';
+    if (count === 1) return 'Upload';
+    return `Upload ${count} files`;
+  }
+
   onCancel(): void {
     this.cancel.emit();
   }
 
-  constructor(private documentService: DocumentService) {}
+  constructor(private documentService: DocumentService) { }
 }
