@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { shareReplay, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
+import { UserStateService } from './user-state.service';
 import { VectorStore, VectorStoreCreateRequest } from '../models/vector-store.model';
 
 @Injectable({
@@ -10,11 +11,15 @@ import { VectorStore, VectorStoreCreateRequest } from '../models/vector-store.mo
 })
 export class VectorStoreService {
   private listCache$?: Observable<VectorStore[]>;
+  private cachedForUserId: number | null = null;
 
   constructor(
     private api: ApiService,
-    private auth: AuthService
-  ) { }
+    private auth: AuthService,
+    private userState: UserStateService
+  ) {
+    this.userState.registerResetFn(() => this.invalidateListCache());
+  }
 
   private getToken(): string {
     const token = this.auth.getToken();
@@ -36,7 +41,12 @@ export class VectorStoreService {
     if (forceRefresh) {
       this.invalidateListCache();
     }
+    // Invalidate cache if the active user changed since the cache was built.
+    if (this.listCache$ && !this.userState.isCurrentUser(this.cachedForUserId)) {
+      this.invalidateListCache();
+    }
     if (!this.listCache$) {
+      this.cachedForUserId = this.userState.currentUserId;
       this.listCache$ = this.api.get<VectorStore[]>(`/vector-store/${token}/list/`, token).pipe(
         shareReplay({ bufferSize: 1, refCount: true })
       );
@@ -65,7 +75,6 @@ export class VectorStoreService {
 
   invalidateListCache(): void {
     this.listCache$ = undefined;
+    this.cachedForUserId = null;
   }
 }
-
-

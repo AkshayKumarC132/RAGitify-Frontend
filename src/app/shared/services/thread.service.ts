@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { shareReplay, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
+import { UserStateService } from './user-state.service';
 import { Thread, ThreadCreateRequest } from '../models/thread.model';
 import { Message } from '../models/message.model';
 
@@ -11,11 +12,15 @@ import { Message } from '../models/message.model';
 })
 export class ThreadService {
   private threadsCache$?: Observable<Thread[]>;
+  private cachedForUserId: number | null = null;
 
   constructor(
     private api: ApiService,
-    private auth: AuthService
-  ) { }
+    private auth: AuthService,
+    private userState: UserStateService
+  ) {
+    this.userState.registerResetFn(() => this.invalidateThreadsCache());
+  }
 
   private getToken(): string {
     const token = this.auth.getToken();
@@ -34,9 +39,13 @@ export class ThreadService {
 
   list(): Observable<Thread[]> {
     const token = this.getToken();
+    // Invalidate cache if the active user changed since the cache was built.
+    if (this.threadsCache$ && !this.userState.isCurrentUser(this.cachedForUserId)) {
+      this.invalidateThreadsCache();
+    }
     if (!this.threadsCache$) {
+      this.cachedForUserId = this.userState.currentUserId;
       this.threadsCache$ = this.api.get<Thread[]>(`/thread/${token}/list/`, token).pipe(
-        // Cache latest value so navigating between /home and /home/chat/:id doesn't refetch unnecessarily
         shareReplay({ bufferSize: 1, refCount: true })
       );
     }
@@ -69,6 +78,6 @@ export class ThreadService {
 
   invalidateThreadsCache(): void {
     this.threadsCache$ = undefined;
+    this.cachedForUserId = null;
   }
 }
-

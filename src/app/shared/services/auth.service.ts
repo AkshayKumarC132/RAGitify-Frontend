@@ -5,6 +5,7 @@ import { catchError, map, switchMap, take, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { User, LoginRequest, RegisterRequest, AuthResponse, UserStatus, LlmSetupRequest, SelectedLLMProvider } from '../models/user.model';
 import { ThemeService } from './theme.service';
+import { UserStateService } from './user-state.service';
 
 @Injectable({
   providedIn: 'root'
@@ -21,7 +22,8 @@ export class AuthService {
   constructor(
     private api: ApiService,
     private router: Router,
-    private themeService: ThemeService
+    private themeService: ThemeService,
+    private userStateService: UserStateService
   ) {
     this.restoreUserFromStorage();
   }
@@ -51,6 +53,7 @@ export class AuthService {
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
     this.currentUserSubject.next(user);
     this.syncStatusFromUser(user);
+    this.userStateService.setCurrentUserId(user.id);
   }
 
   getToken(): string | null {
@@ -77,6 +80,7 @@ export class AuthService {
     if (storedUser) {
       this.currentUserSubject.next(storedUser);
       this.syncStatusFromUser(storedUser);
+      this.userStateService.setCurrentUserId(storedUser.id);
     }
   }
 
@@ -87,6 +91,8 @@ export class AuthService {
     this.userStatusSubject.next(null);
     // Remove persisted theme preference on logout, but keep current UI as-is.
     this.themeService.clearThemeCache();
+    // Purge every user-scoped data cache.
+    this.userStateService.resetAllCaches();
   }
 
   forceLogout(): void {
@@ -173,6 +179,11 @@ export class AuthService {
   }
 
   initializeSession(response: AuthResponse): Observable<UserStatus | null> {
+    // If a different user is logging in, purge stale caches first.
+    const previousUserId = this.userStateService.currentUserId;
+    if (previousUserId !== null && previousUserId !== response.user.id) {
+      this.userStateService.resetAllCaches();
+    }
     this.setAuth(response.token, response.user);
     // Always default to Light Mode upon login.
     this.themeService.forceLightTheme();

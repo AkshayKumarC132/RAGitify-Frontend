@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { HttpEvent, HttpContext } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
+import { UserStateService } from './user-state.service';
 import { Document, DocumentIngestRequest, DocumentStatus } from '../models/document.model';
 import { HttpParams } from '@angular/common/http';
 import { shareReplay, tap } from 'rxjs/operators';
@@ -13,11 +14,15 @@ import { SKIP_LOADING } from '../interceptors/loading.interceptor';
 })
 export class DocumentService {
   private listCache = new Map<string, Observable<Document[]>>();
+  private cachedForUserId: number | null = null;
 
   constructor(
     private api: ApiService,
-    private auth: AuthService
-  ) { }
+    private auth: AuthService,
+    private userState: UserStateService
+  ) {
+    this.userState.registerResetFn(() => this.invalidateListCache());
+  }
 
   private getToken(): string {
     const token = this.auth.getToken();
@@ -70,6 +75,10 @@ export class DocumentService {
     if (forceRefresh) {
       this.invalidateListCache();
     }
+    // Invalidate cache if the active user changed since the cache was built.
+    if (this.listCache.size > 0 && !this.userState.isCurrentUser(this.cachedForUserId)) {
+      this.invalidateListCache();
+    }
     let params = new HttpParams();
     if (vectorStoreId) {
       params = params.set('vector_store_id', vectorStoreId);
@@ -81,6 +90,7 @@ export class DocumentService {
       return existing;
     }
 
+    this.cachedForUserId = this.userState.currentUserId;
     const req$ = this.api.get<Document[]>(`/document/${token}/list/`, token, params).pipe(
       shareReplay({ bufferSize: 1, refCount: true })
     );
@@ -115,5 +125,6 @@ export class DocumentService {
 
   invalidateListCache(): void {
     this.listCache.clear();
+    this.cachedForUserId = null;
   }
 }
