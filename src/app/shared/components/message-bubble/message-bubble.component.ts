@@ -21,6 +21,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     @Input() pageLabel: string = '';
     @Input() pagerHasPrev: boolean = false;
     @Input() pagerHasNext: boolean = false;
+    @Input() showSources: boolean = true;
     @Output() rerun = new EventEmitter<void>();
     @Output() pagerPrev = new EventEmitter<void>();
     @Output() pagerNext = new EventEmitter<void>();

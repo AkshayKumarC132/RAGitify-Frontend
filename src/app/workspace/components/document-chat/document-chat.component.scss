@@ -23,14 +23,14 @@
 }
 
 .document-chat-panel {
-  width: 480px;
+  width: 580px;
   max-width: 90vw;
   height: 100vh;
   background: var(--bg-primary);
   display: flex;
   flex-direction: column;
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.3);
-  animation: slideIn 0.3s ease;
+  animation: slideIn 0.5s ease;
 }
 
 @keyframes slideIn {
@@ -77,39 +77,7 @@
         text-overflow: ellipsis;
       }
 
-      .document-status {
-        display: flex;
-        align-items: center;
-        margin-top: 0.25rem;
 
-        .status-badge {
-          padding: 0.15rem 0.5rem;
-          border-radius: 100px;
-          text-transform: capitalize;
-          font-size: 9px;
-          font-weight: 600;
-
-          &.status-completed {
-            background: rgba(46, 213, 115, 0.15);
-            color: var(--success-color);
-          }
-
-          &.status-in-progress {
-            background: rgba(255, 168, 0, 0.15);
-            color: var(--warning-color);
-          }
-
-          &.status-queued {
-            background: rgba(87, 153, 255, 0.15);
-            color: var(--accent-color);
-          }
-
-          &.status-failed {
-            background: rgba(255, 99, 99, 0.15);
-            color: var(--error-color);
-          }
-        }
-      }
     }
   }
 
@@ -205,57 +173,12 @@
   }
 }
 
-.message-bubble {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 0.5rem;
-
-  &.user {
-    align-items: flex-end;
-
-    .message-content {
-      background: var(--accent-color);
-      color: white;
-      border-radius: 1rem 1rem 0.25rem 1rem;
-    }
-  }
-
-  &.assistant {
-    align-items: flex-start;
-
-    .message-content {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-      border-radius: 1rem 1rem 1rem 0.25rem;
-    }
-  }
-}
-
-.message-content {
-  max-width: 75%;
-  padding: 0.75rem 1rem;
-  word-wrap: break-word;
-}
-
-.message-text {
-  margin-bottom: 0.25rem;
-  line-height: 1.6;
-
-  .text-content {
-    white-space: pre-wrap;
-  }
-}
-
-.message-time {
-  font-size: 10px;
-  opacity: 0.7;
-  margin-top: 0.25rem;
-}
+// Redundant message bubble styles removed as app-message-bubble is now used.
 
 // Typing indicator is now provided by shared <app-typing-indicator>
 
 .input-area {
-  padding: 1.25rem 1.5rem;
+  padding: 0.5rem 0.5rem;
   border-top: 1px solid var(--border-color);
   background: var(--bg-secondary);
 }

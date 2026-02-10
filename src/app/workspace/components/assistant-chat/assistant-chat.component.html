@@ -49,10 +49,6 @@
                     placeholder="Test your assistant..." class="chat-input" [disabled]="loading || isResponseInProgress"
                     rows="1"></textarea>
                 <div class="input-actions">
-                    <button *ngIf="isResponseInProgress" type="button" class="cancel-button" (click)="cancelResponse()"
-                        title="Cancel response" aria-label="Cancel response">
-                        <i class="fa-solid fa-stop"></i>
-                    </button>
                     <button type="button" class="send-button" (click)="sendMessage()"
                         [disabled]="!messageInputText.trim() || loading || isResponseInProgress" title="Send message"
                         aria-label="Send message">

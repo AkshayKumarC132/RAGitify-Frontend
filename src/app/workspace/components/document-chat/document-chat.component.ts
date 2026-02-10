@@ -29,7 +29,7 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private conversationService: ConversationService,
     private responseService: ResponseService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     if (this.document) {
@@ -126,7 +126,8 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
       tools: [
         {
           type: 'document',
-          vector_store_ids: [this.document.vector_store]
+          vector_store_ids: [this.document.vector_store],
+          document_ids: [this.document.id]
         }
       ],
       metadata: {
@@ -208,8 +209,8 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!message.metadata || !message.metadata['used_document_ids']) {
       return [];
     }
-    return Array.isArray(message.metadata['used_document_ids']) 
-      ? message.metadata['used_document_ids'] 
+    return Array.isArray(message.metadata['used_document_ids'])
+      ? message.metadata['used_document_ids']
       : [];
   }
 
@@ -275,6 +276,6 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get isResponseInProgress(): boolean {
-    return this.currentResponse?.status === 'in_progress';
+    return this.loading || this.currentResponse?.status === 'in_progress';
   }
 }

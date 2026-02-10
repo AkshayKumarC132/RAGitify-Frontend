@@ -12,7 +12,8 @@
     </div>
 
     <div class="chat-messages" #messagesContainer>
-        <app-message-bubble *ngFor="let msg of messages; let last = last" [message]="msg" [isLast]="last">
+        <app-message-bubble *ngFor="let msg of messages; let last = last" [message]="msg" [isLast]="last"
+            [showSources]="false">
         </app-message-bubble>
 
         <app-typing-indicator *ngIf="loading" [cycle]="true"></app-typing-indicator>
@@ -50,7 +51,7 @@
                 <div class="library-list">
                     <ng-container *ngIf="libraries.length; else emptyLibrary">
                         <label *ngFor="let library of libraries"
-                               (click)="toggleLibrarySelectionClick(library.id, $event)">
+                            (click)="toggleLibrarySelectionClick(library.id, $event)">
                             <input type="checkbox" [checked]="isLibrarySelected(library.id)" />
                             <div class="library-meta">
                                 <span class="title">{{ library.name }}</span>
@@ -65,8 +66,7 @@
                 </ng-template>
 
                 <div class="panel-actions">
-                    <button type="button" (click)="confirmSelection()"
-                        [disabled]="!pendingVectorStoreIds.size">
+                    <button type="button" (click)="confirmSelection()" [disabled]="!pendingVectorStoreIds.size">
                         Apply
                     </button>
                     <button type="button" (click)="clearSelection()">Clear</button>
@@ -75,9 +75,8 @@
             </div>
         </div>
 
-        <div class="selection-pills" *ngIf="selectionCount > 0"
-             (mouseenter)="onSelectionPillEnter()"
-             (mouseleave)="onSelectionPillLeave()">
+        <div class="selection-pills" *ngIf="selectionCount > 0" (mouseenter)="onSelectionPillEnter()"
+            (mouseleave)="onSelectionPillLeave()">
             <div class="attachment-pill">
                 <span>{{ selectionLabel }}</span>
                 <button type="button" (click)="clearSelection()">×</button>
@@ -85,11 +84,12 @@
 
             <!-- Current vector store selections (shown to the right while hovering) -->
             <div class="attachment-pill attachment-pill--secondary"
-                 *ngIf="showVectorStoreHoverDetails && selectedVectorStores.length > 0">
+                *ngIf="showVectorStoreHoverDetails && selectedVectorStores.length > 0">
                 <span class="pill-title">Libraries:</span>
                 <span class="pill-chip" *ngFor="let store of selectedVectorStores">
                     {{ store.name }}
-                    <button type="button" (click)="removeSelectedVectorStore(store.id, $event)" aria-label="Remove vector store">×</button>
+                    <button type="button" (click)="removeSelectedVectorStore(store.id, $event)"
+                        aria-label="Remove vector store">×</button>
                 </span>
             </div>
         </div>

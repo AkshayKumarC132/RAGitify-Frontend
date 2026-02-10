@@ -44,5 +44,6 @@ export interface ResponseOutput {
 export interface DocumentTool {
   type: 'document';
   vector_store_ids: string[];
+  document_ids?: string[];
 }
 

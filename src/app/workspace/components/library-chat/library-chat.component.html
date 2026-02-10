@@ -34,7 +34,8 @@
                 </span>
             </div>
 
-            <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last">
+            <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last"
+                [showSources]="false">
             </app-message-bubble>
 
             <app-typing-indicator *ngIf="isResponseInProgress" [cycle]="true"></app-typing-indicator>
@@ -47,10 +48,6 @@
                     placeholder="Ask a question about this library..." class="chat-input"
                     [disabled]="loading || isResponseInProgress" rows="1"></textarea>
                 <div class="input-actions">
-                    <button *ngIf="isResponseInProgress" type="button" class="cancel-button" (click)="cancelResponse()"
-                        title="Cancel response" aria-label="Cancel response">
-                        <i class="fa-solid fa-stop"></i>
-                    </button>
                     <button type="button" class="send-button" (click)="sendMessage()"
                         [disabled]="!messageInputText.trim() || loading || isResponseInProgress" title="Send message"
                         aria-label="Send message">

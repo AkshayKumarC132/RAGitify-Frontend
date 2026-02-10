@@ -6,11 +6,6 @@
         <i class="fa-solid fa-comments"></i>
         <div class="header-text">
           <h3>{{ document?.title || 'Document Chat' }}</h3>
-          <span class="document-status" *ngIf="document">
-            <span class="status-badge" [ngClass]="'status-' + document.status">
-              {{ document.status }}
-            </span>
-          </span>
         </div>
       </div>
       <button type="button" class="close-button" (click)="close()" aria-label="Close chat">
@@ -32,17 +27,9 @@
         <span class="empty-state-hint">Start a conversation to get answers based on the document content</span>
       </div>
 
-      <div *ngFor="let message of messages" class="message-bubble" [class.user]="message.role === 'user'"
-        [class.assistant]="message.role === 'assistant'">
-        <div class="message-content">
-          <div class="message-text">
-            <div class="text-content" [innerText]="message.content"></div>
-          </div>
-          <app-message-sources *ngIf="message.role === 'assistant'" [documentIds]="getDocumentIds(message)">
-          </app-message-sources>
-          <div class="message-time">{{ formatTime(message.created_at) }}</div>
-        </div>
-      </div>
+      <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last"
+        [showSources]="false">
+      </app-message-bubble>
 
       <!-- Typing Indicator -->
       <app-typing-indicator *ngIf="isResponseInProgress" [cycle]="true"></app-typing-indicator>
@@ -55,10 +42,6 @@
           placeholder="Ask a question about this document..." class="chat-input"
           [disabled]="loading || isResponseInProgress" rows="1"></textarea>
         <div class="input-actions">
-          <button *ngIf="isResponseInProgress" type="button" class="cancel-button" (click)="cancelResponse()"
-            title="Cancel response" aria-label="Cancel response">
-            <i class="fa-solid fa-stop"></i>
-          </button>
           <button type="button" class="send-button" (click)="sendMessage()"
             [disabled]="!messageInputText.trim() || loading || isResponseInProgress" title="Send message"
             aria-label="Send message">

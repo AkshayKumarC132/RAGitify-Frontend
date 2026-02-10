@@ -281,6 +281,11 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   private startStatusPolling(): void {
     this.statusPollSub?.unsubscribe();
     this.statusPollSub = interval(5000).subscribe(() => {
+      // Don't poll if any chat is open
+      if (this.chatDocument || this.chatLibrary) {
+        return;
+      }
+
       const pendingDocuments = this.documents.filter(doc =>
         doc.status === 'queued' || doc.status === 'in_progress' || doc.status === 'processing'
       );
