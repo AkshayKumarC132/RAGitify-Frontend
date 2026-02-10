@@ -41,7 +41,11 @@ export class AccountSectionComponent implements OnInit {
       }
     });
 
-    this.authService.ensureStatus().subscribe(status => {
+    this.loadStatus();
+  }
+
+  loadStatus(): void {
+    this.authService.refreshUserStatus().subscribe(status => {
       this.status = status;
     });
   }

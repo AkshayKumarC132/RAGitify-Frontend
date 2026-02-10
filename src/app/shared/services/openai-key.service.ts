@@ -36,8 +36,11 @@ export class OpenAIKeyService {
     );
   }
 
-  list(): Observable<OpenAIKey[]> {
+  list(forceRefresh = false): Observable<OpenAIKey[]> {
     const token = this.getToken();
+    if (forceRefresh) {
+      this.invalidateListCache();
+    }
     // Invalidate cache if the active user changed since the cache was built.
     if (this.listCache$ && !this.userState.isCurrentUser(this.cachedForUserId)) {
       this.invalidateListCache();

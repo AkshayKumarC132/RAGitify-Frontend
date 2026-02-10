@@ -55,7 +55,7 @@ export class ModelsSectionComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.authService.ensureStatus().subscribe((status: UserStatus | null) => {
+    this.authService.refreshUserStatus().subscribe((status: UserStatus | null) => {
       const provider = status?.selected_llm_provider || (status as any)?.active_provider || null;
       if (provider === 'OpenAI' || provider === 'Ollama') {
         this.selectedProvider = provider;
@@ -67,12 +67,12 @@ export class ModelsSectionComponent implements OnInit {
       } else {
         this.createForm.get('provider')?.enable({ emitEvent: false });
       }
-      this.loadModels();
+      this.loadModels(true);
     });
   }
 
-  loadModels(): void {
-    this.openAIKeyService.list().subscribe({
+  loadModels(forceRefresh = false): void {
+    this.openAIKeyService.list(forceRefresh).subscribe({
       next: (models) => {
         this.models = this.selectedProvider ? models.filter(m => m.provider === this.selectedProvider) : models;
       },
@@ -174,7 +174,7 @@ export class ModelsSectionComponent implements OnInit {
   async deleteModel(id: number): Promise<void> {
     const model = this.models.find(m => m.id === id);
     const modelName = model?.name || (model ? `${model.provider} - ${model.model}` : 'this model');
-    
+
     const confirmed = await this.confirmDialogService.confirm({
       title: 'Delete model?',
       message: 'This will delete',

@@ -1,90 +1,98 @@
 <div class="account-section">
-  <h2 class="section-title">Account</h2>
-  
-  <div class="settings-group">
-    <form [formGroup]="accountForm" (ngSubmit)="saveAccount()" class="account-form">
-      <div class="setting-item">
-        <label class="setting-label">First Name</label>
-        <div class="setting-control">
-          <input 
-            type="text" 
-            formControlName="first_name" 
-            class="form-input"
-            placeholder="Enter first name"
-          />
+  <div class="profile-header">
+    <div class="profile-avatar">
+      {{ (currentUser?.first_name?.[0] || currentUser?.username?.[0] || '?') | uppercase }}
+    </div>
+    <div class="profile-info">
+      <h1>{{ currentUser?.first_name }} {{ currentUser?.last_name }}</h1>
+      <p class="profile-email">{{ currentUser?.email }}</p>
+      <div class="profile-badges" *ngIf="status">
+        <span class="badge" [class.ready]="status.ready">
+          <i class="fa-solid" [ngClass]="status.ready ? 'fa-check-circle' : 'fa-circle-exclamation'"></i>
+          {{ status.ready ? 'System Ready' : 'Setup Required' }}
+        </span>
+        <span class="badge tenant">
+          <i class="fa-solid fa-building"></i>
+          {{ currentUser?.tenant || 'No Tenant' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-grid">
+    <div class="settings-card">
+      <h3><i class="fa-solid fa-user-gear"></i> Personal Information</h3>
+      <form [formGroup]="accountForm" (ngSubmit)="saveAccount()" class="account-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" formControlName="first_name" class="form-input" placeholder="First name" />
+          </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" formControlName="last_name" class="form-input" placeholder="Last name" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" formControlName="email" class="form-input" placeholder="email@example.com" readonly />
+          <small class="input-hint">Email cannot be changed.</small>
+        </div>
+
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" formControlName="username" class="form-input" placeholder="Username" readonly />
+        </div>
+
+        <div *ngIf="message" class="message-alert" [class.success]="messageType === 'success'"
+          [class.error]="messageType === 'error'">
+          <i class="fa-solid" [ngClass]="messageType === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+          {{ message }}
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="loading || accountForm.invalid">
+            <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+            <span>{{ loading ? 'Saving...' : 'Save Changes' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="settings-card status-card" *ngIf="status">
+      <h3><i class="fa-solid fa-server"></i> System Status</h3>
+      <div class="status-details">
+        <div class="status-item">
+          <div class="status-label">LLM Provider</div>
+          <div class="status-value">
+            <span class="provider-pill" [class.configured]="status.selected_llm_provider">
+              <i class="fa-solid"
+                [ngClass]="status.selected_llm_provider === 'OpenAI' ? 'fa-cloud' : 'fa-microchip'"></i>
+              {{ providerDisplay }}
+            </span>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-label">Active Library</div>
+          <div class="status-value highlight">
+            <i class="fa-solid fa-box-archive"></i>
+            {{ collectionDisplay }}
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-label">Ready for Queries</div>
+          <div class="status-value">
+            <span class="status-indicator" [class.is-ready]="status.ready"></span>
+            {{ readyDisplay }}
+          </div>
         </div>
       </div>
 
-      <div class="setting-item">
-        <label class="setting-label">Last Name</label>
-        <div class="setting-control">
-          <input 
-            type="text" 
-            formControlName="last_name" 
-            class="form-input"
-            placeholder="Enter last name"
-          />
-        </div>
-      </div>
-
-      <div class="setting-item">
-        <label class="setting-label">Email</label>
-        <div class="setting-control">
-          <input 
-            type="email" 
-            formControlName="email" 
-            class="form-input"
-            placeholder="email@example.com"
-            readonly
-          />
-        </div>
-      </div>
-
-      <div class="setting-item">
-        <label class="setting-label">Username</label>
-        <div class="setting-control">
-          <input 
-            type="text" 
-            formControlName="username" 
-            class="form-input"
-            placeholder="Username"
-            readonly
-          />
-        </div>
-      </div>
-
-      <div *ngIf="message" class="message" [class.success]="messageType === 'success'" [class.error]="messageType === 'error'">
-        {{ message }}
-      </div>
-
-      <div class="form-actions">
-        <button 
-          type="submit" 
-          class="btn-primary" 
-          [disabled]="loading || accountForm.invalid"
-        >
-          <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
-          <span>{{ loading ? 'Saving...' : 'Save Changes' }}</span>
-        </button>
-      </div>
-    </form>
-
-    <div class="profile-details" *ngIf="status">
-      <div class="detail-card">
-        <p class="label">Provider</p>
-        <p class="value">{{ providerDisplay }}</p>
-      </div>
-      <div class="detail-card">
-        <p class="label">Collection</p>
-        <p class="value">{{ collectionDisplay }}</p>
-      </div>
-      <div class="detail-card">
-        <p class="label">Ready</p>
-        <p class="value">{{ readyDisplay }}</p>
-      </div>
-      <div class="detail-card">
-        <p class="label">Tenant</p>
-        <p class="value">{{ currentUser?.tenant || 'N/A' }}</p>
+      <div class="status-footer">
+        <p>Your system configuration is monitored automatically.</p>
       </div>
     </div>
   </div>
