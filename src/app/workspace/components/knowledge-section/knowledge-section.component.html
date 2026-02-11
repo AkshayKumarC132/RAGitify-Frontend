@@ -3,18 +3,17 @@
     <div>
       <h1>
         <i class="fa-solid fa-folder-open"></i>
-        <span>Knowledge</span>
+        <span class="section-title">Knowledge Library</span>
       </h1>
-      <p>Upload documents and manage your knowledge library for retrieval.</p>
     </div>
     <div class="header-actions">
-      <button class="btn-secondary" (click)="toggleVectorStoreForm()">
-        <i class="fa-solid" [ngClass]="showCreateVectorStoreForm ? 'fa-xmark' : 'fa-folder-plus'"></i>
+      <button class="btn-premium-primary" (click)="toggleVectorStoreForm()">
+        <i class="fa-solid" [ngClass]="showCreateVectorStoreForm ? 'fa-xmark' : 'fa-plus'"></i>
         <span>{{ showCreateVectorStoreForm ? 'Close' : 'New Library' }}</span>
       </button>
-      <button class="btn-primary" [disabled]="vectorStores.length === 0" (click)="toggleUploadForm()">
-        <i class="fa-solid" [ngClass]="showUploadForm ? 'fa-xmark' : 'fa-cloud-arrow-up'"></i>
-        <span>{{ showUploadForm ? 'Close upload' : 'Upload Documents' }}</span>
+      <button class="btn-premium-primary" [disabled]="vectorStores.length === 0" (click)="toggleUploadForm()">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <span>Upload</span>
       </button>
     </div>
   </div>
@@ -107,14 +106,54 @@
           <span>{{ filteredDocuments.length }} items</span>
         </div>
 
-        <div *ngIf="loadingDocuments" class="loading-state">Loading documents...</div>
+        <div class="documents-toolbar" *ngIf="documents.length > 0">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" [(ngModel)]="searchQuery" placeholder="Search documents..." />
+            <button class="clear-search" *ngIf="searchQuery" (click)="searchQuery = ''">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="filter-box">
+            <select [(ngModel)]="statusFilter" class="status-select">
+              <option value="">All Statuses</option>
+              <option *ngFor="let status of availableStatuses" [value]="status">
+                {{ status | titlecase }}
+              </option>
+            </select>
+          </div>
+
+          <div class="selection-control">
+            <button class="btn-select-toggle" [class.active]="selectionMode" (click)="toggleSelectionMode()">
+              <i class="fa-solid" [ngClass]="selectionMode ? 'fa-xmark' : 'fa-list-check'"></i>
+              <span>{{ selectionMode ? 'Cancel' : 'Select' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="loadingDocuments" class="loading-state">
+          <div class="spinner-small"></div>
+          <span>Loading documents...</span>
+        </div>
 
         <div *ngIf="!loadingDocuments && filteredDocuments.length === 0" class="empty-state">
           No documents found for the selected library.
         </div>
 
         <div *ngIf="!loadingDocuments && filteredDocuments.length > 0" class="documents-list">
-          <div *ngFor="let doc of filteredDocuments" class="document-item">
+          <div class="document-item card-premium" *ngFor="let doc of filteredDocuments"
+            [class.selected]="selectedDocumentIds.has(doc.id)">
+            <div class="document-selection" *ngIf="selectionMode">
+              <label class="checkbox-container">
+                <input type="checkbox" [checked]="selectedDocumentIds.has(doc.id)"
+                  (change)="toggleDocumentSelection(doc.id)" />
+                <span class="checkmark"></span>
+              </label>
+            </div>
+            <div class="document-icon">
+              <i class="fa-solid fa-file-lines"></i>
+            </div>
             <div class="document-meta">
               <div>
                 <div class="document-title" *ngIf="editingDocumentId !== doc.id">{{ doc.title }}</div>
@@ -131,24 +170,25 @@
                     </button>
                   </div>
                 </div>
-                <div class="document-date">Uploaded {{ formatDate(doc.uploaded_at) }}</div>
+                <div class="document-date">
+                  <span class="label">Uploaded at:</span>
+                  <span> {{ formatDate(doc.uploaded_at) }}</span>
+                </div>
               </div>
               <span class="status-badge" [ngClass]="getStatusBadgeClass(doc.status)">
                 {{ doc.status }}
               </span>
             </div>
-            <div class="document-actions">
-              <button class="btn-link" (click)="openDocumentChat(doc)" [disabled]="doc.status !== 'completed'">
+            <div class="document-actions" *ngIf="!selectionMode">
+              <button class="btn-premium-icon" (click)="openDocumentChat(doc)" [disabled]="doc.status !== 'completed'"
+                title="Chat">
                 <i class="fa-solid fa-comments"></i>
-                <span>Chat</span>
               </button>
-              <button class="btn-link" (click)="startDocumentRename(doc)" [disabled]="editingDocumentId === doc.id">
-                <i class="fa-solid fa-pen"></i>
-                <span>Rename</span>
+              <button class="btn-premium-icon" (click)="startDocumentRename(doc)" title="Rename">
+                <i class="fa-solid fa-pen-to-square"></i>
               </button>
-              <button class="btn-link danger" (click)="deleteDocument(doc.id)">
+              <button class="btn-premium-icon danger" (click)="deleteDocument(doc.id)" title="Delete">
                 <i class="fa-solid fa-trash"></i>
-                <span>Delete</span>
               </button>
             </div>
           </div>
@@ -160,4 +200,32 @@
   <app-document-chat *ngIf="chatDocument" [document]="chatDocument" (closed)="closeDocumentChat()"></app-document-chat>
 
   <app-library-chat *ngIf="chatLibrary" [vectorStore]="chatLibrary" (closed)="closeLibraryChat()"></app-library-chat>
+
+  <!-- Floating Selection Bar -->
+  <div class="selection-bar-container" [class.show]="selectedDocumentIds.size > 0">
+    <div class="selection-bar">
+      <div class="selection-info">
+        <span class="count-badge">{{ selectedDocumentIds.size }}</span>
+        <span class="selection-text">documents selected</span>
+      </div>
+
+      <div class="selection-actions">
+        <button class="action-btn secondary" (click)="toggleAllSelection()">
+          <i class="fa-solid" [ngClass]="isAllSelected ? 'fa-square-minus' : 'fa-square-check'"></i>
+          <span>{{ isAllSelected ? 'Deselect All' : 'Select All' }}</span>
+        </button>
+
+        <div class="divider"></div>
+
+        <button class="action-btn danger" (click)="deleteSelectedDocuments()">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Delete Documents</span>
+        </button>
+
+        <button class="close-bar" (click)="clearSelection()" title="Clear selection">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

@@ -1,16 +1,14 @@
 <div class="prompts-section">
   <div class="section-header">
-    <div class="header-copy">
-      <h1>
-        <i class="fa-solid fa-message"></i>
-        <span>Prompts</span>
-      </h1>
-      <p class="section-subtitle">Design assistants, connect them to libraries, and test responses quickly.</p>
+    <div class="section-title">
+      <h1>Assistant Prompts</h1>
     </div>
-    <button class="btn-primary" (click)="toggleCreateForm()">
-      <i class="fa-solid fa-plus"></i>
-      <span>{{ showCreateForm ? 'Close form' : 'New Prompt' }}</span>
-    </button>
+    <div class="header-actions">
+      <button class="btn-premium-primary" (click)="toggleCreateForm()">
+        <i class="fa-solid" [ngClass]="showCreateForm ? 'fa-xmark' : 'fa-plus'"></i>
+        <span>{{ showCreateForm ? 'Close form' : 'New Prompt' }}</span>
+      </button>
+    </div>
   </div>
 
   <div *ngIf="errorMessage" class="error-message">
@@ -104,38 +102,41 @@
 
   <div *ngIf="loadingAssistants" class="loading-state">Loading prompts...</div>
   <div class="prompts-list" *ngIf="!loadingAssistants && assistants.length > 0; else emptyPrompts">
-    <div *ngFor="let assistant of assistants" class="prompt-item">
+    <div *ngFor="let assistant of assistants" class="prompt-item card-premium">
+      <div class="prompt-icon">
+        <i class="fa-solid fa-robot"></i>
+      </div>
       <div class="prompt-info">
         <div class="prompt-name">{{ assistant.name }}</div>
         <div class="prompt-meta">
-          <span>Model: {{ assistant.model || 'Workspace default' }}</span>
-          <span>• Library: {{ vectorStoreLabel(assistant.vector_store_id) }}</span>
+          <span class="meta-tag"><i class="fa-solid fa-microchip"></i> {{ assistant.model || 'Workspace default'
+            }}</span>
+          <span class="meta-tag"><i class="fa-solid fa-database"></i> {{ vectorStoreLabel(assistant.vector_store_id)
+            }}</span>
         </div>
         <div class="prompt-instructions">
           {{ instructionsPreview(assistant.instructions) }}
         </div>
       </div>
       <div class="prompt-actions">
-        <span class="prompt-date">
-          <i class="fa-solid fa-clock"></i>
-          <span>Updated {{ assistant.updated_at | date:'mediumDate' }}</span>
-        </span>
         <div class="action-buttons">
-          <button class="btn-small" (click)="testAssistant(assistant)" title="Test this prompt">
+          <button class="btn-premium-icon" (click)="testAssistant(assistant)" title="Test this prompt">
             <i class="fa-solid fa-play"></i>
-            <span>Test</span>
           </button>
-          <button class="btn-small" (click)="startEdit(assistant)" [disabled]="assistant.is_default === true" 
+          <button class="btn-premium-icon" (click)="startEdit(assistant)" [disabled]="assistant.is_default === true"
             [title]="assistant.is_default === true ? 'Default prompt cannot be edited' : 'Edit prompt'">
-            <i class="fa-solid fa-pen"></i>
-            <span>Edit</span>
+            <i class="fa-solid fa-pen-to-square"></i>
           </button>
-          <button class="btn-small btn-danger" (click)="deleteAssistant(assistant)" [disabled]="assistant.is_default === true"
+          <button class="btn-premium-icon danger" (click)="deleteAssistant(assistant)"
+            [disabled]="assistant.is_default === true"
             [title]="assistant.is_default === true ? 'Default prompt cannot be deleted' : 'Delete prompt'">
             <i class="fa-solid fa-trash"></i>
-            <span>Delete</span>
           </button>
         </div>
+        <span class="prompt-date">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>{{ assistant.updated_at | date:'mediumDate' }}</span>
+        </span>
       </div>
     </div>
   </div>

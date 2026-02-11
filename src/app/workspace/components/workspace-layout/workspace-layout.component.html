@@ -1,43 +1,30 @@
 <div class="workspace-container" [class.sidebar-collapsed]="sidebarCollapsed">
   <aside class="workspace-sidebar" [class.collapsed]="sidebarCollapsed">
     <div class="sidebar-header" [class.show-expand-control]="sidebarCollapsed && hoveringExpandControl">
-      <button
-        type="button"
-        class="brand-toggle"
-        (click)="toggleSidebar(undefined, $event)"
+      <button type="button" class="brand-toggle" (click)="toggleSidebar(undefined, $event)"
         [attr.title]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-        (mouseenter)="handleBrandExpandInteraction(true)"
-        (mouseleave)="handleBrandExpandInteraction(false)"
-        (focus)="handleBrandExpandInteraction(true)"
-        (blur)="handleBrandExpandInteraction(false)"
-      >
+        (mouseenter)="handleBrandExpandInteraction(true)" (mouseleave)="handleBrandExpandInteraction(false)"
+        (focus)="handleBrandExpandInteraction(true)" (blur)="handleBrandExpandInteraction(false)">
         <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" class="brand-logo" />
         <div class="brand-text" *ngIf="!sidebarCollapsed">
-          <p class="eyebrow">RAGitify</p>
-          <h2>Workspace</h2>
+          <div class="brand-title">RAGitify</div>
         </div>
       </button>
 
-      <button
-        class="sidebar-toggle-control"
-        type="button"
-        (click)="toggleSidebar(undefined, $event)"
+      <button class="sidebar-toggle-control" type="button" (click)="toggleSidebar(undefined, $event)"
         [attr.aria-label]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-        (mouseenter)="handleToggleExpandInteraction(true)"
-        (mouseleave)="handleToggleExpandInteraction(false)"
-        (focus)="handleToggleExpandInteraction(true)"
-        (blur)="handleToggleExpandInteraction(false)"
-      >
+        (mouseenter)="handleToggleExpandInteraction(true)" (mouseleave)="handleToggleExpandInteraction(false)"
+        (focus)="handleToggleExpandInteraction(true)" (blur)="handleToggleExpandInteraction(false)">
         <i class="fa-solid" [ngClass]="sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
       </button>
     </div>
 
     <nav class="sidebar-actions">
-      <button type="button" (click)="startNewChat()">
-        <i class="fa-solid fa-comments"></i>
+      <button class="new-thread-button" type="button" (click)="startNewChat()">
+        <i class="fa-solid fa-plus"></i>
         <span>New Chat</span>
       </button>
-      <button type="button" class="active">
+      <button class="workspace-button active" type="button">
         <i class="fa-solid fa-briefcase"></i>
         <span>Workspace</span>
       </button>
@@ -58,8 +45,9 @@
   <div class="workspace-content">
     <div class="workspace-top-bar">
       <div>
-        <p class="eyebrow">Workspace hub</p>
-        <h1>Manage your intelligence stack</h1>
+        <!-- <p class="eyebrow">Hub</p>
+        <h1>Intelligence Layer</h1> -->
+        <h1 class="eyebrow">Hub</h1>
       </div>
       <div class="workspace-tabs">
         <button type="button" [class.active]="activeSection === 'knowledge'" (click)="setActiveSection('knowledge')">
@@ -67,7 +55,7 @@
           <span>Knowledge</span>
         </button>
         <button type="button" [class.active]="activeSection === 'prompts'" (click)="setActiveSection('prompts')">
-          <i class="fa-solid fa-message"></i>
+          <i class="fa-solid fa-robot"></i>
           <span>Prompts</span>
         </button>
       </div>

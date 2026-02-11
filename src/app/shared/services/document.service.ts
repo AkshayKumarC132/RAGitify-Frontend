@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin } from 'rxjs';
 import { HttpEvent, HttpContext } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
@@ -119,6 +119,13 @@ export class DocumentService {
   delete(id: string): Observable<void> {
     const token = this.getToken();
     return this.api.delete<void>(`/document/${token}/${id}/`, token).pipe(
+      tap(() => this.invalidateListCache())
+    );
+  }
+
+  bulkDelete(ids: string[]): Observable<void[]> {
+    const deletions = ids.map(id => this.delete(id));
+    return forkJoin(deletions).pipe(
       tap(() => this.invalidateListCache())
     );
   }

@@ -3,20 +3,24 @@
     <i class="fa-solid fa-folder-tree"></i>
     <span>Library</span>
   </h2>
-  <div *ngFor="let store of vectorStores" class="store-item" [class.selected]="selectedVectorStore?.id === store.id"
-    (click)="selectStore(store)">
+  <div *ngFor="let store of vectorStores" class="store-item card-premium"
+    [class.selected]="selectedVectorStore?.id === store.id" (click)="selectStore(store)">
     <div class="store-meta">
-      <div class="store-name">{{ store.name }}</div>
+      <div class="store-name">
+        <i class="fa-solid fa-database"></i>
+        <span>{{ store.name }}</span>
+      </div>
       <div class="store-date">Created: {{ formatDate(store.created_at) }}</div>
     </div>
     <div class="store-actions">
-      <button type="button" (click)="requestChat(store, $event)" title="Chat with library">
+      <button type="button" class="btn-premium-icon" (click)="requestChat(store, $event)" title="Chat with library">
         <i class="fa-solid fa-comments"></i>
       </button>
-      <button type="button" (click)="requestEdit(store, $event)" title="Rename library">
+      <button type="button" class="btn-premium-icon" (click)="requestEdit(store, $event)" title="Rename library">
         <i class="fa-solid fa-pen"></i>
       </button>
-      <button type="button" (click)="requestDelete(store, $event)" title="Delete library">
+      <button type="button" class="btn-premium-icon danger" (click)="requestDelete(store, $event)"
+        title="Delete library">
         <i class="fa-solid fa-trash"></i>
       </button>
     </div>

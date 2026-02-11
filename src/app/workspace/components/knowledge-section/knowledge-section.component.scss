@@ -9,19 +9,21 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 
   h1 {
-    margin-bottom: 0.25rem;
+    margin: 0;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 11px;
-  }
+    gap: 0.75rem;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
 
-  p {
-    color: var(--text-secondary);
-    margin: 0;
+    i {
+      color: var(--accent-color);
+      font-size: 18px;
+    }
   }
 }
 
@@ -77,6 +79,208 @@
   }
 }
 
+.documents-toolbar {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+
+  .search-box {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+
+    i.fa-magnifying-glass {
+      position: absolute;
+      left: 0.85rem;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.65rem 1rem 0.65rem 2.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 11px;
+      transition: all 0.2s ease;
+
+      &:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(87, 153, 255, 0.1);
+      }
+    }
+
+    .clear-search {
+      position: absolute;
+      right: 0.5rem;
+      background: transparent;
+      border: none;
+      padding: 0.25rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+
+      &:hover {
+        color: var(--error-color);
+      }
+    }
+  }
+
+  .filter-box {
+    .status-select {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      color: var(--text-primary);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      outline: none;
+
+      &:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(87, 153, 255, 0.1);
+      }
+
+      &:hover {
+        border-color: var(--accent-color);
+      }
+    }
+  }
+
+  .selection-control {
+    .btn-select-toggle {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      color: var(--text-primary);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+
+      i {
+        font-size: 14px;
+      }
+
+      &:hover {
+        border-color: var(--accent-color);
+        background: rgba(87, 153, 255, 0.05);
+      }
+
+      &.active {
+        background: var(--accent-color);
+        border-color: var(--accent-color);
+        color: white;
+
+        &:hover {
+          background: #4681e0;
+        }
+      }
+    }
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: var(--text-secondary);
+
+  .spinner-small {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--bg-tertiary);
+    border-top: 2px solid var(--accent-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.panel-header-actions {
+  display: none; // No longer used in header
+}
+
+/* Custom Checkbox Styles */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 24px;
+  cursor: pointer;
+  font-size: 11px;
+  user-select: none;
+  color: var(--text-secondary);
+
+  &.select-all {
+    margin-right: 0.5rem;
+  }
+
+  input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+  }
+
+  .checkmark {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    height: 16px;
+    width: 16px;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  &:hover input~.checkmark {
+    border-color: var(--accent-color);
+  }
+
+  input:checked~.checkmark {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+  }
+
+  .checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 5px;
+    top: 2px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  input:checked~.checkmark:after {
+    display: block;
+  }
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -121,78 +325,102 @@
 }
 
 .document-item {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 0.85rem 1rem;
+  margin-bottom: 0.75rem;
+  padding: 1rem 1.25rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  position: relative;
 
-  .document-meta {
+  &.selected {
+    border-color: var(--accent-color);
+    background: rgba(59, 130, 246, 0.05);
+    box-shadow: inset 4px 0 0 var(--accent-color), var(--shadow-sm);
+  }
+
+  .document-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--bg-tertiary);
     display: flex;
     align-items: center;
-    gap: 1rem;
-  }
-
-  .document-title {
-    color: var(--text-primary);
-    font-weight: 500;
-  }
-
-  .document-date {
+    justify-content: center;
     color: var(--text-secondary);
-    font-size: 10px;
+    font-size: 16px;
+    transition: all 0.2s ease;
+  }
+
+  &.selected .document-icon {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-color);
+  }
+
+  .document-meta {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+
+    .document-title {
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
+    .document-date {
+      color: var(--text-secondary);
+      font-size: 10px;
+    }
   }
 }
 
 .status-badge {
-  padding: 0.15rem 0.65rem;
-  border-radius: 100px;
-  text-transform: capitalize;
-  font-size: 10px;
-  font-weight: 600;
+  padding: 0.2rem 0.75rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  width: fit-content;
+  display: inline-block;
 
   &.status-completed {
-    background: rgba(46, 213, 115, 0.15);
-    color: var(--success-color);
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
   }
 
-  &.status-in-progress {
-    background: rgba(255, 168, 0, 0.15);
-    color: var(--warning-color);
+  &.status-in-progress,
+  &.status-processing {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
   }
 
   &.status-queued {
-    background: rgba(87, 153, 255, 0.15);
-    color: var(--accent-color);
+    background: rgba(59, 130, 246, 0.12);
+    color: #2563eb;
   }
 
   &.status-failed {
-    background: rgba(255, 99, 99, 0.15);
-    color: var(--error-color);
-  }
-}
-
-.btn-link {
-  background: transparent;
-  border: none;
-  color: var(--accent-color);
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-
-  &.danger {
-    color: var(--error-color);
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
   }
 }
 
 .document-actions {
   display: flex;
   gap: 0.5rem;
-  justify-content: flex-end;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: all 0.2s ease;
+}
+
+.document-item:hover .document-actions,
+.document-item.selected .document-actions {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .document-edit {
@@ -218,3 +446,142 @@
   margin-bottom: 1rem;
 }
 
+/* Floating Selection Bar */
+.selection-bar-container {
+  position: fixed;
+  bottom: -100px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1000;
+  transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none;
+
+  &.show {
+    bottom: 0;
+  }
+}
+
+.selection-bar {
+  pointer-events: auto;
+  background: rgba(15, 23, 42, 0.85); // Slate background with transparency
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 100px; // Pill shape
+  padding: 0.65rem 1rem 0.65rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  color: white;
+
+  .selection-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .count-badge {
+      background: var(--accent-color);
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .selection-text {
+      font-weight: 500;
+      font-size: 12px;
+    }
+  }
+
+  .selection-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .divider {
+      width: 1px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 0 0.5rem;
+    }
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 100px;
+      font-weight: 600;
+      font-size: 11px;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      background: transparent;
+      color: white;
+
+      i {
+        font-size: 14px;
+      }
+
+      &.secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      &.danger {
+        background: var(--error-color);
+        border-color: var(--error-color);
+
+        &:hover {
+          background: #b71c1c;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+      }
+    }
+
+    .close-bar {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 18px;
+      padding: 0.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: white;
+      }
+    }
+  }
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.documents-list {
+  padding-bottom: 80px; // Give room for selection bar
+}

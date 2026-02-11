@@ -15,57 +15,89 @@
 }
 
 .store-item {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1rem;
   margin-bottom: 0.75rem;
   cursor: pointer;
-  transition: all 0.2s;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
-    border-color: var(--accent-color);
+    transform: translateX(4px);
+    background: var(--bg-tertiary);
   }
 
   &.selected {
     border-color: var(--accent-color);
-    background: var(--bg-tertiary);
+    background: rgba(59, 130, 246, 0.08);
+    box-shadow: inset 4px 0 0 var(--accent-color), var(--shadow-sm);
+
+    .store-name {
+      color: var(--accent-color);
+
+      i {
+        color: var(--accent-color);
+      }
+    }
   }
+}
+
+.store-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
 .store-name {
   color: var(--text-primary);
-  font-weight: 500;
-  margin-bottom: 0.25rem;
+  font-weight: 700;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+
+  i {
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    flex: 1;
+  }
 }
 
 .store-date {
   color: var(--text-secondary);
   font-size: 10px;
+  padding-left: 1.35rem;
+  opacity: 0.7;
 }
 
 .store-actions {
   display: flex;
-  gap: 0.35rem;
-
-  button {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 1px solid var(--border-color);
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-      color: var(--accent-color);
-      border-color: var(--accent-color);
-    }
-  }
+  gap: 0.4rem;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
+.store-item:hover .store-actions,
+.store-item.selected .store-actions {
+  opacity: 1;
+  transform: translateX(0);
+}

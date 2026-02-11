@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Subscription, interval, of } from 'rxjs';
 import { catchError, finalize, timeout } from 'rxjs/operators';
@@ -31,12 +32,18 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   documentTitleControl = new FormControl('', [Validators.required, Validators.minLength(3)]);
   chatDocument: Document | null = null;
   chatLibrary: VectorStore | null = null;
+  selectedDocumentIds = new Set<string>();
+  searchQuery = '';
+  statusFilter = '';
+  selectionMode = false;
 
   constructor(
     private vectorStoreService: VectorStoreService,
     private documentService: DocumentService,
     private confirmDialogService: ConfirmDialogService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     this.createVectorStoreForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]]
@@ -49,8 +56,23 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadVectorStores(true);
-    this.loadDocuments(false, true);
     this.startStatusPolling();
+
+    // Listen for query parameter changes
+    this.route.queryParamMap.subscribe(params => {
+      const libraryId = params.get('libraryId');
+      if (libraryId && libraryId !== this.selectedVectorStore?.id) {
+        const store = this.vectorStores.find(vs => vs.id === libraryId);
+        if (store) {
+          this.selectedVectorStore = store;
+          this.selectedDocumentIds.clear();
+          this.searchQuery = '';
+          this.statusFilter = '';
+          this.selectionMode = false;
+          this.loadDocuments();
+        }
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -62,9 +84,20 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.vectorStoreService.list(forceRefresh).subscribe({
       next: (stores: VectorStore[]) => {
         this.vectorStores = stores;
-        if (stores.length > 0 && !this.selectedVectorStore) {
+
+        // If we have a libraryId in the URL, use it. Otherwise, default to first store.
+        const libraryId = this.route.snapshot.queryParamMap.get('libraryId');
+        const storeFromUrl = stores.find(s => s.id === libraryId);
+
+        if (storeFromUrl) {
+          this.selectedVectorStore = storeFromUrl;
+        } else if (stores.length > 0 && !this.selectedVectorStore) {
           this.selectedVectorStore = stores[0];
+          // Update URL to match initial selection
+          this.updateUrl(stores[0].id);
         }
+
+        this.loadDocuments(false, forceRefresh);
         this.loadingStores = false;
       },
       error: (err) => {
@@ -83,6 +116,12 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       next: (docs: Document[]) => {
         this.documents = docs;
         this.loadingDocuments = false;
+
+        // Reset status filter if it no longer applies to the new document set
+        if (this.statusFilter && !this.availableStatuses.includes(this.statusFilter)) {
+          this.statusFilter = '';
+        }
+        this.selectedDocumentIds.clear();
       },
       error: (err) => {
         console.error('Error loading documents:', err);
@@ -92,8 +131,24 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   }
 
   onVectorStoreSelected(store: VectorStore): void {
-    this.selectedVectorStore = store;
-    this.loadDocuments();
+    this.statusFilter = '';
+    this.selectionMode = false;
+    this.updateUrl(store.id);
+  }
+
+  toggleSelectionMode(): void {
+    this.selectionMode = !this.selectionMode;
+    if (!this.selectionMode) {
+      this.selectedDocumentIds.clear();
+    }
+  }
+
+  private updateUrl(libraryId: string): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { libraryId },
+      queryParamsHandling: 'merge'
+    });
   }
 
   onDocumentUploaded(): void {
@@ -218,7 +273,10 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     }
 
     this.documentService.delete(documentId).subscribe({
-      next: () => this.loadDocuments(),
+      next: () => {
+        this.selectedDocumentIds.delete(documentId);
+        this.loadDocuments();
+      },
       error: (err) => {
         console.error('Error deleting document:', err);
         this.errorMessage = this.extractErrorMessage(err, 'Unable to delete document.');
@@ -226,11 +284,96 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     });
   }
 
-  get filteredDocuments(): Document[] {
-    if (!this.selectedVectorStore) {
-      return this.documents;
+  toggleDocumentSelection(documentId: string): void {
+    if (this.selectedDocumentIds.has(documentId)) {
+      this.selectedDocumentIds.delete(documentId);
+    } else {
+      this.selectedDocumentIds.add(documentId);
     }
-    return this.documents.filter(doc => doc.vector_store === this.selectedVectorStore?.id);
+  }
+
+  isDocumentSelected(documentId: string): boolean {
+    return this.selectedDocumentIds.has(documentId);
+  }
+
+  get isAllSelected(): boolean {
+    const docs = this.filteredDocuments;
+    if (docs.length === 0) return false;
+    return docs.every(doc => this.selectedDocumentIds.has(doc.id));
+  }
+
+  toggleAllSelection(): void {
+    if (this.isAllSelected) {
+      this.filteredDocuments.forEach(doc => this.selectedDocumentIds.delete(doc.id));
+    } else {
+      this.filteredDocuments.forEach(doc => this.selectedDocumentIds.add(doc.id));
+    }
+  }
+
+  async deleteSelectedDocuments(): Promise<void> {
+    const count = this.selectedDocumentIds.size;
+    if (count === 0) return;
+
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete documents?',
+      message: `This will delete ${count} selected documents.`,
+      itemName: '',
+      secondaryMessage: 'This cannot be undone.'
+    });
+
+    if (!confirmed) return;
+
+    this.loadingDocuments = true;
+    const idsToDelete = Array.from(this.selectedDocumentIds);
+    this.documentService.bulkDelete(idsToDelete).subscribe({
+      next: () => {
+        this.selectedDocumentIds.clear();
+        this.loadDocuments();
+      },
+      error: (err) => {
+        console.error('Error bulk deleting documents:', err);
+        this.errorMessage = this.extractErrorMessage(err, 'Unable to delete selected documents.');
+        this.loadingDocuments = false;
+      }
+    });
+  }
+
+  clearSelection(): void {
+    this.selectedDocumentIds.clear();
+  }
+
+  get filteredDocuments(): Document[] {
+    let docs = this.documents;
+
+    if (this.selectedVectorStore) {
+      docs = docs.filter(doc => doc.vector_store === this.selectedVectorStore?.id);
+    }
+
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      docs = docs.filter(doc =>
+        doc.title?.toLowerCase().includes(query) ||
+        doc.status?.toLowerCase().includes(query)
+      );
+    }
+
+    if (this.statusFilter) {
+      docs = docs.filter(doc => doc.status === this.statusFilter);
+    }
+
+    return docs;
+  }
+
+  get availableStatuses(): string[] {
+    const statuses = new Set<string>();
+    const docs = this.selectedVectorStore
+      ? this.documents.filter(doc => doc.vector_store === this.selectedVectorStore?.id)
+      : this.documents;
+
+    docs.forEach(doc => {
+      if (doc.status) statuses.add(doc.status);
+    });
+    return Array.from(statuses).sort();
   }
 
   startDocumentRename(document: Document): void {
@@ -250,7 +393,10 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     }
 
     const title = this.documentTitleControl.value?.trim();
-    this.documentService.update(document.id, { title }).subscribe({
+    this.documentService.update(document.id, {
+      title,
+      vector_store: document.vector_store
+    }).subscribe({
       next: (updated) => {
         this.documents = this.documents.map(doc =>
           doc.id === updated.id ? { ...doc, title: updated.title } : doc
