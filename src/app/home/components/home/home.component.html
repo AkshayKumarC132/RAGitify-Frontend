@@ -21,7 +21,7 @@
   <div class="main-content" [class.empty-mode]="isConversationEmpty">
     <ng-container *ngIf="!isTemporaryChat">
       <div class="chat-area">
-        <div class="chat-actions" *ngIf="isNewChatRoute">
+        <div class="chat-actions" *ngIf="isNewChatRoute && isConversationEmpty">
           <button class="playground-launch" type="button" (click)="toggleTemporaryChat()"
             [class.active]="isTemporaryChat" title="Playground (temporary chat - not saved)"
             aria-label="Open Playground (temporary chat not saved)">
