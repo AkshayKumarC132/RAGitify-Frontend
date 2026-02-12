@@ -245,6 +245,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     return !this.currentThread && this.messages.length === 0;
   }
 
+  get isNewChatRoute(): boolean {
+    const url = this.router.url.split('?')[0];
+    return url === '/home' || url === '/home/';
+  }
+
   get showSetupBlocker(): boolean {
     return this.setupIncomplete;
   }
