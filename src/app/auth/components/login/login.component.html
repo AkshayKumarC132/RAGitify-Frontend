@@ -29,7 +29,7 @@
     <!-- Right Panel: Auth Forms -->
     <div class="auth-card">
       <div class="auth-header">
-        <!-- <h2>{{ showRegister ? 'Join RAGitify' : 'Welcome Back' }}</h2> -->
+        <h3>{{ showRegister ? 'Join RAGitify' : 'Welcome Back' }}</h3>
         <p class="auth-subtitle">
           {{ showRegister ? 'Start your journey with us today.' : 'Enter your details to access your workspace.' }}
         </p>
@@ -45,50 +45,58 @@
         <span>{{ errorMessage }}</span>
       </div>
 
-      <!-- Login Form -->
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" *ngIf="!showRegister" class="auth-form fade-in">
-        <div class="form-group">
-          <label for="email">Email Address</label>
-          <div class="input-wrapper">
-            <i class="fa-regular fa-envelope"></i>
-            <input type="email" id="email" formControlName="email"
-              [class.error]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
-              placeholder="name@company.com" />
-          </div>
-          <small *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">Valid email required</small>
-        </div>
+      <div class="auth-form-stage">
+        <!-- Login Form -->
+        <div class="auth-pane auth-pane-login" [class.active]="!showRegister" [class.inactive]="showRegister"
+          [attr.aria-hidden]="showRegister" [attr.inert]="showRegister ? '' : null">
+          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <div class="input-wrapper">
+                <i class="fa-regular fa-envelope"></i>
+                <input type="email" id="email" formControlName="email"
+                  [class.error]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+                  placeholder="name@company.com" />
+              </div>
+              <small *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">Valid email
+                required</small>
+            </div>
 
-        <div class="form-group">
-          <label for="password">Password</label>
-          <div class="input-wrapper password-wrapper">
-            <i class="fa-solid fa-lock"></i>
-            <input [type]="showPassword ? 'text' : 'password'" id="password" formControlName="password"
-              [class.error]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
-              placeholder="••••••••" />
-            <button type="button" class="password-toggle" (click)="showPassword = !showPassword" tabindex="-1">
-              <i [class]="showPassword ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye'"></i>
+            <div class="form-group">
+              <label for="password">Password</label>
+              <div class="input-wrapper password-wrapper">
+                <i class="fa-solid fa-lock"></i>
+                <input [type]="showPassword ? 'text' : 'password'" id="password" formControlName="password"
+                  [class.error]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+                  placeholder="********" />
+                <button type="button" class="password-toggle" (click)="showPassword = !showPassword" tabindex="-1">
+                  <i [class]="showPassword ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye'"></i>
+                </button>
+              </div>
+              <small *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">Minimum 6
+                characters</small>
+            </div>
+
+            <div class="form-actions">
+              <a href="#" class="forgot-password">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn-primary btn-block" [disabled]="loading || loginForm.invalid">
+              <span *ngIf="!loading">Sign In <i class="fa-solid fa-arrow-right"></i></span>
+              <span *ngIf="loading" class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Signing
+                in...</span>
             </button>
+          </form>
+        </div>
+
+        <!-- Register Component Wrapper -->
+        <div class="auth-pane auth-pane-register" [class.active]="showRegister" [class.inactive]="!showRegister"
+          [attr.aria-hidden]="!showRegister" [attr.inert]="!showRegister ? '' : null">
+          <div class="auth-component-wrapper">
+            <app-register [isActive]="showRegister" (backToLogin)="toggleRegister()"></app-register>
           </div>
-          <small *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">Minimum 6
-            characters</small>
         </div>
-
-        <div class="form-actions">
-          <a href="#" class="forgot-password">Forgot password?</a>
-        </div>
-
-        <button type="submit" class="btn-primary btn-block" [disabled]="loading || loginForm.invalid">
-          <span *ngIf="!loading">Sign In <i class="fa-solid fa-arrow-right"></i></span>
-          <span *ngIf="loading" class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Signing
-            in...</span>
-        </button>
-      </form>
-
-      <!-- Register Component Wrapper -->
-      <div *ngIf="showRegister" class="auth-component-wrapper fade-in">
-        <app-register (backToLogin)="toggleRegister()"></app-register>
       </div>
-
     </div>
   </div>
 </div>

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../shared/services/auth.service';
@@ -9,7 +9,8 @@ import { RegisterRequest } from '../../../shared/models/user.model';
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.scss']
 })
-export class RegisterComponent implements OnInit {
+export class RegisterComponent implements OnInit, OnChanges {
+  @Input() isActive = false;
   @Output() backToLogin = new EventEmitter<void>();
 
   registerForm: FormGroup;
@@ -25,6 +26,8 @@ export class RegisterComponent implements OnInit {
   loadingTenants = false;
   showTenantDropdown = false;
   isNewTenant = false;
+
+  private hasLoadedTenants = false;
 
   constructor(
     private fb: FormBuilder,
@@ -44,11 +47,26 @@ export class RegisterComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadTenants();
+    this.ensureTenantsLoaded();
     // Subscribe to password changes to calculate strength
     this.registerForm.get('password')?.valueChanges.subscribe(() => {
       this.onPasswordChange();
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isActive']) {
+      this.ensureTenantsLoaded();
+    }
+  }
+
+  private ensureTenantsLoaded(): void {
+    if (!this.isActive || this.hasLoadedTenants || this.loadingTenants) {
+      return;
+    }
+
+    this.hasLoadedTenants = true;
+    this.loadTenants();
   }
 
   loadTenants(): void {

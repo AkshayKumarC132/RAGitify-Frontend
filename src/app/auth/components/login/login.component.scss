@@ -59,8 +59,6 @@
     }
   }
 
-
-
   .illustration-footer {
     p {
       color: rgba(148, 163, 184, 0.5);
@@ -114,6 +112,7 @@
     border: none;
     background: transparent;
     color: $text-muted;
+    cursor: pointer;
     padding: 0.45rem; // Compact
     border-radius: 8px;
     font-size: 0.8rem;
@@ -149,6 +148,58 @@
   i {
     font-size: 1rem;
   }
+}
+
+.auth-form-stage {
+  display: grid;
+  width: 100%;
+  align-items: start;
+}
+
+.auth-pane {
+  grid-area: 1 / 1;
+  width: 100%;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+
+  &.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  &.inactive {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(4px);
+  }
+}
+
+.auth-pane-login {
+  display: flex;
+  align-items: center;
+  min-height: 100%;
+}
+
+.auth-pane-login .auth-form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+}
+
+.auth-pane-login .form-actions {
+  margin-top: 0.25rem;
+}
+
+.auth-pane-login .btn-primary.btn-block {
+  margin-top: 0.5rem;
+}
+
+.auth-component-wrapper {
+  width: 100%;
 }
 
 // Fade Animations
