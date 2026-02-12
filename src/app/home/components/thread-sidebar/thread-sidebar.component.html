@@ -1,18 +1,9 @@
 <div class="thread-sidebar" [class.collapsed]="collapsed">
-  <div
-    class="sidebar-header"
-    [class.show-expand-control]="collapsed && hoveringExpandControl"
-  >
-    <button
-      type="button"
-      class="brand-toggle"
-      (click)="toggleSidebar(undefined, $event)"
-      [attr.title]="collapsed ? 'Expand menu' : 'Collapse menu'"
-      (mouseenter)="handleBrandExpandInteraction(true)"
-      (mouseleave)="handleBrandExpandInteraction(false)"
-      (focus)="handleBrandExpandInteraction(true)"
-      (blur)="handleBrandExpandInteraction(false)"
-    >
+  <div class="sidebar-header" [class.show-expand-control]="collapsed && hoveringExpandControl">
+    <button type="button" class="brand-toggle" (click)="toggleSidebar(undefined, $event)"
+      [attr.title]="collapsed ? 'Expand menu' : 'Collapse menu'" (mouseenter)="handleBrandExpandInteraction(true)"
+      (mouseleave)="handleBrandExpandInteraction(false)" (focus)="handleBrandExpandInteraction(true)"
+      (blur)="handleBrandExpandInteraction(false)">
       <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" class="brand-logo" />
       <div class="brand-text" *ngIf="!collapsed">
         <div class="brand-title">RAGitify</div>
@@ -20,77 +11,51 @@
       </div>
     </button>
 
-    <button
-      class="sidebar-toggle-control"
-      type="button"
-      (click)="toggleSidebar(undefined, $event)"
+    <button class="sidebar-toggle-control" type="button" (click)="toggleSidebar(undefined, $event)"
       [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-      (mouseenter)="handleToggleExpandInteraction(true)"
-      (mouseleave)="handleToggleExpandInteraction(false)"
-      (focus)="handleToggleExpandInteraction(true)"
-      (blur)="handleToggleExpandInteraction(false)"
-    >
+      (mouseenter)="handleToggleExpandInteraction(true)" (mouseleave)="handleToggleExpandInteraction(false)"
+      (focus)="handleToggleExpandInteraction(true)" (blur)="handleToggleExpandInteraction(false)">
       <i class="fa-solid" [ngClass]="collapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
     </button>
   </div>
 
   <div class="sidebar-actions">
-    <button
-      class="new-thread-button"
-      type="button"
-      (click)="createNewThread()"
-      [attr.title]="collapsed ? 'Start a new chat' : null"
-    >
+    <button class="new-thread-button" type="button" (click)="createNewThread()"
+      [attr.title]="collapsed ? 'Start a new chat' : null">
       <i class="fa-solid fa-plus"></i>
       <span class="button-text" *ngIf="!collapsed">New Chat</span>
     </button>
-    <button
-      class="workspace-button"
-      type="button"
-      (click)="goToWorkspace()"
-      [attr.title]="collapsed ? 'Open workspace' : null"
-    >
+    <button class="workspace-button" type="button" (click)="goToWorkspace()"
+      [attr.title]="collapsed ? 'Open workspace' : null">
       <i class="fa-solid fa-briefcase"></i>
       <span class="button-text" *ngIf="!collapsed">Workspace</span>
     </button>
     <div class="threads-search">
-      <div 
-        class="search-input-wrapper"
-        (click)="openSearchPopup($event)"
-        [attr.title]="'Search threads'"
-      >
+      <div class="search-input-wrapper" (click)="openSearchPopup($event)" [attr.title]="'Search threads'">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input
-          type="text"
-          placeholder="Search by title or message"
-          [(ngModel)]="searchQuery"
-          (ngModelChange)="onSearchChange($event)"
-          (click)="$event.stopPropagation(); openSearchPopup()"
-          readonly
-        />
+        <input type="text" placeholder="Search by title or message" [(ngModel)]="searchQuery"
+          (ngModelChange)="onSearchChange($event)" (click)="$event.stopPropagation(); openSearchPopup()" readonly />
       </div>
     </div>
   </div>
 
   <div class="threads-section" *ngIf="!collapsed">
-    <div class="section-title">Chats</div>
+    <div class="section-title">
+      <i class="fa-solid fa-message"></i>
+      <span>Chats</span>
+    </div>
 
-    <div class="threads-list" [class.has-search-results]="searchQuery && filteredThreads.length > 0" (scroll)="handleThreadsScroll()">
-      <div
-        *ngFor="let thread of filteredThreads; trackBy: trackByThreadId"
-        class="thread-item"
-        [class.active]="currentThread?.id === thread.id"
-        [ngClass]="{
+    <div class="threads-list" [class.has-search-results]="searchQuery && filteredThreads.length > 0"
+      (scroll)="handleThreadsScroll()">
+      <div *ngFor="let thread of filteredThreads; trackBy: trackByThreadId" class="thread-item"
+        [class.active]="currentThread?.id === thread.id" [ngClass]="{
           'search-has-title-match': searchQuery && isTitleMatch(thread),
           'search-has-message-match': searchQuery && isMessageMatch(thread)
-        }"
-        (click)="selectThread(thread)"
-        [attr.title]="collapsed ? getThreadTitle(thread) : null"
-      >
+        }" (click)="selectThread(thread)" [attr.title]="collapsed ? getThreadTitle(thread) : null">
         <div class="thread-icon" *ngIf="collapsed">
           <div class="title-slice">{{ getTitleSlice(thread) }}</div>
         </div>
-        
+
         <div class="thread-content" [class.expanded]="!collapsed">
           <div class="thread-title single-line">
             <ng-container *ngIf="!searchQuery; else highlightedTitle">
@@ -101,10 +66,7 @@
             </ng-template>
           </div>
 
-          <div
-            class="thread-snippet"
-            *ngIf="searchQuery && isMessageMatch(thread)"
-          >
+          <div class="thread-snippet" *ngIf="searchQuery && isMessageMatch(thread)">
             <span [innerHTML]="getHighlightedSnippet(thread)"></span>
           </div>
           <div class="thread-time" *ngIf="!collapsed">
@@ -112,12 +74,8 @@
           </div>
         </div>
 
-        <button
-          class="thread-menu"
-          type="button"
-          (click)="toggleThreadMenu(thread, $event)"
-          [attr.aria-expanded]="threadMenuOpen === thread.id"
-        >
+        <button class="thread-menu" type="button" (click)="toggleThreadMenu(thread, $event)"
+          [attr.aria-expanded]="threadMenuOpen === thread.id">
           <i class="fa-solid fa-ellipsis-vertical"></i>
         </button>
       </div>
@@ -125,46 +83,38 @@
   </div>
 
   <!-- Fixed bottom profile - always visible if user exists -->
-<div class="sidebar-profile profile-region" *ngIf="user">
-  <button
-    class="profile-trigger"
-    type="button"
-    (click)="toggleProfileMenu($event)"
-    [attr.title]="collapsed ? getProfileName(user) : null"
-  >
-    <div class="avatar" [attr.aria-label]="getProfileName(user)">
-      {{ getInitials(user!.first_name, user!.last_name, user!.email) }}
-    </div>
-    
-    <div class="profile-meta" *ngIf="!collapsed">
-      <div class="profile-name">{{ getProfileName(user) }}</div>
-      <div class="profile-email">{{ user!.email }}</div>
-    </div>
-    
-    <i class="fa-solid" [ngClass]="profileMenuOpen ? 'fa-angle-up' : 'fa-angle-down'" *ngIf="!collapsed"></i>
-  </button>
+  <div class="sidebar-profile profile-region" *ngIf="user">
+    <button class="profile-trigger" type="button" (click)="toggleProfileMenu($event)"
+      [attr.title]="collapsed ? getProfileName(user) : null">
+      <div class="avatar" [attr.aria-label]="getProfileName(user)">
+        {{ getInitials(user!.first_name, user!.last_name, user!.email) }}
+      </div>
 
-  <!-- Dropdown menu (expanded sidebar) -->
-  <div class="profile-dropdown" *ngIf="profileMenuOpen && !collapsed">
-    <button type="button" (click)="openSettings($event)">
-      <i class="fa-solid fa-gear"></i>
-      <span>Settings</span>
+      <div class="profile-meta" *ngIf="!collapsed">
+        <div class="profile-name">{{ getProfileName(user) }}</div>
+        <div class="profile-email">{{ user!.email }}</div>
+      </div>
+
+      <i class="fa-solid" [ngClass]="profileMenuOpen ? 'fa-angle-up' : 'fa-angle-down'" *ngIf="!collapsed"></i>
     </button>
-    <button type="button" (click)="requestLogout($event)">
-      <i class="fa-solid fa-right-from-bracket"></i>
-      <span>Logout</span>
-    </button>
+
+    <!-- Dropdown menu (expanded sidebar) -->
+    <div class="profile-dropdown" *ngIf="profileMenuOpen && !collapsed">
+      <button type="button" (click)="openSettings($event)">
+        <i class="fa-solid fa-gear"></i>
+        <span>Settings</span>
+      </button>
+      <button type="button" (click)="requestLogout($event)">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Logout</span>
+      </button>
+    </div>
   </div>
-</div>
 
   <!-- Profile menu panel (collapsed sidebar) -->
-  <div
-    class="profile-menu-panel"
-    *ngIf="profileMenuOpen && collapsed && profileMenuPosition"
+  <div class="profile-menu-panel" *ngIf="profileMenuOpen && collapsed && profileMenuPosition"
     [ngStyle]="{ top: profileMenuPosition.top + 'px', left: profileMenuPosition.left + 'px' }"
-    [class.open-left]="profileMenuOpensLeft"
-    (click)="$event.stopPropagation()"
-  >
+    [class.open-left]="profileMenuOpensLeft" (click)="$event.stopPropagation()">
     <button type="button" (click)="openSettings($event)">
       <i class="fa-solid fa-gear"></i>
       <span>Settings</span>
@@ -175,13 +125,9 @@
     </button>
   </div>
 
-  <div
-    class="thread-menu-panel"
-    *ngIf="threadMenuOpen && menuThread && threadMenuPosition"
+  <div class="thread-menu-panel" *ngIf="threadMenuOpen && menuThread && threadMenuPosition"
     [ngStyle]="{ top: threadMenuPosition.top + 'px', left: threadMenuPosition.left + 'px' }"
-    [class.open-left]="menuOpensLeft"
-    (click)="$event.stopPropagation()"
-  >
+    [class.open-left]="menuOpensLeft" (click)="$event.stopPropagation()">
     <button type="button" (click)="editThread(menuThread, $event)">
       <i class="fa-solid fa-pen"></i>
       <span>Rename Title</span>

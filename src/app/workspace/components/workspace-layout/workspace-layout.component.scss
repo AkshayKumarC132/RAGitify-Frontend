@@ -6,12 +6,16 @@
 
 .workspace-sidebar {
   width: 260px;
-  background: var(--bg-secondary);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
   display: flex;
   flex-direction: column;
   position: relative;
-  transition: width 0.25s ease;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 4;
+  backdrop-filter: var(--sidebar-backdrop);
+  -webkit-backdrop-filter: var(--sidebar-backdrop);
+  box-shadow: var(--sidebar-shadow);
 }
 
 .sidebar-header {
@@ -19,7 +23,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 0.85rem;
-  border-bottom: 1px solid var(--border-color);
   gap: 0.5rem;
   position: relative;
 }
@@ -79,7 +82,6 @@
 
 .sidebar-actions {
   padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -132,29 +134,37 @@
 
 .sidebar-footer {
   margin-top: auto;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.5rem;
+  gap: 0.5rem;
 
-  .nav-link,
-  .logout-button {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 0.75rem;
-    border-radius: 6px;
-    text-decoration: none;
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    background: transparent;
-    transition: all 0.2s ease;
-  }
+  .btn-premium-secondary {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0.65rem 0.85rem;
+    font-size: 11px;
+    font-weight: 600;
 
-  .nav-link:hover,
-  .logout-button:hover {
-    border-color: var(--accent-color);
-    color: var(--accent-color);
+    i {
+      width: 16px;
+      text-align: center;
+      color: var(--accent-color);
+    }
+
+    &.danger {
+      color: var(--error-color);
+
+      i {
+        color: var(--error-color);
+      }
+
+      &:hover {
+        background: rgba(239, 68, 68, 0.08);
+        border-color: var(--error-color);
+        color: var(--error-color);
+      }
+    }
   }
 }
 
@@ -168,8 +178,7 @@
 
 .workspace-top-bar {
   position: relative;
-  padding: 2rem 2rem 1.25rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 1.5rem 2rem 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -179,19 +188,23 @@
 
   h1 {
     margin: 0;
-    font-size: 18px;
-    font-weight: 800;
+    font-size: 22px;
+    font-weight: 850;
     color: var(--text-primary);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
+    line-height: 1.1;
   }
 
   .eyebrow {
     text-transform: uppercase;
-    letter-spacing: 0.15em;
-    font-size: 19px;
+    letter-spacing: 0.3em;
+    font-size: 9px;
     font-weight: 700;
     color: var(--accent-color);
-    margin-bottom: 0.25rem;
+    margin: 0 0 0.5rem 0;
+    display: block;
+    line-height: 1;
+    opacity: 0.8;
   }
 }
 

@@ -1,28 +1,48 @@
 <div class="general-section">
   <h2 class="section-title">General</h2>
-  
+
   <div class="settings-group">
-      <div class="setting-item">
-        <label class="setting-label">Appearance</label>
-        <div class="setting-control">
-          <div class="theme-toggle-container">
-            <ng-container *ngIf="theme$ | async as theme">
-              <button 
-                type="button" 
-                class="theme-toggle" 
-                [class.active]="theme === 'dark'"
-                (click)="toggleTheme()"
-                [attr.aria-label]="'Toggle theme'"
-              >
-                <span class="toggle-track">
-                  <span class="toggle-thumb" [class.dark]="theme === 'dark'"></span>
-                </span>
-                <span class="toggle-label">{{ theme === 'dark' ? 'Dark' : 'Light' }}</span>
-              </button>
-            </ng-container>
-          </div>
+    <div class="setting-item">
+      <label class="setting-label">Appearance</label>
+      <div class="setting-control">
+        <div class="theme-toggle-container">
+          <ng-container *ngIf="theme$ | async as theme">
+            <button type="button" class="theme-toggle" [class.active]="theme === 'dark'" (click)="toggleTheme()"
+              [attr.aria-label]="'Toggle theme'">
+              <span class="toggle-track">
+                <span class="toggle-thumb" [class.dark]="theme === 'dark'"></span>
+              </span>
+              <span class="toggle-label">{{ theme === 'dark' ? 'Dark' : 'Light' }}</span>
+            </button>
+          </ng-container>
         </div>
       </div>
+    </div>
+
+    <div class="setting-item">
+      <label class="setting-label">UI Style</label>
+      <div class="setting-control">
+        <div class="style-options" *ngIf="style$ | async as currentStyle">
+          <button type="button" class="style-card" [class.active]="currentStyle === 'default'"
+            (click)="setStyle('default')">
+            <i class="fa-solid fa-check active-check"></i>
+            <div class="style-preview default"></div>
+            <span>Default</span>
+          </button>
+          <button type="button" class="style-card" [class.active]="currentStyle === 'glass'"
+            (click)="setStyle('glass')">
+            <i class="fa-solid fa-check active-check"></i>
+            <div class="style-preview glass"></div>
+            <span>Glass</span>
+          </button>
+          <button type="button" class="style-card" [class.active]="currentStyle === 'neumorphic'"
+            (click)="setStyle('neumorphic')">
+            <i class="fa-solid fa-check active-check"></i>
+            <div class="style-preview neumorphic"></div>
+            <span>Neumorphic</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
-

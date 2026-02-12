@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ThemeService } from '../../../shared/services/theme.service';
+import { ThemeService, UIStyle } from '../../../shared/services/theme.service';
 import { Observable } from 'rxjs';
 
 @Component({
@@ -9,13 +9,19 @@ import { Observable } from 'rxjs';
 })
 export class GeneralSectionComponent {
   theme$: Observable<'light' | 'dark'>;
+  style$: Observable<UIStyle>;
 
   constructor(private themeService: ThemeService) {
     this.theme$ = this.themeService.theme$;
+    this.style$ = this.themeService.style$;
   }
 
   toggleTheme(): void {
     this.themeService.toggleTheme();
+  }
+
+  setStyle(style: UIStyle): void {
+    this.themeService.setStyle(style);
   }
 }
 

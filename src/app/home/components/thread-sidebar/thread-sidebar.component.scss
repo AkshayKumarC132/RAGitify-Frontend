@@ -2,9 +2,15 @@
   height: 100vh; // Constrain to viewport so inner area can scroll
   display: flex;
   flex-direction: column;
-  background: var(--bg-secondary);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
   position: relative;
-  padding-bottom: 80px; /* Make room for fixed profile section so last thread is fully visible */
+  padding-bottom: 80px;
+  /* Make room for fixed profile section so last thread is fully visible */
+  backdrop-filter: var(--sidebar-backdrop);
+  -webkit-backdrop-filter: var(--sidebar-backdrop);
+  box-shadow: var(--sidebar-shadow);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // .threads-section {
@@ -18,7 +24,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 0.85rem;
-  border-bottom: 1px solid var(--border-color);
   gap: 0.5rem;
   position: relative;
 }
@@ -113,7 +118,6 @@
 
 .sidebar-actions {
   padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -185,8 +189,18 @@ button.thread-menu {
   color: var(--text-secondary);
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.7;
+
+  i {
+    font-size: 10px;
+    color: var(--accent-color);
+  }
 }
 
 .threads-search {
@@ -310,7 +324,6 @@ button.thread-menu {
   right: 0;
   padding: 0.55rem;
   background: var(--bg-secondary);
-  border-top: 0.5px solid var(--border-color);
   z-index: 10;
 }
 
@@ -348,6 +361,7 @@ button.thread-menu {
   .profile-meta {
     flex: 1;
     min-width: 0;
+
     .profile-name {
       font-weight: 600;
       color: var(--text-primary);
@@ -355,6 +369,7 @@ button.thread-menu {
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
     .profile-email {
       font-size: 11px;
       color: var(--text-secondary);
@@ -364,6 +379,7 @@ button.thread-menu {
     }
   }
 }
+
 .profile-trigger:hover,
 .profile-trigger:focus-visible {
   border-color: var(--border-color);
@@ -537,6 +553,8 @@ button.thread-menu {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
+  overflow: hidden;
 
   // More compact in search results
   .thread-item.search-has-title-match &,
@@ -546,6 +564,7 @@ button.thread-menu {
     line-height: 1.25;
     max-height: 2.2em;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 }
 

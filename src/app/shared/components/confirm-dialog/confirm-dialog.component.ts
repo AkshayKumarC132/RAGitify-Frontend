@@ -3,8 +3,11 @@ import { Component, Input, Output, EventEmitter, HostListener, OnInit, AfterView
 export interface ConfirmDialogOptions {
   title: string;
   message: string;
-  itemName: string;
+  itemName?: string;
   secondaryMessage?: string;
+  type?: 'danger' | 'info' | 'warning';
+  confirmText?: string;
+  cancelText?: string;
 }
 
 @Component({
@@ -13,10 +16,11 @@ export interface ConfirmDialogOptions {
   styleUrls: ['./confirm-dialog.component.scss']
 })
 export class ConfirmDialogComponent implements OnInit, AfterViewInit, OnDestroy {
-  @Input() title: string = '';
-  @Input() message: string = '';
-  @Input() itemName: string = '';
-  @Input() secondaryMessage: string = '';
+  @Input() data: ConfirmDialogOptions = {
+    title: '',
+    message: '',
+    type: 'danger'
+  };
   @Output() confirmed = new EventEmitter<boolean>();
   @ViewChild('dialogElement') dialogElement!: ElementRef<HTMLDivElement>;
 

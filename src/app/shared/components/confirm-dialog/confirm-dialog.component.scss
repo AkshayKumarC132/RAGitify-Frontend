@@ -16,38 +16,70 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
 }
 
 .confirm-dialog {
-  background-color: var(--bg-secondary);
-  border-radius: 8px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
   padding: 1.5rem;
   min-width: 400px;
   max-width: 500px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.2s ease;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: var(--panel-backdrop);
+  -webkit-backdrop-filter: var(--panel-backdrop);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   outline: none;
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(20px);
+  0% {
+    transform: scale(0.95) translateY(10px);
     opacity: 0;
   }
-  to {
-    transform: translateY(0);
+
+  100% {
+    transform: scale(1) translateY(0);
     opacity: 1;
   }
 }
 
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.dialog-icon-wrapper {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(var(--accent-color-rgb, 59, 130, 246), 0.1);
+  color: var(--accent-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+
+  .fa-triangle-exclamation {
+    color: var(--error-color);
+    background: rgba(239, 68, 68, 0.1);
+  }
+}
+
 .dialog-title {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 1rem 0;
+  margin: 0;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
 }
 
 .dialog-content {
@@ -99,31 +131,24 @@
   }
 }
 
-.btn-delete {
-  background-color: var(--error-color);
-  border: 1px solid var(--error-color);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.confirm-btn {
+  /* @extend .btn-premium-primary; (avoid extend) */
+  /* This class serves as a hook for default button styles if not using global classes directly */
 
-  &:hover {
-    background-color: #d32f2f;
-    border-color: #d32f2f;
-  }
+  &.danger-text {
+    background: var(--error-color);
+    color: white !important;
+    border: none;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 
-  &:focus {
-    outline: 2px solid var(--error-color);
-    outline-offset: 2px;
-  }
-
-  &:active {
-    transform: scale(0.98);
+    &:hover {
+      background: #dc2626;
+      box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+    }
   }
 }
+
+
 
 // Light theme adjustments
 body.theme-light {
@@ -131,4 +156,3 @@ body.theme-light {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
 }
-

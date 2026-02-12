@@ -8,9 +8,8 @@
 </div>
 
 <ng-container *ngIf="dialogState$ | async as dialogState">
-  <app-confirm-dialog *ngIf="dialogState.show" [title]="dialogState.options?.title || ''"
-    [message]="dialogState.options?.message || ''" [itemName]="dialogState.options?.itemName || ''"
-    [secondaryMessage]="dialogState.options?.secondaryMessage || ''" (confirmed)="onDialogConfirmed($event)">
+  <app-confirm-dialog *ngIf="dialogState.show && dialogState.options" [data]="dialogState.options"
+    (confirmed)="onDialogConfirmed($event)">
   </app-confirm-dialog>
 </ng-container>
 

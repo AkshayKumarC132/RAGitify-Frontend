@@ -31,11 +31,11 @@
     </nav>
 
     <div class="sidebar-footer">
-      <a routerLink="/home" class="nav-link">
-        <i class="fa-solid fa-arrow-left"></i>
-        <span>Back to Home</span>
+      <a routerLink="/home" class="btn-premium-secondary">
+        <i class="fa-solid fa-house"></i>
+        <span>Home</span>
       </a>
-      <button class="logout-button" (click)="logout()">
+      <button class="btn-premium-secondary danger" (click)="logout()">
         <i class="fa-solid fa-right-from-bracket"></i>
         <span>Logout</span>
       </button>
@@ -45,9 +45,8 @@
   <div class="workspace-content">
     <div class="workspace-top-bar">
       <div>
-        <!-- <p class="eyebrow">Hub</p>
-        <h1>Intelligence Layer</h1> -->
-        <h1 class="eyebrow">Hub</h1>
+        <p class="eyebrow">Hub</p>
+        <h1>Intelligence Layer</h1>
       </div>
       <div class="workspace-tabs">
         <button type="button" [class.active]="activeSection === 'knowledge'" (click)="setActiveSection('knowledge')">
@@ -66,4 +65,3 @@
       <app-knowledge-section *ngIf="activeSection === 'knowledge'"></app-knowledge-section>
     </div>
   </div>
-</div>
