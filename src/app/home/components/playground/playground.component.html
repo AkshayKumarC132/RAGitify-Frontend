@@ -35,6 +35,13 @@
                 </div>
             </div>
 
+            <div class="integrated-mode-badge temp">
+                <i class="fa-regular fa-clock"></i> Temp
+            </div>
+            <div class="integrated-mode-badge doc" *ngIf="mode === 'document'">
+                <i class="fa-solid fa-file-lines"></i> Docs
+            </div>
+
             <textarea [(ngModel)]="inputMessage" (keydown)="onKeyPress($event)" placeholder="How can I help you today?"
                 [disabled]="loading || !conversationId" rows="1"></textarea>
 
@@ -55,7 +62,7 @@
                             <input type="checkbox" [checked]="isLibrarySelected(library.id)" />
                             <div class="library-meta">
                                 <span class="title">{{ library.name }}</span>
-                                <span class="meta">Created {{ library.created_at | date:'short' }}</span>
+                                <span class="meta">Created {{ library.created_at | date:'MMM d, y' }}</span>
                             </div>
                         </label>
                     </ng-container>

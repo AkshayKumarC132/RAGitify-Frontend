@@ -38,6 +38,9 @@
     <!-- Input Area -->
     <div class="input-area">
       <div class="input-wrapper">
+        <div class="integrated-mode-badge doc-mode">
+          <i class="fa-solid fa-file-lines"></i> Doc
+        </div>
         <textarea #messageInput [(ngModel)]="messageInputText" (keydown)="onKeyPress($event)"
           placeholder="Ask a question about this document..." class="chat-input"
           [disabled]="loading || isResponseInProgress" rows="1"></textarea>

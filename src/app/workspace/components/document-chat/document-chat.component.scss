@@ -185,7 +185,7 @@
 
 .input-wrapper {
   display: flex;
-  // align-items: flex-end;
+  align-items: center;
   gap: 0.75rem;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
@@ -195,6 +195,33 @@
 
   &:focus-within {
     border-color: var(--accent-color);
+  }
+}
+
+// Integrated Mode Badges
+.integrated-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  margin-right: 0.25rem;
+  flex-shrink: 0;
+  line-height: 1;
+  height: 22px;
+
+  i {
+    font-size: 10px;
+  }
+
+  &.doc-mode {
+    background: var(--bg-primary); // Tertiary for this context? The input is tertiary, so maybe primary for contrast
+    /* actually input wrapper is tertiary, so let's use secondary or primary */
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
   }
 }
 

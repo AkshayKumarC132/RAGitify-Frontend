@@ -481,7 +481,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: string): string {
-    return new Date(date).toLocaleDateString();
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   openDocumentChat(document: Document): void {

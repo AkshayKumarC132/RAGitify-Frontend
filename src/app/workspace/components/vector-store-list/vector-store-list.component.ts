@@ -19,7 +19,7 @@ export class VectorStoreListComponent {
   }
 
   formatDate(date: string): string {
-    return new Date(date).toLocaleDateString();
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   requestEdit(store: VectorStore, event: MouseEvent): void {

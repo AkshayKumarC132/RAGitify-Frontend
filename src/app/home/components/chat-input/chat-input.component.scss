@@ -384,16 +384,61 @@
   }
 }
 
-.mode-indicator {
-  margin-top: 0.5rem;
-  text-align: center;
-  color: var(--accent-color);
+// Integrated Mode Badges
+.integrated-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
   font-size: 10px;
+  font-weight: 600;
+  margin-right: 0.25rem;
+  line-height: 1;
+  height: 22px;
+  margin-bottom: 5px; // Align with text baseline physically
+  animation: scaleIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  i {
+    font-size: 10px;
+  }
+
+  &.web {
+    background: rgba(var(--accent-color-rgb, 59, 130, 246), 0.1);
+    color: var(--accent-color);
+    border: 1px solid rgba(var(--accent-color-rgb, 59, 130, 246), 0.2);
+  }
+
+  &.temp {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
+  &.doc {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+  }
 }
 
-.mode-indicator.document {
-  color: var(--text-primary);
-  opacity: 0.8;
+.chat-input-shell {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap; // Allow badge to sit nicely with text or wrap if needed, though we want it inline
+  gap: 0.25rem;
+  padding-bottom: 0.1rem; // Micro adjustment
+}
+
+// Adjust input padding since we have the badge inside logic (or side-by-side)
+// Actually, flex-wrap might cause jumpiness. Let's keep it simple: Badge sits to the left of the textarea in flex row.
+// But wait, textarea is width 100%.
+// Better approach: Badge is part of the shell, textarea takes remaining space.
+
+.chat-input {
+  // ... existing styles ...
+  padding: 0.75rem 0.5rem; // Reduced left padding
 }
 
 .attachment-panel {
@@ -675,5 +720,17 @@
       background: var(--bg-secondary);
       color: var(--text-primary);
     }
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
   }
 }

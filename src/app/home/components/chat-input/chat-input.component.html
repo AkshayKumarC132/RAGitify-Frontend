@@ -29,6 +29,15 @@
     </div>
 
     <div class="chat-input-shell">
+      <div class="integrated-mode-badge web" *ngIf="mode === 'web'">
+        <i class="fa-solid fa-globe"></i> Web
+      </div>
+      <div class="integrated-mode-badge temp" *ngIf="isTemporaryChat">
+        <i class="fa-regular fa-clock"></i> Temp
+      </div>
+      <div class="integrated-mode-badge doc" *ngIf="mode === 'document' && !isTemporaryChat">
+        <i class="fa-solid fa-file-lines"></i> Docs
+      </div>
       <textarea #messageArea [(ngModel)]="message" (keydown)="onKeyPress($event)" (input)="onInputChange()"
         placeholder="How can I help you today?" class="chat-input" [class.overflowing]="isOverflowing"
         [disabled]="loading" rows="1"></textarea>
@@ -94,16 +103,16 @@
         </ng-container>
         <ng-template #documentsReady>
           <ng-container *ngIf="availableDocuments.length; else emptyDocuments">
-          <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
-            <div class="group-title">{{ group.name }}</div>
-            <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)">
-              <input type="checkbox" [checked]="isDocumentSelected(doc.id)" />
-              <div class="library-meta">
-                <span class="title">{{ doc.title || ('Document ' + doc.id) }}</span>
-                <span class="meta">Uploaded {{ doc.uploaded_at | date:'short' }}</span>
-              </div>
-            </label>
-          </div>
+            <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
+              <div class="group-title">{{ group.name }}</div>
+              <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)">
+                <input type="checkbox" [checked]="isDocumentSelected(doc.id)" />
+                <div class="library-meta">
+                  <span class="title">{{ doc.title || ('Document ' + doc.id) }}</span>
+                  <span class="meta">Uploaded {{ doc.uploaded_at | date:'MMM d, y' }}</span>
+                </div>
+              </label>
+            </div>
           </ng-container>
         </ng-template>
       </div>
@@ -131,13 +140,13 @@
           </ng-container>
           <ng-template #libraryReady>
             <ng-container *ngIf="libraries.length; else emptyLibrary">
-            <label *ngFor="let library of libraries">
-              <input type="radio" name="library" [value]="library.id" [(ngModel)]="pendingLibraryId" />
-              <div class="library-meta">
-                <span class="title">{{ library.name }}</span>
-                <span class="meta">Created {{ library.created_at | date:'short' }}</span>
-              </div>
-            </label>
+              <label *ngFor="let library of libraries">
+                <input type="radio" name="library" [value]="library.id" [(ngModel)]="pendingLibraryId" />
+                <div class="library-meta">
+                  <span class="title">{{ library.name }}</span>
+                  <span class="meta">Created {{ library.created_at | date:'MMM d, y' }}</span>
+                </div>
+              </label>
             </ng-container>
           </ng-template>
         </div>
@@ -171,14 +180,14 @@
     </ng-container>
     <ng-template #promptsReady>
       <div class="prompt-list" *ngIf="prompts.length; else emptyPrompts">
-      <label *ngFor="let prompt of prompts">
-        <input type="radio" name="prompt" [value]="prompt.id" [(ngModel)]="pendingPromptId" />
-        <div class="prompt-meta">
-          <span class="title">{{ prompt.name || 'Untitled Prompt' }}</span>
-          <span class="meta" *ngIf="prompt.instructions">{{ prompt.instructions | slice:0:60 }}{{
-            prompt.instructions.length > 60 ? '...' : '' }}</span>
-        </div>
-      </label>
+        <label *ngFor="let prompt of prompts">
+          <input type="radio" name="prompt" [value]="prompt.id" [(ngModel)]="pendingPromptId" />
+          <div class="prompt-meta">
+            <span class="title">{{ prompt.name || 'Untitled Prompt' }}</span>
+            <span class="meta" *ngIf="prompt.instructions">{{ prompt.instructions | slice:0:60 }}{{
+              prompt.instructions.length > 60 ? '...' : '' }}</span>
+          </div>
+        </label>
       </div>
     </ng-template>
     <ng-template #emptyPrompts>
@@ -191,15 +200,7 @@
     </div>
   </div>
 
-  <div class="mode-indicator" *ngIf="mode === 'web'">
-    <span>Web Mode Active</span>
-  </div>
-  <div class="mode-indicator document" *ngIf="isTemporaryChat">
-    <span>Temporary Mode Active</span>
-  </div>
-  <div class="mode-indicator document" *ngIf="mode === 'document' && !isTemporaryChat">
-    <span>Documents Mode Active</span>
-  </div>
+
 
   <div class="attachment-pill" *ngIf="selectedLibraryId">
     <span>Library: {{ getLibraryLabel() || selectedLibraryId }}</span>

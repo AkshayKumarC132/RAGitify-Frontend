@@ -192,7 +192,7 @@
     border-radius: 999px;
     padding: 0.5rem 1.1rem;
     display: flex;
-    align-items: center;
+    align-items: flex-end; // Align to bottom effectively
     gap: 0.75rem;
     box-shadow: 0 16px 50px rgba(0, 0, 0, 0.28);
     backdrop-filter: blur(14px);
@@ -208,6 +208,39 @@
     &:focus-within {
         border-color: rgba(var(--accent-color-rgb, 88, 115, 255), 0.3);
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    // Integrated Mode Badges
+    .integrated-mode-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 600;
+        margin-right: 0.25rem;
+        flex-shrink: 0;
+        line-height: 1;
+        height: 22px;
+        margin-bottom: 5px; // Align with text baseline visually
+        animation: scaleIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+        i {
+            font-size: 10px;
+        }
+
+        &.temp {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        &.doc {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
     }
 
     textarea {

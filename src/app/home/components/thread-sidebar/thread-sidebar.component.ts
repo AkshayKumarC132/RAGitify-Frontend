@@ -72,7 +72,7 @@ export class ThreadSidebarComponent implements OnChanges {
     if ('collapsed' in changes) {
       const wasCollapsed = changes['collapsed'].previousValue;
       const isCollapsed = changes['collapsed'].currentValue;
-      
+
       if (!isCollapsed) {
         this.resetExpandControlState();
         // Close profile menu when expanding (transitioning from collapsed to expanded)
@@ -354,14 +354,24 @@ export class ThreadSidebarComponent implements OnChanges {
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    
-    if (hours < 1) {
+
+    // Calendar day difference logic
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dateMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dayDiff = Math.floor((today.getTime() - dateMidnight.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diff < 60000) { // Less than 1 minute
       return 'Just now';
-    } else if (hours < 24) {
-      return `${hours}h ago`;
+    }
+
+    if (dayDiff === 0) {
+      return 'Today';
+    } else if (dayDiff === 1) {
+      return 'Yesterday';
+    } else if (dayDiff < 7) {
+      return `${dayDiff} days ago`;
     } else {
-      return date.toLocaleDateString();
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
   }
 
@@ -416,7 +426,7 @@ export class ThreadSidebarComponent implements OnChanges {
     this.profileMenuTrigger = trigger;
     this.profileMenuOpen = true;
     this.closeThreadMenu();
-    
+
     if (this.collapsed) {
       this.updateProfileMenuPosition();
     }
