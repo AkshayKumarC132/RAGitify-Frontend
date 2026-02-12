@@ -2,13 +2,13 @@
   <!-- Step Indicator -->
   <div class="step-indicator">
     <div class="step" [class.active]="currentStep === 1" [class.completed]="currentStep > 1">
-      <span class="step-number">1</span>
-      <span class="step-label">Basic Info</span>
+      <div class="step-dot"></div>
+      <span class="step-label">Account</span>
     </div>
     <div class="step-connector" [class.active]="currentStep > 1"></div>
     <div class="step" [class.active]="currentStep === 2">
-      <span class="step-number">2</span>
-      <span class="step-label">LLM Setup</span>
+      <div class="step-dot"></div>
+      <span class="step-label">AI Setup</span>
     </div>
   </div>
 

@@ -9,12 +9,12 @@
 
 // Left Panel: Illustration
 .auth-illustration {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%);
-  padding: 3rem;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); // Light grey/slate gradient
+  padding: 2.5rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border-right: 1px solid $border-color;
+  border-right: 1px solid #e2e8f0;
   color: $text-main;
 
   .brand-header {
@@ -36,51 +36,30 @@
   }
 
   .illustration-text {
+    margin-top: auto;
+    margin-bottom: auto;
+
     h2 {
-      font-size: 2rem;
-      font-weight: 700;
-      line-height: 1.2;
+      font-size: 2.25rem;
+      font-weight: 800;
+      line-height: 1.1;
       margin-bottom: 1rem;
-      background: linear-gradient(to right, #fff, #94a3b8);
+      background: linear-gradient(to right, #0f172a, #3b82f6); // Dark to Blue text gradient
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
+      letter-spacing: -0.03em;
     }
 
     p {
       color: $text-muted;
-      line-height: 1.6;
-      font-size: 0.95rem;
-      margin-bottom: 2.5rem;
-    }
-  }
-
-  .feature-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-
-    li {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
+      line-height: 1.5;
       font-size: 0.9rem;
-      color: $text-main;
-
-      .icon-box {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.05);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #38bdf8;
-        font-size: 1rem;
-      }
+      max-width: 90%;
     }
   }
+
+
 
   .illustration-footer {
     p {
@@ -123,31 +102,34 @@
 // Tabs
 .auth-tabs {
   display: flex;
-  background: rgba(15, 23, 42, 0.5);
+  background: #f1f5f9; // Light grey bg
   padding: 0.25rem;
-  border-radius: 12px;
-  margin-bottom: 2rem;
+  border-radius: 10px; // Matching radius
+  margin-bottom: 1.5rem;
   width: 100%;
+  border: 1px solid #e2e8f0;
 
   button {
     flex: 1;
     border: none;
     background: transparent;
     color: $text-muted;
-    padding: 0.6rem;
+    padding: 0.45rem; // Compact
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 
     &.active {
-      background: rgba(255, 255, 255, 0.1);
+      background: white;
       color: $text-main;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      font-weight: 600;
     }
 
     &:hover:not(.active) {
       color: $text-main;
+      background: rgba(255, 255, 255, 0.5);
     }
   }
 }
