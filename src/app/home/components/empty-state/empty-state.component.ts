@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { AuthService } from '../../../shared/services/auth.service';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -10,6 +10,10 @@ import { map } from 'rxjs/operators';
 })
 export class EmptyStateComponent {
   @Input() isTemporaryChat = false;
+  @Input() mode: 'normal' | 'web' | 'document' = 'normal';
+  @Input() hasDocuments = false;
+  @Output() viewLibrary = new EventEmitter<void>();
+
   userName$: Observable<string>;
   greeting$: Observable<string>;
 
@@ -65,5 +69,13 @@ export class EmptyStateComponent {
         return `${baseGreeting}, ${name}`;
       })
     );
+  }
+
+
+
+
+
+  onLibraryClick(): void {
+    this.viewLibrary.emit();
   }
 }

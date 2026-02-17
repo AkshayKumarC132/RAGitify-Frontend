@@ -82,6 +82,13 @@
             </div>
         </div>
 
+        <div class="suggested-questions" *ngIf="messages.length === 0">
+            <button type="button" class="question-pill" *ngFor="let question of suggestedQuestions"
+                (click)="onQuestionClick(question)">
+                {{ question }}
+            </button>
+        </div>
+
         <div class="selection-pills" *ngIf="selectionCount > 0" (mouseenter)="onSelectionPillEnter()"
             (mouseleave)="onSelectionPillLeave()">
             <div class="attachment-pill">

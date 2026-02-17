@@ -44,6 +44,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Input() prompts: Assistant[] = [];
   @Input() selectedPromptId: string | null = null;
   @Input() hasExistingThread = false;
+  @Input() threadVectorStoreId: string | null = null;
   @Input() isTemporaryChat = false;
   @Input() currentRun: Run | null = null;
   @Input() librariesLoading = false;
@@ -126,6 +127,11 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
       this.message = '';
       setTimeout(() => this.adjustTextareaHeight(), 0);
     }
+  }
+
+  updateInput(text: string): void {
+    this.message = text;
+    setTimeout(() => this.adjustTextareaHeight(), 0);
   }
 
   onKeyPress(event: KeyboardEvent): void {

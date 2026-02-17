@@ -19,7 +19,8 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <button type="button" (click)="openPanel('library'); $event.stopPropagation()">
+        <button type="button" (click)="openPanel('library'); $event.stopPropagation()"
+          *ngIf="!hasExistingThread || threadVectorStoreId">
           Attach Documents
         </button>
         <button type="button" (click)="openPanel('prompts'); $event.stopPropagation()">
@@ -206,7 +207,7 @@
     <span>Library: {{ getLibraryLabel() || selectedLibraryId }}</span>
     <button type="button" (click)="clearLibrarySelection()">×</button>
   </div>
-  <div class="attachment-pill" *ngIf="selectedDocumentIds?.length">
+  <div class="attachment-pill" *ngIf="selectedDocumentIds.length">
     <span>{{ selectedDocumentIds.length }} document{{ selectedDocumentIds.length === 1 ? '' : 's' }} selected</span>
     <button type="button" (click)="clearLibrarySelection()">×</button>
   </div>

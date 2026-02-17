@@ -38,6 +38,39 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     private librariesLoading = false;
     showVectorStoreHoverDetails = false;
 
+    private allDefaultQuestions = [
+        "How can I improve my productivity?",
+        "What are some effective time management techniques?",
+        "Can you recommend some good books to read?",
+        "Tell me a fun fact about technology.",
+        "How can I stay motivated?",
+        "What are popular travel destinations?",
+        "Tell me an interesting historical fact.",
+        "How can I learn a new language?",
+        "What are the latest trends in technology?",
+        "Can you suggest some fun hobbies?"
+    ];
+
+    defaultQuestions: string[] = [];
+
+    documentQuestions = [
+        "Summarize these libraries",
+        "What are the main insights?",
+        "Analyze themes across documents",
+        "Key takeaways from attachments"
+    ];
+
+    get suggestedQuestions(): string[] {
+        if (this.mode === 'document') {
+            return this.documentQuestions;
+        }
+        return this.defaultQuestions;
+    }
+
+    onQuestionClick(question: string): void {
+        this.inputMessage = question;
+    }
+
     constructor(
         private conversationService: ConversationService,
         private responseService: ResponseService,
@@ -45,7 +78,13 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     ) { }
 
     ngOnInit(): void {
+        this.shuffleDefaultQuestions();
         this.createTemporaryConversation();
+    }
+
+    private shuffleDefaultQuestions(): void {
+        const shuffled = [...this.allDefaultQuestions].sort(() => 0.5 - Math.random());
+        this.defaultQuestions = shuffled.slice(0, 5);
     }
 
     ngOnDestroy(): void {

@@ -32,7 +32,8 @@
           </button>
         </div>
 
-        <app-empty-state *ngIf="isConversationEmpty" [isTemporaryChat]="isTemporaryChat"></app-empty-state>
+        <app-empty-state *ngIf="isConversationEmpty" [isTemporaryChat]="isTemporaryChat" [mode]="mode"
+          [hasDocuments]="allDocuments.length > 0" (viewLibrary)="onWorkspaceNavigate()"></app-empty-state>
 
         <app-chat-container *ngIf="!isConversationEmpty" [messages]="messages" [currentRun]="currentRun"
           [runMap]="runMap" [rerunLoadingMessageId]="rerunLoadingMessageId"
@@ -44,12 +45,22 @@
           [isTemporaryChat]="isTemporaryChat" [libraries]="libraries" [selectedLibraryId]="selectedLibraryId"
           [documents]="allDocuments" [selectedDocumentIds]="selectedDocumentIds" [prompts]="prompts"
           [selectedPromptId]="selectedPromptId" [hasExistingThread]="!!currentThread"
-          [librariesLoading]="librariesLoadingState" [documentsLoading]="documentsLoadingState"
-          [promptsLoading]="promptsLoadingState" (messageSent)="onMessageSent($event)" (cancelRun)="onCancelRun()"
-          (modeToggle)="onModeToggle($event)" (filesSelected)="onFilesSelected($event)"
-          (webpageAttached)="onWebpageAttach($event)" (notesAttached)="onNotesAttach($event)"
-          (librarySelected)="onLibrarySelected($event)" (attachmentPanelOpened)="onAttachmentPanelOpened($event)"
-          (promptSelected)="onPromptSelected($event)" (attachmentMenuToggled)="onAttachmentMenuToggled($event)"></app-chat-input>
+          [threadVectorStoreId]="currentThread?.vector_store_id_read || null" [librariesLoading]="librariesLoadingState"
+          [documentsLoading]="documentsLoadingState" [promptsLoading]="promptsLoadingState"
+          (messageSent)="onMessageSent($event)" (cancelRun)="onCancelRun()" (modeToggle)="onModeToggle($event)"
+          (filesSelected)="onFilesSelected($event)" (webpageAttached)="onWebpageAttach($event)"
+          (notesAttached)="onNotesAttach($event)" (librarySelected)="onLibrarySelected($event)"
+          (attachmentPanelOpened)="onAttachmentPanelOpened($event)" (promptSelected)="onPromptSelected($event)"
+          (attachmentMenuToggled)="onAttachmentMenuToggled($event)"></app-chat-input>
+
+        <div class="suggested-questions-container" *ngIf="isConversationEmpty">
+          <div class="suggested-questions">
+            <button type="button" class="question-pill" *ngFor="let question of suggestedQuestions"
+              (click)="onQuestionSelected(question)">
+              {{ question }}
+            </button>
+          </div>
+        </div>
 
         <div class="attachment-status" *ngIf="attachmentMessage">
           {{ attachmentMessage }}

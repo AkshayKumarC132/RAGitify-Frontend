@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { switchMap, map, catchError, takeUntil } from 'rxjs/operators';
@@ -26,12 +26,15 @@ import { SelectedLLMProvider, User } from '../../../shared/models/user.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LibrarySelectionEvent } from '../chat-input/chat-input.component';
 
+import { ChatInputComponent } from '../chat-input/chat-input.component';
+
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit, OnDestroy {
+  @ViewChild(ChatInputComponent) chatInput?: ChatInputComponent;
   currentThread: Thread | null = null;
   messages: Message[] = [];
   threads: Thread[] = [];
@@ -107,6 +110,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.shuffleDefaultQuestions();
     this.authService.restoreUserFromStorage();
     this.checkPlaygroundRoute(this.router.url);
     this.setupIncomplete = !this.authService.isLlmReady(this.authService.getCurrentStatus());
@@ -520,10 +524,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (!content.trim()) return;
 
     if (this.isTemporaryChat) {
-      // Playground handles its own input, this messageSent event might come from the main chat input
-      // But if we are in temporary chat mode, we shouldn't be seeing the main chat input?
-      // We'll see in the template. If the main chat input is hidden, this won't be called.
-      // Just in case:
       return;
     }
 
@@ -553,6 +553,46 @@ export class HomeComponent implements OnInit, OnDestroy {
       console.error('Error in message flow:', error);
       this.currentRun = null;
     });
+  }
+
+  onQuestionSelected(question: string): void {
+    if (this.chatInput) {
+      this.chatInput.updateInput(question);
+    }
+  }
+
+  private allDefaultQuestions = [
+    "How can I improve my productivity?",
+    "What are some effective time management techniques?",
+    "Can you recommend some good books to read?",
+    "Tell me a fun fact about technology.",
+    "How can I stay motivated?",
+    "What are popular travel destinations?",
+    "Tell me an interesting historical fact.",
+    "How can I learn a new language?",
+    "What are the latest trends in technology?",
+    "Can you suggest some fun hobbies?"
+  ];
+
+  defaultQuestions: string[] = [];
+
+  documentQuestions = [
+    "Summarize the attached documents",
+    "What are the key takeaways?",
+    "Analyze the main themes in this library",
+    "List the most important information found"
+  ];
+
+  get suggestedQuestions(): string[] {
+    if (this.mode === 'document') {
+      return this.documentQuestions;
+    }
+    return this.defaultQuestions;
+  }
+
+  private shuffleDefaultQuestions(): void {
+    const shuffled = [...this.allDefaultQuestions].sort(() => 0.5 - Math.random());
+    this.defaultQuestions = shuffled.slice(0, 5);
   }
 
 
