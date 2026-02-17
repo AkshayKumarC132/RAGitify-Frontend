@@ -12,8 +12,7 @@
     </div>
 
     <div class="chat-messages" #messagesContainer>
-        <app-message-bubble *ngFor="let msg of messages; let last = last" [message]="msg" [isLast]="last"
-            [showSources]="false">
+        <app-message-bubble *ngFor="let msg of messages; let last = last" [message]="msg" [isLast]="last">
         </app-message-bubble>
 
         <app-typing-indicator *ngIf="loading" [cycle]="true"></app-typing-indicator>

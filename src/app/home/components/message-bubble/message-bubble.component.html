@@ -19,10 +19,6 @@
         <div class="text-content markdown" [innerHTML]="renderedContent"></div>
       </ng-template>
     </div>
-    <app-message-sources 
-      *ngIf="!showEmptyState && !isUser"
-      [documentIds]="getDocumentIds(message)">
-    </app-message-sources>
     <div class="message-time" *ngIf="!showEmptyState">{{ formatTime(message.created_at) }}</div>
   </div>
   <div class="message-actions" *ngIf="!showEmptyState">

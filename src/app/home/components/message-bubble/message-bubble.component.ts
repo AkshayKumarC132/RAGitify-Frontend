@@ -210,12 +210,4 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-  getDocumentIds(message: Message): string[] {
-    if (!message.metadata || !message.metadata['used_document_ids']) {
-      return [];
-    }
-    return Array.isArray(message.metadata['used_document_ids'])
-      ? message.metadata['used_document_ids']
-      : [];
-  }
 }
