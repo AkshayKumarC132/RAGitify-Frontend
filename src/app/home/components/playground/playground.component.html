@@ -20,7 +20,7 @@
     </div>
 
     <div class="input-area-wrapper">
-        <div class="input-card">
+        <div class="input-card" [class.document-mode-active]="mode === 'document'">
             <div class="attachment-controls">
                 <button class="add-button" [class.active]="attachmentMenuOpen" title="Attach Documents"
                     (click)="toggleAttachmentMenu()">
@@ -35,7 +35,7 @@
                 </div>
             </div>
 
-            <div class="integrated-mode-badge temp">
+            <div class="integrated-mode-badge temp" *ngIf="mode === 'document'">
                 <i class="fa-regular fa-clock"></i> Temp
             </div>
             <div class="integrated-mode-badge doc" *ngIf="mode === 'document'">

@@ -40,7 +40,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   rerunLoadingMessageId: number | null = null;
   selectedModel: OpenAIKey | null = null;
   availableModels: OpenAIKey[] = [];
-  mode: 'normal' | 'web' | 'document' = 'document';
+  mode: 'normal' | 'web' | 'document' = 'normal';
   loading = false;
   knowledgeSources: Document[] = [];
   allDocuments: Document[] = [];
@@ -63,7 +63,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   showProfilePanel = false;
   profileMessage = '';
   private attachmentMessageTimeout?: any;
-  private enforceDocumentMode = true;
+  private enforceDocumentMode = false;
   private runStatusSub?: Subscription;
   private searchPopupSub?: Subscription;
   private destroy$ = new Subject<void>();
@@ -421,13 +421,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   loadThread(threadId: string): void {
     // Get thread from existing threads array instead of calling API
     const thread = this.threads.find(t => t.id === threadId);
-    
+
     // When switching threads, clear any in-flight run state from the previous thread
     this.teardownRunPolling();
     this.currentRun = null;
     this.runMap = {};
     this.rerunLoadingMessageId = null;
-    
+
     if (thread) {
       this.currentThread = thread;
       this.setCurrentVectorStore(thread.vector_store_id_read || null);
@@ -437,8 +437,9 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.currentThread = null;
       console.warn(`Thread ${threadId} not found in threads array`);
     }
-    
+
     // Only call the messages API - no thread retrieve or run list APIs
+    this.updateModeFromSelection();
     this.loadMessages(threadId);
   }
 
@@ -1084,7 +1085,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.selectedPromptId = null;
     this.prompts = [];
     this.currentVectorStoreId = null;
-    this.mode = 'document';
+    this.mode = 'normal';
     this.attachmentMessage = '';
     this.librariesLoaded = false;
     this.librariesLoading = false;
@@ -1109,7 +1110,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private updateModeFromSelection(forceNormal = false): void {
-    if (this.selectedLibraryId || this.selectedDocumentIds.length) {
+    if (this.selectedLibraryId || this.selectedDocumentIds.length || this.currentThread?.vector_store_id_read) {
       if (!forceNormal) {
         this.mode = 'document';
         this.enforceDocumentMode = false;

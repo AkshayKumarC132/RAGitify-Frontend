@@ -1,7 +1,7 @@
 <div class="chat-input-container">
   <input type="file" #filePicker multiple hidden (change)="handleFilesChange($event)" />
 
-  <div class="input-wrapper">
+  <div class="input-wrapper" [class.document-mode-active]="mode === 'document'">
     <div class="attachment-controls">
       <button type="button" class="attachment-toggle" (click)="toggleAttachmentMenu()"
         [class.active]="attachmentMenuOpen" title="Attachments" aria-label="Toggle attachments">
@@ -32,7 +32,7 @@
       <div class="integrated-mode-badge web" *ngIf="mode === 'web'">
         <i class="fa-solid fa-globe"></i> Web
       </div>
-      <div class="integrated-mode-badge temp" *ngIf="isTemporaryChat">
+      <div class="integrated-mode-badge temp" *ngIf="isTemporaryChat && mode === 'document'">
         <i class="fa-regular fa-clock"></i> Temp
       </div>
       <div class="integrated-mode-badge doc" *ngIf="mode === 'document' && !isTemporaryChat">

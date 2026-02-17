@@ -35,7 +35,7 @@ export type LibrarySelectionEvent =
 export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnDestroy {
   @ViewChild('messageArea') messageArea?: ElementRef<HTMLTextAreaElement>;
 
-  @Input() mode: 'normal' | 'web' | 'document' = 'document';
+  @Input() mode: 'normal' | 'web' | 'document' = 'normal';
   @Input() loading = false;
   @Input() libraries: VectorStore[] = [];
   @Input() selectedLibraryId: string | null = null;
