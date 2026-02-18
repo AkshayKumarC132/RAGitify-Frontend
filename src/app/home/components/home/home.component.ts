@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { switchMap, map, catchError, takeUntil } from 'rxjs/operators';
-import { of, lastValueFrom, EMPTY, Subscription, Subject } from 'rxjs';
+import { of, lastValueFrom, EMPTY, Subscription, Subject, throwError } from 'rxjs';
 import { ThreadService } from '../../../shared/services/thread.service';
 import { MessageService } from '../../../shared/services/message.service';
 import { RunService } from '../../../shared/services/run.service';
@@ -65,7 +65,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   profileForm: FormGroup;
   showProfilePanel = false;
   profileMessage = '';
+  errorMessage = '';
   private attachmentMessageTimeout?: any;
+  private errorMessageTimeout?: any;
   private enforceDocumentMode = false;
   private runStatusSub?: Subscription;
   private searchPopupSub?: Subscription;
@@ -209,6 +211,12 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.teardownRunPolling();
     if (this.searchPopupSub) {
       this.searchPopupSub.unsubscribe();
+    }
+    if (this.errorMessageTimeout) {
+      clearTimeout(this.errorMessageTimeout);
+    }
+    if (this.attachmentMessageTimeout) {
+      clearTimeout(this.attachmentMessageTimeout);
     }
     this.destroy$.next();
     this.destroy$.complete();
@@ -552,6 +560,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     }).catch((error) => {
       console.error('Error in message flow:', error);
       this.currentRun = null;
+      // Remove optimistic message on error
+      this.messages = this.messages.filter(m => m.id !== optimisticMessage.id);
     });
   }
 
@@ -785,6 +795,10 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.upsertRun(run);
         this.startRunPolling(run.id, threadId);
         return of(undefined);
+      }),
+      catchError(error => {
+        this.handleError('Failed to send message', error);
+        return throwError(() => error);
       })
     ).toPromise() as Promise<void>;
   }
@@ -1102,6 +1116,24 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.attachmentMessageTimeout = setTimeout(() => {
       this.attachmentMessage = '';
     }, 4000);
+  }
+
+  private handleError(message: string, error?: any): void {
+    // Extract the error message from the API response if available
+    const errorMessage = error?.error?.error || error?.message || message;
+    this.errorMessage = errorMessage;
+
+    if (error) {
+      console.error(message, error);
+    }
+
+    // Clear the error message after 5 seconds
+    if (this.errorMessageTimeout) {
+      clearTimeout(this.errorMessageTimeout);
+    }
+    this.errorMessageTimeout = setTimeout(() => {
+      this.errorMessage = '';
+    }, 5000);
   }
 
   private clearLoadedState(): void {

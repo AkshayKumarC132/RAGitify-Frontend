@@ -141,6 +141,23 @@ app-playground {
   }
 }
 
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.2rem;
+  background: rgba(255, 99, 99, 0.1);
+  color: var(--error-color);
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255, 99, 99, 0.2);
+  margin-bottom: 0.5rem;
+
+  i {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+}
+
 .chat-toolbar {
   display: flex;
   align-items: center;

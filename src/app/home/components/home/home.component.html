@@ -32,6 +32,12 @@
           </button>
         </div>
 
+        <!-- Error Banner -->
+        <div class="error-banner" *ngIf="errorMessage">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>{{ errorMessage }}</span>
+        </div>
+
         <app-empty-state *ngIf="isConversationEmpty" [isTemporaryChat]="isTemporaryChat" [mode]="mode"
           [hasDocuments]="allDocuments.length > 0" (viewLibrary)="onWorkspaceNavigate()"></app-empty-state>
 
