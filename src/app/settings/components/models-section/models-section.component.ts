@@ -1,5 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  trigger,
+  transition,
+  style,
+  animate,
+  query,
+  stagger,
+  state
+} from '@angular/animations';
 import { OpenAIKeyService } from '../../../shared/services/openai-key.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { OpenAIKey, OpenAIKeyCreateRequest } from '../../../shared/models/openai-key.model';
@@ -9,13 +18,37 @@ import { UserStatus } from '../../../shared/models/user.model';
 @Component({
   selector: 'app-models-section',
   templateUrl: './models-section.component.html',
-  styleUrls: ['./models-section.component.scss']
+  styleUrls: ['./models-section.component.scss'],
+  animations: [
+    trigger('expandCollapse', [
+      state('void', style({ height: '0', opacity: '0', overflow: 'hidden' })),
+      state('*', style({ height: '*', opacity: '1', overflow: 'hidden' })),
+      transition(':enter', [
+        style({ height: '0', opacity: '0', overflow: 'hidden' }),
+        animate('220ms cubic-bezier(0.4, 0, 0.2, 1)', style({ height: '*', opacity: '1' }))
+      ]),
+      transition(':leave', [
+        animate('180ms cubic-bezier(0.4, 0, 0.2, 1)', style({ height: '0', opacity: '0' }))
+      ])
+    ]),
+    trigger('listStagger', [
+      transition('* => *', [
+        query(':enter', [
+          style({ opacity: 0, transform: 'translateY(10px)' }),
+          stagger(50, [
+            animate('200ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+          ])
+        ], { optional: true })
+      ])
+    ])
+  ]
 })
 export class ModelsSectionComponent implements OnInit {
   models: OpenAIKey[] = [];
   showCreateForm = false;
   createForm: FormGroup;
   loading = false;
+  loadingModels = false;
   errorMessage = '';
   selectedProvider: 'OpenAI' | 'Ollama' | null = null;
   modelOptions: Record<'OpenAI' | 'Ollama', string[]> = {
@@ -26,6 +59,7 @@ export class ModelsSectionComponent implements OnInit {
     {
       name: 'OpenAI',
       badge: 'Cloud',
+      icon: 'fa-cloud',
       description: 'Access GPT-4.1 through the official OpenAI API.',
       defaultModel: 'gpt-4.1',
       requiresApiKey: true
@@ -33,6 +67,7 @@ export class ModelsSectionComponent implements OnInit {
     {
       name: 'Ollama',
       badge: 'Local',
+      icon: 'fa-microchip',
       description: 'Run open-source models like Llama 3 locally via the Ollama runtime.',
       defaultModel: 'llama3.1:latest',
       requiresApiKey: false
@@ -72,12 +107,15 @@ export class ModelsSectionComponent implements OnInit {
   }
 
   loadModels(forceRefresh = false): void {
+    this.loadingModels = true;
     this.openAIKeyService.list(forceRefresh).subscribe({
       next: (models) => {
         this.models = this.selectedProvider ? models.filter(m => m.provider === this.selectedProvider) : models;
+        this.loadingModels = false;
       },
       error: (err) => {
         console.error('Error loading models:', err);
+        this.loadingModels = false;
       }
     });
   }
@@ -199,6 +237,7 @@ interface ProviderOption {
   name: 'OpenAI' | 'Ollama';
   description: string;
   badge: string;
+  icon: string;
   defaultModel: string;
   requiresApiKey: boolean;
 }

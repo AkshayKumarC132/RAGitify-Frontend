@@ -62,6 +62,7 @@ body.theme-light .settings-overlay {
   display: flex;
   height: 100%;
   min-height: 600px;
+  overflow: hidden; // only content area scrolls
 }
 
 .settings-sidebar {
@@ -73,6 +74,7 @@ body.theme-light .settings-overlay {
   flex-direction: column;
   gap: 0.25rem;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .nav-item {
@@ -112,11 +114,45 @@ body.theme-light .settings-overlay {
   flex: 1;
   padding: 3rem 2.5rem 2.5rem 2.5rem;
   overflow-y: auto;
+  overflow-x: hidden;
   background: var(--bg-secondary);
+  min-width: 0; // prevent flex overflow
+
+  // Custom thin scrollbar
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+
+    &:hover {
+      background: var(--text-secondary);
+    }
+  }
 }
 
 .tab-content {
   width: 100%;
-  max-width: 600px;
+  animation: tabFadeIn 0.25s ease-out both;
 }
 
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
