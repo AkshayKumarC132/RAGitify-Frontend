@@ -1,10 +1,10 @@
 <div class="models-section">
   <!-- Sticky section header -->
   <div class="section-header">
-    <h2 class="section-title">
+    <h5 class="section-title">
       <i class="fa-solid fa-robot"></i>
       Models
-    </h2>
+    </h5>
     <button class="btn-primary" (click)="toggleCreateForm()">
       <i class="fa-solid" [ngClass]="showCreateForm ? 'fa-xmark' : 'fa-plus'"></i>
       <span>{{ showCreateForm ? 'Cancel' : 'New Model' }}</span>
@@ -18,10 +18,10 @@
 
   <!-- Animated create form -->
   <div *ngIf="showCreateForm" [@expandCollapse] class="create-form">
-    <h2>
+    <h5>
       <i class="fa-solid fa-square-pen"></i>
       <span>Create New Model</span>
-    </h2>
+    </h5>
     <form [formGroup]="createForm" (ngSubmit)="onCreateSubmit()">
       <div class="form-group">
         <label>Name <span class="optional">(Optional)</span></label>
@@ -70,7 +70,7 @@
       <div class="form-actions">
         <button type="submit" class="btn-primary" [disabled]="loading || createForm.invalid">
           <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
-          <span>{{ loading ? 'Creating…' : 'Create Model' }}</span>
+          <span>{{ loading ? 'Creating...' : 'Create Model' }}</span>
         </button>
       </div>
     </form>
@@ -121,7 +121,7 @@
   </div>
 
   <!-- Models list -->
-  <div class="models-list" *ngIf="!loadingModels && models.length" [@listStagger]="models.length">
+  <div class="models-list" [class.scrollable]="shouldUseModelListScroll" *ngIf="!loadingModels && models.length" [@listStagger]="models.length">
     <div class="list-heading">
       <div>
         <p class="label">Provider</p>
@@ -137,10 +137,10 @@
         <i class="fa-solid" [ngClass]="model.provider === 'OpenAI' ? 'fa-cloud' : 'fa-microchip'"></i>
       </div>
       <div class="model-info">
-        <div class="model-name">{{ model.name || (model.provider + ' · ' + model.model) }}</div>
+        <div class="model-name">{{ model.name || (model.provider + ' - ' + model.model) }}</div>
         <div class="model-details">
           <span class="detail-tag">{{ model.provider }}</span>
-          <span class="detail-sep">·</span>
+          <span class="detail-sep">-</span>
           <span>{{ model.model }}</span>
           <span *ngIf="model.is_active" class="active-badge">
             <i class="fa-solid fa-circle-dot"></i> Active
@@ -165,3 +165,6 @@
     <span>Click <strong>New Model</strong> to add your first model.</span>
   </div>
 </div>
+
+
+

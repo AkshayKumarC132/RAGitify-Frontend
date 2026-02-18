@@ -1,52 +1,33 @@
-<div class="settings-overlay" (click)="goToHome()">
-  <div class="settings-panel" (click)="$event.stopPropagation()">
-    <button class="close-button" (click)="goToHome()" aria-label="Close settings">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-    
+<div class="settings-page">
+  <div class="settings-shell">
+    <header class="settings-header">
+      <button class="back-button" (click)="goToHome()" aria-label="Back to home">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+      <h4>Settings</h4>
+    </header>
+
     <div class="settings-layout">
-      <nav class="settings-sidebar">
-        <button 
-          class="nav-item" 
-          [class.active]="activeTab === 'general'"
-          (click)="setActiveTab('general')"
-        >
+      <nav class="settings-sidebar" aria-label="Settings navigation">
+        <a class="nav-item" routerLink="general" routerLinkActive="active">
           <i class="fa-solid fa-gear"></i>
           <span>General</span>
-        </button>
-        
-        <button 
-          class="nav-item" 
-          [class.active]="activeTab === 'models'"
-          (click)="setActiveTab('models')"
-        >
+        </a>
+
+        <a class="nav-item" routerLink="models" routerLinkActive="active">
           <i class="fa-solid fa-robot"></i>
           <span>Models</span>
-        </button>
-        
-        <button 
-          class="nav-item" 
-          [class.active]="activeTab === 'account'"
-          (click)="setActiveTab('account')"
-        >
+        </a>
+
+        <a class="nav-item" routerLink="account" routerLinkActive="active">
           <i class="fa-solid fa-user"></i>
           <span>Account</span>
-        </button>
+        </a>
       </nav>
 
-      <div class="settings-content">
-        <div *ngIf="activeTab === 'general'" class="tab-content">
-          <app-general-section></app-general-section>
-        </div>
-        
-        <div *ngIf="activeTab === 'models'" class="tab-content">
-          <app-models-section></app-models-section>
-        </div>
-        
-        <div *ngIf="activeTab === 'account'" class="tab-content">
-          <app-account-section></app-account-section>
-        </div>
-      </div>
+      <main class="settings-content">
+        <router-outlet></router-outlet>
+      </main>
     </div>
   </div>
 </div>

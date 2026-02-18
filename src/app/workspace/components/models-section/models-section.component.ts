@@ -109,9 +109,18 @@ export class ModelsSectionComponent implements OnInit {
       });
     }
   }
+  private buildModelUpdatePayload(model: OpenAIKey, isActive: boolean): Partial<OpenAIKeyCreateRequest> {
+    return {
+      name: model.name,
+      provider: model.provider,
+      model: model.model,
+      api_key: model.api_key,
+      is_active: isActive
+    };
+  }
 
   setActive(model: OpenAIKey): void {
-    this.openAIKeyService.update(model.id, { is_active: true }).subscribe({
+    this.openAIKeyService.update(model.id, this.buildModelUpdatePayload(model, true)).subscribe({
       next: () => {
         this.loadModels();
       },
@@ -152,3 +161,4 @@ interface ProviderOption {
   defaultModel: string;
   requiresApiKey: boolean;
 }
+

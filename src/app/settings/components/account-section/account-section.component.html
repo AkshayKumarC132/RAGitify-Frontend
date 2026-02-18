@@ -4,17 +4,17 @@
       {{ (currentUser?.first_name?.[0] || currentUser?.username?.[0] || '?') | uppercase }}
     </div>
     <div class="profile-info">
-      <h1>{{ currentUser?.first_name }} {{ currentUser?.last_name }}</h1>
+      <h4>{{ currentUser?.first_name }} {{ currentUser?.last_name }}</h4>
       <p class="profile-email">{{ currentUser?.email }}</p>
       <div class="profile-badges" *ngIf="status">
         <span class="badge" [class.ready]="status.ready">
           <i class="fa-solid" [ngClass]="status.ready ? 'fa-check-circle' : 'fa-circle-exclamation'"></i>
           {{ status.ready ? 'System Ready' : 'Setup Required' }}
         </span>
-        <span class="badge tenant">
+        <!-- <span class="badge tenant">
           <i class="fa-solid fa-building"></i>
           {{ currentUser?.tenant || 'No Tenant' }}
-        </span>
+        </span> -->
       </div>
     </div>
   </div>

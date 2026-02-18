@@ -1,129 +1,123 @@
-.settings-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  padding: 2rem;
+.settings-page {
+  min-height: 100vh;
+  padding: 1.25rem;
+  box-sizing: border-box;
+  background:
+    radial-gradient(900px 420px at 8% -12%, rgba(var(--accent-rgb), 0.1), transparent 60%),
+    linear-gradient(180deg, var(--bg-primary), var(--bg-secondary));
 }
 
-body.theme-light .settings-overlay {
-  background: rgba(0, 0, 0, 0.4);
-}
-
-.settings-panel {
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  width: 100%;
-  max-width: 900px;
-  max-height: 85vh;
+.settings-shell {
+  max-width: 1180px;
+  max-height: calc(100vh - 2.5rem);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  position: relative;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.12);
   overflow: hidden;
 }
 
-.close-button {
-  position: absolute;
-  top: 0.62rem;
-  left: 1rem;
-  width: 32px;
-  height: 32px;
+.settings-header {
+height: 64px;
+  padding: 0 1.25rem;
   display: flex;
   align-items: center;
+  gap: 0.85rem;
+  border-bottom: 1px solid var(--border-color);
+  h4 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+}
+
+.back-button {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 10px;
   background: transparent;
-  border: 0px solid var(--border-color);
-  border-radius: 57px;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   cursor: pointer;
-  z-index: 10;
   transition: all 0.2s ease;
 
   &:hover {
     background: var(--bg-tertiary);
-    border-color: var(--accent-color);
-    color: var(--accent-color);
-  }
-
-  i {
-    font-size: 14px;
+    border-color: var(--border-color);
+    color: var(--text-primary);
   }
 }
 
 .settings-layout {
   display: flex;
-  height: 100%;
-  min-height: 600px;
-  overflow: hidden; // only content area scrolls
+  flex: 1;
+  min-height: 0;
 }
 
 .settings-sidebar {
-  width: 200px;
-  padding: 3rem 0 2rem 0;
-  border-right: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  width: 250px;
+  flex-shrink: 0;
+  padding: 1rem 0.9rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  flex-shrink: 0;
-  overflow: hidden;
+  gap: 0.45rem;
+  border-right: 1px solid var(--border-color);
+  background:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.06), transparent 24%),
+    var(--bg-secondary);
 }
 
 .nav-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1.5rem;
-  background: transparent;
-  border: none;
+  padding: 0.62rem 0.82rem;
+  text-decoration: none;
+  border-radius: 10px;
   color: var(--text-secondary);
-  cursor: pointer;
   font-size: 13px;
-  text-align: left;
+  font-weight: 500;
   transition: all 0.2s ease;
-  border-left: 3px solid transparent;
 
   i {
-    font-size: 14px;
     width: 16px;
     text-align: center;
+    font-size: 13px;
   }
 
   &:hover {
     color: var(--text-primary);
-    background: var(--bg-tertiary);
+    background: rgba(var(--accent-rgb), 0.08);
   }
 
   &.active {
     color: var(--text-primary);
-    background: var(--bg-tertiary);
-    border-left-color: var(--accent-color);
-    font-weight: 500;
+    background: rgba(var(--accent-rgb), 0.12);
+    box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.3);
   }
 }
 
 .settings-content {
   flex: 1;
-  padding: 3rem 2.5rem 2.5rem 2.5rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 1.75rem;
   overflow-y: auto;
-  overflow-x: hidden;
-  background: var(--bg-secondary);
-  min-width: 0; // prevent flex overflow
+  overscroll-behavior: contain;
 
-  // Custom thin scrollbar
   scrollbar-width: thin;
   scrollbar-color: var(--border-color) transparent;
 
   &::-webkit-scrollbar {
-    width: 4px;
+    width: 7px;
   }
 
   &::-webkit-scrollbar-track {
@@ -132,7 +126,7 @@ body.theme-light .settings-overlay {
 
   &::-webkit-scrollbar-thumb {
     background: var(--border-color);
-    border-radius: 4px;
+    border-radius: 99px;
 
     &:hover {
       background: var(--text-secondary);
@@ -140,19 +134,41 @@ body.theme-light .settings-overlay {
   }
 }
 
-.tab-content {
-  width: 100%;
-  animation: tabFadeIn 0.25s ease-out both;
-}
-
-@keyframes tabFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
+@media (max-width: 980px) {
+  .settings-page {
+    padding: 0;
   }
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .settings-shell {
+    max-height: 100vh;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .settings-layout {
+    flex-direction: column;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+    padding: 0.55rem;
+    flex-direction: row;
+    gap: 0.5rem;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .nav-item {
+    white-space: nowrap;
+  }
+
+  .settings-content {
+    padding: 1rem;
   }
 }
+
+
+
+
