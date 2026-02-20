@@ -13,7 +13,7 @@ import { LoadingService } from './shared/services/loading.service';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-  title = 'RAG Application';
+  title = 'RAGitify';
   dialogState$: Observable<{ show: boolean; options: ConfirmDialogOptions | null }>;
   searchPopupState$: Observable<{ show: boolean; threads: Thread[]; currentThread: Thread | null }>;
   loading$: Observable<boolean>;

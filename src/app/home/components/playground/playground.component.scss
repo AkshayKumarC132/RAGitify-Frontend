@@ -4,6 +4,7 @@
     height: 100%;
     width: 100%;
     overflow: hidden;
+    font-family: inherit;
 }
 
 .playground-container {
@@ -137,7 +138,7 @@
     animation: fadeIn 0.5s ease;
 
     h1 {
-        font-family: serif;
+        // font-family: serif;
         font-size: 2rem;
         font-weight: 200;
         margin-bottom: 0.15rem;
@@ -323,7 +324,7 @@
         font-family: inherit;
         color: #ffffff !important;
         caret-color: #ffffff;
-        line-height: 1.45;
+        // line-height: 1.45;
 
         :host-context(.theme-dark) & {
             color: #000000 !important;

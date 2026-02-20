@@ -104,7 +104,6 @@
 
 .message-text {
     margin-bottom: 0.25rem;
-    line-height: 2.2;
 }
 
 .message-text .text-content {
@@ -112,7 +111,6 @@
 }
 
 .message-text .markdown {
-    line-height: 1.6;
 
     p {
         margin: 0 0 0.75rem;
@@ -133,7 +131,8 @@
     }
 
     code {
-        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-family: var(--app-mono);
+        // font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         font-size: 0.85em;
         background: rgba(15, 23, 42, 0.08);
         padding: 0.1rem 0.35rem;
@@ -141,6 +140,7 @@
     }
 
     pre {
+        font-family: var(--app-mono);
         background: rgba(15, 23, 42, 0.08);
         padding: 0.75rem;
         border-radius: 8px;

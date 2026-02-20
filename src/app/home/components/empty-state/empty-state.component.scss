@@ -1,3 +1,7 @@
+:host {
+  font-family: inherit;
+}
+
 .empty-state {
   height: 100%;
   display: flex;
@@ -20,7 +24,7 @@
 
   h1 {
     color: var(--text-primary);
-    font-family: 'Times New Roman', Times, serif;
+    // font-family: 'Times New Roman', Times, serif;
     font-size: 2.5rem;
     font-weight: 400;
     margin-bottom: 0.25rem;
