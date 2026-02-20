@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../shared/services/auth.service';
+import { OpenAIKeyService } from '../../../shared/services/openai-key.service';
 import { LoginRequest } from '../../../shared/models/user.model';
 import { switchMap } from 'rxjs/operators';
 
@@ -20,6 +21,7 @@ export class LoginComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
+    private openAIKeyService: OpenAIKeyService,
     private router: Router
   ) {
     this.loginForm = this.fb.group({
@@ -56,6 +58,9 @@ export class LoginComponent implements OnInit {
       ).subscribe({
         next: (status) => {
           this.loading = false;
+          // Cache the active model immediately after session initialization
+          this.openAIKeyService.fetchAndCacheActiveModel();
+
           if (this.authService.isLlmReady(status)) {
             this.router.navigate(['/home']);
             return;

@@ -123,6 +123,7 @@ export class ModelsSectionComponent implements OnInit {
     this.openAIKeyService.update(model.id, this.buildModelUpdatePayload(model, true)).subscribe({
       next: () => {
         this.loadModels();
+        this.openAIKeyService.fetchAndCacheActiveModel();
       },
       error: (err) => {
         console.error('Error setting active model:', err);
@@ -133,7 +134,7 @@ export class ModelsSectionComponent implements OnInit {
   async deleteModel(id: number): Promise<void> {
     const model = this.models.find(m => m.id === id);
     const modelName = model?.name || (model ? `${model.provider} - ${model.model}` : 'this model');
-    
+
     const confirmed = await this.confirmDialogService.confirm({
       title: 'Delete model?',
       message: 'This will delete',
@@ -146,6 +147,7 @@ export class ModelsSectionComponent implements OnInit {
     this.openAIKeyService.delete(id).subscribe({
       next: () => {
         this.loadModels();
+        this.openAIKeyService.fetchAndCacheActiveModel();
       },
       error: (err) => {
         console.error('Error deleting model:', err);

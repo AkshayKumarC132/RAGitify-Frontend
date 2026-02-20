@@ -17,9 +17,14 @@ export class ResponseService {
   ) { }
 
   getDefaultModel(): string {
-    const storedUser = this.auth.getStoredUser() as any;
+    // 1. Read the active model cached in localStorage (populated on login & model change)
+    const cached = this.auth.getActiveModel();
+    if (cached) {
+      return cached;
+    }
 
-    // Prioritize active_provider then selected_llm_provider
+    // 2. Fallback: derive from stored user's provider info
+    const storedUser = this.auth.getStoredUser() as any;
     const provider = storedUser?.active_provider
       || storedUser?.selected_llm_provider
       || (typeof storedUser?.active_collection === 'object' ? storedUser?.active_collection?.provider : null)
@@ -29,7 +34,7 @@ export class ResponseService {
       return 'llama3.1:latest';
     }
 
-    // Default to gpt-4o for OpenAI or fallback
+    // Default for OpenAI or unknown provider
     return 'gpt-4.1';
   }
 

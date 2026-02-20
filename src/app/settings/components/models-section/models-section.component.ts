@@ -215,6 +215,7 @@ export class ModelsSectionComponent implements OnInit {
     this.openAIKeyService.update(model.id, this.buildModelUpdatePayload(model, true)).subscribe({
       next: () => {
         this.loadModels();
+        this.openAIKeyService.fetchAndCacheActiveModel();
       },
       error: (err) => {
         console.error('Error setting active model:', err);
@@ -238,6 +239,7 @@ export class ModelsSectionComponent implements OnInit {
     this.openAIKeyService.delete(id).subscribe({
       next: () => {
         this.loadModels();
+        this.openAIKeyService.fetchAndCacheActiveModel();
       },
       error: (err) => {
         console.error('Error deleting model:', err);

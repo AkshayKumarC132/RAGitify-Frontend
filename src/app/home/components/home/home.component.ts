@@ -716,38 +716,54 @@ export class HomeComponent implements OnInit, OnDestroy {
     await this.ensurePromptsLoaded();
     const assistants = this.prompts || [];
     // If a prompt is selected, use it
+    const preferredModel = this.resolveModelPreference();
+    let chosenAssistant: Assistant | undefined;
+
+    // 1. If a prompt is explicitly selected, use it
     if (this.selectedPromptId) {
-      const selectedPrompt = this.prompts.find(p => p.id === this.selectedPromptId);
-      if (selectedPrompt) {
-        // If the prompt has a different vector store, we might need to handle that
-        // For now, use the selected prompt's assistant
-        return Promise.resolve({ assistantId: selectedPrompt.id, threadId });
+      chosenAssistant = this.prompts.find(p => p.id === this.selectedPromptId);
+    }
+
+    // 2. If no prompt, try to find a default assistant
+    if (!chosenAssistant) {
+      chosenAssistant = assistants.find(a => a.is_default);
+    }
+
+    // 3. If still no assistant, try to find one matching the vector store
+    if (!chosenAssistant && vectorStoreId) {
+      chosenAssistant = assistants.find(a => a.vector_store_id === vectorStoreId);
+    }
+
+    // 4. Fallback: use the first available assistant
+    if (!chosenAssistant && assistants.length) {
+      chosenAssistant = assistants[0];
+    }
+
+    // If we found an existing assistant, ensure its model is up-to-date
+    if (chosenAssistant) {
+      if (chosenAssistant.model !== preferredModel) {
+        try {
+          // Update the assistant's model to match the currently active preference
+          chosenAssistant = await lastValueFrom(this.assistantService.update(chosenAssistant.id, { model: preferredModel }));
+
+          // Update the local prompts cache
+          const index = this.prompts.findIndex(p => p.id === chosenAssistant!.id);
+          if (index !== -1) {
+            this.prompts[index] = chosenAssistant;
+          }
+        } catch (error) {
+          console.error('Failed to update assistant model:', error);
+          // Proceed with the old model if update fails, rather than blocking the chat
+        }
       }
+      return { assistantId: chosenAssistant.id, threadId };
     }
 
-    const defaultAssistant = assistants.find(a => a.is_default);
-    if (defaultAssistant) {
-      return { assistantId: defaultAssistant.id, threadId };
-    }
-
-    // Only match by vector_store_id if vectorStoreId is not null
-    if (vectorStoreId) {
-      const existingAssistant = assistants.find(a => a.vector_store_id === vectorStoreId);
-      if (existingAssistant) {
-        return { assistantId: existingAssistant.id, threadId };
-      }
-    }
-
-    if (assistants.length) {
-      return { assistantId: assistants[0].id, threadId };
-    }
-
-    // Create a single assistant only when none exist for the user
-    const model = this.resolveModelPreference();
+    // 5. Create a new default assistant if none exist
     const createRequest: any = {
       name: 'Default Assistant',
       instructions: 'You are a helpful assistant.',
-      model: model,
+      model: preferredModel,
       tools: []
     };
     if (vectorStoreId) {
@@ -1232,12 +1248,18 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private resolveModelPreference(): string {
-    // If user explicitly selected a model, use it
+    // 1. If user explicitly selected a model via the UI selector, use it
     if (this.selectedModel?.model) {
       return this.selectedModel.model;
     }
 
-    // Fallback based on active provider reported by backend status
+    // 2. Check the cached active model in localStorage
+    const cached = this.authService.getActiveModel();
+    if (cached) {
+      return cached;
+    }
+
+    // 3. Fallback based on active provider reported by backend status
     if (this.activeProvider === 'Ollama') {
       return 'llama3.1:latest';
     }
@@ -1245,12 +1267,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       return 'gpt-4.1';
     }
 
-    // If no provider info, prefer an existing active model choice
-    if (this.availableModels.length) {
-      return this.availableModels[0].model;
-    }
-
-    // Absolute default
+    // 4. Default for OpenAI or unknown provider
     return 'gpt-4.1';
   }
 

@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { UserStateService } from './user-state.service';
 import { OpenAIKey, OpenAIKeyCreateRequest } from '../models/openai-key.model';
 
+
 @Injectable({
   providedIn: 'root'
 })
@@ -32,7 +33,12 @@ export class OpenAIKeyService {
   create(data: OpenAIKeyCreateRequest): Observable<OpenAIKey> {
     const token = this.getToken();
     return this.api.post<OpenAIKey>(`/llm-config/${token}/`, data, token).pipe(
-      tap(() => this.invalidateListCache())
+      tap((created) => {
+        this.invalidateListCache();
+        if (created.is_active && created.model) {
+          this.auth.storeActiveModel(created.model);
+        }
+      })
     );
   }
 
@@ -62,7 +68,12 @@ export class OpenAIKeyService {
   update(id: number, data: Partial<OpenAIKeyCreateRequest>): Observable<OpenAIKey> {
     const token = this.getToken();
     return this.api.put<OpenAIKey>(`/llm-config/${token}/${id}/`, data, token).pipe(
-      tap(() => this.invalidateListCache())
+      tap((updated) => {
+        this.invalidateListCache();
+        if (updated.is_active && updated.model) {
+          this.auth.storeActiveModel(updated.model);
+        }
+      })
     );
   }
 
@@ -76,5 +87,24 @@ export class OpenAIKeyService {
   invalidateListCache(): void {
     this.listCache$ = undefined;
     this.cachedForUserId = null;
+  }
+
+  /**
+   * Fetches the current llm-config list, finds the active entry,
+   * and caches its model identifier in localStorage via AuthService.
+   * Call this after login and after any model activation change.
+   */
+  fetchAndCacheActiveModel(): void {
+    this.list(true).subscribe({
+      next: (models) => {
+        const activeModel = models.find(m => m.is_active);
+        if (activeModel?.model) {
+          this.auth.storeActiveModel(activeModel.model);
+        }
+      },
+      error: (err) => {
+        console.warn('[OpenAIKeyService] Failed to fetch active model for cache', err);
+      }
+    });
   }
 }

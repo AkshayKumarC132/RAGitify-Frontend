@@ -13,6 +13,7 @@ import { UserStateService } from './user-state.service';
 export class AuthService {
   private readonly TOKEN_KEY = 'auth_token';
   private readonly USER_KEY = 'current_user';
+  private readonly ACTIVE_MODEL_KEY = 'active_llm_model';
 
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
@@ -75,6 +76,20 @@ export class AuthService {
     }
   }
 
+  storeActiveModel(model: string): void {
+    if (model) {
+      localStorage.setItem(this.ACTIVE_MODEL_KEY, model);
+    }
+  }
+
+  getActiveModel(): string | null {
+    return localStorage.getItem(this.ACTIVE_MODEL_KEY);
+  }
+
+  clearActiveModel(): void {
+    localStorage.removeItem(this.ACTIVE_MODEL_KEY);
+  }
+
   restoreUserFromStorage(): void {
     const storedUser = this.getStoredUser();
     if (storedUser) {
@@ -87,6 +102,7 @@ export class AuthService {
   clearAuth(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
+    this.clearActiveModel();
     this.currentUserSubject.next(null);
     this.userStatusSubject.next(null);
     // Remove persisted theme preference on logout, but keep current UI as-is.
