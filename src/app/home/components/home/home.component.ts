@@ -85,6 +85,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   private modelsLoadingPromise?: Promise<void>;
   private threadsLoaded = false;
   private threadsLoading = false;
+  private threadsNeedingPostFirstRunRefresh = new Set<string>();
+  private hydratingThreadId: string | null = null;
+  private lastMessagesRequestThreadId: string | null = null;
 
 
   constructor(
@@ -164,9 +167,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.route.params.pipe(
       takeUntil(this.destroy$),
       switchMap(params => {
-        const threadId = params['threadId'];
+        const threadId = params['threadId'] || null;
+        this.pendingThreadId = threadId;
         if (threadId) {
-          this.pendingThreadId = threadId;
           if (!this.setupIncomplete && !this.isTemporaryChat) {
             this.loadThread(threadId);
           }
@@ -296,10 +299,9 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.upsertRun(updatedRun);
           if (updatedRun.status === 'completed') {
             this.loadMessages(threadId);
-            this.threadService.getById(threadId).subscribe(t => {
-              this.currentThread = t;
-              this.upsertThread(t);
-            });
+            if (this.shouldRefreshThreadAfterFirstRun(threadId)) {
+              this.refreshThreadOnceAfterFirstRun(threadId);
+            }
             this.teardownRunPolling();
           } else if (updatedRun.status === 'failed' || updatedRun.status === 'cancelled') {
             this.currentRun = null;
@@ -333,6 +335,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   onThreadRemove(thread: Thread): void {
     this.threadService.delete(thread.id).subscribe({
       next: () => {
+        this.threadsNeedingPostFirstRunRefresh.delete(thread.id);
         this.threads = this.threads.filter(t => t.id !== thread.id);
         if (this.currentThread?.id === thread.id) {
           this.currentThread = null;
@@ -422,6 +425,9 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.threads = threads;
         this.threadsLoaded = true;
         this.threadsLoading = false;
+        if (this.pendingThreadId && !this.currentThread) {
+          this.loadThread(this.pendingThreadId);
+        }
       },
       error: (err) => {
         console.error('Error loading threads:', err);
@@ -443,21 +449,56 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (thread) {
       this.currentThread = thread;
       this.setCurrentVectorStore(thread.vector_store_id_read || null);
+      this.markThreadForPostFirstRunRefreshIfUntitled(thread);
     } else {
-      // Fallback: if thread not found in array, set currentThread to null
-      // This should rarely happen if threads are loaded properly
-      this.currentThread = null;
-      console.warn(`Thread ${threadId} not found in threads array`);
+      // If we're already hydrating this thread, avoid duplicating message/thread calls.
+      if (this.hydratingThreadId === threadId) {
+        return;
+      }
+
+      // Hydrate thread directly for hard-refresh / deep-link cases before list cache is ready.
+      this.hydratingThreadId = threadId;
+      this.threadService.getById(threadId).subscribe({
+        next: (resolvedThread) => {
+          this.currentThread = resolvedThread;
+          this.setCurrentVectorStore(resolvedThread.vector_store_id_read || null);
+          this.markThreadForPostFirstRunRefreshIfUntitled(resolvedThread);
+          this.upsertThread(resolvedThread);
+          this.updateModeFromSelection();
+          this.loadMessages(threadId);
+          this.resumeActiveRun(threadId);
+        },
+        error: (err) => {
+          this.currentThread = null;
+          console.warn(`Thread ${threadId} not found in threads array`);
+          console.error('Error hydrating thread by id:', err);
+          this.updateModeFromSelection();
+          this.loadMessages(threadId);
+          this.resumeActiveRun(threadId);
+        },
+        complete: () => {
+          this.hydratingThreadId = null;
+        }
+      });
+      return;
     }
 
     // Only call the messages API - no thread retrieve or run list APIs
     this.updateModeFromSelection();
     this.loadMessages(threadId);
+    this.resumeActiveRun(threadId);
   }
 
   loadMessages(threadId: string): void {
+    this.lastMessagesRequestThreadId = threadId;
     this.threadService.getMessages(threadId).subscribe({
       next: (messages) => {
+        const isCurrentThread = this.currentThread?.id === threadId;
+        const isPendingThread = !this.currentThread && this.pendingThreadId === threadId;
+        const isLatestRequest = this.lastMessagesRequestThreadId === threadId;
+        if (!isLatestRequest || (!isCurrentThread && !isPendingThread)) {
+          return;
+        }
         this.messages = messages;
       },
       error: (err) => console.error('Error loading messages:', err)
@@ -476,6 +517,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   onNewThread(): void {
+    this.pendingThreadId = null;
     this.currentThread = null;
     this.currentRun = null;
     this.runMap = {};
@@ -608,6 +650,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
 
   private async ensureVectorStoreAndThread(): Promise<{ vectorStoreId: string | null; threadId: string }> {
+    await this.hydrateCurrentThreadFromRouteIfNeeded();
     const vectorStoreId = await this.getDesiredVectorStoreId();
 
     if (this.currentThread && this.currentThread.vector_store_id_read === vectorStoreId) {
@@ -630,7 +673,31 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.location.replaceState(`/home/chat/${thread.id}`);
 
     this.upsertThread(thread);
+    this.threadsNeedingPostFirstRunRefresh.add(thread.id);
     return { vectorStoreId, threadId: thread.id };
+  }
+
+  private async hydrateCurrentThreadFromRouteIfNeeded(): Promise<void> {
+    if (this.currentThread || !this.pendingThreadId) {
+      return;
+    }
+
+    const threadFromCache = this.threads.find(t => t.id === this.pendingThreadId);
+    if (threadFromCache) {
+      this.currentThread = threadFromCache;
+      this.setCurrentVectorStore(threadFromCache.vector_store_id_read || null);
+      this.markThreadForPostFirstRunRefreshIfUntitled(threadFromCache);
+      return;
+    }
+
+    try {
+      const thread = await lastValueFrom(this.threadService.getById(this.pendingThreadId));
+      this.currentThread = thread;
+      this.setCurrentVectorStore(thread.vector_store_id_read || null);
+      this.upsertThread(thread);
+    } catch (error) {
+      console.error('Error hydrating current thread from route:', error);
+    }
   }
 
   private async getDesiredVectorStoreId(): Promise<string | null> {
@@ -715,8 +782,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
     await this.ensurePromptsLoaded();
     const assistants = this.prompts || [];
-    // If a prompt is selected, use it
-    const preferredModel = this.resolveModelPreference();
     let chosenAssistant: Assistant | undefined;
 
     // 1. If a prompt is explicitly selected, use it
@@ -739,27 +804,14 @@ export class HomeComponent implements OnInit, OnDestroy {
       chosenAssistant = assistants[0];
     }
 
-    // If we found an existing assistant, ensure its model is up-to-date
+    // If we found an existing assistant, use it as-is.
+    // Do not mutate assistant configuration during send flow.
     if (chosenAssistant) {
-      if (chosenAssistant.model !== preferredModel) {
-        try {
-          // Update the assistant's model to match the currently active preference
-          chosenAssistant = await lastValueFrom(this.assistantService.update(chosenAssistant.id, { model: preferredModel }));
-
-          // Update the local prompts cache
-          const index = this.prompts.findIndex(p => p.id === chosenAssistant!.id);
-          if (index !== -1) {
-            this.prompts[index] = chosenAssistant;
-          }
-        } catch (error) {
-          console.error('Failed to update assistant model:', error);
-          // Proceed with the old model if update fails, rather than blocking the chat
-        }
-      }
       return { assistantId: chosenAssistant.id, threadId };
     }
 
     // 5. Create a new default assistant if none exist
+    const preferredModel = this.resolveModelPreference();
     const createRequest: any = {
       name: 'Default Assistant',
       instructions: 'You are a helpful assistant.',
@@ -807,9 +859,12 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     return this.runService.create(payload).pipe(
       switchMap(run => {
-        this.currentRun = run;
-        this.upsertRun(run);
-        this.startRunPolling(run.id, threadId);
+        // Keep run UI scoped to the active thread only.
+        if (this.currentThread?.id === threadId) {
+          this.currentRun = run;
+          this.upsertRun(run);
+          this.startRunPolling(run.id, threadId);
+        }
         return of(undefined);
       }),
       catchError(error => {
@@ -1185,6 +1240,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.modelsLoading = false;
     this.threadsLoaded = false;
     this.threadsLoading = false;
+    this.threadsNeedingPostFirstRunRefresh.clear();
     if (this.attachmentMessageTimeout) {
       clearTimeout(this.attachmentMessageTimeout);
     }
@@ -1362,6 +1418,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     const existingIndex = this.threads.findIndex(t => t.id === thread.id);
     if (existingIndex === -1) {
       this.threads = [thread, ...this.threads];
+      this.markThreadForPostFirstRunRefreshIfUntitled(thread);
       // Mark as loaded since we now have threads
       if (!this.threadsLoaded) {
         this.threadsLoaded = true;
@@ -1371,6 +1428,35 @@ export class HomeComponent implements OnInit, OnDestroy {
     const nextThreads = [...this.threads];
     nextThreads[existingIndex] = thread;
     this.threads = nextThreads;
+    this.markThreadForPostFirstRunRefreshIfUntitled(thread);
+  }
+
+  private shouldRefreshThreadAfterFirstRun(threadId: string): boolean {
+    return this.threadsNeedingPostFirstRunRefresh.has(threadId);
+  }
+
+  private refreshThreadOnceAfterFirstRun(threadId: string): void {
+    this.threadService.getById(threadId).subscribe({
+      next: (thread) => {
+        if (this.currentThread?.id === thread.id) {
+          this.currentThread = thread;
+        }
+        this.upsertThread(thread);
+        this.threadsNeedingPostFirstRunRefresh.delete(threadId);
+      },
+      error: (err) => {
+        console.error('Unable to refresh thread after first run', err);
+      }
+    });
+  }
+
+  private markThreadForPostFirstRunRefreshIfUntitled(thread: Thread): void {
+    const hasTitle = !!thread.title && thread.title.trim().length > 0;
+    if (!hasTitle) {
+      this.threadsNeedingPostFirstRunRefresh.add(thread.id);
+      return;
+    }
+    this.threadsNeedingPostFirstRunRefresh.delete(thread.id);
   }
 
   private upsertRun(run: Run | null | undefined): void {

@@ -26,7 +26,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
 
   displayContent: string = '';
   renderedContent: SafeHtml | null = null;
-  private typingSpeed = 5; // ms per character
+  private typingSpeed = 2; // ms per character
   // Track messages that have already played the typing animation in this session
   private static animatedMessageIds = new Set<number>();
   copied = false;

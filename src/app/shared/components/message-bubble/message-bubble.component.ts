@@ -28,10 +28,13 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
 
     displayContent: string = '';
     renderedContent: SafeHtml | null = null;
-    private typingSpeed = 5; // ms per character
+    private typingSpeed = 2; // ms per character
     // Track messages that have already played the typing animation in this session
     // Updated to accept string or number IDs
     private static animatedMessageIds = new Set<string | number>();
+    // Timestamp captured when the page session starts.
+    // Prevents replaying animation for historical messages after a hard refresh.
+    private static readonly pageSessionStartedAt = Date.now();
     copied = false;
     private copyResetTimeout?: ReturnType<typeof setTimeout>;
 
@@ -121,6 +124,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         return !this.isUser &&
             this.isLast &&
             this.isRecent() &&
+            this.isFromCurrentPageSession() &&
             !alreadyAnimated;
     }
 
@@ -128,6 +132,14 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         const messageTime = new Date(this.message.created_at).getTime();
         const now = new Date().getTime();
         return (now - messageTime) < 60000; // Less than 1 minute old
+    }
+
+    private isFromCurrentPageSession(): boolean {
+        const messageTime = new Date(this.message?.created_at).getTime();
+        if (!Number.isFinite(messageTime)) {
+            return false;
+        }
+        return messageTime >= MessageBubbleComponent.pageSessionStartedAt;
     }
 
     private typeWriter(text: string, index: number = 0) {
