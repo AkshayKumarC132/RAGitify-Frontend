@@ -9,10 +9,20 @@ import { VectorStore } from '../../../shared/models/vector-store.model';
 export class VectorStoreListComponent {
   @Input() vectorStores: VectorStore[] = [];
   @Input() selectedVectorStore: VectorStore | null = null;
+  /** Optional map of vector store id -> document count for display */
+  @Input() documentCounts: Record<string, number> = {};
   @Output() vectorStoreSelected = new EventEmitter<VectorStore>();
   @Output() editRequested = new EventEmitter<VectorStore>();
   @Output() deleteRequested = new EventEmitter<VectorStore>();
   @Output() chatRequested = new EventEmitter<VectorStore>();
+
+  getDocCount(store: VectorStore): number {
+    return this.documentCounts[store.id] ?? 0;
+  }
+
+  getProgressPercent(store: VectorStore): number {
+    return 100; // Could be computed from processing docs; default full
+  }
 
   selectStore(store: VectorStore): void {
     this.vectorStoreSelected.emit(store);

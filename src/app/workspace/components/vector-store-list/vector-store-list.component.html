@@ -1,16 +1,21 @@
 <div class="vector-store-list">
-  <h2>
-    <i class="fa-solid fa-folder-tree"></i>
-    <span>Library</span>
-  </h2>
   <div *ngFor="let store of vectorStores" class="store-item card-premium"
     [class.selected]="selectedVectorStore?.id === store.id" (click)="selectStore(store)">
     <div class="store-meta">
-      <div class="store-name">
-        <i class="fa-solid fa-database"></i>
-        <span>{{ store.name }}</span>
+      <div class="store-name">{{ store.name }}</div>
+      <div class="store-date">
+        <i class="fa-regular fa-calendar"></i>
+        {{ formatDate(store.created_at) }}
       </div>
-      <div class="store-date">Created: {{ formatDate(store.created_at) }}</div>
+      <div class="store-docs">
+        <i class="fa-solid fa-file-lines"></i>
+        <span>{{ getDocCount(store) }} docs</span>
+      </div>
+      <div class="store-progress">
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="getProgressPercent(store)"></div>
+        </div>
+      </div>
     </div>
     <div class="store-actions">
       <button type="button" class="btn-premium-icon" (click)="requestChat(store, $event)" title="Chat with library">

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { HttpParams } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { DocumentAccess, DocumentAccessCreateRequest, DocumentAccessRemoveRequest } from '../models/document-access.model';
@@ -26,9 +27,13 @@ export class DocumentAccessService {
     return this.api.post<DocumentAccess>(`/document-access/${token}/`, data, token);
   }
 
-  list(): Observable<DocumentAccess[]> {
+  list(vectorStoreId?: string): Observable<DocumentAccess[]> {
     const token = this.getToken();
-    return this.api.get<DocumentAccess[]>(`/document-access/${token}/list/`, token);
+    let params = new HttpParams();
+    if (vectorStoreId) {
+      params = params.set('vector_store_id', vectorStoreId);
+    }
+    return this.api.get<DocumentAccess[]>(`/document-access/${token}/list/`, token, params);
   }
 
   getById(id: number): Observable<DocumentAccess> {

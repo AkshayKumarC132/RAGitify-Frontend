@@ -12,11 +12,13 @@ import { AssistantFormComponent } from './components/assistant-form/assistant-fo
 import { DocumentChatComponent } from './components/document-chat/document-chat.component';
 import { AssistantChatComponent } from './components/assistant-chat/assistant-chat.component';
 import { LibraryChatComponent } from './components/library-chat/library-chat.component';
+import { WorkspaceLibraryPickerComponent } from './components/workspace-library-picker/workspace-library-picker.component';
 import { WorkspaceRoutingModule } from './workspace-routing.module';
 
 @NgModule({
   declarations: [
     WorkspaceLayoutComponent,
+    WorkspaceLibraryPickerComponent,
     KnowledgeSectionComponent,
     PromptsSectionComponent,
     ToolsSectionComponent,

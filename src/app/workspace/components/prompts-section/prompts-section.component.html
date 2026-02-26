@@ -8,6 +8,26 @@
         <i class="fa-solid" [ngClass]="showCreateForm ? 'fa-xmark' : 'fa-plus'"></i>
         <span>{{ showCreateForm ? 'Close form' : 'New Prompt' }}</span>
       </button>
+      <div class="prompts-view-toggle">
+        <button
+          type="button"
+          class="view-btn"
+          [class.active]="viewMode === 'grid'"
+          (click)="setViewMode('grid')"
+          title="Grid view"
+        >
+          <i class="fa-solid fa-grip"></i>
+        </button>
+        <button
+          type="button"
+          class="view-btn"
+          [class.active]="viewMode === 'list'"
+          (click)="setViewMode('list')"
+          title="List view"
+        >
+          <i class="fa-solid fa-list"></i>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -15,128 +35,160 @@
     {{ errorMessage }}
   </div>
 
-  <div *ngIf="showCreateForm" class="create-form panel">
-    <h2>
-      <i class="fa-solid fa-square-pen"></i>
-      <span>Create Assistant Prompt</span>
-    </h2>
-    <form [formGroup]="createForm" (ngSubmit)="onCreateSubmit()">
-      <div class="form-group">
-        <label>Name *</label>
-        <input type="text" formControlName="name" class="form-control" placeholder="Assistant name" />
-      </div>
-
-      <div class="form-group">
-        <label>Library</label>
-        <select formControlName="vector_store_id" class="form-control">
-          <option value="">None</option>
-          <option *ngFor="let store of vectorStores" [value]="store.id">{{ store.name }}</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Instructions</label>
-        <textarea formControlName="instructions" class="form-control" rows="8"
-          placeholder="Enter assistant instructions (system prompt)..."></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Model</label>
-        <input type="text" formControlName="model" class="form-control" placeholder="e.g., gpt-4o" />
-      </div>
-
-      <div class="form-actions">
-        <button type="submit" class="btn-primary" [disabled]="loading || createForm.invalid">
-          <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
-          <span>{{ loading ? 'Creating…' : 'Create' }}</span>
-        </button>
-        <button type="button" class="btn-secondary" (click)="toggleCreateForm()" [disabled]="loading">
-          <i class="fa-solid fa-xmark"></i>
-          <span>Cancel</span>
-        </button>
-      </div>
-    </form>
+  <div class="prompt-create-backdrop" *ngIf="showCreateForm" (click)="toggleCreateForm()">
+    <div class="prompt-create-modal" (click)="$event.stopPropagation()">
+      <h3 class="rename-title">New prompt</h3>
+      <p class="rename-subtitle">Create an assistant prompt with name, instructions, and optional model.</p>
+      <form [formGroup]="createForm" (ngSubmit)="onCreateSubmit()">
+        <div class="rename-field">
+          <label for="createPromptName">Name</label>
+          <input id="createPromptName" type="text" formControlName="name" class="rename-input" placeholder="Assistant name" />
+        </div>
+        <div class="rename-field">
+          <label for="createPromptInstructions">Instructions</label>
+          <textarea id="createPromptInstructions" formControlName="instructions" class="rename-input" rows="6"
+            placeholder="Enter assistant instructions (system prompt)..."></textarea>
+        </div>
+        <div class="rename-field">
+          <label for="createPromptModel">Model</label>
+          <input id="createPromptModel" type="text" formControlName="model" class="rename-input" placeholder="e.g., gpt-4o" />
+        </div>
+        <div class="rename-actions">
+          <button type="button" class="rename-btn rename-btn-secondary" (click)="toggleCreateForm()" [disabled]="loading">
+            Cancel
+          </button>
+          <button type="submit" class="rename-btn rename-btn-primary" [disabled]="loading || createForm.invalid">
+            <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+            <span>{{ loading ? 'Creating…' : 'Create' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
-  <div *ngIf="editingAssistant" class="create-form panel">
-    <h2>
-      <i class="fa-solid fa-pen-to-square"></i>
-      <span>Update "{{ editingAssistant.name }}"</span>
-    </h2>
-    <form [formGroup]="editForm" (ngSubmit)="onEditSubmit()">
-      <div class="form-group">
-        <label>Name *</label>
-        <input type="text" formControlName="name" class="form-control" placeholder="Assistant name" />
-      </div>
-
-      <div class="form-group">
-        <label>Library</label>
-        <select formControlName="vector_store_id" class="form-control">
-          <option value="">None</option>
-          <option *ngFor="let store of vectorStores" [value]="store.id">{{ store.name }}</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Instructions</label>
-        <textarea formControlName="instructions" class="form-control" rows="6"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Model</label>
-        <input type="text" formControlName="model" class="form-control" placeholder="e.g., gpt-4o" />
-      </div>
-
-      <div class="form-actions">
-        <button type="submit" class="btn-primary" [disabled]="editLoading || editForm.invalid">
-          <i class="fa-solid" [ngClass]="editLoading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
-          <span>{{ editLoading ? 'Saving…' : 'Save changes' }}</span>
-        </button>
-        <button type="button" class="btn-secondary" (click)="cancelEdit()" [disabled]="editLoading">
-          <i class="fa-solid fa-xmark"></i>
-          <span>Cancel</span>
-        </button>
-      </div>
-    </form>
+  <div class="prompt-create-backdrop" *ngIf="editingAssistant" (click)="cancelEdit()">
+    <div class="prompt-create-modal" (click)="$event.stopPropagation()">
+      <h3 class="rename-title">Update prompt</h3>
+      <p class="rename-subtitle">Update the name, instructions, or model for <strong>{{ editingAssistant.name }}</strong>.</p>
+      <form [formGroup]="editForm" (ngSubmit)="onEditSubmit()">
+        <div class="rename-field">
+          <label for="editPromptName">Name</label>
+          <input id="editPromptName" type="text" formControlName="name" class="rename-input" placeholder="Assistant name" />
+        </div>
+        <div class="rename-field">
+          <label for="editPromptInstructions">Instructions</label>
+          <textarea id="editPromptInstructions" formControlName="instructions" class="rename-input" rows="6"></textarea>
+        </div>
+        <div class="rename-field">
+          <label for="editPromptModel">Model</label>
+          <input id="editPromptModel" type="text" formControlName="model" class="rename-input" placeholder="e.g., gpt-4o" />
+        </div>
+        <div class="rename-actions">
+          <button type="button" class="rename-btn rename-btn-secondary" (click)="cancelEdit()" [disabled]="editLoading">
+            Cancel
+          </button>
+          <button type="submit" class="rename-btn rename-btn-primary" [disabled]="editLoading || editForm.invalid">
+            <i class="fa-solid" [ngClass]="editLoading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+            <span>{{ editLoading ? 'Saving…' : 'Save' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div *ngIf="loadingAssistants" class="loading-state">Loading prompts...</div>
-  <div class="prompts-list" *ngIf="!loadingAssistants && assistants.length > 0; else emptyPrompts">
-    <div *ngFor="let assistant of assistants" class="prompt-item card-premium">
-      <div class="prompt-icon">
-        <i class="fa-solid fa-robot"></i>
-      </div>
-      <div class="prompt-info">
-        <div class="prompt-name">{{ assistant.name }}</div>
-        <div class="prompt-meta">
-          <span class="meta-tag"><i class="fa-solid fa-microchip"></i> {{ assistant.model || 'Workspace default'
-            }}</span>
-          <span class="meta-tag"><i class="fa-solid fa-database"></i> {{ vectorStoreLabel(assistant.vector_store_id)
-            }}</span>
+  <div *ngIf="!loadingAssistants && assistants.length > 0; else emptyPrompts">
+    <!-- List view -->
+    <div *ngIf="viewMode === 'list'" class="prompts-table-wrap">
+      <table class="prompts-table">
+        <thead>
+          <tr>
+            <th class="col-name">NAME</th>
+            <th class="col-model">MODEL</th>
+            <th class="col-instructions">INSTRUCTIONS</th>
+            <th class="col-date">DATE</th>
+            <th class="col-actions">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let assistant of assistants" class="prompt-row">
+            <td class="col-name">
+              <div class="prompt-row-icon">
+                <i class="fa-solid fa-robot"></i>
+              </div>
+              <div class="prompt-row-name">{{ assistant.name }}</div>
+            </td>
+            <td class="col-model">
+              {{ assistant.model || 'Workspace default' }}
+            </td>
+            <td class="col-instructions">
+              <span class="instructions-preview">
+                {{ instructionsPreview(assistant.instructions) }}
+              </span>
+            </td>
+            <td class="col-date">
+              {{ assistant.updated_at | date:'MMM d, y' }}
+            </td>
+            <td class="col-actions">
+              <div class="prompt-actions-inline">
+                <button class="btn-premium-icon" (click)="testAssistant(assistant)" title="Test this prompt">
+                  <i class="fa-solid fa-play"></i>
+                </button>
+                <button class="btn-premium-icon" (click)="startEdit(assistant)" [disabled]="assistant.is_default === true"
+                  [title]="assistant.is_default === true ? 'Default prompt cannot be edited' : 'Edit prompt'">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button class="btn-premium-icon danger" (click)="deleteAssistant(assistant)"
+                  [disabled]="assistant.is_default === true"
+                  [title]="assistant.is_default === true ? 'Default prompt cannot be deleted' : 'Delete prompt'">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Grid view -->
+    <div class="prompts-list grid" *ngIf="viewMode === 'grid'">
+      <div *ngFor="let assistant of assistants" class="prompt-item card-premium">
+        <div class="prompt-icon">
+          <i class="fa-solid fa-robot"></i>
         </div>
-        <div class="prompt-instructions">
-          {{ instructionsPreview(assistant.instructions) }}
+        <div class="prompt-info">
+          <div class="prompt-instructions">
+            {{ instructionsPreview(assistant.instructions) }}
+          </div>
+          <div class="prompt-name">{{ assistant.name }}</div>
+          <div class="prompt-meta">
+            <span class="meta-tag"><i class="fa-solid fa-microchip"></i> {{ assistant.model || 'Workspace default'
+              }}</span>
+            <span class="meta-tag" *ngIf="assistant.vector_store_id">
+              <i class="fa-solid fa-database"></i> {{ vectorStoreLabel(assistant.vector_store_id) }}
+            </span>
+          </div>
         </div>
-      </div>
-      <div class="prompt-actions">
-        <div class="action-buttons">
-          <button class="btn-premium-icon" (click)="testAssistant(assistant)" title="Test this prompt">
-            <i class="fa-solid fa-play"></i>
-          </button>
-          <button class="btn-premium-icon" (click)="startEdit(assistant)" [disabled]="assistant.is_default === true"
-            [title]="assistant.is_default === true ? 'Default prompt cannot be edited' : 'Edit prompt'">
-            <i class="fa-solid fa-pen-to-square"></i>
-          </button>
-          <button class="btn-premium-icon danger" (click)="deleteAssistant(assistant)"
-            [disabled]="assistant.is_default === true"
-            [title]="assistant.is_default === true ? 'Default prompt cannot be deleted' : 'Delete prompt'">
-            <i class="fa-solid fa-trash"></i>
-          </button>
+        <div class="prompt-actions">
+          <div class="action-buttons">
+            <button class="btn-premium-icon" (click)="testAssistant(assistant)" title="Test this prompt">
+              <i class="fa-solid fa-play"></i>
+            </button>
+            <button class="btn-premium-icon" (click)="startEdit(assistant)" [disabled]="assistant.is_default === true"
+              [title]="assistant.is_default === true ? 'Default prompt cannot be edited' : 'Edit prompt'">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button class="btn-premium-icon danger" (click)="deleteAssistant(assistant)"
+              [disabled]="assistant.is_default === true"
+              [title]="assistant.is_default === true ? 'Default prompt cannot be deleted' : 'Delete prompt'">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+          <span class="prompt-date">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>{{ assistant.updated_at | date:'MMM d, y' }}</span>
+          </span>
         </div>
-        <span class="prompt-date">
-          <i class="fa-solid fa-clock-rotate-left"></i>
-          <span>{{ assistant.updated_at | date:'MMM d, y' }}</span>
-        </span>
       </div>
     </div>
   </div>

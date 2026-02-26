@@ -1,5 +1,5 @@
 <div class="knowledge-section">
-  <div class="section-header">
+  <div class="section-header" *ngIf="!isInWorkspace">
     <div>
       <h1>
         <i class="fa-solid fa-folder-open"></i>
@@ -22,62 +22,65 @@
     {{ errorMessage }}
   </div>
 
-  <div *ngIf="showCreateVectorStoreForm" class="panel">
-    <h3>
-      <i class="fa-solid fa-folder-plus"></i>
-      <span>Create library</span>
-    </h3>
-    <form [formGroup]="createVectorStoreForm" (ngSubmit)="createVectorStore()">
-      <div class="form-group">
-        <label>Name *</label>
-        <input type="text" formControlName="name" placeholder="e.g., Product manuals" />
-        <small *ngIf="createVectorStoreForm.get('name')?.invalid && createVectorStoreForm.get('name')?.touched">
-          A descriptive name is required.
-        </small>
-      </div>
-      <div class="form-actions">
-        <button type="submit" class="btn-primary" [disabled]="createVectorStoreForm.invalid">
-          <i class="fa-solid fa-floppy-disk"></i>
-          <span>Create</span>
-        </button>
-        <button type="button" class="btn-secondary" (click)="toggleVectorStoreForm()">
-          <i class="fa-solid fa-xmark"></i>
-          <span>Cancel</span>
-        </button>
-      </div>
-    </form>
+  <div class="library-create-backdrop" *ngIf="showCreateVectorStoreForm" (click)="toggleVectorStoreForm()">
+    <div class="panel library-create-modal" (click)="$event.stopPropagation()">
+      <h3>
+        <i class="fa-solid fa-folder-plus"></i>
+        <span>Create library</span>
+      </h3>
+      <form [formGroup]="createVectorStoreForm" (ngSubmit)="createVectorStore()">
+        <div class="form-group">
+          <label>Name *</label>
+          <input type="text" formControlName="name" placeholder="e.g., Product manuals" />
+          <small *ngIf="createVectorStoreForm.get('name')?.invalid && createVectorStoreForm.get('name')?.touched">
+            A descriptive name is required.
+          </small>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="createVectorStoreForm.invalid">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Create</span>
+          </button>
+          <button type="button" class="btn-secondary" (click)="toggleVectorStoreForm()">
+            <i class="fa-solid fa-xmark"></i>
+            <span>Cancel</span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
-  <div *ngIf="editingVectorStore" class="panel">
-    <h3>
-      <i class="fa-solid fa-pen"></i>
-      <span>Rename "{{ editingVectorStore.name }}"</span>
-    </h3>
-    <form [formGroup]="editVectorStoreForm" (ngSubmit)="updateVectorStore()">
-      <div class="form-group">
-        <label>New name *</label>
-        <input type="text" formControlName="name" />
-      </div>
-      <div class="form-actions">
-        <button type="submit" class="btn-primary" [disabled]="editVectorStoreForm.invalid">
-          <i class="fa-solid fa-floppy-disk"></i>
-          <span>Save</span>
-        </button>
-        <button type="button" class="btn-secondary" (click)="cancelVectorStoreEdit()">
-          <i class="fa-solid fa-xmark"></i>
-          <span>Cancel</span>
-        </button>
-      </div>
-    </form>
+  <!-- Library rename modal (same as Your Libraries) -->
+  <div class="library-rename-backdrop" *ngIf="editingVectorStore" (click)="cancelVectorStoreEdit()">
+    <div class="library-rename-modal" (click)="$event.stopPropagation()">
+      <h3 class="rename-title">Rename library</h3>
+      <p class="rename-subtitle">Update the name for <strong>{{ editingVectorStore.name }}</strong>.</p>
+      <form [formGroup]="editVectorStoreForm" (ngSubmit)="updateVectorStore()">
+        <div class="rename-field">
+          <label for="renameLibraryInput">New name</label>
+          <input id="renameLibraryInput" type="text" formControlName="name" placeholder="Enter library name" />
+        </div>
+        <div class="rename-actions">
+          <button type="button" class="rename-btn rename-btn-secondary" (click)="cancelVectorStoreEdit()">
+            Cancel
+          </button>
+          <button type="submit" class="rename-btn rename-btn-primary" [disabled]="editVectorStoreForm.invalid">
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
-  <div *ngIf="showUploadForm" class="panel upload-panel">
-    <app-document-upload [vectorStores]="vectorStores" [defaultVectorStoreId]="selectedVectorStore?.id || null"
-      (uploaded)="onDocumentUploaded()" (cancel)="showUploadForm = false"></app-document-upload>
+  <div class="library-rename-backdrop" *ngIf="showUploadForm" (click)="showUploadForm = false">
+    <div class="upload-modal" (click)="$event.stopPropagation()">
+      <app-document-upload [vectorStores]="vectorStores" [defaultVectorStoreId]="selectedVectorStore?.id || null"
+        (uploaded)="onDocumentUploaded()" (cancel)="showUploadForm = false"></app-document-upload>
+    </div>
   </div>
 
-  <div class="knowledge-grid">
-    <div class="vector-store-column">
+  <div class="knowledge-grid" [class.single-column]="isInWorkspace">
+    <div class="vector-store-column" *ngIf="!isInWorkspace">
       <div class="panel">
         <div class="panel-header">
           <h3>Library</h3>
@@ -95,18 +98,15 @@
     </div>
 
     <div class="documents-column">
-      <div class="panel">
-        <div class="panel-header">
-          <h3>
-            Documents
-            <span *ngIf="selectedVectorStore">
-              in {{ selectedVectorStore.name }}
-            </span>
-          </h3>
-          <span>{{ filteredDocuments.length }} items</span>
+      <div class="documents-panel">
+        <div class="documents-panel-header">
+          <h2 class="documents-title">{{ selectedVectorStore?.name || 'Documents' }}</h2>
+          <p class="documents-subtitle" *ngIf="selectedVectorStore">
+            {{ filteredDocuments.length }} documents
+          </p>
         </div>
 
-        <div class="documents-toolbar" *ngIf="documents.length > 0">
+        <div class="documents-toolbar">
           <div class="search-box">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" [(ngModel)]="searchQuery" placeholder="Search documents..." />
@@ -114,21 +114,73 @@
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
-
-          <div class="filter-box">
-            <select [(ngModel)]="statusFilter" class="status-select">
-              <option value="">All Statuses</option>
-              <option *ngFor="let status of availableStatuses" [value]="status">
-                {{ status | titlecase }}
-              </option>
-            </select>
-          </div>
-
-          <div class="selection-control">
-            <button class="btn-select-toggle" [class.active]="selectionMode" (click)="toggleSelectionMode()">
-              <i class="fa-solid" [ngClass]="selectionMode ? 'fa-xmark' : 'fa-list-check'"></i>
-              <span>{{ selectionMode ? 'Cancel' : 'Select' }}</span>
+          <button type="button" class="toolbar-icon-btn" title="Settings">
+            <i class="fa-solid fa-gear"></i>
+          </button>
+          <div class="view-toggle">
+            <button type="button" class="toolbar-icon-btn" [class.active]="listView" (click)="listView = true" title="List view">
+              <i class="fa-solid fa-list"></i>
             </button>
+            <button type="button" class="toolbar-icon-btn" [class.active]="!listView" (click)="listView = false" title="Grid view">
+              <i class="fa-solid fa-grip"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="overview-cards">
+          <div class="overview-panel overview-panel-type">
+            <span class="overview-group-label">DOCUMENT TYPE</span>
+            <div class="overview-cards-row">
+              <div class="overview-card" [class.active]="activeTypeFilter === 'all'" (click)="setTypeFilter('all')">
+                <div class="overview-card-top">
+                  <i class="fa-solid fa-file-lines overview-card-icon"></i>
+                  <span class="overview-card-value">{{ baseDocuments.length }}</span>
+                </div>
+                <div class="overview-card-label">All Documents</div>
+              </div>
+              <div class="overview-card" [class.active]="activeTypeFilter === 'uploaded'" (click)="setTypeFilter('uploaded')">
+                <div class="overview-card-top">
+                  <i class="fa-solid fa-arrow-up overview-card-icon"></i>
+                  <span class="overview-card-value">{{ typeUploadedCount }}</span>
+                </div>
+                <div class="overview-card-label">Uploaded</div>
+              </div>
+              <div class="overview-card" [class.active]="activeTypeFilter === 'accessed'" (click)="setTypeFilter('accessed')">
+                <div class="overview-card-top">
+                  <i class="fa-solid fa-eye overview-card-icon"></i>
+                  <span class="overview-card-value">{{ typeAccessedCount }}</span>
+                </div>
+                <div class="overview-card-label">Accessed</div>
+              </div>
+            </div>
+          </div>
+          <div class="overview-panel overview-panel-status">
+            <span class="overview-group-label">STATUS</span>
+            <div class="overview-cards-row status-row">
+              <div class="overview-card" [class.active]="activeStatusFilter === 'finished'" [class.disabled]="activeTypeFilter === 'accessed'"
+                (click)="setStatusFilter('finished')">
+                <div class="overview-card-top">
+                  <i class="fa-solid fa-circle-check overview-card-icon status-finished"></i>
+                  <span class="overview-card-value">{{ statusFinishedCount }}</span>
+                </div>
+                <div class="overview-card-label">Finished</div>
+              </div>
+              <div class="overview-card" [class.active]="activeStatusFilter === 'processing'" [class.disabled]="activeTypeFilter === 'accessed'"
+                (click)="setStatusFilter('processing')">
+                <div class="overview-card-top">
+                  <i class="fa-solid fa-clock overview-card-icon status-processing"></i>
+                  <span class="overview-card-value">{{ statusProcessingCount }}</span>
+                </div>
+                <div class="overview-card-label">Processing</div>
+              </div>
+              <div class="overview-card" [class.active]="activeStatusFilter === 'failed'" [class.disabled]="activeTypeFilter === 'accessed'" (click)="setStatusFilter('failed')">
+                <div class="overview-card-top">
+                  <i class="fa-solid fa-triangle-exclamation overview-card-icon status-failed"></i>
+                  <span class="overview-card-value">{{ statusFailedCount }}</span>
+                </div>
+                <div class="overview-card-label">Failed</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -141,55 +193,113 @@
           No documents found for the selected library.
         </div>
 
-        <div *ngIf="!loadingDocuments && filteredDocuments.length > 0" class="documents-list">
-          <div class="document-item card-premium" *ngFor="let doc of filteredDocuments"
-            [class.selected]="selectedDocumentIds.has(doc.id)">
-            <div class="document-selection" *ngIf="selectionMode">
-              <label class="checkbox-container">
-                <input type="checkbox" [checked]="selectedDocumentIds.has(doc.id)"
-                  (change)="toggleDocumentSelection(doc.id)" />
-                <span class="checkmark"></span>
-              </label>
-            </div>
-            <div class="document-icon">
-              <i class="fa-solid fa-file-lines"></i>
-            </div>
-            <div class="document-meta">
-              <div>
-                <div class="document-title" *ngIf="editingDocumentId !== doc.id">{{ doc.title }}</div>
-                <div class="document-edit" *ngIf="editingDocumentId === doc.id">
-                  <input type="text" [formControl]="documentTitleControl" placeholder="Document title" />
-                  <div class="edit-actions">
-                    <button class="btn-small" (click)="saveDocumentTitle(doc)" type="button">
-                      <i class="fa-solid fa-floppy-disk"></i>
-                      <span>Save</span>
+        <!-- List view -->
+        <div *ngIf="!loadingDocuments && filteredDocuments.length > 0 && listView" class="documents-table-wrap">
+          <table class="documents-table">
+            <thead>
+              <tr>
+                <th class="col-checkbox">
+                  <label class="checkbox-container">
+                    <input type="checkbox" [checked]="isAllSelected" (change)="toggleAllSelection()" />
+                    <span class="checkmark"></span>
+                  </label>
+                </th>
+                <th class="col-name">NAME</th>
+                <th class="col-type">TYPE</th>
+                <th class="col-status">STATUS</th>
+                <th class="col-date">DATE</th>
+                <th class="col-actions">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let doc of filteredDocuments" class="document-row"
+                [class.selected]="selectedDocumentIds.has(doc.id)">
+                <td class="col-checkbox">
+                  <label class="checkbox-container">
+                    <input type="checkbox" [checked]="selectedDocumentIds.has(doc.id)"
+                      (change)="toggleDocumentSelection(doc.id)" />
+                    <span class="checkmark"></span>
+                  </label>
+                </td>
+                <td class="col-name">
+                  <i class="fa-solid doc-file-icon" [ngClass]="getFileIcon(doc.title)"></i>
+                  <span class="doc-name-text">{{ doc.title }}</span>
+                </td>
+                <td class="col-type">
+                  <span class="type-badge" [ngClass]="getDocumentTypeLabel(doc) === 'Accessed' ? 'type-accessed' : 'type-uploaded'">
+                    <i class="fa-solid" [ngClass]="getDocumentTypeLabel(doc) === 'Accessed' ? 'fa-eye' : 'fa-arrow-up'"></i>
+                    {{ getDocumentTypeLabel(doc) }}
+                  </span>
+                </td>
+                <td class="col-status">
+                  <span class="status-badge" [ngClass]="getStatusBadgeClass(doc.status)">
+                    <i class="fa-solid" [ngClass]="doc.status === 'completed' ? 'fa-circle-check' : doc.status === 'failed' ? 'fa-triangle-exclamation' : 'fa-clock'"></i>
+                    {{ getDisplayStatus(doc.status) }}
+                  </span>
+                </td>
+                <td class="col-date">{{ formatDate(doc.uploaded_at) }}</td>
+                <td class="col-actions">
+                  <div class="actions-cell-wrap" (click)="$event.stopPropagation()">
+                    <button type="button" class="action-menu-btn" title="Actions"
+                      (click)="toggleDocumentActions(doc.id, $event)">
+                      <i class="fa-solid fa-ellipsis-vertical"></i>
                     </button>
-                    <button class="btn-small" (click)="cancelDocumentRename()" type="button">
-                      <i class="fa-solid fa-xmark"></i>
-                      <span>Cancel</span>
-                    </button>
+                    <div class="document-actions-dropdown" *ngIf="!selectionMode && isActionsOpen(doc.id)">
+                      <button type="button" class="dropdown-action-item" (click)="openDocumentChat(doc); closeDocumentActions()"
+                        [disabled]="doc.status !== 'completed'" title="Chat">
+                        <i class="fa-solid fa-comments"></i>
+                        <span>Chat</span>
+                      </button>
+                      <button type="button" class="dropdown-action-item danger" (click)="deleteDocument(doc.id); closeDocumentActions()" title="Delete">
+                        <i class="fa-solid fa-trash"></i>
+                        <span>Delete</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div class="document-date">
-                  <span class="label">Uploaded at:</span>
-                  <span> {{ formatDate(doc.uploaded_at) }}</span>
-                </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Grid view -->
+        <div *ngIf="!loadingDocuments && filteredDocuments.length > 0 && !listView" class="documents-grid-wrap">
+          <div class="documents-grid">
+            <div *ngFor="let doc of filteredDocuments" class="document-card"
+              [class.selected]="selectedDocumentIds.has(doc.id)" (click)="onDocumentCardClick($event, doc)">
+              <div class="document-card-header">
+                <label class="checkbox-container card-checkbox" (click)="$event.stopPropagation()">
+                  <input type="checkbox" [checked]="selectedDocumentIds.has(doc.id)"
+                    (change)="toggleDocumentSelection(doc.id)" />
+                  <span class="checkmark"></span>
+                </label>
+                <span class="document-card-type-icon" [title]="getDocumentTypeLabel(doc)">
+                  <i class="fa-solid" [ngClass]="getDocumentTypeLabel(doc) === 'Accessed' ? 'fa-eye' : 'fa-arrow-up-from-square'"></i>
+                </span>
               </div>
-              <span class="status-badge" [ngClass]="getStatusBadgeClass(doc.status)">
-                {{ doc.status }}
-              </span>
-            </div>
-            <div class="document-actions" *ngIf="!selectionMode">
-              <button class="btn-premium-icon" (click)="openDocumentChat(doc)" [disabled]="doc.status !== 'completed'"
-                title="Chat">
-                <i class="fa-solid fa-comments"></i>
-              </button>
-              <button class="btn-premium-icon" (click)="startDocumentRename(doc)" title="Rename">
-                <i class="fa-solid fa-pen-to-square"></i>
-              </button>
-              <button class="btn-premium-icon danger" (click)="deleteDocument(doc.id)" title="Delete">
-                <i class="fa-solid fa-trash"></i>
-              </button>
+              <div class="document-card-icon">
+                <i class="fa-solid" [ngClass]="getFileIcon(doc.title)"></i>
+              </div>
+              <h3 class="document-card-title">{{ doc.title }}</h3>
+              <p class="document-card-size">{{ getFileSizeDisplay(doc) }}</p>
+              <div class="document-card-footer">
+                <span class="document-card-status" [ngClass]="getStatusBadgeClass(doc.status)" [title]="getDisplayStatus(doc.status)">
+                  <i class="fa-solid" [ngClass]="doc.status === 'completed' ? 'fa-circle-check' : doc.status === 'failed' ? 'fa-triangle-exclamation' : 'fa-clock'"></i>
+                </span>
+                <span class="document-card-date">{{ formatDate(doc.uploaded_at) }}</span>
+              </div>
+              <div class="document-card-actions">
+                <button type="button" class="card-action-btn" (click)="openDocumentChat(doc); $event.stopPropagation()"
+                  [disabled]="doc.status !== 'completed'" title="Chat">
+                  <i class="fa-solid fa-comments"></i>
+                </button>
+                <button type="button" class="card-action-btn" (click)="startDocumentRename(doc); $event.stopPropagation()" title="Rename">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button type="button" class="card-action-btn danger" (click)="deleteDocument(doc.id); $event.stopPropagation()" title="Delete">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -198,30 +308,24 @@
   </div>
 
   <app-document-chat *ngIf="chatDocument" [document]="chatDocument" (closed)="closeDocumentChat()"></app-document-chat>
-
   <app-library-chat *ngIf="chatLibrary" [vectorStore]="chatLibrary" (closed)="closeLibraryChat()"></app-library-chat>
 
-  <!-- Floating Selection Bar -->
   <div class="selection-bar-container" [class.show]="selectedDocumentIds.size > 0">
     <div class="selection-bar">
       <div class="selection-info">
         <span class="count-badge">{{ selectedDocumentIds.size }}</span>
         <span class="selection-text">documents selected</span>
       </div>
-
       <div class="selection-actions">
         <button class="action-btn secondary" (click)="toggleAllSelection()">
           <i class="fa-solid" [ngClass]="isAllSelected ? 'fa-square-minus' : 'fa-square-check'"></i>
           <span>{{ isAllSelected ? 'Deselect All' : 'Select All' }}</span>
         </button>
-
         <div class="divider"></div>
-
         <button class="action-btn danger" (click)="deleteSelectedDocuments()">
           <i class="fa-solid fa-trash-can"></i>
           <span>Delete Documents</span>
         </button>
-
         <button class="close-bar" (click)="clearSelection()" title="Clear selection">
           <i class="fa-solid fa-xmark"></i>
         </button>

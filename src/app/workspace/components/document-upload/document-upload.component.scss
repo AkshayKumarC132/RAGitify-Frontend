@@ -1,12 +1,112 @@
 @import '../models-section/models-section.component.scss';
 
-.document-upload {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+/* Modal styling (matches Rename library modal) */
+.document-upload-modal {
+  .upload-modal-title {
+    margin: 0 0 0.35rem 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
 
+  .upload-modal-subtitle {
+    margin: 0 0 1rem 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .upload-modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 1.25rem;
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+  }
+
+  .upload-modal-input {
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 0.75rem;
+    font-size: 13px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+
+    &:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+  }
+
+  select.upload-modal-input {
+    cursor: pointer;
+    appearance: auto;
+  }
+
+  input[type="file"].upload-modal-input {
+    padding: 0.4rem 0.5rem;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .upload-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  }
+
+  .upload-modal-btn {
+    min-width: 84px;
+    border-radius: 999px;
+    padding: 0.4rem 0.85rem;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+
+    &.upload-modal-btn-secondary {
+      background: transparent;
+      border-color: var(--border-color);
+      color: var(--text-secondary);
+
+      &:hover:not(:disabled) {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+    }
+
+    &.upload-modal-btn-primary {
+      background: var(--accent-color);
+      color: #fff;
+      border-color: var(--accent-color);
+
+      &:hover:not(:disabled) {
+        background: var(--accent-hover);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+    }
+  }
+}
+
+.document-upload {
   h2 {
     color: var(--text-primary);
     margin-bottom: 1.5rem;

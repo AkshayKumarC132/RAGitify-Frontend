@@ -1,8 +1,8 @@
 <div class="workspace-container" [class.sidebar-collapsed]="sidebarCollapsed">
   <aside class="workspace-sidebar" [class.collapsed]="sidebarCollapsed">
     <div class="sidebar-header" [class.show-expand-control]="sidebarCollapsed && hoveringExpandControl">
-      <button type="button" class="brand-toggle" (click)="toggleSidebar(undefined, $event)"
-        [attr.title]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+      <button type="button" class="brand-toggle" (click)="goToHome()"
+        [attr.title]="'Go to home'"
         (mouseenter)="handleBrandExpandInteraction(true)" (mouseleave)="handleBrandExpandInteraction(false)"
         (focus)="handleBrandExpandInteraction(true)" (blur)="handleBrandExpandInteraction(false)">
         <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" class="brand-logo" />
@@ -19,43 +19,107 @@
       </button>
     </div>
 
-    <nav class="sidebar-actions">
-      <button class="new-thread-button" type="button" (click)="startNewChat()">
+    <!-- New Chat / Workspace / Prompts: hidden when in Knowledge Library -->
+    <nav class="sidebar-actions" *ngIf="showLibraryPicker || activeSection === 'prompts'">
+      <button type="button" class="new-thread-button" (click)="goToNewChat()" [attr.title]="sidebarCollapsed ? 'Start a new chat' : null">
         <i class="fa-solid fa-plus"></i>
-        <span>New Chat</span>
+        <span class="button-text" *ngIf="!sidebarCollapsed">New Chat</span>
       </button>
-      <button class="workspace-button active" type="button">
+      <button type="button" class="workspace-button" [class.active]="activeSection !== 'prompts'" (click)="goToWorkspace()" [attr.title]="sidebarCollapsed ? 'Open workspace' : null">
         <i class="fa-solid fa-briefcase"></i>
-        <span>Workspace</span>
+        <span class="button-text" *ngIf="!sidebarCollapsed">Workspace</span>
+      </button>
+      <button type="button" class="workspace-button" [class.active]="activeSection === 'prompts'" (click)="goToPrompts()" [attr.title]="sidebarCollapsed ? 'Open prompts' : null">
+        <i class="fa-solid fa-robot"></i>
+        <span class="button-text" *ngIf="!sidebarCollapsed">Prompts</span>
       </button>
     </nav>
 
+    <!-- Knowledge tab (inside a library): show library list and summary -->
+    <ng-container *ngIf="!showLibraryPicker && activeSection === 'knowledge'">
+      <div class="knowledge-sidebar-block">
+        <div class="library-search-row" *ngIf="!sidebarCollapsed">
+          <div class="library-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+              class="library-search-input"
+              type="text"
+              [(ngModel)]="librarySearchQuery"
+              placeholder="Search libraries..."
+              aria-label="Search libraries"
+            />
+            <button
+              type="button"
+              class="library-search-clear"
+              *ngIf="librarySearchQuery"
+              (click)="librarySearchQuery = ''"
+              title="Clear search"
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <button type="button" class="library-add-btn" (click)="openUploadOrNewLibrary('library')" title="New Library">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+        <button
+          type="button"
+          class="library-add-btn library-add-btn-collapsed"
+          *ngIf="sidebarCollapsed"
+          (click)="openUploadOrNewLibrary('library')"
+          title="New Library"
+        >
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <div class="sidebar-library-list" *ngIf="!sidebarCollapsed">
+          <app-vector-store-list [vectorStores]="filteredVectorStores" [selectedVectorStore]="layoutSelectedStore"
+            [documentCounts]="libraryDocCounts" (vectorStoreSelected)="onLayoutLibrarySelect($event)"
+            (editRequested)="onLayoutEditLibrary($event)" (deleteRequested)="onLayoutDeleteLibrary($event)"
+            (chatRequested)="onLayoutChatLibrary($event)"></app-vector-store-list>
+        </div>
+        <div class="sidebar-summary" *ngIf="!sidebarCollapsed">
+          <div class="summary-card summary-card-libraries">
+            <span class="summary-card-value">{{ layoutVectorStores.length }}</span>
+            <span class="summary-card-label">Total Libraries</span>
+          </div>
+          <div class="summary-card summary-card-documents">
+            <span class="summary-card-value">{{ totalDocumentsCount }}</span>
+            <span class="summary-card-label">Total Documents</span>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Bottom: Home and Logout -->
     <div class="sidebar-footer">
-      <a routerLink="/home" class="btn-premium-secondary">
+      <button type="button" class="sidebar-footer-btn" (click)="goToHome()" title="Home">
         <i class="fa-solid fa-house"></i>
         <span>Home</span>
-      </a>
-      <button class="btn-premium-secondary danger" (click)="logout()">
+      </button>
+      <button type="button" class="sidebar-footer-btn danger" (click)="logout()" title="Log out">
         <i class="fa-solid fa-right-from-bracket"></i>
         <span>Logout</span>
       </button>
     </div>
   </aside>
 
-  <div class="workspace-content">
+  <!-- Main: picker when no library selected, otherwise workspace content -->
+  <ng-container *ngIf="showLibraryPicker">
+    <div class="workspace-picker-full">
+      <app-workspace-library-picker></app-workspace-library-picker>
+    </div>
+  </ng-container>
+
+  <div class="workspace-content" *ngIf="!showLibraryPicker">
     <div class="workspace-top-bar">
-      <div>
-        <p class="eyebrow">Hub</p>
-        <h1>Intelligence Layer</h1>
+      <div class="top-bar-brand">
+        <i class="fa-solid fa-file-lines top-bar-icon"></i>
+        <span class="top-bar-title">Knowledge Library</span>
       </div>
-      <div class="workspace-tabs">
-        <button type="button" [class.active]="activeSection === 'knowledge'" (click)="setActiveSection('knowledge')">
-          <i class="fa-solid fa-folder-open"></i>
-          <span>Knowledge</span>
-        </button>
-        <button type="button" [class.active]="activeSection === 'prompts'" (click)="setActiveSection('prompts')">
-          <i class="fa-solid fa-robot"></i>
-          <span>Prompts</span>
+      <div class="top-bar-right">
+        <button type="button" class="upload-button" (click)="openUploadOrNewLibrary('upload')" *ngIf="activeSection === 'knowledge'">
+          <i class="fa-solid fa-arrow-up"></i>
+          <span>Upload</span>
         </button>
       </div>
     </div>
@@ -65,3 +129,4 @@
       <app-knowledge-section *ngIf="activeSection === 'knowledge'"></app-knowledge-section>
     </div>
   </div>
+</div>

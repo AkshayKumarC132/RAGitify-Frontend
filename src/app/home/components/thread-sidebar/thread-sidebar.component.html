@@ -30,6 +30,11 @@
       <i class="fa-solid fa-briefcase"></i>
       <span class="button-text" *ngIf="!collapsed">Workspace</span>
     </button>
+    <button class="workspace-button" type="button" (click)="goToPrompts()"
+      [attr.title]="collapsed ? 'Open prompts' : null">
+      <i class="fa-solid fa-robot"></i>
+      <span class="button-text" *ngIf="!collapsed">Prompts</span>
+    </button>
     <div class="threads-search">
       <div class="search-input-wrapper" (click)="openSearchPopup($event)" [attr.title]="'Search threads'">
         <i class="fa-solid fa-magnifying-glass"></i>

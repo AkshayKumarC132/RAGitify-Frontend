@@ -24,6 +24,7 @@ export class PromptsSectionComponent implements OnInit {
   errorMessage = '';
   editingAssistant: Assistant | null = null;
   testingAssistant: Assistant | null = null;
+  viewMode: 'list' | 'grid' = 'list';
 
   constructor(
     private assistantService: AssistantService,
@@ -34,14 +35,12 @@ export class PromptsSectionComponent implements OnInit {
   ) {
     this.createForm = this.fb.group({
       name: ['', Validators.required],
-      vector_store_id: [''],
       instructions: [''],
       model: ['']
     });
 
     this.editForm = this.fb.group({
       name: ['', Validators.required],
-      vector_store_id: [''],
       instructions: [''],
       model: ['']
     });
@@ -89,20 +88,15 @@ export class PromptsSectionComponent implements OnInit {
     this.editingAssistant = assistant;
     this.editForm.reset({
       name: assistant.name,
-      vector_store_id: assistant.vector_store_id || '',
       instructions: assistant.instructions || '',
       model: assistant.model || ''
     });
-    if (!this.vectorStores.length) {
-      this.loadVectorStores();
-    }
   }
 
   cancelEdit(): void {
     this.editingAssistant = null;
     this.editForm.reset({
       name: '',
-      vector_store_id: '',
       instructions: '',
       model: ''
     });
@@ -117,7 +111,6 @@ export class PromptsSectionComponent implements OnInit {
 
       this.assistantService.create({
         name: formValue.name,
-        vector_store_id: formValue.vector_store_id || undefined,
         instructions: formValue.instructions || undefined,
         model: formValue.model || undefined,
         tools: []
@@ -126,7 +119,6 @@ export class PromptsSectionComponent implements OnInit {
           this.loading = false;
           this.createForm.reset({
             name: '',
-            vector_store_id: '',
             instructions: '',
             model: ''
           });
@@ -159,7 +151,7 @@ export class PromptsSectionComponent implements OnInit {
 
     this.assistantService.update(this.editingAssistant.id, {
       name: formValue.name,
-      vector_store_id: formValue.vector_store_id || undefined,
+      vector_store_id: this.editingAssistant.vector_store_id || undefined,
       instructions: formValue.instructions || undefined,
       model: formValue.model || undefined,
       tools: this.editingAssistant.tools || []
@@ -175,6 +167,10 @@ export class PromptsSectionComponent implements OnInit {
         console.error('Error updating assistant:', err);
       }
     });
+  }
+
+  setViewMode(mode: 'list' | 'grid'): void {
+    this.viewMode = mode;
   }
 
   async deleteAssistant(assistant: Assistant): Promise<void> {
@@ -201,13 +197,18 @@ export class PromptsSectionComponent implements OnInit {
   instructionsPreview(instructions?: string): string {
     if (!instructions) {
       return 'No instructions provided.';
+    }    
+    const lines = instructions.split('\n');
+    const firstLines = lines.slice(0, 3).join('\n').trim();
+    if (!firstLines) {
+      return 'No instructions provided.';
     }
-    return instructions.length > 180 ? `${instructions.slice(0, 180)}…` : instructions;
+    return firstLines.length > 220 ? `${firstLines.slice(0, 220)}…` : firstLines;
   }
 
   vectorStoreLabel(vectorStoreId?: string): string {
     if (!vectorStoreId) {
-      return 'No knowledge base';
+      return '';
     }
     const store = this.vectorStores.find(vs => vs.id === vectorStoreId);
     return store ? store.name : vectorStoreId;

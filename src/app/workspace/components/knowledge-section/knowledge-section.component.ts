@@ -1,13 +1,16 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { Subscription, interval, of } from 'rxjs';
-import { catchError, finalize, timeout } from 'rxjs/operators';
+import { Subscription, interval, of, Subject, forkJoin } from 'rxjs';
+import { catchError, filter, finalize, takeUntil, timeout } from 'rxjs/operators';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentService } from '../../../shared/services/document.service';
+import { DocumentAccessService } from '../../../shared/services/document-access.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
+import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document, DocumentStatus } from '../../../shared/models/document.model';
+import { DocumentAccess } from '../../../shared/models/document-access.model';
 
 @Component({
   selector: 'app-knowledge-section',
@@ -17,6 +20,10 @@ import { Document, DocumentStatus } from '../../../shared/models/document.model'
 export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   vectorStores: VectorStore[] = [];
   documents: Document[] = [];
+  documentAccessList: DocumentAccess[] = [];
+  /** Full document list (all libraries). Loaded lazily for "Accessed". */
+  allDocuments: Document[] = [];
+  private allDocumentsLoaded = false;
   selectedVectorStore: VectorStore | null = null;
   showUploadForm = false;
   showCreateVectorStoreForm = false;
@@ -36,11 +43,19 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   searchQuery = '';
   statusFilter = '';
   selectionMode = false;
+  isInWorkspace = false;
+  listView = true; // list vs grid
+  activeTypeFilter: 'all' | 'uploaded' | 'accessed' = 'all';
+  activeStatusFilter: 'all' | 'finished' | 'processing' | 'failed' = 'all';
+  openActionsDocId: string | null = null;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private vectorStoreService: VectorStoreService,
     private documentService: DocumentService,
+    private documentAccessService: DocumentAccessService,
     private confirmDialogService: ConfirmDialogService,
+    private knowledgeContext: WorkspaceKnowledgeContextService,
     private fb: FormBuilder,
     private router: Router,
     private route: ActivatedRoute
@@ -55,10 +70,49 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.isInWorkspace = this.router.url.includes('/workspace');
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd), takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.isInWorkspace = this.router.url.includes('/workspace');
+      });
+
     this.loadVectorStores(true);
     this.startStatusPolling();
 
-    // Listen for query parameter changes
+    if (this.isInWorkspace) {
+      this.knowledgeContext.state$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(state => {
+          const urlLibraryId = this.route.snapshot.queryParamMap.get('libraryId');
+          if (urlLibraryId && !state.selectedVectorStore) {
+            return;
+          }
+          if (state.selectedVectorStore?.id !== this.selectedVectorStore?.id) {
+            this.selectedVectorStore = state.selectedVectorStore;
+            this.updateUrl(state.selectedVectorStore?.id || '');
+            this.loadDocuments();
+          }
+        });
+      this.knowledgeContext.openUploadPanel.pipe(takeUntil(this.destroy$)).subscribe(() => {
+        this.showUploadForm = true;
+        this.showCreateVectorStoreForm = false;
+      });
+      this.knowledgeContext.openNewLibraryPanel.pipe(takeUntil(this.destroy$)).subscribe(() => {
+        this.showCreateVectorStoreForm = true;
+        this.showUploadForm = false;
+      });
+      this.knowledgeContext.editLibraryRequested.pipe(takeUntil(this.destroy$)).subscribe(store => {
+        this.startVectorStoreEdit(store);
+      });
+      this.knowledgeContext.deleteLibraryRequested.pipe(takeUntil(this.destroy$)).subscribe(store => {
+        this.deleteVectorStore(store);
+      });
+      this.knowledgeContext.chatLibraryRequested.pipe(takeUntil(this.destroy$)).subscribe(store => {
+        this.openLibraryChat(store);
+      });
+    }
+
     this.route.queryParamMap.subscribe(params => {
       const libraryId = params.get('libraryId');
       if (libraryId && libraryId !== this.selectedVectorStore?.id) {
@@ -70,6 +124,9 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
           this.statusFilter = '';
           this.selectionMode = false;
           this.loadDocuments();
+          if (this.isInWorkspace) {
+            this.knowledgeContext.setSelectedStore(store);
+          }
         }
       }
     });
@@ -77,6 +134,24 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.statusPollSub?.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private syncContextState(): void {
+    if (!this.isInWorkspace) return;
+    this.documentService.list(undefined, false).subscribe(allDocs => {
+      const documentCounts: Record<string, number> = {};
+      allDocs.forEach(d => {
+        documentCounts[d.vector_store] = (documentCounts[d.vector_store] || 0) + 1;
+      });
+      this.knowledgeContext.updateState({
+        vectorStores: this.vectorStores,
+        selectedVectorStore: this.selectedVectorStore,
+        documentCounts,
+        totalDocuments: allDocs.length
+      });
+    });
   }
 
   loadVectorStores(forceRefresh = false): void {
@@ -112,16 +187,29 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       this.loadingDocuments = true;
     }
     const vectorStoreId = this.selectedVectorStore?.id || undefined;
-    this.documentService.list(vectorStoreId, forceRefresh).subscribe({
-      next: (docs: Document[]) => {
+    forkJoin({
+      documents: this.documentService.list(vectorStoreId, forceRefresh),
+      documentAccess: this.documentAccessService.list(vectorStoreId).pipe(
+        catchError(() => of([] as DocumentAccess[]))
+      )
+    }).subscribe({
+      next: ({ documents: docs, documentAccess }) => {
         this.documents = docs;
+        this.documentAccessList = documentAccess;
         this.loadingDocuments = false;
 
-        // Reset status filter if it no longer applies to the new document set
+        // If user is viewing Accessed, ensure we have all documents to display them.
+        if (this.activeTypeFilter === 'accessed') {
+          this.ensureAllDocumentsLoaded(forceRefresh);
+        }
+
         if (this.statusFilter && !this.availableStatuses.includes(this.statusFilter)) {
           this.statusFilter = '';
         }
         this.selectedDocumentIds.clear();
+        if (this.isInWorkspace) {
+          this.syncContextState();
+        }
       },
       error: (err) => {
         console.error('Error loading documents:', err);
@@ -203,6 +291,12 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
           this.selectedVectorStore = { ...updated };
         }
         this.cancelVectorStoreEdit();
+        if (this.isInWorkspace) {
+          this.knowledgeContext.updateState({
+            vectorStores: this.vectorStores,
+            selectedVectorStore: this.selectedVectorStore
+          });
+        }
       },
       error: (err) => {
         console.error('Error updating library:', err);
@@ -250,6 +344,9 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         this.selectedVectorStore = store;
         this.toggleVectorStoreForm();
         this.errorMessage = '';
+        if (this.isInWorkspace) {
+          this.syncContextState();
+        }
       },
       error: (err) => {
         console.error('Error creating library:', err);
@@ -342,13 +439,62 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.selectedDocumentIds.clear();
   }
 
-  get filteredDocuments(): Document[] {
-    let docs = this.documents;
+  toggleDocumentActions(docId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.openActionsDocId = this.openActionsDocId === docId ? null : docId;
+  }
 
-    if (this.selectedVectorStore) {
-      docs = docs.filter(doc => doc.vector_store === this.selectedVectorStore?.id);
+  closeDocumentActions(): void {
+    this.openActionsDocId = null;
+  }
+
+  isActionsOpen(docId: string): boolean {
+    return this.openActionsDocId === docId;
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.closeDocumentActions();
+  }
+
+  setTypeFilter(filter: 'all' | 'uploaded' | 'accessed'): void {
+    const next = this.activeTypeFilter === filter ? 'all' : filter;
+    this.activeTypeFilter = next;
+    if (next === 'accessed') {
+      // When viewing Accessed, ignore status filters.
+      this.activeStatusFilter = 'all';
+      this.ensureAllDocumentsLoaded();
     }
+  }
 
+  setStatusFilter(filter: 'finished' | 'processing' | 'failed'): void {
+    // Status filters are disabled while viewing Accessed.
+    if (this.activeTypeFilter === 'accessed') {
+      return;
+    }
+    this.activeStatusFilter = this.activeStatusFilter === filter ? 'all' : filter;
+  }
+
+  private ensureAllDocumentsLoaded(forceRefresh = false): void {
+    if (this.allDocumentsLoaded && !forceRefresh) {
+      return;
+    }
+    // Reuse the main loading indicator to avoid adding extra UI.
+    this.loadingDocuments = true;
+    this.documentService.list(undefined, forceRefresh).pipe(
+      catchError(() => of([] as Document[])),
+      finalize(() => {
+        this.loadingDocuments = false;
+      })
+    ).subscribe(docs => {
+      this.allDocuments = docs;
+      this.allDocumentsLoaded = true;
+    });
+  }
+
+  /** Base documents: current library + search only. Used for overview card counts so values don't change when type/status filter changes. */
+  get baseDocuments(): Document[] {
+    let docs = this.documents;
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
       docs = docs.filter(doc =>
@@ -356,9 +502,40 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         doc.status?.toLowerCase().includes(query)
       );
     }
+    return docs;
+  }
 
-    if (this.statusFilter) {
-      docs = docs.filter(doc => doc.status === this.statusFilter);
+  /** Filtered list for display: base + type + status filters. Only the list below changes when user selects type/status. */
+  get filteredDocuments(): Document[] {
+    let docs = this.activeTypeFilter === 'accessed' ? (this.allDocumentsLoaded ? this.allDocuments : this.documents) : this.baseDocuments;
+
+    if (this.activeTypeFilter === 'accessed' && this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      docs = docs.filter(doc =>
+        doc.title?.toLowerCase().includes(query) ||
+        doc.status?.toLowerCase().includes(query)
+      );
+    }
+
+    // Status filter from STATUS overview cards
+    if (this.activeStatusFilter === 'finished') {
+      docs = docs.filter(doc => doc.status === 'completed');
+    } else if (this.activeStatusFilter === 'failed') {
+      docs = docs.filter(doc => doc.status === 'failed');
+    } else if (this.activeStatusFilter === 'processing') {
+      docs = docs.filter(doc =>
+        doc.status === 'processing' || doc.status === 'in_progress' || doc.status === 'queued'
+      );
+    }
+
+    // Type filter from DOCUMENT TYPE overview cards
+    if (this.activeTypeFilter === 'accessed') {
+      const accessedDocIds = new Set(
+        this.documentAccessList
+          .filter(da => da.vector_store === this.selectedVectorStore?.id)
+          .map(da => String(da.document))
+      );
+      docs = docs.filter(doc => accessedDocIds.has(doc.id));
     }
 
     return docs;
@@ -374,6 +551,74 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       if (doc.status) statuses.add(doc.status);
     });
     return Array.from(statuses).sort();
+  }
+
+  get typeUploadedCount(): number {
+    return this.baseDocuments.length;
+  }
+
+  get typeAccessedCount(): number {
+    if (!this.selectedVectorStore?.id) return 0;
+    return this.documentAccessList.filter(
+      da => da.vector_store === this.selectedVectorStore?.id
+    ).length;
+  }
+
+  get statusFinishedCount(): number {
+    return this.baseDocuments.filter(d => d.status === 'completed').length;
+  }
+
+  get statusFailedCount(): number {
+    return this.baseDocuments.filter(d => d.status === 'failed').length;
+  }
+
+  get statusProcessingCount(): number {
+    return this.baseDocuments.filter(d =>
+      d.status === 'processing' || d.status === 'in_progress' || d.status === 'queued'
+    ).length;
+  }
+
+  getDisplayStatus(status: Document['status']): string {
+    switch (status) {
+      case 'completed': return 'Finished';
+      case 'failed': return 'Failed';
+      case 'processing':
+      case 'in_progress':
+      case 'queued': return 'Processing';
+      default: return status;
+    }
+  }
+
+  getDocumentTypeLabel(doc: Document): string {
+    if (!this.selectedVectorStore?.id) return 'Uploaded';
+    const isAccessed = this.documentAccessList.some(
+      da => da.vector_store === this.selectedVectorStore?.id && String(da.document) === doc.id
+    );
+    return isAccessed ? 'Accessed' : 'Uploaded';
+  }
+
+  getFileIcon(title: string): string {
+    if (!title) return 'fa-file-lines';
+    const ext = title.split('.').pop()?.toLowerCase();
+    if (ext === 'pdf') return 'fa-file-pdf';
+    if (['doc', 'docx'].includes(ext || '')) return 'fa-file-word';
+    if (['xls', 'xlsx'].includes(ext || '')) return 'fa-file-excel';
+    if (['ppt', 'pptx'].includes(ext || '')) return 'fa-file-powerpoint';
+    if (ext === 'txt') return 'fa-file-lines';
+    return 'fa-file-lines';
+  }
+
+  /** File size not available from API; show placeholder */
+  getFileSizeDisplay(_doc: Document): string {
+    return '—';
+  }
+
+  onDocumentCardClick(event: MouseEvent, doc: Document): void {
+    const target = event.target as HTMLElement;
+    if (target.closest('button') || target.closest('label') || target.closest('input')) {
+      return;
+    }
+    this.toggleDocumentSelection(doc.id);
   }
 
   startDocumentRename(document: Document): void {

@@ -138,6 +138,12 @@ export class ThreadSidebarComponent implements OnChanges {
     this.workspaceNavigate.emit();
   }
 
+  goToPrompts(): void {
+    this.closeProfileMenu();
+    // Navigate to workspace with prompts view via query param
+    window.location.href = '/workspace?view=prompts';
+  }
+
   getThreadTitle(thread: Thread): string {
     return thread.title || 'New Conversation';
   }

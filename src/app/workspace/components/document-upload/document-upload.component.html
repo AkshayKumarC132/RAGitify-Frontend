@@ -1,24 +1,22 @@
-<div class="document-upload">
-  <h2>
-    <i class="fa-solid fa-cloud-arrow-up"></i>
-    <span>Upload Document</span>
-  </h2>
-  
+<div class="document-upload document-upload-modal">
+  <h3 class="upload-modal-title">Upload document</h3>
+  <p class="upload-modal-subtitle">Choose a library and select files to upload.</p>
+
   <div *ngIf="errorMessage" class="error-message">
     {{ errorMessage }}
   </div>
 
-  <div class="form-group">
-    <label>Library</label>
-    <select [(ngModel)]="selectedVectorStoreId" class="form-control">
+  <div class="upload-modal-field">
+    <label for="uploadLibrarySelect">Library</label>
+    <select id="uploadLibrarySelect" [(ngModel)]="selectedVectorStoreId" class="upload-modal-input">
       <option value="">Select library</option>
       <option *ngFor="let store of vectorStores" [value]="store.id">{{ store.name }}</option>
     </select>
   </div>
 
-  <div class="form-group">
-    <label>File(s)</label>
-    <input type="file" (change)="onFileSelected($event)" class="form-control" multiple />
+  <div class="upload-modal-field">
+    <label for="uploadFileInput">File(s)</label>
+    <input id="uploadFileInput" type="file" (change)="onFileSelected($event)" class="upload-modal-input" multiple />
   </div>
 
   <!-- File List -->
@@ -72,14 +70,14 @@
     {{ getOverallStatus() }}
   </div>
 
-  <div class="form-actions">
-    <button class="btn-primary" (click)="onUpload()" [disabled]="loading || fileStatuses.length === 0 || !selectedVectorStoreId">
+  <div class="upload-modal-actions">
+    <button type="button" class="upload-modal-btn upload-modal-btn-secondary" (click)="onCancel()" [disabled]="loading">
+      Cancel
+    </button>
+    <button type="button" class="upload-modal-btn upload-modal-btn-primary" (click)="onUpload()"
+      [disabled]="loading || fileStatuses.length === 0 || !selectedVectorStoreId">
       <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
       <span>{{ loading ? 'Uploading…' : getUploadButtonText() }}</span>
-    </button>
-    <button class="btn-secondary" (click)="onCancel()" [disabled]="loading">
-      <i class="fa-solid fa-xmark"></i>
-      <span>Cancel</span>
     </button>
   </div>
 </div>

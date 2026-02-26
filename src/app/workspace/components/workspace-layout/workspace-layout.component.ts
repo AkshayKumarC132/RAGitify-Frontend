@@ -1,29 +1,115 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../shared/services/auth.service';
+import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
+import { VectorStore } from '../../../shared/models/vector-store.model';
 
 @Component({
   selector: 'app-workspace-layout',
   templateUrl: './workspace-layout.component.html',
   styleUrls: ['./workspace-layout.component.scss']
 })
-export class WorkspaceLayoutComponent {
+export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
   activeSection: 'knowledge' | 'prompts' = 'knowledge';
   sidebarCollapsed = false;
   hoveringExpandControl = false;
   private brandExpandInteraction = false;
   private toggleExpandInteraction = false;
+  private destroy$ = new Subject<void>();
+
+  layoutVectorStores: VectorStore[] = [];
+  layoutSelectedStore: VectorStore | null = null;
+  libraryDocCounts: Record<string, number> = {};
+  totalDocumentsCount = 0;
+  librarySearchQuery = '';
+  showLibraryPicker = true;
+
+  get libraryCount(): number {
+    return this.layoutVectorStores.length;
+  }
+
+  get filteredVectorStores(): VectorStore[] {
+    const q = this.librarySearchQuery.trim().toLowerCase();
+    if (!q) return this.layoutVectorStores;
+    return this.layoutVectorStores.filter(s => (s.name || '').toLowerCase().includes(q));
+  }
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private knowledgeContext: WorkspaceKnowledgeContextService,
+    private route: ActivatedRoute
   ) {}
 
-  setActiveSection(section: 'knowledge' | 'prompts'): void {
-    this.activeSection = section;
+  ngOnInit(): void {
+    this.knowledgeContext.state$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(state => {
+        this.layoutVectorStores = state.vectorStores;
+        this.layoutSelectedStore = state.selectedVectorStore;
+        this.libraryDocCounts = state.documentCounts;
+        this.totalDocumentsCount = state.totalDocuments;
+      });
+
+    // Show library picker when no library selected; show main UI when libraryId or view=prompts
+    this.route.queryParamMap.subscribe(params => {
+      const libraryId = params.get('libraryId');
+      const view = params.get('view');
+      this.showLibraryPicker = !libraryId && view !== 'prompts';
+      this.activeSection = view === 'prompts' ? 'prompts' : 'knowledge';
+    });
   }
 
-  startNewChat(): void {
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  onLayoutLibrarySelect(store: VectorStore): void {
+    this.knowledgeContext.setSelectedStore(store);
+  }
+
+  openUploadOrNewLibrary(action: 'upload' | 'library'): void {
+    if (action === 'upload') {
+      this.knowledgeContext.openUploadPanel.next();
+    } else {
+      this.knowledgeContext.openNewLibraryPanel.next();
+    }
+  }
+
+  onLayoutEditLibrary(store: VectorStore): void {
+    this.knowledgeContext.editLibraryRequested.next(store);
+  }
+
+  onLayoutDeleteLibrary(store: VectorStore): void {
+    this.knowledgeContext.deleteLibraryRequested.next(store);
+  }
+
+  onLayoutChatLibrary(store: VectorStore): void {
+    this.knowledgeContext.chatLibraryRequested.next(store);
+  }
+
+  goToNewChat(): void {
+    this.router.navigate(['/home']);
+  }
+
+  goToWorkspace(): void {
+    // When user is on Your Libraries (picker), stay on picker. When in Prompts, go to Your Libraries (picker).
+    if (this.showLibraryPicker || this.activeSection === 'prompts') {
+      this.router.navigate(['/workspace'], { queryParams: {} });
+      return;
+    }
+    const libraryId = this.layoutSelectedStore?.id ?? this.route.snapshot.queryParamMap.get('libraryId');
+    this.router.navigate(['/workspace'], { queryParams: libraryId ? { libraryId } : {} });
+  }
+
+  goToPrompts(): void {
+    this.router.navigate(['/workspace'], { queryParams: { view: 'prompts' } });
+  }
+
+  goToHome(): void {
     this.router.navigate(['/home']);
   }
 
