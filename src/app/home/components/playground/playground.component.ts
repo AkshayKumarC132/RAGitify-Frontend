@@ -237,12 +237,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     private cleanupConversation(): void {
-        if (this.conversationId) {
-            this.conversationService.delete(this.conversationId).subscribe({
-                error: (err: any) => console.error('Error cleaning up playground', err)
-            });
-            this.conversationId = null;
-        }
+        this.conversationId = null;
         this.stopPolling();
     }
 

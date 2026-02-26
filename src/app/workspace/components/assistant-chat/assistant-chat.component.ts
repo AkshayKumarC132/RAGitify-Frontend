@@ -1,8 +1,9 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { Assistant } from '../../../shared/models/assistant.model';
-import { ConversationMessage } from '../../../shared/models/conversation.model';
+import { Conversation, ConversationMessage } from '../../../shared/models/conversation.model';
 import { ResponseRecord, ResponseCreateRequest } from '../../../shared/models/response.model';
 import { ResponseService } from '../../../shared/services/response.service';
+import { ConversationService } from '../../../shared/services/conversation.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -18,6 +19,7 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
     @ViewChild('messageInput') messageInput?: ElementRef<HTMLTextAreaElement>;
 
     messages: ConversationMessage[] = [];
+    conversation: Conversation | null = null;
     currentResponse: ResponseRecord | null = null;
     loading = false;
     messageInputText = '';
@@ -25,7 +27,8 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
     private responsePollSub?: Subscription;
 
     constructor(
-        private responseService: ResponseService
+        private responseService: ResponseService,
+        private conversationService: ConversationService
     ) { }
 
     ngOnInit(): void {
@@ -65,13 +68,36 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
         this.messages.push(userMessage);
         this.scrollToBottom();
 
-        this.sendResponse(messageText);
+        if (!this.conversation) {
+            this.createConversation().then(() => {
+                this.sendResponse(messageText);
+            }).catch(err => {
+                this.handleError('Failed to create conversation', err);
+                this.messages = this.messages.filter(m => m.id !== userMessage.id);
+            });
+        } else {
+            this.sendResponse(messageText);
+        }
+    }
+
+    private createConversation(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const title = this.assistant?.name ? `Assistant: ${this.assistant.name}` : 'Assistant Chat';
+            this.conversationService.create({ title }).subscribe({
+                next: (conv) => {
+                    this.conversation = conv;
+                    resolve();
+                },
+                error: (err) => reject(err)
+            });
+        });
     }
 
     private sendResponse(messageText: string): void {
-        if (!this.assistant) return;
+        if (!this.assistant || !this.conversation) return;
 
         const request: ResponseCreateRequest = {
+            conversation: this.conversation.id,
             // Priority:
             // 1. Active Model (via getDefaultModel which reads from localStorage)
             // 2. Assistant's configured Model
