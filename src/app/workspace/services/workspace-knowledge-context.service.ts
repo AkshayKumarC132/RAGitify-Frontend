@@ -29,6 +29,10 @@ export class WorkspaceKnowledgeContextService {
   readonly deleteLibraryRequested = new Subject<VectorStore>();
   readonly chatLibraryRequested = new Subject<VectorStore>();
 
+  /** Sidebar search query (libraries + documents) */
+  private sidebarSearch = new BehaviorSubject<string>('');
+  readonly sidebarSearch$ = this.sidebarSearch.asObservable();
+
   get currentState(): WorkspaceKnowledgeState {
     return this.state.value;
   }
@@ -42,5 +46,9 @@ export class WorkspaceKnowledgeContextService {
       ...this.state.value,
       selectedVectorStore: store
     });
+  }
+
+  setSidebarSearch(query: string): void {
+    this.sidebarSearch.next(query);
   }
 }

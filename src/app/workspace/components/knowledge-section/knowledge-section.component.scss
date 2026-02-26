@@ -86,6 +86,15 @@
     flex: 1;
   }
 
+  .toolbar-upload-btn {
+    height: 36px;
+    padding: 0 1rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
   .toolbar-icon-btn {
     width: 36px;
     height: 36px;
@@ -246,7 +255,7 @@
     text-align: left;
     padding: 0.65rem 1rem;
     font-weight: 700;
-    font-size: 10px;
+    // font-size: 10px;
     letter-spacing: 0.05em;
     color: var(--text-secondary);
     background: var(--bg-tertiary);
@@ -272,6 +281,14 @@
 
     &:last-child td {
       border-bottom: none;
+    }
+  }
+
+  .document-row.document-failed {
+    background: rgba(239, 68, 68, 0.04);
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.08);
     }
   }
 
@@ -354,8 +371,15 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     z-index: 20;
     display: flex;
-    flex-direction: row;
-    gap: 0.35rem;
+    flex-direction: column;
+    gap: 0.15rem;
+
+    &.open-above {
+      top: auto;
+      bottom: 100%;
+      margin-top: 0;
+      margin-bottom: 0.25rem;
+    }
   }
 
   .dropdown-action-item {
@@ -440,6 +464,15 @@
     background: rgba(59, 130, 246, 0.04);
   }
 
+  &.document-failed {
+    border-color: rgba(233 150 150 / 70%);
+    background: rgba(239, 68, 68, 0.04);
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    }
+  }
+
   .document-card-header {
     display: flex;
     align-items: flex-start;
@@ -509,7 +542,12 @@
     justify-content: space-between;
     margin-top: 0.75rem;
     padding-top: 0.75rem;
-    border-top: 1px solid var(--border-color);
+  }
+
+  .document-card-footer-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .document-card-status {
@@ -544,48 +582,18 @@
     color: var(--text-secondary);
   }
 
-  .document-card-actions {
-    display: flex;
-    gap: 0.35rem;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--border-color);
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-
-  &:hover .document-card-actions {
-    opacity: 1;
-  }
-
-  .card-action-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-    background: var(--bg-primary);
-    color: var(--text-secondary);
+  .document-card-footer-right {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s ease;
+    gap: 0.35rem;
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
 
-    &:hover:not(:disabled) {
-      border-color: var(--accent-color);
-      color: var(--accent-color);
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    &.danger:hover:not(:disabled) {
-      border-color: var(--error-color);
-      color: var(--error-color);
-    }
+  &:hover .document-card-footer-right {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

@@ -1,7 +1,11 @@
-<div class="prompts-section">
+<div class="prompts-section" (click)="closeAssistantActions()">
   <div class="section-header">
     <div class="section-title">
-      <h1>Assistant Prompts</h1>
+      <h1>
+        <i class="fa-solid fa-folder-open"></i>
+        <span class="title-main">Prompt Space</span>
+      </h1>
+      <p class="title-sub">Assistant Prompts</p>
     </div>
     <div class="header-actions">
       <button class="btn-premium-primary" (click)="toggleCreateForm()">
@@ -106,12 +110,13 @@
             <th class="col-name">NAME</th>
             <th class="col-model">MODEL</th>
             <th class="col-instructions">INSTRUCTIONS</th>
-            <th class="col-date">DATE</th>
+            <th class="col-created">CREATED</th>
+            <th class="col-updated">UPDATED</th>
             <th class="col-actions">ACTIONS</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let assistant of assistants" class="prompt-row">
+          <tr *ngFor="let assistant of assistants; let first = first" class="prompt-row">
             <td class="col-name">
               <div class="prompt-row-icon">
                 <i class="fa-solid fa-robot"></i>
@@ -126,23 +131,37 @@
                 {{ instructionsPreview(assistant.instructions) }}
               </span>
             </td>
-            <td class="col-date">
+            <td class="col-created">
+              {{ assistant.created_at | date:'MMM d, y' }}
+            </td>
+            <td class="col-updated">
               {{ assistant.updated_at | date:'MMM d, y' }}
             </td>
             <td class="col-actions">
-              <div class="prompt-actions-inline">
-                <button class="btn-premium-icon" (click)="testAssistant(assistant)" title="Test this prompt">
-                  <i class="fa-solid fa-play"></i>
+              <div class="actions-cell-wrap" (click)="$event.stopPropagation()">
+                <button type="button" class="action-menu-btn" title="Actions"
+                  (click)="toggleAssistantActions(assistant, $event)">
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
                 </button>
-                <button class="btn-premium-icon" (click)="startEdit(assistant)" [disabled]="assistant.is_default === true"
-                  [title]="assistant.is_default === true ? 'Default prompt cannot be edited' : 'Edit prompt'">
-                  <i class="fa-solid fa-pen-to-square"></i>
-                </button>
-                <button class="btn-premium-icon danger" (click)="deleteAssistant(assistant)"
-                  [disabled]="assistant.is_default === true"
-                  [title]="assistant.is_default === true ? 'Default prompt cannot be deleted' : 'Delete prompt'">
-                  <i class="fa-solid fa-trash"></i>
-                </button>
+                <div class="prompt-actions-dropdown" *ngIf="isAssistantActionsOpen(assistant.id)" [class.open-below]="first">
+                  <button type="button" class="dropdown-action-item" (click)="testAssistant(assistant); closeAssistantActions()"
+                    title="Test this prompt">
+                    <i class="fa-solid fa-play"></i>
+                    <span>Test</span>
+                  </button>
+                  <button type="button" class="dropdown-action-item" (click)="startEdit(assistant); closeAssistantActions()"
+                    [disabled]="assistant.is_default === true"
+                    [title]="assistant.is_default === true ? 'Default prompt cannot be edited' : 'Edit prompt'">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Edit</span>
+                  </button>
+                  <button type="button" class="dropdown-action-item danger"
+                    (click)="deleteAssistant(assistant); closeAssistantActions()" [disabled]="assistant.is_default === true"
+                    [title]="assistant.is_default === true ? 'Default prompt cannot be deleted' : 'Delete prompt'">
+                    <i class="fa-solid fa-trash"></i>
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
             </td>
           </tr>
@@ -153,41 +172,40 @@
     <!-- Grid view -->
     <div class="prompts-list grid" *ngIf="viewMode === 'grid'">
       <div *ngFor="let assistant of assistants" class="prompt-item card-premium">
+        <div class="prompt-card-actions">
+          <button type="button" class="btn-premium-icon" (click)="testAssistant(assistant); $event.stopPropagation()"
+            title="Test this prompt">
+            <i class="fa-solid fa-play"></i>
+          </button>
+          <button type="button" class="btn-premium-icon" (click)="startEdit(assistant); $event.stopPropagation()"
+            [disabled]="assistant.is_default === true"
+            [title]="assistant.is_default === true ? 'Default prompt cannot be edited' : 'Edit prompt'">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+          <button type="button" class="btn-premium-icon danger"
+            (click)="deleteAssistant(assistant); $event.stopPropagation()" [disabled]="assistant.is_default === true"
+            [title]="assistant.is_default === true ? 'Default prompt cannot be deleted' : 'Delete prompt'">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
         <div class="prompt-icon">
           <i class="fa-solid fa-robot"></i>
         </div>
         <div class="prompt-info">
+          <div class="prompt-name">{{ assistant.name }}</div>
           <div class="prompt-instructions">
             {{ instructionsPreview(assistant.instructions) }}
           </div>
-          <div class="prompt-name">{{ assistant.name }}</div>
-          <div class="prompt-meta">
-            <span class="meta-tag"><i class="fa-solid fa-microchip"></i> {{ assistant.model || 'Workspace default'
-              }}</span>
-            <span class="meta-tag" *ngIf="assistant.vector_store_id">
-              <i class="fa-solid fa-database"></i> {{ vectorStoreLabel(assistant.vector_store_id) }}
-            </span>
-          </div>
         </div>
-        <div class="prompt-actions">
-          <div class="action-buttons">
-            <button class="btn-premium-icon" (click)="testAssistant(assistant)" title="Test this prompt">
-              <i class="fa-solid fa-play"></i>
-            </button>
-            <button class="btn-premium-icon" (click)="startEdit(assistant)" [disabled]="assistant.is_default === true"
-              [title]="assistant.is_default === true ? 'Default prompt cannot be edited' : 'Edit prompt'">
-              <i class="fa-solid fa-pen-to-square"></i>
-            </button>
-            <button class="btn-premium-icon danger" (click)="deleteAssistant(assistant)"
-              [disabled]="assistant.is_default === true"
-              [title]="assistant.is_default === true ? 'Default prompt cannot be deleted' : 'Delete prompt'">
-              <i class="fa-solid fa-trash"></i>
-            </button>
+        <div class="prompt-footer">
+          <div class="prompt-footer-left">
+            <i class="fa-solid fa-microchip"></i>
+            <span>{{ assistant.model || 'Workspace default' }}</span>
           </div>
-          <span class="prompt-date">
-            <i class="fa-solid fa-clock-rotate-left"></i>
+          <div class="prompt-footer-right">
+            <i class="fa-regular fa-calendar"></i>
             <span>{{ assistant.updated_at | date:'MMM d, y' }}</span>
-          </span>
+          </div>
         </div>
       </div>
     </div>

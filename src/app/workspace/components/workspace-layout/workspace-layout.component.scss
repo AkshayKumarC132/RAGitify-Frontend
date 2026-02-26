@@ -199,7 +199,7 @@
 .summary-card {
   padding: 0.6rem 0.5rem;
   border-radius: 10px;
-  background: #fff;
+  background: #adccfe40;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
@@ -368,19 +368,48 @@
 .top-bar-brand {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
+}
 
-  .top-bar-icon {
-    font-size: 20px;
-    color: var(--accent-color);
-  }
+.crumb-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
 
-  .top-bar-title {
-    font-size: 18px;
-    font-weight: 800;
+  &:hover {
     color: var(--text-primary);
-    letter-spacing: -0.02em;
   }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  i {
+    font-size: 13px;
+  }
+}
+
+.crumb-separator {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.crumb-current {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.top-bar-icon {
+  font-size: 16px;
+  color: var(--accent-color);
 }
 
 .top-bar-right {

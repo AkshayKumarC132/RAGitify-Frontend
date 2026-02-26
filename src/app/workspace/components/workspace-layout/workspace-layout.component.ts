@@ -109,6 +109,15 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     this.router.navigate(['/workspace'], { queryParams: { view: 'prompts' } });
   }
 
+  goToLibraryPicker(): void {
+    this.router.navigate(['/workspace'], { queryParams: {} });
+  }
+
+  onSidebarSearchChange(value: string): void {
+    this.librarySearchQuery = value;
+    this.knowledgeContext.setSidebarSearch(value);
+  }
+
   goToHome(): void {
     this.router.navigate(['/home']);
   }

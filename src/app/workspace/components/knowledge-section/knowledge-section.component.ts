@@ -115,6 +115,13 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
 
     this.route.queryParamMap.subscribe(params => {
       const libraryId = params.get('libraryId');
+      const openNewLibrary = params.get('openNewLibrary');
+
+      if (openNewLibrary === '1') {
+        this.showCreateVectorStoreForm = true;
+        this.showUploadForm = false;
+      }
+
       if (libraryId && libraryId !== this.selectedVectorStore?.id) {
         const store = this.vectorStores.find(vs => vs.id === libraryId);
         if (store) {
@@ -130,6 +137,13 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         }
       }
     });
+
+    // Keep document search in sync with sidebar search
+    this.knowledgeContext.sidebarSearch$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(query => {
+        this.searchQuery = query;
+      });
   }
 
   ngOnDestroy(): void {
@@ -369,16 +383,34 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.documentService.delete(documentId).subscribe({
-      next: () => {
-        this.selectedDocumentIds.delete(documentId);
-        this.loadDocuments();
-      },
-      error: (err) => {
-        console.error('Error deleting document:', err);
-        this.errorMessage = this.extractErrorMessage(err, 'Unable to delete document.');
-      }
-    });
+    const isAccessed = document && this.getDocumentTypeLabel(document) === 'Accessed';
+
+    if (isAccessed && this.selectedVectorStore?.id) {
+      this.documentAccessService.remove({
+        document_ids: [documentId],
+        vector_store_id: this.selectedVectorStore.id
+      }).subscribe({
+        next: () => {
+          this.selectedDocumentIds.delete(documentId);
+          this.loadDocuments();
+        },
+        error: (err) => {
+          console.error('Error removing document access:', err);
+          this.errorMessage = this.extractErrorMessage(err, 'Unable to remove document access.');
+        }
+      });
+    } else {
+      this.documentService.delete(documentId).subscribe({
+        next: () => {
+          this.selectedDocumentIds.delete(documentId);
+          this.loadDocuments();
+        },
+        error: (err) => {
+          console.error('Error deleting document:', err);
+          this.errorMessage = this.extractErrorMessage(err, 'Unable to delete document.');
+        }
+      });
+    }
   }
 
   toggleDocumentSelection(documentId: string): void {
@@ -421,14 +453,42 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     if (!confirmed) return;
 
     this.loadingDocuments = true;
-    const idsToDelete = Array.from(this.selectedDocumentIds);
-    this.documentService.bulkDelete(idsToDelete).subscribe({
+    const ids = Array.from(this.selectedDocumentIds);
+    const accessedIds: string[] = [];
+    const uploadedIds: string[] = [];
+
+    ids.forEach(id => {
+      const doc = this.documents.find(d => d.id === id);
+      if (doc && this.getDocumentTypeLabel(doc) === 'Accessed') {
+        accessedIds.push(id);
+      } else {
+        uploadedIds.push(id);
+      }
+    });
+
+    const ops = [];
+    if (uploadedIds.length) {
+      ops.push(this.documentService.bulkDelete(uploadedIds));
+    }
+    if (accessedIds.length && this.selectedVectorStore?.id) {
+      ops.push(this.documentAccessService.remove({
+        document_ids: accessedIds,
+        vector_store_id: this.selectedVectorStore.id
+      }));
+    }
+
+    if (!ops.length) {
+      this.loadingDocuments = false;
+      return;
+    }
+
+    forkJoin(ops).subscribe({
       next: () => {
         this.selectedDocumentIds.clear();
         this.loadDocuments();
       },
       error: (err) => {
-        console.error('Error bulk deleting documents:', err);
+        console.error('Error deleting selected documents:', err);
         this.errorMessage = this.extractErrorMessage(err, 'Unable to delete selected documents.');
         this.loadingDocuments = false;
       }

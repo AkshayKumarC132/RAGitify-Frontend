@@ -24,7 +24,8 @@ export class PromptsSectionComponent implements OnInit {
   errorMessage = '';
   editingAssistant: Assistant | null = null;
   testingAssistant: Assistant | null = null;
-  viewMode: 'list' | 'grid' = 'list';
+  viewMode: 'list' | 'grid' = 'grid';
+  openActionsAssistantId: string | null = null;
 
   constructor(
     private assistantService: AssistantService,
@@ -194,6 +195,21 @@ export class PromptsSectionComponent implements OnInit {
     });
   }
 
+  toggleAssistantActions(assistant: Assistant, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.openActionsAssistantId = this.openActionsAssistantId === assistant.id ? null : assistant.id;
+  }
+
+  isAssistantActionsOpen(assistantId: string): boolean {
+    return this.openActionsAssistantId === assistantId;
+  }
+
+  closeAssistantActions(): void {
+    this.openActionsAssistantId = null;
+  }
+
   instructionsPreview(instructions?: string): string {
     if (!instructions) {
       return 'No instructions provided.';
@@ -203,7 +219,7 @@ export class PromptsSectionComponent implements OnInit {
     if (!firstLines) {
       return 'No instructions provided.';
     }
-    return firstLines.length > 220 ? `${firstLines.slice(0, 220)}…` : firstLines;
+    return firstLines.length > 110 ? `${firstLines.slice(0, 110)}…` : firstLines;
   }
 
   vectorStoreLabel(vectorStoreId?: string): string {

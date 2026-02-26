@@ -45,6 +45,7 @@
               class="library-search-input"
               type="text"
               [(ngModel)]="librarySearchQuery"
+              (ngModelChange)="onSidebarSearchChange($event)"
               placeholder="Search libraries..."
               aria-label="Search libraries"
             />
@@ -90,8 +91,8 @@
       </div>
     </ng-container>
 
-    <!-- Bottom: Home and Logout -->
-    <div class="sidebar-footer">
+    <!-- Bottom: Home and Logout (hidden inside Knowledge Library workspace view) -->
+    <div class="sidebar-footer" *ngIf="showLibraryPicker || activeSection === 'prompts'">
       <button type="button" class="sidebar-footer-btn" (click)="goToHome()" title="Home">
         <i class="fa-solid fa-house"></i>
         <span>Home</span>
@@ -111,10 +112,21 @@
   </ng-container>
 
   <div class="workspace-content" *ngIf="!showLibraryPicker">
-    <div class="workspace-top-bar">
+    <div class="workspace-top-bar" *ngIf="activeSection === 'knowledge'">
       <div class="top-bar-brand">
-        <i class="fa-solid fa-file-lines top-bar-icon"></i>
-        <span class="top-bar-title">Knowledge Library</span>
+        <button type="button" class="crumb-link" (click)="goToHome()">
+          <i class="fa-solid fa-house"></i>
+          <span>Home</span>
+        </button>
+        <span class="crumb-separator">/</span>
+        <button type="button" class="crumb-link" (click)="goToLibraryPicker()">
+          <i class="fa-solid fa-file-lines top-bar-icon"></i>
+          <span>Knowledge Library</span>
+        </button>
+        <ng-container *ngIf="!showLibraryPicker && layoutSelectedStore">
+          <span class="crumb-separator">/</span>
+          <span class="crumb-current">{{ layoutSelectedStore.name }}</span>
+        </ng-container>
       </div>
       <div class="top-bar-right">
         <button type="button" class="upload-button" (click)="openUploadOrNewLibrary('upload')" *ngIf="activeSection === 'knowledge'">

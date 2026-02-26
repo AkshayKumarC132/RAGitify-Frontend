@@ -3,29 +3,7 @@
     <div class="picker-title-row">
       <div class="picker-title">
         <div class="picker-icon" aria-hidden="true">
-          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="40" height="40" rx="10" fill="url(#picker-icon-bg)"/>
-            <defs>
-              <linearGradient id="picker-icon-bg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#E8E0F5"/>
-                <stop offset="1" stop-color="#D4C8ED"/>
-              </linearGradient>
-              <filter id="picker-star-glitch" x="-20%" y="-20%" width="140%" height="140%">
-                <feOffset in="SourceAlpha" dx="-0.6" dy="0" result="offset1"/>
-                <feFlood flood-color="#E879A0" flood-opacity="0.4" result="color1"/>
-                <feComposite in="color1" in2="offset1" operator="in" result="shadow1"/>
-                <feOffset in="SourceAlpha" dx="0.6" dy="0" result="offset2"/>
-                <feFlood flood-color="#7DD3FC" flood-opacity="0.4" result="color2"/>
-                <feComposite in="color2" in2="offset2" operator="in" result="shadow2"/>
-                <feMerge>
-                  <feMergeNode in="shadow1"/>
-                  <feMergeNode in="shadow2"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
-            <path filter="url(#picker-star-glitch)" d="M20 8l2.5 7.5H30l-6 4.5 2.5 7.5L20 23l-6.5 4.5 2.5-7.5-6-4.5h7.5L20 8z" fill="#2563EB"/>
-          </svg>
+          <i class="fa-solid fa-layer-group"></i>
         </div>
         <h1>Your Libraries</h1>
       </div>
@@ -53,6 +31,10 @@
           <i class="fa-solid fa-list"></i>
         </button>
       </div>
+      <button type="button" class="picker-create-btn" (click)="createLibrary()">
+        <i class="fa-solid fa-plus"></i>
+        <span>Create Library</span>
+      </button>
     </div>
   </header>
 
@@ -114,39 +96,85 @@
   </div>
 
   <!-- List view -->
-  <div *ngIf="!loading && vectorStores.length > 0 && !gridView && filteredVectorStores.length > 0" class="library-list">
-    <div *ngFor="let store of filteredVectorStores" class="library-list-item">
-      <div class="library-list-main" (click)="selectLibrary(store)" tabindex="0" role="button" (keydown.enter)="selectLibrary(store)" (keydown.space)="selectLibrary(store); $event.preventDefault()">
-        <div class="library-list-icon">
-          <i class="fa-solid fa-folder"></i>
-        </div>
-        <div class="library-list-body">
-          <h3 class="library-list-title">{{ store.name }}</h3>
-          <div class="library-list-meta">
-            <div class="meta-row"><span class="meta-label">Updated</span><span class="meta-value">{{ getRelativeTime(store.created_at) }}</span></div>
-            <div class="meta-row"><span class="meta-label">Created</span><span class="meta-value">{{ formatDate(store.created_at) }}</span></div>
-          </div>
-        </div>
-        <i class="fa-solid fa-chevron-right library-list-chevron"></i>
+  <div *ngIf="!loading && vectorStores.length > 0 && !gridView && filteredVectorStores.length > 0" class="library-table-wrap">
+    <table class="library-table">
+      <thead>
+        <tr>
+          <th class="col-name">NAME</th>
+          <th class="col-created">CREATED</th>
+          <th class="col-updated">UPDATED</th>
+          <th class="col-actions">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let store of filteredVectorStores" class="library-row">
+          <td class="col-name" (click)="selectLibrary(store)" tabindex="0" role="button">
+            <div class="library-list-name-cell">
+              <div class="library-list-icon">
+                <i class="fa-solid fa-folder"></i>
+              </div>
+              <span class="library-list-title">{{ store.name }}</span>
+            </div>
+          </td>
+          <td class="col-created">
+            {{ formatDate(store.created_at) }}
+          </td>
+          <td class="col-updated">
+            {{ getRelativeTime(store.created_at) }}
+          </td>
+          <td class="col-actions">
+            <div class="library-table-actions">
+              <button
+                type="button"
+                class="card-action-button card-action-edit"
+                (click)="editLibrary(store); $event.stopPropagation()"
+                title="Rename library"
+              >
+                <i class="fa-solid fa-pen"></i>
+                <span>Edit</span>
+              </button>
+              <button
+                type="button"
+                class="card-action-button card-action-delete"
+                (click)="deleteLibrary(store); $event.stopPropagation()"
+                title="Delete library"
+              >
+                <i class="fa-solid fa-trash"></i>
+                <span>Delete</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Create library modal -->
+  <div class="library-rename-backdrop" *ngIf="creating" (click)="cancelCreateLibrary()">
+    <div class="library-rename-modal" (click)="$event.stopPropagation()">
+      <h3 class="rename-title">Create library</h3>
+      <p class="rename-subtitle">Choose a name for your new library.</p>
+      <div class="rename-field">
+        <label for="createLibraryInput">Name</label>
+        <input
+          id="createLibraryInput"
+          type="text"
+          [(ngModel)]="createName"
+          (keydown.enter)="confirmCreateLibrary()"
+          placeholder="e.g., Product manuals"
+        />
       </div>
-      <div class="library-list-actions">
-        <button
-          type="button"
-          class="card-action-button card-action-edit"
-          (click)="editLibrary(store); $event.stopPropagation()"
-          title="Rename library"
-        >
-          <i class="fa-solid fa-pen"></i>
-          <span>Edit</span>
+      <div class="rename-actions">
+        <button type="button" class="rename-btn rename-btn-secondary" (click)="cancelCreateLibrary()">
+          Cancel
         </button>
         <button
           type="button"
-          class="card-action-button card-action-delete"
-          (click)="deleteLibrary(store); $event.stopPropagation()"
-          title="Delete library"
+          class="rename-btn rename-btn-primary"
+          (click)="confirmCreateLibrary()"
+          [disabled]="!createName || !createName.trim()"
         >
-          <i class="fa-solid fa-trash"></i>
-          <span>Delete</span>
+          Create
         </button>
       </div>
     </div>

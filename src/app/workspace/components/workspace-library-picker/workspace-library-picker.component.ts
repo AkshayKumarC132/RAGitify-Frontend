@@ -19,6 +19,8 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
   searchQuery = '';
   renameTarget: VectorStore | null = null;
   renameName = '';
+  creating = false;
+  createName = '';
 
   get filteredVectorStores(): VectorStore[] {
     const q = this.searchQuery.trim().toLowerCase();
@@ -150,5 +152,36 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
         }
       });
     }).catch(() => {});
+  }
+
+  createLibrary(): void {
+    this.creating = true;
+    this.createName = '';
+    this.errorMessage = '';
+  }
+
+  cancelCreateLibrary(): void {
+    this.creating = false;
+    this.createName = '';
+  }
+
+  confirmCreateLibrary(): void {
+    const trimmed = (this.createName || '').trim();
+    if (!trimmed) {
+      return;
+    }
+
+    this.vectorStoreService.create({ name: trimmed }).subscribe({
+      next: (store) => {
+        this.vectorStores = [store, ...this.vectorStores];
+        this.createName = '';
+        this.creating = false;
+        this.loadDocumentCounts();
+      },
+      error: (err) => {
+        console.error('Error creating library:', err);
+        this.errorMessage = 'Unable to create library.';
+      }
+    });
   }
 }
