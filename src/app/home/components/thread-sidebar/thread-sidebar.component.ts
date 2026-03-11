@@ -380,6 +380,10 @@ export class ThreadSidebarComponent implements OnChanges {
     }
   }
 
+  getThreadDisplayTimestamp(thread: Conversation): string {
+    return thread.updated_at || thread.created_at;
+  }
+
   toggleThreadMenu(thread: Conversation, event: MouseEvent): void {
     event.stopPropagation();
     if (this.threadMenuOpen === thread.id) {

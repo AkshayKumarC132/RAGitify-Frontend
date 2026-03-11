@@ -75,7 +75,7 @@
             <span [innerHTML]="getHighlightedSnippet(thread)"></span>
           </div>
           <div class="thread-time" *ngIf="!collapsed">
-            {{ formatTime(thread.created_at) }}
+            {{ formatTime(getThreadDisplayTimestamp(thread)) }}
           </div>
         </div>
 
