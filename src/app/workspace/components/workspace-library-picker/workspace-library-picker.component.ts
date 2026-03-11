@@ -32,11 +32,17 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
     const q = this.searchQuery.trim().toLowerCase();
     if (!q) return this.vectorStores;
     return this.vectorStores.filter(s => {
+      const matchingDocuments = this.documents
+        .filter(doc => doc.vector_store === s.id)
+        .map(doc => [doc.title, doc.original_filename, doc.file_type].filter(Boolean).join(' '))
+        .join(' ');
+
       const haystack = [
         s.name,
         s.vs_type,
         s.collection,
-        this.getStoreHint(s)
+        this.getStoreHint(s),
+        matchingDocuments
       ].filter(Boolean).join(' ').toLowerCase();
       return haystack.includes(q);
     });
@@ -177,6 +183,10 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
     return !this.isSystemStore(store);
   }
 
+  isProtectedStore(store: VectorStore): boolean {
+    return store.vs_type === 'DEFAULT' || store.vs_type === 'SHARED';
+  }
+
   getRelativeTime(dateStr: string): string {
     const date = new Date(dateStr);
     const now = new Date();
@@ -202,6 +212,20 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
     this.knowledgeContext.requestPendingLibraryChat(store);
     this.router.navigate(['/workspace'], {
       queryParams: { libraryId: store.id }
+    });
+  }
+
+  openSharedWithMe(): void {
+    const sharedStore = this.vectorStores.find(store => store.vs_type === 'SHARED');
+    if (!sharedStore) {
+      return;
+    }
+
+    this.router.navigate(['/workspace'], {
+      queryParams: {
+        libraryId: sharedStore.id,
+        workspaceTab: 'shared-with-me'
+      }
     });
   }
 

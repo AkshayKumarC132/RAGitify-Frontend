@@ -19,8 +19,8 @@
         <input
           type="text"
           [(ngModel)]="searchQuery"
-          placeholder="Search libraries..."
-          aria-label="Search libraries"
+          placeholder="Search libraries or documents..."
+          aria-label="Search libraries or documents"
           class="picker-search-input"
         />
         <button type="button" class="picker-search-clear" *ngIf="searchQuery" (click)="searchQuery = ''" title="Clear search">
@@ -74,7 +74,7 @@
       <span class="kpi-value">{{ totalProcessingDocuments }}</span>
       <span class="kpi-meta">Queued, processing, or in progress</span>
     </article>
-    <article class="kpi-card">
+    <article class="kpi-card clickable" (click)="openSharedWithMe()">
       <span class="kpi-label">Accessed</span>
       <span class="kpi-value">{{ totalAccessedDocuments }}</span>
       <span class="kpi-meta">Shared or externally surfaced docs</span>
@@ -140,66 +140,74 @@
 
   <!-- List view -->
   <div *ngIf="!loading && vectorStores.length > 0 && !gridView && filteredVectorStores.length > 0" class="library-table-wrap">
-    <div class="library-rows">
-      <article *ngFor="let store of filteredVectorStores" class="library-row-card">
-        <button type="button" class="library-row-main" (click)="selectLibrary(store)">
-          <div class="library-row-identity">
-            <div class="library-list-icon">
-              <i class="fa-solid fa-folder"></i>
+    <table class="library-table">
+      <thead>
+        <tr>
+          <th class="col-name">Name</th>
+          <th class="col-type">Type</th>
+          <th class="col-created">Created</th>
+          <th class="col-updated">Updated</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let store of filteredVectorStores" class="library-table-row" [class.protected-store]="isProtectedStore(store)">
+          <td class="col-name">
+            <button type="button" class="library-table-name" (click)="selectLibrary(store)">
+              <span class="library-list-icon">
+                <i class="fa-solid fa-folder"></i>
+              </span>
+              <span class="library-list-copy">
+                <span class="library-list-title-row">
+                  <span class="library-list-title">{{ store.name }}</span>
+                  <span class="store-badge type">{{ getStoreTypeLabel(store) }}</span>
+                  <span class="store-badge system" *ngIf="store.is_system">System</span>
+                </span>
+                <span class="library-list-subtitle">{{ getStoreHint(store) }}</span>
+              </span>
+            </button>
+          </td>
+          <td class="col-type">
+            <span class="library-table-type">{{ getStoreTypeLabel(store) }}</span>
+          </td>
+          <td class="col-created">{{ formatDate(store.created_at) }}</td>
+          <td class="col-updated">{{ getRelativeTime(store.updated_at) }}</td>
+          <td class="col-actions">
+            <div class="library-table-actions">
+              <button
+                type="button"
+                class="card-action-button card-action-chat"
+                (click)="openLibraryChat(store); $event.stopPropagation()"
+                title="Chat with library"
+              >
+                <i class="fa-solid fa-comments"></i>
+                <span>Chat</span>
+              </button>
+              <button
+                type="button"
+                class="card-action-button card-action-edit"
+                (click)="editLibrary(store); $event.stopPropagation()"
+                [disabled]="!canEdit(store)"
+                title="Rename library"
+              >
+                <i class="fa-solid fa-pen"></i>
+                <span>{{ canEdit(store) ? 'Edit' : 'Locked' }}</span>
+              </button>
+              <button
+                type="button"
+                class="card-action-button card-action-delete"
+                (click)="deleteLibrary(store); $event.stopPropagation()"
+                [disabled]="!canDelete(store)"
+                title="Delete library"
+              >
+                <i class="fa-solid fa-trash"></i>
+                <span>{{ canDelete(store) ? 'Delete' : 'Protected' }}</span>
+              </button>
             </div>
-            <div class="library-list-copy">
-              <div class="library-list-title-row">
-                <span class="library-list-title">{{ store.name }}</span>
-                <span class="store-badge type">{{ getStoreTypeLabel(store) }}</span>
-                <span class="store-badge system" *ngIf="store.is_system">System</span>
-              </div>
-              <span class="library-list-subtitle">{{ getStoreHint(store) }}</span>
-            </div>
-          </div>
-          <div class="library-row-details">
-            <div class="detail-cell">
-              <span class="detail-label">Created</span>
-              <span class="detail-value">{{ formatDate(store.created_at) }}</span>
-            </div>
-            <div class="detail-cell">
-              <span class="detail-label">Updated</span>
-              <span class="detail-value">{{ getRelativeTime(store.updated_at) }}</span>
-            </div>
-          </div>
-        </button>
-        <div class="library-row-actions">
-          <button
-            type="button"
-            class="card-action-button card-action-chat"
-            (click)="openLibraryChat(store); $event.stopPropagation()"
-            title="Chat with library"
-          >
-            <i class="fa-solid fa-comments"></i>
-            <span>Chat</span>
-          </button>
-          <button
-            type="button"
-            class="card-action-button card-action-edit"
-            (click)="editLibrary(store); $event.stopPropagation()"
-            [disabled]="!canEdit(store)"
-            title="Rename library"
-          >
-            <i class="fa-solid fa-pen"></i>
-            <span>{{ canEdit(store) ? 'Edit' : 'Locked' }}</span>
-          </button>
-          <button
-            type="button"
-            class="card-action-button card-action-delete"
-            (click)="deleteLibrary(store); $event.stopPropagation()"
-            [disabled]="!canDelete(store)"
-            title="Delete library"
-          >
-            <i class="fa-solid fa-trash"></i>
-            <span>{{ canDelete(store) ? 'Delete' : 'Protected' }}</span>
-          </button>
-        </div>
-      </article>
-    </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- Create library modal -->

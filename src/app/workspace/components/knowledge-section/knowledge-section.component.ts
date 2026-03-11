@@ -125,6 +125,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       const libraryId = params.get('libraryId');
       const openNewLibrary = params.get('openNewLibrary');
       const openLibraryChat = params.get('openLibraryChat');
+      const workspaceTab = params.get('workspaceTab');
 
       if (openNewLibrary === '1') {
         this.showCreateVectorStoreForm = true;
@@ -134,6 +135,8 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       if (libraryId) {
         this.applyRouteLibrarySelection(libraryId);
       }
+
+      this.applyRouteWorkspaceTab(workspaceTab);
 
       if (libraryId && openLibraryChat === '1') {
         this.handleRouteLibraryChatRequest(libraryId);
@@ -217,6 +220,8 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         this.tryOpenPendingLibraryChat();
 
         const openLibraryChat = this.route.snapshot.queryParamMap.get('openLibraryChat');
+        const workspaceTab = this.route.snapshot.queryParamMap.get('workspaceTab');
+        this.applyRouteWorkspaceTab(workspaceTab);
         if (this.selectedVectorStore && openLibraryChat === '1') {
           this.handleRouteLibraryChatRequest(this.selectedVectorStore.id);
         }
@@ -1420,6 +1425,16 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
 
     if (this.activeWorkspaceTab !== 'documents') {
       this.activeWorkspaceTab = 'documents';
+    }
+  }
+
+  private applyRouteWorkspaceTab(workspaceTab: string | null): void {
+    if (!this.isSharedVectorStoreSelected || !workspaceTab) {
+      return;
+    }
+
+    if (workspaceTab === 'shared-with-me' || workspaceTab === 'shared-by-me') {
+      this.activeWorkspaceTab = workspaceTab;
     }
   }
 
