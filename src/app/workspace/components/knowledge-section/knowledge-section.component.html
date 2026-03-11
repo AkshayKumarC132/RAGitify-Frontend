@@ -247,7 +247,7 @@
                 <td class="col-name">
                   <i class="fa-solid doc-file-icon" [ngClass]="[getFileIcon(getDisplayDocumentName(doc)), getFileIconTone(getDisplayDocumentName(doc))]"></i>
                   <div class="doc-name-stack">
-                    <span class="doc-name-text" [title]="getDisplayDocumentName(doc)">{{ getTruncatedDocumentName(doc, 14) }}</span>
+                    <span class="doc-name-text" [title]="getDisplayDocumentName(doc)">{{ getTruncatedDocumentName(doc, 34) }}</span>
                   </div>
                 </td>
                 <td class="col-type">
@@ -312,25 +312,36 @@
                   <input type="checkbox" [checked]="selectedDocumentIds.has(doc.id)" (change)="toggleDocumentSelection(doc.id)" />
                   <span class="checkmark"></span>
                 </label>
-                <span class="document-card-type-icon" [title]="getDocumentTypeLabel(doc)">
-                  <i class="fa-solid" [ngClass]="getDocumentTypeLabel(doc) === 'Accessed' ? 'fa-eye' : 'fa-arrow-up-from-square'"></i>
-                </span>
+                <div class="document-card-header-right">
+                  <span class="document-card-origin-chip" [class.accessed]="getDocumentTypeLabel(doc) === 'Accessed'" [title]="getDocumentTypeLabel(doc)">
+                    <i class="fa-solid" [ngClass]="getDocumentTypeLabel(doc) === 'Accessed' ? 'fa-eye' : 'fa-arrow-up-from-square'"></i>
+                    <span>{{ getDocumentTypeLabel(doc) }}</span>
+                  </span>
+                </div>
               </div>
-              <div class="document-card-icon">
-                <i class="fa-solid" [ngClass]="[getFileIcon(getDisplayDocumentName(doc)), getFileIconTone(getDisplayDocumentName(doc))]"></i>
+              <div class="document-card-main">
+                <div class="document-card-icon">
+                  <i class="fa-solid" [ngClass]="[getFileIcon(getDisplayDocumentName(doc)), getFileIconTone(getDisplayDocumentName(doc))]"></i>
+                </div>
+                <div class="document-card-copy">
+                  <h3 class="document-card-title" [title]="getDisplayDocumentName(doc)">{{ getTruncatedDocumentName(doc, 18) }}</h3>
+                  <p class="document-card-subtitle">{{ getDocumentFileType(doc) }} document</p>
+                </div>
               </div>
-              <h3 class="document-card-title" [title]="getDisplayDocumentName(doc)">{{ getTruncatedDocumentName(doc, 14) }}</h3>
               <div class="document-card-meta">
-                <span class="meta-chip inline subtle">{{ getDocumentSource(doc) }}</span>
-                <span class="meta-chip inline subtle">{{ formatFileSize(doc) }}</span>
+                <span class="document-card-meta-chip">{{ getDocumentSource(doc) }}</span>
+                <span class="document-card-meta-chip">{{ formatFileSize(doc) }}</span>
+                <span class="document-card-meta-chip">{{ formatDate(resolvedDocumentDate(doc)) }}</span>
               </div>
-              <div class="document-card-footer">
-                <div class="document-card-footer-left">
+              <div class="document-card-summary">
+                <div class="document-card-status-line">
                   <span class="document-card-status" [ngClass]="getStatusBadgeClass(resolvedDocumentStatus(doc))" [title]="getDisplayStatus(resolvedDocumentStatus(doc))">
                     <i class="fa-solid" [ngClass]="resolvedDocumentStatus(doc) === 'completed' ? 'fa-circle-check' : resolvedDocumentStatus(doc) === 'failed' ? 'fa-triangle-exclamation' : 'fa-clock'"></i>
                   </span>
-                  <span class="document-card-date">{{ formatDate(resolvedDocumentDate(doc)) }}</span>
+                  <span class="document-card-status-text">{{ getDisplayStatus(resolvedDocumentStatus(doc)) }}</span>
                 </div>
+              </div>
+              <div class="document-card-footer">
                 <div class="document-card-footer-right">
                   <a *ngIf="canPreviewDocument(doc)" class="btn-premium-icon" [href]="doc.signed_url" target="_blank" rel="noopener noreferrer" title="Open file" (click)="$event.stopPropagation()">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
