@@ -19,6 +19,7 @@ import { ResponseService } from '../../../shared/services/response.service';
 import { ResponseAttentionService } from '../../../shared/services/response-attention.service';
 import { ThreadSearchPopupService } from '../../../shared/services/thread-search-popup.service';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
+import { DocumentShareService } from '../../../shared/services/document-share.service';
 
 @Component({
   selector: 'app-home',
@@ -105,6 +106,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     private assistantService: AssistantService,
     private authService: AuthService,
     private documentService: DocumentService,
+    private documentShareService: DocumentShareService,
     private threadSearchPopupService: ThreadSearchPopupService,
     private fb: FormBuilder,
     private location: Location
@@ -666,7 +668,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.librariesLoading = true;
     this.vectorStoreService.list().subscribe({
       next: (libraries) => {
-        this.libraries = (libraries || []).filter(library => library.vs_type !== 'SHARED');
+        this.libraries = libraries || [];
         this.librariesLoaded = true;
         this.librariesLoading = false;
       },
@@ -707,16 +709,24 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
 
     this.documentsLoading = true;
-    this.documentService.list(undefined, true).subscribe({
-      next: (documents) => {
-        this.allDocuments = documents || [];
-        this.documentsLoaded = true;
-        this.documentsLoading = false;
-      },
-      error: (error) => {
-        this.documentsLoading = false;
-        console.error('Error loading documents:', error);
-      }
+    Promise.all([
+      lastValueFrom(this.documentService.list(undefined, true)),
+      lastValueFrom(this.documentShareService.listSharedWithMe())
+    ]).then(([documents, sharedWithMe]) => {
+      const ownedDocuments = documents || [];
+      const sharedDocuments = this.mapSharedDocuments(sharedWithMe || []);
+      const deduped = new Map<string, Document>();
+
+      [...ownedDocuments, ...sharedDocuments].forEach(document => {
+        deduped.set(document.id, document);
+      });
+
+      this.allDocuments = Array.from(deduped.values());
+      this.documentsLoaded = true;
+      this.documentsLoading = false;
+    }).catch(error => {
+      this.documentsLoading = false;
+      console.error('Error loading documents:', error);
     });
   }
 
@@ -885,6 +895,25 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     const firstWritableLibrary = this.libraries.find(library => library.vs_type !== 'SHARED');
     return firstWritableLibrary?.id || null;
+  }
+
+  private mapSharedDocuments(items: Array<{ document_id: string; document_title: string; shared_at: string; updated_at: string; expires_at: string | null }>): Document[] {
+    const sharedLibraryId = this.libraries.find(library => library.vs_type === 'SHARED')?.id || 'shared';
+
+    return items.map(item => ({
+      id: item.document_id,
+      title: item.document_title,
+      original_filename: item.document_title,
+      vector_store: sharedLibraryId,
+      uploaded_at: item.shared_at,
+      created_at: item.shared_at,
+      updated_at: item.updated_at || item.shared_at,
+      status: 'completed',
+      ingestion_status: 'completed',
+      access_type: 'shared',
+      source: 'LOCAL',
+      metadata: item.expires_at ? { expires_at: item.expires_at } : undefined
+    }));
   }
 
   private async uploadFiles(files: File[], vectorStoreId: string | null): Promise<void> {

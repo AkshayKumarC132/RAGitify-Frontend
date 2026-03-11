@@ -48,6 +48,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Input() threadVectorStoreId: string | null = null;
   @Input() isTemporaryChat = false;
   @Input() currentRun: { status: string } | null = null;
+  @Input() allowCancelRun = true;
   @Input() librariesLoading = false;
   @Input() documentsLoading = false;
   @Input() promptsLoading = false;
@@ -71,6 +72,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   pendingPromptId: string | null = null;
   selectionMode: 'documents' = 'documents';
   pendingDocumentIds = new Set<string>();
+  public documentSearchQuery = '';
   speechSupported = false;
   isListening = false;
   isOverflowing = false;
@@ -112,7 +114,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   }
 
   sendMessage(): void {
-    if (this.message.trim() && !this.loading && !this.runActive) {
+    if (this.canSendMessage) {
       this.messageSent.emit(this.message);
       this.message = '';
       setTimeout(() => this.adjustTextareaHeight(), 0);
@@ -132,7 +134,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   }
 
   onCancelRun(): void {
-    if (this.runActive) {
+    if (this.runActive && this.allowCancelRun) {
       this.cancelRun.emit();
     }
   }
@@ -143,6 +145,10 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   get runActive(): boolean {
     return !!this.currentRun && ['queued', 'in_progress', 'requires_action'].includes(this.currentRun.status);
+  }
+
+  get canSendMessage(): boolean {
+    return !!this.message.trim() && !this.loading && !this.runActive;
   }
 
   toggleWebMode(): void {
@@ -215,6 +221,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
       if (panel === 'library') {
         this.pendingLibraryId = this.selectedLibraryId;
         this.pendingDocumentIds = new Set((this.selectedDocumentIds || []).map(id => String(id)));
+        this.documentSearchQuery = '';
         if (this.hasExistingThread) {
           this.enforceDocumentsOnlyMode();
         }
@@ -229,6 +236,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   closePanels(): void {
     this.activePanel = null;
+    this.documentSearchQuery = '';
   }
 
   submitWebForm(): void {
@@ -308,11 +316,13 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
       grouping.set(doc.vector_store, list);
     });
 
-    return Array.from(grouping.entries()).map(([libraryId, docs]) => ({
-      libraryId,
-      name: this.getLibraryName(libraryId),
-      documents: docs
-    }));
+    return Array.from(grouping.entries())
+      .map(([libraryId, docs]) => ({
+        libraryId,
+        name: this.getLibraryName(libraryId),
+        documents: docs
+      }))
+      .filter(group => group.documents.length > 0);
   }
 
   private getLibraryName(libraryId: string): string {
@@ -513,7 +523,25 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   }
 
   get availableDocuments(): Document[] {
-    return (this.documents || []).filter(doc => this.getDocumentStatus(doc) !== 'failed');
+    const query = this.documentSearchQuery.trim().toLowerCase();
+    return (this.documents || []).filter(doc => {
+      if (this.getDocumentStatus(doc) === 'failed') {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      const haystack = [
+        doc.title,
+        doc.original_filename,
+        doc.file_type,
+        doc.id
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return haystack.includes(query);
+    });
   }
 
   getDocumentStatus(document: Document): string {

@@ -2,7 +2,7 @@
   <aside class="workspace-sidebar" [class.collapsed]="sidebarCollapsed">
     <div class="sidebar-header" [class.show-expand-control]="sidebarCollapsed && hoveringExpandControl">
       <button type="button" class="brand-toggle" (click)="goToHome()"
-        [attr.title]="'Go to home'"
+        [attr.title]="'Home'"
         (mouseenter)="handleBrandExpandInteraction(true)" (mouseleave)="handleBrandExpandInteraction(false)"
         (focus)="handleBrandExpandInteraction(true)" (blur)="handleBrandExpandInteraction(false)">
         <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" class="brand-logo" />

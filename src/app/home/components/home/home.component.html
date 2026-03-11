@@ -54,6 +54,7 @@
 
       <div class="input-area" [class.centered]="isConversationEmpty">
         <app-chat-input [mode]="mode" [loading]="loading || attachmentsInProgress" [currentRun]="currentRun"
+          [allowCancelRun]="false"
           [isTemporaryChat]="isTemporaryChat" [libraries]="libraries" [selectedLibraryId]="selectedLibraryId"
           [documents]="allDocuments" [selectedDocumentIds]="selectedDocumentIds" [prompts]="prompts"
           [selectedPromptId]="selectedPromptId" [hasExistingThread]="!!currentThread"

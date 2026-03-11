@@ -54,7 +54,8 @@
       </button>
 
       <button class="send-button" (click)="runActive ? onCancelRun() : sendMessage()"
-        [disabled]="!runActive && (!message.trim() || loading)" [title]="runActive ? 'Stop run' : 'Send message'"
+        [disabled]="(runActive && !allowCancelRun) || (!runActive && !canSendMessage)"
+        [title]="runActive ? (allowCancelRun ? 'Stop run' : 'Response in progress') : (canSendMessage ? 'Send message' : 'Enter a message to send')"
         aria-label="Send message">
         <ng-container *ngIf="runActive; else sendState">
           <i class="fa-solid fa-stop"></i>
@@ -71,7 +72,8 @@
     <span>Listening...</span>
   </div>
 
-  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'web'" (click)="$event.stopPropagation()">
+  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'web'"
+    (click)="$event.stopPropagation()">
     <h4>Attach Webpage</h4>
     <input type="text" placeholder="https://example.com/article" [(ngModel)]="webForm.url" />
     <input type="text" placeholder="Optional title" [(ngModel)]="webForm.title" />
@@ -81,7 +83,8 @@
     </div>
   </div>
 
-  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'notes'" (click)="$event.stopPropagation()">
+  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'notes'"
+    (click)="$event.stopPropagation()">
     <h4>Attach Notes</h4>
     <input type="text" placeholder="Note title" [(ngModel)]="noteForm.title" />
     <textarea rows="4" placeholder="Add the text you want to reference..." [(ngModel)]="noteForm.content"></textarea>
@@ -91,17 +94,18 @@
     </div>
   </div>
 
-  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'library'" (click)="$event.stopPropagation()">
+  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'library'"
+    (click)="$event.stopPropagation()">
     <div class="attachment-panel-header">
       <div class="attachment-panel-copy" [class.limit-reached]="selectedDocumentsCount >= 10">
         <span>Attach Documents</span>
         <!-- <div class="selection-counter" > -->
         <span class="selection-counter__value">{{ selectedDocumentsCount }}/10</span>
         <!-- <span class="selection-counter__label">{{ selectionSlotsRemaining }} left</span> -->
-      <!-- </div> -->
+        <!-- </div> -->
         <!-- <p>Select up to 10 files. RAGitify will use the matching libraries behind those documents automatically.</p> -->
       </div>
-      
+
     </div>
     <ng-template #documentsList>
       <div class="documents-list">
@@ -109,6 +113,14 @@
           <p class="empty-text">Loading documents...</p>
         </ng-container>
         <ng-template #documentsReady>
+          <div class="document-search-box" *ngIf="documents.length">
+            <input type="text" [(ngModel)]="documentSearchQuery" placeholder="Search documents"
+              aria-label="Search documents" />
+            <button type="button" class="clear-search-btn" *ngIf="documentSearchQuery"
+              (click)="documentSearchQuery = ''" title="Clear search">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
           <ng-container *ngIf="availableDocuments.length; else emptyDocuments">
             <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
               <div class="group-header">
@@ -118,7 +130,8 @@
               <div class="group-documents">
                 <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)"
                   [class.disabled]="isSelectionDisabled(doc.id)" [class.selected]="isDocumentSelected(doc.id)">
-                  <input type="checkbox" [checked]="isDocumentSelected(doc.id)" [disabled]="isSelectionDisabled(doc.id)" />
+                  <input type="checkbox" [checked]="isDocumentSelected(doc.id)"
+                    [disabled]="isSelectionDisabled(doc.id)" />
                   <div class="document-card-meta">
                     <div class="document-card-topline">
                       <span class="title">{{ getDocumentDisplayName(doc) }}</span>
@@ -159,7 +172,8 @@
     </div>
   </div>
 
-  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'prompts'" (click)="$event.stopPropagation()">
+  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'prompts'"
+    (click)="$event.stopPropagation()">
     <h4>Use Prompts</h4>
     <ng-container *ngIf="promptsLoading; else promptsReady">
       <p class="empty-text">Loading prompts...</p>
