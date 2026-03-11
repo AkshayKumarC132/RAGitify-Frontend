@@ -45,9 +45,24 @@ export class ApiService {
     });
   }
 
+  patch<T>(endpoint: string, data: any, token?: string, context?: HttpContext): Observable<T> {
+    return this.http.patch<T>(`${this.baseUrl}${endpoint}`, data, {
+      headers: this.getHeaders(token),
+      context
+    });
+  }
+
   delete<T>(endpoint: string, token?: string, context?: HttpContext): Observable<T> {
     return this.http.delete<T>(`${this.baseUrl}${endpoint}`, {
       headers: this.getHeaders(token),
+      context
+    });
+  }
+
+  deleteWithBody<T>(endpoint: string, data: any, token?: string, context?: HttpContext): Observable<T> {
+    return this.http.delete<T>(`${this.baseUrl}${endpoint}`, {
+      headers: this.getHeaders(token),
+      body: data,
       context
     });
   }

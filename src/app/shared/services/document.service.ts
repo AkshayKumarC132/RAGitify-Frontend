@@ -4,10 +4,11 @@ import { HttpEvent, HttpContext } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { UserStateService } from './user-state.service';
-import { Document, DocumentIngestRequest, DocumentStatus } from '../models/document.model';
+import { Document, DocumentIngestRequest, DocumentStatus, IngestResponse, DocumentMoveRequest, DocumentMoveResponse } from '../models/document.model';
 import { HttpParams } from '@angular/common/http';
 import { shareReplay, tap } from 'rxjs/operators';
 import { SKIP_LOADING } from '../interceptors/loading.interceptor';
+import { SKIP_API_ERROR_ALERT } from '../interceptors/api-error-alert.interceptor';
 
 @Injectable({
   providedIn: 'root'
@@ -32,7 +33,7 @@ export class DocumentService {
     return token;
   }
 
-  ingest(data: DocumentIngestRequest): Observable<Document> {
+  ingest(data: DocumentIngestRequest): Observable<Document | IngestResponse> {
     const token = this.getToken();
     const formData = new FormData();
 
@@ -42,14 +43,16 @@ export class DocumentService {
     if (data.s3_file_url) {
       formData.append('s3_file_url', data.s3_file_url);
     }
-    formData.append('vector_store_id', data.vector_store_id);
+    if (data.vector_store_id) {
+      formData.append('vector_store_id', data.vector_store_id);
+    }
 
-    return this.api.postFormData<Document>(`/document/${token}/ingest/`, formData, token).pipe(
+    return this.api.postFormData<Document | IngestResponse>(`/document/${token}/ingest/`, formData, token).pipe(
       tap(() => this.invalidateListCache())
     );
   }
 
-  ingestWithProgress(data: DocumentIngestRequest): Observable<HttpEvent<Document>> {
+  ingestWithProgress(data: DocumentIngestRequest): Observable<HttpEvent<Document | IngestResponse>> {
     const token = this.getToken();
     const formData = new FormData();
 
@@ -59,7 +62,9 @@ export class DocumentService {
     if (data.s3_file_url) {
       formData.append('s3_file_url', data.s3_file_url);
     }
-    formData.append('vector_store_id', data.vector_store_id);
+    if (data.vector_store_id) {
+      formData.append('vector_store_id', data.vector_store_id);
+    }
 
     // When ingest completes, the caller typically refreshes lists; we still clear caches up-front
     // so subsequent list() calls won't reuse stale data.
@@ -67,7 +72,7 @@ export class DocumentService {
 
     // Skip global loading spinner to prevent flickering during multi-file uploads
     const context = new HttpContext().set(SKIP_LOADING, true);
-    return this.api.postFormDataWithProgress<Document>(`/document/${token}/ingest/`, formData, token, context);
+    return this.api.postFormDataWithProgress<Document | IngestResponse>(`/document/${token}/ingest/`, formData, token, context);
   }
 
   list(vectorStoreId?: string, forceRefresh = false): Observable<Document[]> {
@@ -105,13 +110,22 @@ export class DocumentService {
 
   getStatus(documentId: string): Observable<DocumentStatus> {
     const token = this.getToken();
-    const context = new HttpContext().set(SKIP_LOADING, true);
+    const context = new HttpContext()
+      .set(SKIP_LOADING, true)
+      .set(SKIP_API_ERROR_ALERT, true);
     return this.api.get<DocumentStatus>(`/document/${token}/${documentId}/status/`, token, undefined, context);
   }
 
   update(id: string, data: Partial<Document>): Observable<Document> {
     const token = this.getToken();
     return this.api.put<Document>(`/document/${token}/${id}/`, data, token).pipe(
+      tap(() => this.invalidateListCache())
+    );
+  }
+
+  move(data: DocumentMoveRequest): Observable<DocumentMoveResponse> {
+    const token = this.getToken();
+    return this.api.post<DocumentMoveResponse>(`/documents/move/${token}/`, data, token).pipe(
       tap(() => this.invalidateListCache())
     );
   }

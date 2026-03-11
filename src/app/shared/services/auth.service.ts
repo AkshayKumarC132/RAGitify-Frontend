@@ -3,9 +3,21 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, map, switchMap, take, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
-import { User, LoginRequest, RegisterRequest, AuthResponse, UserStatus, LlmSetupRequest, SelectedLLMProvider } from '../models/user.model';
+import {
+  User,
+  LoginRequest,
+  RegisterRequest,
+  AuthResponse,
+  UserStatus,
+  LlmSetupRequest,
+  SelectedLLMProvider,
+  UserProfileUpdateRequest,
+  UserPasswordUpdateRequest
+} from '../models/user.model';
 import { ThemeService } from './theme.service';
 import { UserStateService } from './user-state.service';
+import { HttpContext } from '@angular/common/http';
+import { SKIP_API_ERROR_ALERT } from '../interceptors/api-error-alert.interceptor';
 
 @Injectable({
   providedIn: 'root'
@@ -46,7 +58,8 @@ export class AuthService {
   }
 
   verifyToken(token: string): Observable<any> {
-    return this.api.get(`/protected/${token}/`);
+    const context = new HttpContext().set(SKIP_API_ERROR_ALERT, true);
+    return this.api.get(`/protected/${token}/`, undefined, undefined, context);
   }
 
   setAuth(token: string, user: User): void {
@@ -178,9 +191,32 @@ export class AuthService {
     if (!token) {
       return throwError(() => new Error('Authentication token is required'));
     }
-    return this.api.get<UserStatus>(`/me/status/${token}/`, token).pipe(
+    const context = new HttpContext().set(SKIP_API_ERROR_ALERT, true);
+    return this.api.get<UserStatus>(`/me/status/${token}/`, token, undefined, context).pipe(
       map((status: UserStatus) => this.normalizeStatus(status) as UserStatus),
       tap(status => this.applyStatus(status))
+    );
+  }
+
+  updateUserProfile(userId: number, payload: UserProfileUpdateRequest): Observable<User> {
+    const token = this.getToken();
+    if (!token) {
+      return throwError(() => new Error('Authentication token is required'));
+    }
+
+    return this.api.patch<User>(`/user/${token}/${userId}/`, payload, token).pipe(
+      tap(user => this.mergeUpdatedUser(user))
+    );
+  }
+
+  updateUserPassword(userId: number, payload: UserPasswordUpdateRequest): Observable<User> {
+    const token = this.getToken();
+    if (!token) {
+      return throwError(() => new Error('Authentication token is required'));
+    }
+
+    return this.api.put<User>(`/user/${token}/${userId}/`, payload, token).pipe(
+      tap(user => this.mergeUpdatedUser(user))
     );
   }
 
@@ -308,5 +344,20 @@ export class AuthService {
       selected_llm_provider: provider,
       ready
     };
+  }
+
+  private mergeUpdatedUser(user: User): void {
+    const token = this.getToken();
+    const existing = this.getStoredUser();
+    const mergedUser = { ...existing, ...user } as User;
+
+    if (token) {
+      this.setAuth(token, mergedUser);
+      return;
+    }
+
+    localStorage.setItem(this.USER_KEY, JSON.stringify(mergedUser));
+    this.currentUserSubject.next(mergedUser);
+    this.syncStatusFromUser(mergedUser);
   }
 }

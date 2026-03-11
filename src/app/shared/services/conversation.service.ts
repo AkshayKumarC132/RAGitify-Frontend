@@ -26,6 +26,11 @@ export class ConversationService {
     return this.api.post<Conversation>(`/conversation/generate/${token}/`, data, token);
   }
 
+  list(): Observable<Conversation[]> {
+    const token = this.getToken();
+    return this.api.get<Conversation[]>(`/conversation/${token}/list/`, token);
+  }
+
   getById(id: string): Observable<Conversation> {
     const token = this.getToken();
     return this.api.get<Conversation>(`/conversation/${token}/${id}/`, token);
@@ -34,6 +39,11 @@ export class ConversationService {
   update(id: string, data: Partial<ConversationCreateRequest>): Observable<Conversation> {
     const token = this.getToken();
     return this.api.put<Conversation>(`/conversation/${token}/${id}/`, data, token);
+  }
+
+  patch(id: string, data: Partial<ConversationCreateRequest>): Observable<Conversation> {
+    const token = this.getToken();
+    return this.api.patch<Conversation>(`/conversation/${token}/${id}/`, data, token);
   }
 
   delete(id: string): Observable<void> {
@@ -46,4 +56,3 @@ export class ConversationService {
     return this.api.get<ConversationMessage[]>(`/conversation/${conversationId}/items/${token}/`, token);
   }
 }
-

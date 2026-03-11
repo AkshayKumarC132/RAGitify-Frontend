@@ -208,7 +208,15 @@ export class ModelsSectionComponent implements OnInit {
   }
 
   get shouldUseModelListScroll(): boolean {
-    return this.models.length > 5;
+    return this.models.length > 4;
+  }
+
+  get activeModelsCount(): number {
+    return this.models.filter(model => model.is_active).length;
+  }
+
+  get inactiveModelsCount(): number {
+    return this.models.filter(model => !model.is_active).length;
   }
 
   setActive(model: OpenAIKey): void {
@@ -256,5 +264,4 @@ interface ProviderOption {
   defaultModel: string;
   requiresApiKey: boolean;
 }
-
 

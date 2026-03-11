@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import Swal from 'sweetalert2/dist/sweetalert2.js';
 import { AuthService } from '../../../shared/services/auth.service';
 import { User, UserStatus } from '../../../shared/models/user.model';
 
@@ -12,20 +14,29 @@ export class AccountSectionComponent implements OnInit {
   currentUser: User | null = null;
   status: UserStatus | null = null;
   accountForm: FormGroup;
-  loading = false;
-  message = '';
-  messageType: 'success' | 'error' = 'success';
+  passwordForm: FormGroup;
+  profileLoading = false;
+  passwordLoading = false;
+  profileMessage = '';
+  passwordMessage = '';
+  profileMessageType: 'success' | 'error' = 'success';
+  passwordMessageType: 'success' | 'error' = 'success';
 
   constructor(
     private authService: AuthService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private router: Router
   ) {
     this.accountForm = this.fb.group({
       first_name: [''],
       last_name: [''],
-      email: [{ value: '', disabled: true }],
-      username: [{ value: '', disabled: true }]
+      email: [{ value: '', disabled: true }]
     });
+
+    this.passwordForm = this.fb.group({
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', [Validators.required]]
+    }, { validators: this.passwordsMatchValidator });
   }
 
   ngOnInit(): void {
@@ -35,8 +46,7 @@ export class AccountSectionComponent implements OnInit {
         this.accountForm.patchValue({
           first_name: user.first_name || '',
           last_name: user.last_name || '',
-          email: user.email || '',
-          username: user.username || ''
+          email: user.email || ''
         });
       }
     });
@@ -55,33 +65,85 @@ export class AccountSectionComponent implements OnInit {
       return;
     }
 
-    this.loading = true;
-    this.message = '';
+    this.profileLoading = true;
+    this.profileMessage = '';
 
-    const token = this.authService.getToken();
-    const updatedUser: User = {
-      ...this.currentUser,
+    this.authService.updateUserProfile(this.currentUser.id, {
       first_name: this.accountForm.get('first_name')?.value || '',
       last_name: this.accountForm.get('last_name')?.value || ''
-    };
+    }).subscribe({
+      next: (user) => {
+        this.currentUser = user;
+        this.profileLoading = false;
+        this.profileMessage = 'Profile updated successfully';
+        this.profileMessageType = 'success';
+        this.clearMessageLater('profile');
+      },
+      error: (error) => {
+        this.profileLoading = false;
+        this.profileMessage = error?.error?.detail || error?.error?.error || 'Failed to update profile';
+        this.profileMessageType = 'error';
+      }
+    });
+  }
 
-    if (token) {
-      this.authService.setAuth(token, updatedUser);
+  async savePassword(): Promise<void> {
+    if (!this.currentUser || this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
+      return;
     }
 
-    this.currentUser = updatedUser;
-    this.message = 'Account updated successfully';
-    this.messageType = 'success';
-    this.loading = false;
+    const confirm = await Swal.fire({
+      title: 'Update password?',
+      text: 'Updating your password can log you out from this session. Continue?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, update',
+      cancelButtonText: 'No'
+    });
 
-    setTimeout(() => {
-      this.message = '';
-    }, 3000);
+    if (!confirm.isConfirmed) {
+      return;
+    }
+
+    this.passwordLoading = true;
+    this.passwordMessage = '';
+
+    this.authService.updateUserPassword(this.currentUser.id, {
+      password: this.passwordForm.get('password')?.value
+    }).subscribe({
+      next: () => {
+        this.passwordLoading = false;
+        this.passwordForm.reset();
+        void this.logoutAfterPasswordChange();
+      },
+      error: (error) => {
+        this.passwordLoading = false;
+        this.passwordMessage = error?.error?.detail || error?.error?.error || 'Failed to update password';
+        this.passwordMessageType = 'error';
+      }
+    });
   }
 
   get providerDisplay(): string {
     const provider = this.status?.selected_llm_provider || (this.status as any)?.active_provider;
     return provider || 'Not configured';
+  }
+
+  get fullNameDisplay(): string {
+    const fullName = `${this.currentUser?.first_name || ''} ${this.currentUser?.last_name || ''}`.trim();
+    return fullName || this.currentUser?.username || 'Workspace User';
+  }
+
+  get initialsDisplay(): string {
+    const first = this.currentUser?.first_name?.[0] || this.currentUser?.username?.[0] || '';
+    const last = this.currentUser?.last_name?.[0] || '';
+    return `${first}${last}`.trim().toUpperCase() || '?';
+  }
+
+  get tenantDisplay(): string {
+    const tenantValue = this.currentUser?.tenant;
+    return typeof tenantValue !== 'undefined' && tenantValue !== null ? `Tenant #${tenantValue}` : 'Not available';
   }
 
   get collectionDisplay(): string {
@@ -96,5 +158,72 @@ export class AccountSectionComponent implements OnInit {
 
   get readyDisplay(): string {
     return this.status?.ready ? 'Yes' : 'No';
+  }
+
+  get collectionIdDisplay(): string {
+    return this.status?.active_collection?.id || 'Not available';
+  }
+
+  get qdrantCollectionDisplay(): string {
+    return this.status?.active_collection?.qdrant_collection_name || 'Not available';
+  }
+
+  get collectionDimensionDisplay(): string {
+    const dimension = this.status?.active_collection?.embedding_dimension;
+    return typeof dimension === 'number' ? `${dimension}` : 'Not available';
+  }
+
+  get llmConfiguredDisplay(): string {
+    return this.status?.llm_configured ? 'Configured' : 'Not configured';
+  }
+
+  private passwordsMatchValidator(group: FormGroup): { passwordMismatch: true } | null {
+    const password = group.get('password')?.value;
+    const confirmPassword = group.get('confirmPassword')?.value;
+    if (!password || !confirmPassword) {
+      return null;
+    }
+    return password === confirmPassword ? null : { passwordMismatch: true };
+  }
+
+  private clearMessageLater(type: 'profile' | 'password'): void {
+    setTimeout(() => {
+      if (type === 'profile') {
+        this.profileMessage = '';
+        return;
+      }
+      this.passwordMessage = '';
+    }, 3000);
+  }
+
+  private async logoutAfterPasswordChange(): Promise<void> {
+    const token = this.authService.getToken();
+    const finalizeLogout = async (): Promise<void> => {
+      this.authService.clearAuth();
+      localStorage.clear();
+      await Swal.fire({
+        title: 'Password updated',
+        text: 'Please log in again to continue.',
+        icon: 'success',
+        confirmButtonText: 'Login Again',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      });
+      await this.router.navigate(['/auth/login']);
+    };
+
+    if (token) {
+      this.authService.logout(token).subscribe({
+        next: () => {
+          void finalizeLogout();
+        },
+        error: () => {
+          void finalizeLogout();
+        }
+      });
+      return;
+    }
+
+    await finalizeLogout();
   }
 }

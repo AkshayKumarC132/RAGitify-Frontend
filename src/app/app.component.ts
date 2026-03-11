@@ -4,7 +4,7 @@ import { ConfirmDialogService } from './shared/services/confirm-dialog.service';
 import { ThreadSearchPopupService } from './shared/services/thread-search-popup.service';
 import { Observable } from 'rxjs';
 import { ConfirmDialogOptions } from './shared/components/confirm-dialog/confirm-dialog.component';
-import { Thread } from './shared/models/thread.model';
+import { Conversation } from './shared/models/conversation.model';
 import { LoadingService } from './shared/services/loading.service';
 
 @Component({
@@ -15,7 +15,7 @@ import { LoadingService } from './shared/services/loading.service';
 export class AppComponent implements OnInit {
   title = 'RAGitify';
   dialogState$: Observable<{ show: boolean; options: ConfirmDialogOptions | null }>;
-  searchPopupState$: Observable<{ show: boolean; threads: Thread[]; currentThread: Thread | null }>;
+  searchPopupState$: Observable<{ show: boolean; threads: Conversation[]; currentThread: Conversation | null }>;
   loading$: Observable<boolean>;
   loaderLabel$: Observable<string>;
 
@@ -43,7 +43,7 @@ export class AppComponent implements OnInit {
     this.threadSearchPopupService.close();
   }
 
-  onThreadSelected(thread: Thread): void {
+  onThreadSelected(thread: Conversation): void {
     this.threadSearchPopupService.selectThread(thread);
   }
 }

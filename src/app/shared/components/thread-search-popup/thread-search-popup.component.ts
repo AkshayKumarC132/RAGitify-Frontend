@@ -2,9 +2,8 @@ import { Component, Input, Output, EventEmitter, HostListener, OnInit, AfterView
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Subscription, from } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
-import { Thread } from '../../models/thread.model';
-import { Message } from '../../models/message.model';
-import { ThreadService } from '../../services/thread.service';
+import { Conversation, ConversationMessage } from '../../models/conversation.model';
+import { ConversationService } from '../../services/conversation.service';
 
 @Component({
   selector: 'app-thread-search-popup',
@@ -12,9 +11,9 @@ import { ThreadService } from '../../services/thread.service';
   styleUrls: ['./thread-search-popup.component.scss']
 })
 export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDestroy {
-  @Input() threads: Thread[] = [];
-  @Input() currentThread: Thread | null = null;
-  @Output() threadSelected = new EventEmitter<Thread>();
+  @Input() threads: Conversation[] = [];
+  @Input() currentThread: Conversation | null = null;
+  @Output() threadSelected = new EventEmitter<Conversation>();
   @Output() closed = new EventEmitter<void>();
 
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
@@ -22,16 +21,16 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
   @ViewChild('resultsContainer') resultsContainer!: ElementRef<HTMLDivElement>;
 
   searchQuery = '';
-  filteredThreads: Thread[] = [];
+  filteredThreads: Conversation[] = [];
   private searchDebounceTimeout: any;
-  private messagesCache = new Map<string, Message[]>();
+  private messagesCache = new Map<string, ConversationMessage[]>();
   private matchSourceByThreadId = new Map<string, 'title' | 'message' | 'both'>();
   private messageSubscriptions: Subscription[] = [];
   private readonly maxConcurrentMessageFetches = 4;
 
   constructor(
     private sanitizer: DomSanitizer,
-    private threadService: ThreadService
+    private conversationService: ConversationService
   ) { }
 
   ngOnInit(): void {
@@ -84,8 +83,8 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
 
     this.matchSourceByThreadId.clear();
 
-    const titleMatches: Thread[] = [];
-    const remainingThreads: Thread[] = [];
+    const titleMatches: Conversation[] = [];
+    const remainingThreads: Conversation[] = [];
 
     for (const thread of this.threads) {
       const title = this.getThreadTitle(thread).toLowerCase();
@@ -97,8 +96,8 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
       }
     }
 
-    const messageMatches: Thread[] = [];
-    const threadsNeedingFetch: Thread[] = [];
+    const messageMatches: Conversation[] = [];
+    const threadsNeedingFetch: Conversation[] = [];
 
     for (const thread of remainingThreads) {
       const cachedMessages = this.messagesCache.get(thread.id);
@@ -128,14 +127,13 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
       // Limit concurrency to keep network + server load reasonable.
       const sub = from(threadsNeedingFetch).pipe(
         mergeMap(thread =>
-          this.threadService.getMessages(thread.id),
+          this.conversationService.getMessages(thread.id),
           this.maxConcurrentMessageFetches
         )
       ).subscribe({
         next: (messages) => {
-          // NOTE: we don't get the threadId here from the response directly.
-          // Our Message model includes thread_id; use it to map back.
-          const threadId = String((messages?.[0] as any)?.thread_id || '');
+          // The endpoint returns only messages, so infer the parent conversation id.
+          const threadId = String((messages?.[0] as any)?.conversation_id || this.findThreadIdByMessages(messages));
           if (threadId) {
             this.messagesCache.set(threadId, messages);
           }
@@ -173,16 +171,16 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
     }
   }
 
-  getThreadTitle(thread: Thread): string {
+  getThreadTitle(thread: Conversation): string {
     return thread.title || 'Untitled';
   }
 
-  isTitleMatch(thread: Thread): boolean {
+  isTitleMatch(thread: Conversation): boolean {
     return this.matchSourceByThreadId.get(thread.id) === 'title' ||
       this.matchSourceByThreadId.get(thread.id) === 'both';
   }
 
-  isMessageMatch(thread: Thread): boolean {
+  isMessageMatch(thread: Conversation): boolean {
     const matchSource = this.matchSourceByThreadId.get(thread.id);
     return matchSource === 'message' || matchSource === 'both';
   }
@@ -199,17 +197,17 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
     return this.sanitizer.sanitize(1, highlighted) || '';
   }
 
-  getHighlightedTitle(thread: Thread): SafeHtml {
+  getHighlightedTitle(thread: Conversation): SafeHtml {
     const title = this.getThreadTitle(thread);
     return this.highlightText(title, this.searchQuery);
   }
 
-  getHighlightedSnippet(thread: Thread): SafeHtml {
+  getHighlightedSnippet(thread: Conversation): SafeHtml {
     const snippet = this.getMessageSnippet(thread);
     return this.highlightText(snippet, this.searchQuery);
   }
 
-  private getMessageSnippet(thread: Thread): string {
+  private getMessageSnippet(thread: Conversation): string {
     const messages = this.messagesCache.get(thread.id);
     if (!messages || !this.searchQuery.trim()) {
       return '';
@@ -236,7 +234,7 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  selectThread(thread: Thread): void {
+  selectThread(thread: Conversation): void {
     this.threadSelected.emit(thread);
   }
 
@@ -266,8 +264,18 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
   }
 
-  trackByThreadId(index: number, thread: Thread): string {
+  trackByThreadId(index: number, thread: Conversation): string {
     return thread.id;
   }
-}
 
+  private findThreadIdByMessages(messages: ConversationMessage[]): string {
+    const messageIds = new Set((messages || []).map(message => String(message.id)));
+    for (const thread of this.threads) {
+      const cached = this.messagesCache.get(thread.id);
+      if (cached?.some(message => messageIds.has(String(message.id)))) {
+        return thread.id;
+      }
+    }
+    return '';
+  }
+}

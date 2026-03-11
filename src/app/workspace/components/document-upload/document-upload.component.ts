@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { HttpEvent, HttpEventType } from '@angular/common/http';
-import { Document } from '../../../shared/models/document.model';
+import { Document, IngestResponse } from '../../../shared/models/document.model';
 import { DocumentService } from '../../../shared/services/document.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 
@@ -59,8 +59,8 @@ export class DocumentUploadComponent implements OnChanges {
   }
 
   onUpload(): void {
-    if (this.fileStatuses.length === 0 || !this.selectedVectorStoreId) {
-      this.errorMessage = 'Please select file(s) and library destination';
+    if (this.fileStatuses.length === 0) {
+      this.errorMessage = 'Please select file(s) to upload';
       return;
     }
 
@@ -86,9 +86,9 @@ export class DocumentUploadComponent implements OnChanges {
 
     this.documentService.ingestWithProgress({
       file: fileStatus.file,
-      vector_store_id: this.selectedVectorStoreId
+      vector_store_id: this.selectedVectorStoreId || undefined
     }).subscribe({
-      next: (event: HttpEvent<Document>) => {
+      next: (event: HttpEvent<Document | IngestResponse>) => {
         if (event.type === HttpEventType.UploadProgress) {
           this.hasProgressEvents = true;
           const total = event.total || 0;

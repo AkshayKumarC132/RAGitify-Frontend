@@ -4,6 +4,7 @@ import { Conversation, ConversationMessage } from '../../../shared/models/conver
 import { ResponseRecord, ResponseCreateRequest, DocumentTool } from '../../../shared/models/response.model';
 import { ConversationService } from '../../../shared/services/conversation.service';
 import { ResponseService } from '../../../shared/services/response.service';
+import { ResponseAttentionService } from '../../../shared/services/response-attention.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -28,7 +29,8 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     private conversationService: ConversationService,
-    private responseService: ResponseService
+    private responseService: ResponseService,
+    private responseAttentionService: ResponseAttentionService
   ) { }
 
   ngOnInit(): void {
@@ -95,7 +97,7 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
   private createConversation(): Promise<void> {
     return new Promise((resolve, reject) => {
       const title = this.document?.title ? `Chat: ${this.document.title}` : undefined;
-      this.conversationService.create({ title }).subscribe({
+      this.conversationService.create({ title, is_temporary: true }).subscribe({
         next: (conversation) => {
           this.conversation = conversation;
           resolve();
@@ -185,6 +187,7 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
   private handleResponseComplete(response: ResponseRecord): void {
     this.loading = false;
     this.currentResponse = null;
+    this.responseAttentionService.notifyResponseReady('Document chat response ready', response.output?.[0]?.content?.[0]?.text);
 
     if (response.output && response.output.length > 0) {
       const output = response.output[0];

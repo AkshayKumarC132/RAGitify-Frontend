@@ -38,12 +38,18 @@
           <span>{{ errorMessage }}</span>
         </div>
 
+        <div class="error-banner warning-banner" *ngIf="warningMessages.length">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>{{ warningMessages.join(' ') }}</span>
+        </div>
+
         <app-empty-state *ngIf="isConversationEmpty" [isTemporaryChat]="isTemporaryChat" [mode]="mode"
           [hasDocuments]="allDocuments.length > 0" (viewLibrary)="onWorkspaceNavigate()"></app-empty-state>
 
         <app-chat-container *ngIf="!isConversationEmpty" [messages]="messages" [currentRun]="currentRun"
-          [runMap]="runMap" [rerunLoadingMessageId]="rerunLoadingMessageId"
-          (rerunRequest)="onRerunRequest($event)"></app-chat-container>
+          [loading]="loading"
+          [typingStatuses]="typingStatuses">
+        </app-chat-container>
       </div>
 
       <div class="input-area" [class.centered]="isConversationEmpty">
@@ -51,7 +57,7 @@
           [isTemporaryChat]="isTemporaryChat" [libraries]="libraries" [selectedLibraryId]="selectedLibraryId"
           [documents]="allDocuments" [selectedDocumentIds]="selectedDocumentIds" [prompts]="prompts"
           [selectedPromptId]="selectedPromptId" [hasExistingThread]="!!currentThread"
-          [threadVectorStoreId]="currentThread?.vector_store_id_read || null" [librariesLoading]="librariesLoadingState"
+          [threadVectorStoreId]="null" [librariesLoading]="librariesLoadingState"
           [documentsLoading]="documentsLoadingState" [promptsLoading]="promptsLoadingState"
           (messageSent)="onMessageSent($event)" (cancelRun)="onCancelRun()" (modeToggle)="onModeToggle($event)"
           (filesSelected)="onFilesSelected($event)" (webpageAttached)="onWebpageAttach($event)"

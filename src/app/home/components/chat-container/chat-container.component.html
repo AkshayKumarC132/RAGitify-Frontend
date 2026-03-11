@@ -1,18 +1,10 @@
 <div class="chat-container">
   <div class="messages-list" #messagesWrapper (scroll)="onScroll()">
-    <app-message-bubble *ngFor="let message of pagedMessages; let last = last; trackBy: trackByMessage"
-      [message]="message" [isLast]="last"
-      [canRerun]="message.role === 'assistant' && (!!getRunForMessage(message) || message.id < 0) && last"
-      [run]="getRunForMessage(message)" [rerunLoading]="rerunLoadingMessageId === message.id"
-      [showPager]="message.role === 'assistant' && getAssistantMessagesForPaging(message).length > 1"
-      [pageLabel]="message.role === 'assistant' ? (getActiveRerunIndex(message) + 1) + '/' + getAssistantMessagesForPaging(message).length : ''"
-      [pagerHasPrev]="message.role === 'assistant' && getActiveRerunIndex(message) > 0"
-      [pagerHasNext]="message.role === 'assistant' && getActiveRerunIndex(message) < getAssistantMessagesForPaging(message).length - 1"
-      (pagerPrev)="onPagerPrevForMessage(message)" (pagerNext)="onPagerNextForMessage(message)"
-      (rerun)="onRerun(message)"></app-message-bubble>
+    <app-message-bubble *ngFor="let message of messages; let last = last; trackBy: trackByMessage"
+      [message]="message" [isLast]="last">
+    </app-message-bubble>
 
-    <app-typing-indicator *ngIf="isTyping" [cycle]="true"></app-typing-indicator>
-
+    <app-typing-indicator *ngIf="isTyping" [cycle]="true" [statuses]="typingStatuses"></app-typing-indicator>
   </div>
 
   <button type="button" class="jump-to-bottom-btn" *ngIf="showJumpToBottom" (click)="jumpToBottom()"

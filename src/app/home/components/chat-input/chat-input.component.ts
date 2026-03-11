@@ -1,8 +1,8 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener, ChangeDetectorRef, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import Swal from 'sweetalert2/dist/sweetalert2.js';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
 import { Document } from '../../../shared/models/document.model';
-import { Run } from '../../../shared/models/run.model';
 
 type AttachmentPanel = 'web' | 'notes' | 'library' | 'prompts' | null;
 
@@ -33,6 +33,7 @@ export type LibrarySelectionEvent =
   styleUrls: ['./chat-input.component.scss']
 })
 export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnDestroy {
+  private readonly maxSelectedDocuments = 10;
   @ViewChild('messageArea') messageArea?: ElementRef<HTMLTextAreaElement>;
 
   @Input() mode: 'normal' | 'web' | 'document' = 'normal';
@@ -46,7 +47,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Input() hasExistingThread = false;
   @Input() threadVectorStoreId: string | null = null;
   @Input() isTemporaryChat = false;
-  @Input() currentRun: Run | null = null;
+  @Input() currentRun: { status: string } | null = null;
   @Input() librariesLoading = false;
   @Input() documentsLoading = false;
   @Input() promptsLoading = false;
@@ -68,7 +69,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   noteForm = { title: '', content: '' };
   pendingLibraryId: string | null = null;
   pendingPromptId: string | null = null;
-  selectionMode: 'library' | 'documents' = 'library';
+  selectionMode: 'documents' = 'documents';
   pendingDocumentIds = new Set<string>();
   speechSupported = false;
   isListening = false;
@@ -97,27 +98,16 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selectedLibraryId']) {
       this.pendingLibraryId = this.selectedLibraryId;
-      if (this.selectedLibraryId) {
-        this.selectionMode = 'library';
-      }
     }
     if (changes['selectedPromptId']) {
       this.pendingPromptId = this.selectedPromptId;
     }
     if (changes['selectedDocumentIds']) {
       this.pendingDocumentIds = new Set((this.selectedDocumentIds || []).map(id => String(id)));
-      if (this.selectedDocumentIds?.length) {
-        this.selectionMode = 'documents';
-      } else if (!this.selectedLibraryId) {
-        this.selectionMode = 'library';
-      }
+      this.selectionMode = 'documents';
     }
     if (changes['hasExistingThread']) {
-      if (this.hasExistingThread) {
-        this.enforceDocumentsOnlyMode();
-      } else if (!this.selectedDocumentIds?.length && this.selectedLibraryId) {
-        this.selectionMode = 'library';
-      }
+      this.enforceDocumentsOnlyMode();
     }
   }
 
@@ -266,18 +256,14 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   }
 
   confirmLibrarySelection(): void {
-    if (this.selectionMode === 'documents') {
-      this.librarySelected.emit({ type: 'documents', documentIds: Array.from(this.pendingDocumentIds) });
-    } else {
-      this.librarySelected.emit({ type: 'library', libraryId: this.pendingLibraryId || null });
-    }
+    this.librarySelected.emit({ type: 'documents', documentIds: Array.from(this.pendingDocumentIds) });
     this.closePanels();
   }
 
   clearLibrarySelection(): void {
     this.pendingLibraryId = null;
     this.pendingDocumentIds.clear();
-    this.selectionMode = this.hasExistingThread ? 'documents' : 'library';
+    this.selectionMode = 'documents';
     this.librarySelected.emit({ type: 'clear' });
     this.closePanels();
   }
@@ -314,16 +300,6 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     this.activePanel = null;
   }
 
-  setSelectionMode(mode: 'library' | 'documents'): void {
-    if (this.hasExistingThread && mode === 'library') {
-      return;
-    }
-    if (mode === 'documents' && !this.availableDocuments.length) {
-      return;
-    }
-    this.selectionMode = mode;
-  }
-
   getDocumentsByLibrary(): { libraryId: string; name: string; documents: Document[] }[] {
     const grouping = new Map<string, Document[]>();
     this.availableDocuments.forEach(doc => {
@@ -348,15 +324,41 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     return this.pendingDocumentIds.has(String(documentId));
   }
 
+  isSelectionDisabled(documentId: string): boolean {
+    return !this.isDocumentSelected(documentId) && this.pendingDocumentIds.size >= this.maxSelectedDocuments;
+  }
+
+  get selectedDocumentsCount(): number {
+    return this.pendingDocumentIds.size;
+  }
+
+  get selectionSlotsRemaining(): number {
+    return Math.max(0, this.maxSelectedDocuments - this.pendingDocumentIds.size);
+  }
+
+  getDocumentSourceLabel(document: Document): string {
+    return document.access_type === 'shared' ? 'Shared' : 'Owned';
+  }
+
+  getDocumentTypeLabel(document: Document): string {
+    return (document.file_type || document.original_filename?.split('.').pop() || 'file').toUpperCase();
+  }
+
+  getDocumentDisplayName(document: Document): string {
+    return document.title || document.original_filename || `Document ${document.id}`;
+  }
+
   toggleDocumentSelectionClick(documentId: string, event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
-
-    const target = event.target as HTMLElement;
     const isCurrentlySelected = this.pendingDocumentIds.has(String(documentId));
     const newState = !isCurrentlySelected;
 
-    this.toggleDocumentSelectionById(documentId, newState);
+    const updated = this.toggleDocumentSelectionById(documentId, newState);
+    if (!updated) {
+      this.showSelectionLimitAlert();
+      return;
+    }
 
     const label = event.currentTarget as HTMLElement;
     const checkbox = label.querySelector('input[type="checkbox"]') as HTMLInputElement;
@@ -365,7 +367,10 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     }
   }
 
-  toggleDocumentSelectionById(documentId: string, selected: boolean): void {
+  toggleDocumentSelectionById(documentId: string, selected: boolean): boolean {
+    if (selected && !this.pendingDocumentIds.has(String(documentId)) && this.pendingDocumentIds.size >= this.maxSelectedDocuments) {
+      return false;
+    }
     const next = new Set(this.pendingDocumentIds);
     if (selected) {
       next.add(String(documentId));
@@ -374,12 +379,17 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     }
     this.pendingDocumentIds = next;
     this.cdr.detectChanges();
+    return true;
   }
 
   toggleDocumentSelection(documentId: string, event: Event): void {
     const checkbox = event.target as HTMLInputElement;
     const selected = checkbox.checked;
-    this.toggleDocumentSelectionById(documentId, selected);
+    const updated = this.toggleDocumentSelectionById(documentId, selected);
+    if (!updated) {
+      checkbox.checked = false;
+      this.showSelectionLimitAlert();
+    }
   }
 
   toggleNormalMode(event: Event): void {
@@ -492,7 +502,25 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     this.pendingLibraryId = null;
   }
 
+  private showSelectionLimitAlert(): void {
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Document limit reached',
+      text: 'You can attach up to 10 documents in Home Chat.',
+      confirmButtonText: 'OK',
+      heightAuto: false
+    });
+  }
+
   get availableDocuments(): Document[] {
-    return (this.documents || []).filter(doc => doc.status !== 'failed');
+    return (this.documents || []).filter(doc => this.getDocumentStatus(doc) !== 'failed');
+  }
+
+  getDocumentStatus(document: Document): string {
+    return document.ingestion_status || document.status || 'completed';
+  }
+
+  getDocumentDate(document: Document): string | undefined {
+    return document.created_at || document.updated_at || document.uploaded_at;
   }
 }

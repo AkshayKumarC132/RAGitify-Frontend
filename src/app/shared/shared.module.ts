@@ -3,6 +3,7 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgModule } from '@angular/core';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { ApiErrorAlertInterceptor } from './interceptors/api-error-alert.interceptor';
 import { LoadingInterceptor } from './interceptors/loading.interceptor';
 import { ApiService } from './services/api.service';
 import { AuthService } from './services/auth.service';
@@ -29,6 +30,11 @@ import { MessageBubbleComponent } from './components/message-bubble/message-bubb
     {
       provide: HTTP_INTERCEPTORS,
       useClass: LoadingInterceptor,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: ApiErrorAlertInterceptor,
       multi: true
     },
     {

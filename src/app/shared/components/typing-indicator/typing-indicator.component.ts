@@ -89,12 +89,12 @@ export class TypingIndicatorComponent implements OnInit, OnDestroy {
   @Input() cycle: boolean = true;
 
   /** List of statuses to loop through when `cycle=true` and `label` is not provided. */
-  @Input() statuses: string[] = ['Thinking', 'Retrieving', 'Generating'];
+  @Input() statuses: string[] = ['Retrieving', 'Searching', 'Thinking', 'Generating'];
 
   /** ms per status */
   @Input() cycleIntervalMs: number = 3000;
 
-  protected displayLabel: string = 'Generating';
+  protected displayLabel: string = 'Retrieving';
   private timer: any;
   private index = 0;
 

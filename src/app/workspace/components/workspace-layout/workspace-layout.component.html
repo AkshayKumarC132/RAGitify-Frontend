@@ -78,16 +78,6 @@
             (editRequested)="onLayoutEditLibrary($event)" (deleteRequested)="onLayoutDeleteLibrary($event)"
             (chatRequested)="onLayoutChatLibrary($event)"></app-vector-store-list>
         </div>
-        <div class="sidebar-summary" *ngIf="!sidebarCollapsed">
-          <div class="summary-card summary-card-libraries">
-            <span class="summary-card-value">{{ layoutVectorStores.length }}</span>
-            <span class="summary-card-label">Total Libraries</span>
-          </div>
-          <div class="summary-card summary-card-documents">
-            <span class="summary-card-value">{{ totalDocumentsCount }}</span>
-            <span class="summary-card-label">Total Documents</span>
-          </div>
-        </div>
       </div>
     </ng-container>
 

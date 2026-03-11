@@ -1,20 +1,20 @@
 <div class="account-section">
   <div class="profile-header">
     <div class="profile-avatar">
-      {{ (currentUser?.first_name?.[0] || currentUser?.username?.[0] || '?') | uppercase }}
+      {{ initialsDisplay }}
     </div>
     <div class="profile-info">
-      <h4>{{ currentUser?.first_name }} {{ currentUser?.last_name }}</h4>
+      <h4>{{ fullNameDisplay }}</h4>
       <p class="profile-email">{{ currentUser?.email }}</p>
       <div class="profile-badges" *ngIf="status">
         <span class="badge" [class.ready]="status.ready">
           <i class="fa-solid" [ngClass]="status.ready ? 'fa-check-circle' : 'fa-circle-exclamation'"></i>
           {{ status.ready ? 'System Ready' : 'Setup Required' }}
         </span>
-        <!-- <span class="badge tenant">
+        <span class="badge tenant">
           <i class="fa-solid fa-building"></i>
-          {{ currentUser?.tenant || 'No Tenant' }}
-        </span> -->
+          {{ tenantDisplay }}
+        </span>
       </div>
     </div>
   </div>
@@ -40,59 +40,109 @@
           <small class="input-hint">Email cannot be changed.</small>
         </div>
 
-        <div class="form-group">
-          <label>Username</label>
-          <input type="text" formControlName="username" class="form-input" placeholder="Username" readonly />
-        </div>
-
-        <div *ngIf="message" class="message-alert" [class.success]="messageType === 'success'"
-          [class.error]="messageType === 'error'">
-          <i class="fa-solid" [ngClass]="messageType === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
-          {{ message }}
+        <div *ngIf="profileMessage" class="message-alert" [class.success]="profileMessageType === 'success'"
+          [class.error]="profileMessageType === 'error'">
+          <i class="fa-solid" [ngClass]="profileMessageType === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+          {{ profileMessage }}
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn-primary" [disabled]="loading || accountForm.invalid">
-            <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
-            <span>{{ loading ? 'Saving...' : 'Save Changes' }}</span>
+          <button type="submit" class="btn-primary" [disabled]="profileLoading || accountForm.invalid">
+            <i class="fa-solid" [ngClass]="profileLoading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+            <span>{{ profileLoading ? 'Saving...' : 'Save Changes' }}</span>
           </button>
         </div>
       </form>
     </div>
 
-    <div class="settings-card status-card" *ngIf="status">
-      <h3><i class="fa-solid fa-server"></i> System Status</h3>
-      <div class="status-details">
-        <div class="status-item">
-          <div class="status-label">LLM Provider</div>
-          <div class="status-value">
-            <span class="provider-pill" [class.configured]="status.selected_llm_provider">
-              <i class="fa-solid"
-                [ngClass]="status.selected_llm_provider === 'OpenAI' ? 'fa-cloud' : 'fa-microchip'"></i>
-              {{ providerDisplay }}
-            </span>
+    <div class="settings-card password-card">
+      <h3><i class="fa-solid fa-lock"></i> Password</h3>
+      <form [formGroup]="passwordForm" (ngSubmit)="savePassword()" class="account-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>New Password</label>
+            <input type="password" formControlName="password" class="form-input" placeholder="Enter new password" />
+            <small class="input-hint" *ngIf="passwordForm.get('password')?.invalid && passwordForm.get('password')?.touched">
+              Minimum 6 characters required.
+            </small>
+          </div>
+          <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" formControlName="confirmPassword" class="form-input" placeholder="Re-enter new password" />
+            <small class="input-hint" *ngIf="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched">
+              Passwords must match.
+            </small>
           </div>
         </div>
 
-        <div class="status-item">
-          <div class="status-label">Active Library</div>
-          <div class="status-value highlight">
-            <i class="fa-solid fa-box-archive"></i>
-            {{ collectionDisplay }}
+        <div *ngIf="passwordMessage" class="message-alert" [class.success]="passwordMessageType === 'success'"
+          [class.error]="passwordMessageType === 'error'">
+          <i class="fa-solid" [ngClass]="passwordMessageType === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+          {{ passwordMessage }}
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="passwordLoading || passwordForm.invalid">
+            <i class="fa-solid" [ngClass]="passwordLoading ? 'fa-spinner fa-spin' : 'fa-key'"></i>
+            <span>{{ passwordLoading ? 'Updating...' : 'Update Password' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="account-meta-grid" *ngIf="status">
+      <div class="settings-card status-card">
+        <h3><i class="fa-solid fa-server"></i> System Status</h3>
+        <div class="status-details">
+          <div class="status-item">
+            <div class="status-label">LLM Provider</div>
+            <div class="status-value">
+              <span class="provider-pill" [class.configured]="status.selected_llm_provider">
+                <i class="fa-solid"
+                  [ngClass]="status.selected_llm_provider === 'OpenAI' ? 'fa-cloud' : 'fa-microchip'"></i>
+                {{ providerDisplay }}
+              </span>
+            </div>
+          </div>
+
+          <div class="status-item">
+            <div class="status-label">Active Library</div>
+            <div class="status-value highlight">
+              <i class="fa-solid fa-box-archive"></i>
+              {{ collectionDisplay }}
+            </div>
+          </div>
+
+          <div class="status-item">
+            <div class="status-label">Ready for Queries</div>
+            <div class="status-value">
+              <span class="status-indicator" [class.is-ready]="status.ready"></span>
+              {{ readyDisplay }}
+            </div>
           </div>
         </div>
 
-        <div class="status-item">
-          <div class="status-label">Ready for Queries</div>
-          <div class="status-value">
-            <span class="status-indicator" [class.is-ready]="status.ready"></span>
-            {{ readyDisplay }}
-          </div>
+        <div class="status-footer">
+          <p>Your system configuration is monitored automatically.</p>
         </div>
       </div>
 
-      <div class="status-footer">
-        <p>Your system configuration is monitored automatically.</p>
+      <div class="settings-card metadata-card">
+        <h3><i class="fa-solid fa-database"></i> Workspace Metadata</h3>
+        <div class="metadata-grid">
+          <div class="metadata-item">
+            <span class="metadata-label">Tenant</span>
+            <span class="metadata-value">{{ tenantDisplay }}</span>
+          </div>
+          <div class="metadata-item">
+            <span class="metadata-label">Collection Name</span>
+            <span class="metadata-value">{{ collectionDisplay }}</span>
+          </div>
+          <div class="metadata-item">
+            <span class="metadata-label">LLM State</span>
+            <span class="metadata-value">{{ llmConfiguredDisplay }}</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>

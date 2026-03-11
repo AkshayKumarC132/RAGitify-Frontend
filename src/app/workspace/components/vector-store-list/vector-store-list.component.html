@@ -2,29 +2,39 @@
   <div *ngFor="let store of vectorStores" class="store-item card-premium"
     [class.selected]="selectedVectorStore?.id === store.id" (click)="selectStore(store)">
     <div class="store-meta">
-      <div class="store-name">{{ store.name }}</div>
+      <div class="store-title-row">
+        <div class="store-name">{{ store.name }}</div>
+      </div>
+      <div class="store-badges">
+          <span class="store-badge store-badge-system" *ngIf="isSystemStore(store)">System</span>
+        </div>
+      <!-- <div class="store-hint">{{ getStoreHint(store) }}</div> -->
       <div class="store-date">
         <i class="fa-regular fa-calendar"></i>
         {{ formatDate(store.created_at) }}
       </div>
-      <div class="store-docs">
-        <i class="fa-solid fa-file-lines"></i>
-        <span>{{ getDocCount(store) }} docs</span>
+      <div class="store-metrics">
+        <div class="store-docs">
+          <i class="fa-solid fa-file-lines"></i>
+          <span>{{ getDocCount(store) }} docs</span>
+        </div>
       </div>
-      <div class="store-progress">
+      <!-- <div class="store-progress" *ngIf="!isSystemStore(store)">
         <div class="progress-bar">
           <div class="progress-fill" [style.width.%]="getProgressPercent(store)"></div>
         </div>
-      </div>
+      </div> -->
     </div>
     <div class="store-actions">
       <button type="button" class="btn-premium-icon" (click)="requestChat(store, $event)" title="Chat with library">
         <i class="fa-solid fa-comments"></i>
       </button>
-      <button type="button" class="btn-premium-icon" (click)="requestEdit(store, $event)" title="Rename library">
+      <button type="button" class="btn-premium-icon" (click)="requestEdit(store, $event)" title="Rename library"
+        [disabled]="!canEdit(store)">
         <i class="fa-solid fa-pen"></i>
       </button>
       <button type="button" class="btn-premium-icon danger" (click)="requestDelete(store, $event)"
+        [disabled]="!canDelete(store)"
         title="Delete library">
         <i class="fa-solid fa-trash"></i>
       </button>

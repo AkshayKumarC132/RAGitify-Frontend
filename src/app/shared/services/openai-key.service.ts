@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { shareReplay, tap } from 'rxjs/operators';
+import { HttpContext } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { UserStateService } from './user-state.service';
 import { OpenAIKey, OpenAIKeyCreateRequest } from '../models/openai-key.model';
+import { SKIP_API_ERROR_ALERT } from '../interceptors/api-error-alert.interceptor';
 
 
 @Injectable({
@@ -42,7 +44,7 @@ export class OpenAIKeyService {
     );
   }
 
-  list(forceRefresh = false): Observable<OpenAIKey[]> {
+  list(forceRefresh = false, skipAlert = false): Observable<OpenAIKey[]> {
     const token = this.getToken();
     if (forceRefresh) {
       this.invalidateListCache();
@@ -53,7 +55,8 @@ export class OpenAIKeyService {
     }
     if (!this.listCache$) {
       this.cachedForUserId = this.userState.currentUserId;
-      this.listCache$ = this.api.get<OpenAIKey[]>(`/llm-config/${token}/list/`, token).pipe(
+      const context = new HttpContext().set(SKIP_API_ERROR_ALERT, skipAlert);
+      this.listCache$ = this.api.get<OpenAIKey[]>(`/llm-config/${token}/list/`, token, undefined, context).pipe(
         shareReplay({ bufferSize: 1, refCount: true })
       );
     }
@@ -95,7 +98,7 @@ export class OpenAIKeyService {
    * Call this after login and after any model activation change.
    */
   fetchAndCacheActiveModel(): void {
-    this.list(true).subscribe({
+    this.list(true, true).subscribe({
       next: (models) => {
         const activeModel = models.find(m => m.is_active);
         if (activeModel?.model) {

@@ -121,40 +121,39 @@
   </div>
 
   <!-- Models list -->
-  <div class="models-list" [class.scrollable]="shouldUseModelListScroll" *ngIf="!loadingModels && models.length" [@listStagger]="models.length">
+  <div class="models-panel" *ngIf="!loadingModels && models.length">
     <div class="list-heading">
       <div>
         <p class="label">Provider</p>
         <p class="value">{{ selectedProvider || 'All Providers' }}</p>
       </div>
-      <div>
-        <p class="label">Total</p>
-        <p class="value">{{ models.length }} model{{ models.length !== 1 ? 's' : '' }}</p>
-      </div>
     </div>
-    <div *ngFor="let model of models" class="model-item" [class.active]="model.is_active">
-      <div class="model-icon">
-        <i class="fa-solid" [ngClass]="model.provider === 'OpenAI' ? 'fa-cloud' : 'fa-microchip'"></i>
-      </div>
-      <div class="model-info">
-        <div class="model-name">{{ model.name || (model.provider + ' - ' + model.model) }}</div>
-        <div class="model-details">
-          <span class="detail-tag">{{ model.provider }}</span>
-          <span class="detail-sep">-</span>
-          <span>{{ model.model }}</span>
-          <span *ngIf="model.is_active" class="active-badge">
-            <i class="fa-solid fa-circle-dot"></i> Active
-          </span>
+
+    <div class="models-list" [class.scrollable]="shouldUseModelListScroll" [@listStagger]="models.length">
+      <div *ngFor="let model of models" class="model-item" [class.active]="model.is_active">
+        <div class="model-icon">
+          <i class="fa-solid" [ngClass]="model.provider === 'OpenAI' ? 'fa-cloud' : 'fa-microchip'"></i>
         </div>
-      </div>
-      <div class="model-actions">
-        <button *ngIf="!model.is_active" class="btn-small" (click)="setActive(model)" title="Set as active">
-          <i class="fa-solid fa-check"></i>
-          <span>Set Active</span>
-        </button>
-        <button class="btn-small btn-danger" (click)="deleteModel(model.id)" title="Delete model">
-          <i class="fa-solid fa-trash"></i>
-        </button>
+        <div class="model-info">
+          <div class="model-name">{{ model.name || (model.provider + ' - ' + model.model) }}</div>
+          <div class="model-details">
+            <span class="detail-tag">{{ model.provider }}</span>
+            <span class="detail-sep">-</span>
+            <span>{{ model.model }}</span>
+            <span *ngIf="model.is_active" class="active-badge">
+              <i class="fa-solid fa-circle-dot"></i> Active
+            </span>
+          </div>
+        </div>
+        <div class="model-actions">
+          <button *ngIf="!model.is_active" class="btn-small" (click)="setActive(model)" title="Set as active">
+            <i class="fa-solid fa-check"></i>
+            <span>Set Active</span>
+          </button>
+          <button class="btn-small btn-danger" (click)="deleteModel(model.id)" title="Delete model">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -165,6 +164,3 @@
     <span>Click <strong>New Model</strong> to add your first model.</span>
   </div>
 </div>
-
-
-

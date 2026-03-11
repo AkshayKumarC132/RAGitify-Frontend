@@ -66,9 +66,10 @@ export class VectorStoreService {
     );
   }
 
-  delete(id: string): Observable<void> {
+  delete(id: string, options?: { hardDelete?: boolean }): Observable<void> {
     const token = this.getToken();
-    return this.api.delete<void>(`/vector-store/${token}/${id}/`, token).pipe(
+    const query = options?.hardDelete ? '?hard_delete=true' : '';
+    return this.api.delete<void>(`/vector-store/${token}/${id}/${query}`, token).pipe(
       tap(() => this.invalidateListCache())
     );
   }

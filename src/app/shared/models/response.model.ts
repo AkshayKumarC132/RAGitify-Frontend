@@ -7,6 +7,7 @@ export interface ResponseRecord {
   input_messages: any[];
   output: ResponseOutput[];
   metadata: Record<string, any>;
+  warnings?: string[];
   created_at: string;
   completed_at: string | null;
   error_message?: string;
@@ -46,4 +47,3 @@ export interface DocumentTool {
   vector_store_ids: string[];
   document_ids?: string[];
 }
-

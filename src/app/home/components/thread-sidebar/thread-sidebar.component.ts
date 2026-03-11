@@ -1,11 +1,10 @@
 import { Component, Input, Output, EventEmitter, HostListener, OnChanges, SimpleChanges } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Observable } from 'rxjs';
-import { Thread } from '../../../shared/models/thread.model';
+import { Conversation, ConversationMessage } from '../../../shared/models/conversation.model';
 import { User } from '../../../shared/models/user.model';
-import { Message } from '../../../shared/models/message.model';
 import { ThemeService } from '../../../shared/services/theme.service';
-import { ThreadService } from '../../../shared/services/thread.service';
+import { ConversationService } from '../../../shared/services/conversation.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { ThreadSearchPopupService } from '../../../shared/services/thread-search-popup.service';
 
@@ -15,21 +14,21 @@ import { ThreadSearchPopupService } from '../../../shared/services/thread-search
   styleUrls: ['./thread-sidebar.component.scss']
 })
 export class ThreadSidebarComponent implements OnChanges {
-  @Input() threads: Thread[] = [];
-  @Input() currentThread: Thread | null = null;
+  @Input() threads: Conversation[] = [];
+  @Input() currentThread: Conversation | null = null;
   @Input() collapsed = false;
   @Input() user: User | null = null;
-  @Output() threadSelected = new EventEmitter<Thread>();
+  @Output() threadSelected = new EventEmitter<Conversation>();
   @Output() newThread = new EventEmitter<void>();
   @Output() workspaceNavigate = new EventEmitter<void>();
   @Output() sidebarToggled = new EventEmitter<boolean>();
   @Output() manageProfile = new EventEmitter<void>();
   @Output() logoutRequested = new EventEmitter<void>();
-  @Output() renameThread = new EventEmitter<{ thread: Thread; title: string }>();
-  @Output() removeThread = new EventEmitter<Thread>();
+  @Output() renameThread = new EventEmitter<{ thread: Conversation; title: string }>();
+  @Output() removeThread = new EventEmitter<Conversation>();
 
   threadMenuOpen: string | null = null;
-  menuThread: Thread | null = null;
+  menuThread: Conversation | null = null;
   threadMenuPosition: { top: number; left: number } | null = null;
   profileMenuOpen = false;
   profileMenuPosition: { top: number; left: number } | null = null;
@@ -40,9 +39,9 @@ export class ThreadSidebarComponent implements OnChanges {
 
   // Search state
   searchQuery = '';
-  filteredThreads: Thread[] = [];
+  filteredThreads: Conversation[] = [];
   private searchDebounceTimeout: any;
-  private messagesCache = new Map<string, Message[]>();
+  private messagesCache = new Map<string, ConversationMessage[]>();
   private matchSourceByThreadId = new Map<string, 'title' | 'message' | 'both'>();
   hoveringExpandControl = false;
   private brandExpandInteraction = false;
@@ -51,7 +50,7 @@ export class ThreadSidebarComponent implements OnChanges {
 
   constructor(
     private themeService: ThemeService,
-    private threadService: ThreadService,
+    private conversationService: ConversationService,
     private sanitizer: DomSanitizer,
     private confirmDialogService: ConfirmDialogService,
     private threadSearchPopupService: ThreadSearchPopupService
@@ -122,7 +121,7 @@ export class ThreadSidebarComponent implements OnChanges {
     this.hoveringExpandControl = false;
   }
 
-  selectThread(thread: Thread): void {
+  selectThread(thread: Conversation): void {
     this.threadMenuOpen = null;
     this.closeProfileMenu();
     this.threadSelected.emit(thread);
@@ -144,26 +143,26 @@ export class ThreadSidebarComponent implements OnChanges {
     window.location.href = '/workspace?view=prompts';
   }
 
-  getThreadTitle(thread: Thread): string {
+  getThreadTitle(thread: Conversation): string {
     return thread.title || 'New Conversation';
   }
 
-  isTitleMatch(thread: Thread): boolean {
+  isTitleMatch(thread: Conversation): boolean {
     const source = this.matchSourceByThreadId.get(thread.id);
     return source === 'title' || source === 'both';
   }
 
-  isMessageMatch(thread: Thread): boolean {
+  isMessageMatch(thread: Conversation): boolean {
     const source = this.matchSourceByThreadId.get(thread.id);
     return source === 'message' || source === 'both';
   }
 
-  getHighlightedTitle(thread: Thread): SafeHtml {
+  getHighlightedTitle(thread: Conversation): SafeHtml {
     const title = this.getThreadTitle(thread);
     return this.highlightText(title, this.searchQuery);
   }
 
-  getHighlightedSnippet(thread: Thread): SafeHtml | null {
+  getHighlightedSnippet(thread: Conversation): SafeHtml | null {
     const query = this.searchQuery.trim().toLowerCase();
     if (!query) {
       return null;
@@ -227,8 +226,8 @@ export class ThreadSidebarComponent implements OnChanges {
 
     this.matchSourceByThreadId.clear();
 
-    const titleMatches: Thread[] = [];
-    const remainingThreads: Thread[] = [];
+    const titleMatches: Conversation[] = [];
+    const remainingThreads: Conversation[] = [];
 
     for (const thread of this.threads) {
       const title = this.getThreadTitle(thread).toLowerCase();
@@ -240,8 +239,8 @@ export class ThreadSidebarComponent implements OnChanges {
       }
     }
 
-    const messageMatches: Thread[] = [];
-    const threadsNeedingFetch: Thread[] = [];
+    const messageMatches: Conversation[] = [];
+    const threadsNeedingFetch: Conversation[] = [];
 
     for (const thread of remainingThreads) {
       const cachedMessages = this.messagesCache.get(thread.id);
@@ -271,7 +270,7 @@ export class ThreadSidebarComponent implements OnChanges {
     if (threadsNeedingFetch.length) {
       const currentQuery = query;
       for (const thread of threadsNeedingFetch) {
-        this.threadService.getMessages(thread.id).subscribe({
+        this.conversationService.getMessages(thread.id).subscribe({
           next: (messages) => {
             this.messagesCache.set(thread.id, messages);
             // Only apply results if the search query hasn't changed
@@ -316,7 +315,7 @@ export class ThreadSidebarComponent implements OnChanges {
     return this.sanitizer.bypassSecurityTrustHtml(highlighted);
   }
 
-  getTitleSlice(thread: Thread): string {
+  getTitleSlice(thread: Conversation): string {
     const title = this.getThreadTitle(thread).trim();
     if (!title) {
       return 'NC';
@@ -381,7 +380,7 @@ export class ThreadSidebarComponent implements OnChanges {
     }
   }
 
-  toggleThreadMenu(thread: Thread, event: MouseEvent): void {
+  toggleThreadMenu(thread: Conversation, event: MouseEvent): void {
     event.stopPropagation();
     if (this.threadMenuOpen === thread.id) {
       this.closeThreadMenu();
@@ -397,7 +396,7 @@ export class ThreadSidebarComponent implements OnChanges {
     this.updateThreadMenuPosition();
   }
 
-  editThread(thread: Thread, event?: MouseEvent): void {
+  editThread(thread: Conversation, event?: MouseEvent): void {
     event?.stopPropagation();
     const currentTitle = this.getThreadTitle(thread);
     const updatedTitle = window.prompt('Edit thread title', currentTitle);
@@ -407,7 +406,7 @@ export class ThreadSidebarComponent implements OnChanges {
     }
   }
 
-  async deleteThread(thread: Thread, event?: MouseEvent): Promise<void> {
+  async deleteThread(thread: Conversation, event?: MouseEvent): Promise<void> {
     event?.stopPropagation();
     const confirmed = await this.confirmDialogService.confirm({
       title: 'Delete chat?',
@@ -560,7 +559,7 @@ export class ThreadSidebarComponent implements OnChanges {
     this.threadMenuPosition = { top, left };
   }
 
-  trackByThreadId(index: number, thread: Thread): string {
+  trackByThreadId(index: number, thread: Conversation): string {
     return thread.id;
   }
 

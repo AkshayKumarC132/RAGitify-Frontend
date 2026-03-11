@@ -69,6 +69,7 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
 
   onLayoutLibrarySelect(store: VectorStore): void {
     this.knowledgeContext.setSelectedStore(store);
+    this.router.navigate(['/workspace'], { queryParams: { libraryId: store.id } });
   }
 
   openUploadOrNewLibrary(action: 'upload' | 'library'): void {
@@ -177,4 +178,3 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     }
   }
 }
-

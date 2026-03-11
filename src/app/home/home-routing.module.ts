@@ -4,6 +4,7 @@ import { HomeComponent } from './components/home/home.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
+  { path: 'chat/:conversationId', component: HomeComponent },
   { path: 'chat/:threadId', component: HomeComponent }
 ];
 

@@ -9,9 +9,6 @@
       </button>
 
       <div class="attachment-menu" *ngIf="attachmentMenuOpen" (click)="$event.stopPropagation()">
-        <!-- <button type="button" (click)="triggerFilePicker(filePicker); $event.stopPropagation()">Upload Files</button>
-        <button type="button" (click)="openPanel('web'); $event.stopPropagation()">Attach Webpage</button>
-        <button type="button" (click)="openPanel('notes'); $event.stopPropagation()">Attach Notes</button> -->
         <div class="normal-mode-toggle" (click)="$event.stopPropagation()">
           <span>Normal Mode</span>
           <label class="toggle-switch">
@@ -96,7 +93,17 @@
   </div>
 
   <div class="attachment-panel" *ngIf="activePanel === 'library'" (click)="$event.stopPropagation()">
-    <h4>Attach Documents</h4>
+    <div class="attachment-panel-header">
+      <div class="attachment-panel-copy" [class.limit-reached]="selectedDocumentsCount >= 10">
+        <span>Attach Documents</span>
+        <!-- <div class="selection-counter" > -->
+        <span class="selection-counter__value">{{ selectedDocumentsCount }}/10</span>
+        <!-- <span class="selection-counter__label">{{ selectionSlotsRemaining }} left</span> -->
+      <!-- </div> -->
+        <!-- <p>Select up to 10 files. RAGitify will use the matching libraries behind those documents automatically.</p> -->
+      </div>
+      
+    </div>
     <ng-template #documentsList>
       <div class="documents-list">
         <ng-container *ngIf="documentsLoading; else documentsReady">
@@ -105,14 +112,31 @@
         <ng-template #documentsReady>
           <ng-container *ngIf="availableDocuments.length; else emptyDocuments">
             <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
-              <div class="group-title">{{ group.name }}</div>
-              <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)">
-                <input type="checkbox" [checked]="isDocumentSelected(doc.id)" />
-                <div class="library-meta">
-                  <span class="title">{{ doc.title || ('Document ' + doc.id) }}</span>
-                  <span class="meta">Uploaded {{ doc.uploaded_at | date:'MMM d, y' }}</span>
-                </div>
-              </label>
+              <div class="group-header">
+                <div class="group-title">{{ group.name }}</div>
+                <div class="group-count">{{ group.documents.length }} docs</div>
+              </div>
+              <div class="group-documents">
+                <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)"
+                  [class.disabled]="isSelectionDisabled(doc.id)" [class.selected]="isDocumentSelected(doc.id)">
+                  <input type="checkbox" [checked]="isDocumentSelected(doc.id)" [disabled]="isSelectionDisabled(doc.id)" />
+                  <div class="document-card-meta">
+                    <div class="document-card-topline">
+                      <span class="title">{{ getDocumentDisplayName(doc) }}</span>
+                      <div class="document-card-tags">
+                        <span class="document-chip">{{ getDocumentTypeLabel(doc) }}</span>
+                        <span class="document-chip subtle">{{ getDocumentSourceLabel(doc) }}</span>
+                      </div>
+                    </div>
+                    <div class="document-card-subline">
+                      <span class="meta">{{ doc.original_filename || ('ID ' + doc.id) }}</span>
+                    </div>
+                    <div class="document-card-footer">
+                      <span class="meta">Uploaded {{ getDocumentDate(doc) | date:'MMM d, y' }}</span>
+                    </div>
+                  </div>
+                </label>
+              </div>
             </div>
           </ng-container>
         </ng-template>
@@ -124,38 +148,7 @@
     </ng-container>
 
     <ng-template #librarySelection>
-      <div class="library-mode-switch">
-        <button type="button" [class.active]="selectionMode === 'library'" (click)="setSelectionMode('library')">
-          Whole Library
-        </button>
-        <button type="button" [class.active]="selectionMode === 'documents'" [disabled]="!availableDocuments.length"
-          (click)="setSelectionMode('documents')">
-          Specific Documents
-        </button>
-      </div>
-
-      <ng-container [ngSwitch]="selectionMode">
-        <div class="library-list" *ngSwitchCase="'library'">
-          <ng-container *ngIf="librariesLoading; else libraryReady">
-            <p class="empty-text">Loading libraries...</p>
-          </ng-container>
-          <ng-template #libraryReady>
-            <ng-container *ngIf="libraries.length; else emptyLibrary">
-              <label *ngFor="let library of libraries">
-                <input type="radio" name="library" [value]="library.id" [(ngModel)]="pendingLibraryId" />
-                <div class="library-meta">
-                  <span class="title">{{ library.name }}</span>
-                  <span class="meta">Created {{ library.created_at | date:'MMM d, y' }}</span>
-                </div>
-              </label>
-            </ng-container>
-          </ng-template>
-        </div>
-
-        <ng-container *ngSwitchCase="'documents'">
-          <ng-container *ngTemplateOutlet="documentsList"></ng-container>
-        </ng-container>
-      </ng-container>
+      <ng-container *ngTemplateOutlet="documentsList"></ng-container>
     </ng-template>
 
     <ng-template #emptyLibrary>
@@ -165,8 +158,7 @@
       <p class="empty-text">No documents available. Upload knowledge in Workspace.</p>
     </ng-template>
     <div class="panel-actions">
-      <button type="button" (click)="confirmLibrarySelection()"
-        [disabled]="(selectionMode === 'library' && !pendingLibraryId) || (selectionMode === 'documents' && !pendingDocumentIds.size)">
+      <button type="button" (click)="confirmLibrarySelection()" [disabled]="!pendingDocumentIds.size">
         Apply
       </button>
       <button type="button" (click)="clearLibrarySelection()">Clear</button>
@@ -192,7 +184,7 @@
       </div>
     </ng-template>
     <ng-template #emptyPrompts>
-      <p class="empty-text">Create prompts in Workspace ➜ Prompts to see them here.</p>
+      <p class="empty-text">Create prompts in Workspace -> Prompts to see them here.</p>
     </ng-template>
     <div class="panel-actions">
       <button type="button" (click)="confirmPromptSelection()" [disabled]="!pendingPromptId">Apply</button>
@@ -201,18 +193,18 @@
     </div>
   </div>
 
-
-
-  <div class="attachment-pill" *ngIf="selectedLibraryId">
-    <span>Library: {{ getLibraryLabel() || selectedLibraryId }}</span>
-    <button type="button" (click)="clearLibrarySelection()">×</button>
-  </div>
-  <div class="attachment-pill" *ngIf="selectedDocumentIds.length">
-    <span>{{ selectedDocumentIds.length }} document{{ selectedDocumentIds.length === 1 ? '' : 's' }} selected</span>
-    <button type="button" (click)="clearLibrarySelection()">×</button>
-  </div>
-  <div class="attachment-pill" *ngIf="selectedPromptId">
-    <span>Prompt: {{ getPromptLabel() || selectedPromptId }}</span>
-    <button type="button" (click)="clearPromptSelection()">×</button>
+  <div class="attachment-pills" *ngIf="selectedLibraryId || selectedDocumentIds.length || selectedPromptId">
+    <div class="attachment-pill" *ngIf="selectedLibraryId">
+      <span>Library: {{ getLibraryLabel() || selectedLibraryId }}</span>
+      <button type="button" (click)="clearLibrarySelection()">×</button>
+    </div>
+    <div class="attachment-pill" *ngIf="selectedDocumentIds.length">
+      <span>{{ selectedDocumentsCount }}/10 documents selected</span>
+      <button type="button" (click)="clearLibrarySelection()">×</button>
+    </div>
+    <div class="attachment-pill" *ngIf="selectedPromptId">
+      <span>Prompt: {{ getPromptLabel() || selectedPromptId }}</span>
+      <button type="button" (click)="clearPromptSelection()">×</button>
+    </div>
   </div>
 </div>

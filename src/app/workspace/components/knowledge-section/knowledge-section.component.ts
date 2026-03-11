@@ -6,11 +6,14 @@ import { catchError, filter, finalize, takeUntil, timeout } from 'rxjs/operators
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentService } from '../../../shared/services/document.service';
 import { DocumentAccessService } from '../../../shared/services/document-access.service';
+import { DocumentShareService } from '../../../shared/services/document-share.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document, DocumentStatus } from '../../../shared/models/document.model';
 import { DocumentAccess } from '../../../shared/models/document-access.model';
+import { SharedByMeItem, SharedWithMeItem } from '../../../shared/models/document-share.model';
+import Swal from 'sweetalert2/dist/sweetalert2.js';
 
 @Component({
   selector: 'app-knowledge-section',
@@ -21,6 +24,8 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   vectorStores: VectorStore[] = [];
   documents: Document[] = [];
   documentAccessList: DocumentAccess[] = [];
+  sharedWithMe: SharedWithMeItem[] = [];
+  sharedByMe: SharedByMeItem[] = [];
   /** Full document list (all libraries). Loaded lazily for "Accessed". */
   allDocuments: Document[] = [];
   private allDocumentsLoaded = false;
@@ -45,15 +50,31 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   selectionMode = false;
   isInWorkspace = false;
   listView = true; // list vs grid
-  activeTypeFilter: 'all' | 'uploaded' | 'accessed' = 'all';
   activeStatusFilter: 'all' | 'finished' | 'processing' | 'failed' = 'all';
+  sourceFilter: 'all' | 'LOCAL' | 'S3' = 'all';
+  dateFilter: 'all' | '7d' | '30d' | '90d' | 'older' = 'all';
+  sizeFilter: 'all' | 'unknown' | 'small' | 'medium' | 'large' = 'all';
+  fileTypeFilter = 'all';
+  activeWorkspaceTab: 'documents' | 'shared-with-me' | 'shared-by-me' = 'documents';
   openActionsDocId: string | null = null;
+  loadingSharedWithMe = false;
+  loadingSharedByMe = false;
+  shareDialogOpen = false;
+  moveDialogOpen = false;
+  shareSubmitting = false;
+  moveSubmitting = false;
+  shareTargetEmail = '';
+  shareExpiresAt = '';
+  shareDocumentIds: string[] = [];
+  moveDocumentIds: string[] = [];
+  moveTargetVectorStoreId = '';
   private destroy$ = new Subject<void>();
 
   constructor(
     private vectorStoreService: VectorStoreService,
     private documentService: DocumentService,
     private documentAccessService: DocumentAccessService,
+    private documentShareService: DocumentShareService,
     private confirmDialogService: ConfirmDialogService,
     private knowledgeContext: WorkspaceKnowledgeContextService,
     private fb: FormBuilder,
@@ -81,19 +102,6 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.startStatusPolling();
 
     if (this.isInWorkspace) {
-      this.knowledgeContext.state$
-        .pipe(takeUntil(this.destroy$))
-        .subscribe(state => {
-          const urlLibraryId = this.route.snapshot.queryParamMap.get('libraryId');
-          if (urlLibraryId && !state.selectedVectorStore) {
-            return;
-          }
-          if (state.selectedVectorStore?.id !== this.selectedVectorStore?.id) {
-            this.selectedVectorStore = state.selectedVectorStore;
-            this.updateUrl(state.selectedVectorStore?.id || '');
-            this.loadDocuments();
-          }
-        });
       this.knowledgeContext.openUploadPanel.pipe(takeUntil(this.destroy$)).subscribe(() => {
         this.showUploadForm = true;
         this.showCreateVectorStoreForm = false;
@@ -122,19 +130,8 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         this.showUploadForm = false;
       }
 
-      if (libraryId && libraryId !== this.selectedVectorStore?.id) {
-        const store = this.vectorStores.find(vs => vs.id === libraryId);
-        if (store) {
-          this.selectedVectorStore = store;
-          this.selectedDocumentIds.clear();
-          this.searchQuery = '';
-          this.statusFilter = '';
-          this.selectionMode = false;
-          this.loadDocuments();
-          if (this.isInWorkspace) {
-            this.knowledgeContext.setSelectedStore(store);
-          }
-        }
+      if (libraryId) {
+        this.applyRouteLibrarySelection(libraryId);
       }
     });
 
@@ -152,19 +149,34 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private syncContextState(): void {
+  private syncContextState(skipDocumentCountRefresh = false): void {
     if (!this.isInWorkspace) return;
-    this.documentService.list(undefined, false).subscribe(allDocs => {
-      const documentCounts: Record<string, number> = {};
-      allDocs.forEach(d => {
-        documentCounts[d.vector_store] = (documentCounts[d.vector_store] || 0) + 1;
-      });
+    if (skipDocumentCountRefresh) {
       this.knowledgeContext.updateState({
         vectorStores: this.vectorStores,
-        selectedVectorStore: this.selectedVectorStore,
-        documentCounts,
-        totalDocuments: allDocs.length
+        selectedVectorStore: this.selectedVectorStore
       });
+      return;
+    }
+    this.documentService.list(undefined, false).subscribe({
+      next: allDocs => {
+        const documentCounts: Record<string, number> = {};
+        allDocs.forEach(d => {
+          documentCounts[d.vector_store] = (documentCounts[d.vector_store] || 0) + 1;
+        });
+        this.knowledgeContext.updateState({
+          vectorStores: this.vectorStores,
+          selectedVectorStore: this.selectedVectorStore,
+          documentCounts,
+          totalDocuments: allDocs.length
+        });
+      },
+      error: () => {
+        this.knowledgeContext.updateState({
+          vectorStores: this.vectorStores,
+          selectedVectorStore: this.selectedVectorStore
+        });
+      }
     });
   }
 
@@ -174,19 +186,28 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       next: (stores: VectorStore[]) => {
         this.vectorStores = stores;
 
-        // If we have a libraryId in the URL, use it. Otherwise, default to first store.
         const libraryId = this.route.snapshot.queryParamMap.get('libraryId');
-        const storeFromUrl = stores.find(s => s.id === libraryId);
+        const selectedFromUrl = libraryId ? stores.find(s => s.id === libraryId) || null : null;
+        const selectedFromCurrent = this.selectedVectorStore
+          ? stores.find(s => s.id === this.selectedVectorStore?.id) || null
+          : null;
+        const nextSelectedStore = selectedFromUrl || selectedFromCurrent || stores[0] || null;
 
-        if (storeFromUrl) {
-          this.selectedVectorStore = storeFromUrl;
-        } else if (stores.length > 0 && !this.selectedVectorStore) {
-          this.selectedVectorStore = stores[0];
-          // Update URL to match initial selection
-          this.updateUrl(stores[0].id);
+        const selectionChanged = nextSelectedStore?.id !== this.selectedVectorStore?.id;
+        this.selectedVectorStore = nextSelectedStore;
+        this.syncWorkspaceTabForSelectedStore();
+        this.syncSelectionState();
+
+        if (!libraryId && nextSelectedStore) {
+          this.updateUrl(nextSelectedStore.id);
         }
 
-        this.loadDocuments(false, forceRefresh);
+        if (this.selectedVectorStore) {
+          this.loadDocuments(false, forceRefresh || selectionChanged);
+        } else {
+          this.documents = [];
+          this.documentAccessList = [];
+        }
         this.loadingStores = false;
       },
       error: (err) => {
@@ -200,6 +221,17 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     if (!skipLoading) {
       this.loadingDocuments = true;
     }
+    if (this.selectedVectorStore?.vs_type === 'SHARED') {
+      this.documents = [];
+      this.documentAccessList = [];
+      this.loadingDocuments = false;
+      this.loadSharedWithMe(forceRefresh);
+      this.loadSharedByMe(forceRefresh);
+      if (this.isInWorkspace) {
+        this.syncContextState(true);
+      }
+      return;
+    }
     const vectorStoreId = this.selectedVectorStore?.id || undefined;
     forkJoin({
       documents: this.documentService.list(vectorStoreId, forceRefresh),
@@ -212,11 +244,6 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         this.documentAccessList = documentAccess;
         this.loadingDocuments = false;
 
-        // If user is viewing Accessed, ensure we have all documents to display them.
-        if (this.activeTypeFilter === 'accessed') {
-          this.ensureAllDocumentsLoaded(forceRefresh);
-        }
-
         if (this.statusFilter && !this.availableStatuses.includes(this.statusFilter)) {
           this.statusFilter = '';
         }
@@ -228,13 +255,22 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error loading documents:', err);
         this.loadingDocuments = false;
+        if (this.isInWorkspace) {
+          this.knowledgeContext.updateState({
+            vectorStores: this.vectorStores,
+            selectedVectorStore: this.selectedVectorStore
+          });
+        }
       }
     });
   }
 
   onVectorStoreSelected(store: VectorStore): void {
-    this.statusFilter = '';
+    this.resetDocumentFilters();
     this.selectionMode = false;
+    this.selectedVectorStore = store;
+    this.syncWorkspaceTabForSelectedStore();
+    this.syncSelectionState();
     this.updateUrl(store.id);
   }
 
@@ -320,6 +356,11 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   }
 
   async deleteVectorStore(store: VectorStore): Promise<void> {
+    if (store.is_system) {
+      this.errorMessage = `${store.name} is a system library and cannot be deleted.`;
+      return;
+    }
+
     const confirmed = await this.confirmDialogService.confirm({
       title: 'Delete library?',
       message: 'This will delete',
@@ -356,6 +397,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       next: (store) => {
         this.vectorStores = [store, ...this.vectorStores];
         this.selectedVectorStore = store;
+        this.updateUrl(store.id);
         this.toggleVectorStoreForm();
         this.errorMessage = '';
         if (this.isInWorkspace) {
@@ -418,6 +460,21 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       this.selectedDocumentIds.delete(documentId);
     } else {
       this.selectedDocumentIds.add(documentId);
+    }
+  }
+
+  setWorkspaceTab(tab: 'documents' | 'shared-with-me' | 'shared-by-me'): void {
+    if (this.activeWorkspaceTab === tab) {
+      return;
+    }
+    this.activeWorkspaceTab = tab;
+    this.closeDocumentActions();
+    this.clearSelection();
+
+    if (tab === 'shared-with-me') {
+      this.loadSharedWithMe(this.sharedWithMe.length === 0);
+    } else if (tab === 'shared-by-me') {
+      this.loadSharedByMe(this.sharedByMe.length === 0);
     }
   }
 
@@ -499,6 +556,18 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.selectedDocumentIds.clear();
   }
 
+  get canShareSelectedDocuments(): boolean {
+    return this.getSelectedShareableDocuments().length > 0;
+  }
+
+  get canMoveSelectedDocuments(): boolean {
+    return this.getSelectedMovableDocuments().length > 0 && this.moveTargetOptions.length > 0;
+  }
+
+  get moveTargetOptions(): VectorStore[] {
+    return this.getMoveTargetOptions(this.moveDocumentIds.length ? this.moveDocumentIds : Array.from(this.selectedDocumentIds));
+  }
+
   toggleDocumentActions(docId: string, event: MouseEvent): void {
     event.stopPropagation();
     this.openActionsDocId = this.openActionsDocId === docId ? null : docId;
@@ -517,21 +586,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.closeDocumentActions();
   }
 
-  setTypeFilter(filter: 'all' | 'uploaded' | 'accessed'): void {
-    const next = this.activeTypeFilter === filter ? 'all' : filter;
-    this.activeTypeFilter = next;
-    if (next === 'accessed') {
-      // When viewing Accessed, ignore status filters.
-      this.activeStatusFilter = 'all';
-      this.ensureAllDocumentsLoaded();
-    }
-  }
-
   setStatusFilter(filter: 'finished' | 'processing' | 'failed'): void {
-    // Status filters are disabled while viewing Accessed.
-    if (this.activeTypeFilter === 'accessed') {
-      return;
-    }
     this.activeStatusFilter = this.activeStatusFilter === filter ? 'all' : filter;
   }
 
@@ -554,51 +609,50 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
 
   /** Base documents: current library + search only. Used for overview card counts so values don't change when type/status filter changes. */
   get baseDocuments(): Document[] {
+    return this.applySearchAndAttributeFilters(this.documents);
+  }
+
+  get filteredDocuments(): Document[] {
     let docs = this.documents;
-    if (this.searchQuery) {
-      const query = this.searchQuery.toLowerCase();
+    docs = this.applySearchAndAttributeFilters(docs);
+
+    if (this.activeStatusFilter === 'finished') {
+      docs = docs.filter(doc => this.resolvedDocumentStatus(doc) === 'completed');
+    } else if (this.activeStatusFilter === 'failed') {
+      docs = docs.filter(doc => this.resolvedDocumentStatus(doc) === 'failed');
+    } else if (this.activeStatusFilter === 'processing') {
       docs = docs.filter(doc =>
-        doc.title?.toLowerCase().includes(query) ||
-        doc.status?.toLowerCase().includes(query)
+        ['processing', 'in_progress', 'queued'].includes(this.resolvedDocumentStatus(doc))
       );
     }
+
     return docs;
   }
 
-  /** Filtered list for display: base + type + status filters. Only the list below changes when user selects type/status. */
-  get filteredDocuments(): Document[] {
-    let docs = this.activeTypeFilter === 'accessed' ? (this.allDocumentsLoaded ? this.allDocuments : this.documents) : this.baseDocuments;
+  get filteredSharedWithMe(): SharedWithMeItem[] {
+    return this.filterShareItems(this.sharedWithMe, 'recipient');
+  }
 
-    if (this.activeTypeFilter === 'accessed' && this.searchQuery) {
-      const query = this.searchQuery.toLowerCase();
-      docs = docs.filter(doc =>
-        doc.title?.toLowerCase().includes(query) ||
-        doc.status?.toLowerCase().includes(query)
-      );
-    }
+  get filteredSharedByMe(): SharedByMeItem[] {
+    return this.filterShareItems(this.sharedByMe, 'owner');
+  }
 
-    // Status filter from STATUS overview cards
-    if (this.activeStatusFilter === 'finished') {
-      docs = docs.filter(doc => doc.status === 'completed');
-    } else if (this.activeStatusFilter === 'failed') {
-      docs = docs.filter(doc => doc.status === 'failed');
-    } else if (this.activeStatusFilter === 'processing') {
-      docs = docs.filter(doc =>
-        doc.status === 'processing' || doc.status === 'in_progress' || doc.status === 'queued'
-      );
-    }
+  get isSharedVectorStoreSelected(): boolean {
+    return this.selectedVectorStore?.vs_type === 'SHARED';
+  }
 
-    // Type filter from DOCUMENT TYPE overview cards
-    if (this.activeTypeFilter === 'accessed') {
-      const accessedDocIds = new Set(
-        this.documentAccessList
-          .filter(da => da.vector_store === this.selectedVectorStore?.id)
-          .map(da => String(da.document))
-      );
-      docs = docs.filter(doc => accessedDocIds.has(doc.id));
-    }
+  get availableFileTypes(): string[] {
+    const fileTypes = new Set<string>();
+    this.documents.forEach(doc => fileTypes.add(this.getDocumentFileType(doc)));
+    return Array.from(fileTypes).sort((a, b) => a.localeCompare(b));
+  }
 
-    return docs;
+  get hasActiveAdvancedFilters(): boolean {
+    return this.sourceFilter !== 'all'
+      || this.dateFilter !== 'all'
+      || this.sizeFilter !== 'all'
+      || this.fileTypeFilter !== 'all'
+      || this.activeStatusFilter !== 'all';
   }
 
   get availableStatuses(): string[] {
@@ -608,34 +662,36 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       : this.documents;
 
     docs.forEach(doc => {
-      if (doc.status) statuses.add(doc.status);
+      statuses.add(this.resolvedDocumentStatus(doc));
     });
     return Array.from(statuses).sort();
   }
 
-  get typeUploadedCount(): number {
-    return this.baseDocuments.length;
-  }
-
-  get typeAccessedCount(): number {
-    if (!this.selectedVectorStore?.id) return 0;
-    return this.documentAccessList.filter(
-      da => da.vector_store === this.selectedVectorStore?.id
-    ).length;
-  }
-
   get statusFinishedCount(): number {
-    return this.baseDocuments.filter(d => d.status === 'completed').length;
+    return this.baseDocuments.filter(d => this.resolvedDocumentStatus(d) === 'completed').length;
   }
 
   get statusFailedCount(): number {
-    return this.baseDocuments.filter(d => d.status === 'failed').length;
+    return this.baseDocuments.filter(d => this.resolvedDocumentStatus(d) === 'failed').length;
   }
 
   get statusProcessingCount(): number {
     return this.baseDocuments.filter(d =>
-      d.status === 'processing' || d.status === 'in_progress' || d.status === 'queued'
+      ['processing', 'in_progress', 'queued'].includes(this.resolvedDocumentStatus(d))
     ).length;
+  }
+
+  resetDocumentFilters(): void {
+    this.statusFilter = '';
+    this.activeStatusFilter = 'all';
+    this.sourceFilter = 'all';
+    this.dateFilter = 'all';
+    this.sizeFilter = 'all';
+    this.fileTypeFilter = 'all';
+  }
+
+  get documentCounts(): Record<string, number> {
+    return this.knowledgeContext.currentState.documentCounts || {};
   }
 
   getDisplayStatus(status: Document['status']): string {
@@ -657,15 +713,140 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     return isAccessed ? 'Accessed' : 'Uploaded';
   }
 
+  getWorkspaceSubtitle(): string {
+    if (this.isSharedVectorStoreSelected && this.activeWorkspaceTab === 'shared-with-me') {
+      return `${this.filteredSharedWithMe.length} active documents shared with you`;
+    }
+    if (this.isSharedVectorStoreSelected && this.activeWorkspaceTab === 'shared-by-me') {
+      return `${this.filteredSharedByMe.length} active documents you shared with others`;
+    }
+    if (this.activeWorkspaceTab === 'shared-with-me') {
+      return `${this.filteredSharedWithMe.length} active shares visible to you`;
+    }
+    if (this.activeWorkspaceTab === 'shared-by-me') {
+      return `${this.filteredSharedByMe.length} active shares created by you`;
+    }
+    if (!this.selectedVectorStore) {
+      return `${this.filteredDocuments.length} documents`;
+    }
+
+    const storeType = this.selectedVectorStore.vs_type || 'CUSTOM';
+    const systemNote = this.selectedVectorStore.is_system ? ' · read-only system rules apply' : '';
+    return `${this.filteredDocuments.length} documents · ${storeType}${systemNote}`;
+  }
+
+  resolvedDocumentStatus(doc: Document): Document['status'] {
+    return doc.ingestion_status || doc.status || 'queued';
+  }
+
+  resolvedDocumentDate(doc: Document): string {
+    return doc.updated_at || doc.created_at || doc.uploaded_at;
+  }
+
+  getDocumentSecondaryText(doc: Document): string {
+    return [
+      doc.original_filename,
+      doc.file_type,
+      doc.access_type,
+      doc.source,
+      doc.checksum
+    ].filter(Boolean).join(' ');
+  }
+
+  getDocumentFileType(doc: Document): string {
+    return (doc.file_type || doc.original_filename?.split('.').pop() || 'file').toUpperCase();
+  }
+
+  getDisplayDocumentName(doc: Document): string {
+    return doc.original_filename || doc.title || doc.id;
+  }
+
+  getTruncatedDocumentName(doc: Document, maxBaseLength = 14): string {
+    const name = this.getDisplayDocumentName(doc);
+    const lastDot = name.lastIndexOf('.');
+    const hasExtension = lastDot > 0;
+    const baseName = hasExtension ? name.slice(0, lastDot) : name;
+
+    if (baseName.length <= maxBaseLength) {
+      return name;
+    }
+
+    return `${baseName.slice(0, maxBaseLength)}...`;
+  }
+
+  getDocumentSource(doc: Document): string {
+    return doc.source || 'LOCAL';
+  }
+
+  canPreviewDocument(doc: Document): boolean {
+    return !!doc.signed_url;
+  }
+
+  canUploadToSelectedStore(): boolean {
+    if (!this.selectedVectorStore) {
+      return false;
+    }
+    return this.selectedVectorStore.vs_type !== 'SHARED';
+  }
+
+  canShareDocument(doc: Document): boolean {
+    return this.getDocumentTypeLabel(doc) !== 'Accessed'
+      && this.resolvedDocumentStatus(doc) === 'completed'
+      && doc.access_type !== 'shared';
+  }
+
+  canMoveDocument(doc: Document): boolean {
+    return this.canShareDocument(doc) && this.getMoveTargetOptions([doc.id]).length > 0;
+  }
+
+  formatFileSize(doc: Document): string {
+    if (!doc.file_size && doc.file_size !== 0) {
+      return '-';
+    }
+    const size = doc.file_size;
+    if (size < 1024) {
+      return `${size} B`;
+    }
+    if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(1)} KB`;
+    }
+    if (size < 1024 * 1024 * 1024) {
+      return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    }
+    return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  }
+
+  isSystemStore(store: VectorStore | null): boolean {
+    return !!store?.is_system;
+  }
+
   getFileIcon(title: string): string {
-    if (!title) return 'fa-file-lines';
-    const ext = title.split('.').pop()?.toLowerCase();
+    const ext = this.getFileExtension(title);
     if (ext === 'pdf') return 'fa-file-pdf';
-    if (['doc', 'docx'].includes(ext || '')) return 'fa-file-word';
-    if (['xls', 'xlsx'].includes(ext || '')) return 'fa-file-excel';
-    if (['ppt', 'pptx'].includes(ext || '')) return 'fa-file-powerpoint';
-    if (ext === 'txt') return 'fa-file-lines';
+    if (['doc', 'docx', 'odt', 'rtf'].includes(ext)) return 'fa-file-word';
+    if (['xls', 'xlsx', 'csv'].includes(ext)) return 'fa-file-excel';
+    if (['ppt', 'pptx'].includes(ext)) return 'fa-file-powerpoint';
+    if (['txt', 'log', 'md', 'epub', 'tex', 'msg'].includes(ext)) return 'fa-file-lines';
+    if (['json', 'xml', 'html', 'htm', 'yaml', 'yml', 'ini', 'cfg'].includes(ext)) return 'fa-file-code';
+    if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'avif', 'ico', 'heic', 'heif', 'apng', 'jfif'].includes(ext)) return 'fa-file-image';
+    if (['mp4', 'avi', 'mov', 'wmv', 'mkv', 'flv', 'webm', 'm4v', 'mpg', 'mpeg', '3gp', 'ts'].includes(ext)) return 'fa-file-video';
+    if (['mp3', 'wav', 'm4a', 'ogg', 'flac', 'aac', 'opus', 'wma', 'alac'].includes(ext)) return 'fa-file-audio';
+    if (['zip', 'tar', 'gz', 'tgz', 'bz2', 'tbz2', 'rar', '7z', 'xz', 'txz'].includes(ext)) return 'fa-file-zipper';
     return 'fa-file-lines';
+  }
+
+  getFileIconTone(title: string): string {
+    const ext = this.getFileExtension(title);
+    if (ext === 'pdf') return 'tone-pdf';
+    if (['doc', 'docx', 'odt', 'rtf'].includes(ext)) return 'tone-word';
+    if (['xls', 'xlsx', 'csv'].includes(ext)) return 'tone-sheet';
+    if (['ppt', 'pptx'].includes(ext)) return 'tone-slide';
+    if (['json', 'xml', 'html', 'htm', 'yaml', 'yml', 'ini', 'cfg'].includes(ext)) return 'tone-code';
+    if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'avif', 'ico', 'heic', 'heif', 'apng', 'jfif'].includes(ext)) return 'tone-image';
+    if (['mp4', 'avi', 'mov', 'wmv', 'mkv', 'flv', 'webm', 'm4v', 'mpg', 'mpeg', '3gp', 'ts'].includes(ext)) return 'tone-video';
+    if (['mp3', 'wav', 'm4a', 'ogg', 'flac', 'aac', 'opus', 'wma', 'alac'].includes(ext)) return 'tone-audio';
+    if (['zip', 'tar', 'gz', 'tgz', 'bz2', 'tbz2', 'rar', '7z', 'xz', 'txz'].includes(ext)) return 'tone-archive';
+    return 'tone-text';
   }
 
   /** File size not available from API; show placeholder */
@@ -738,7 +919,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       }
 
       const pendingDocuments = this.documents.filter(doc =>
-        doc.status === 'queued' || doc.status === 'in_progress' || doc.status === 'processing'
+        ['queued', 'in_progress', 'processing'].includes(this.resolvedDocumentStatus(doc))
       );
 
       if (!pendingDocuments.length && this.statusCheckInFlight.size === 0) {
@@ -777,15 +958,18 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       return;
     }
     const doc = this.documents[docIndex];
-    if (doc.status === status.status) {
+    if (this.resolvedDocumentStatus(doc) === status.status) {
       return;
     }
     const next = [...this.documents];
-    next[docIndex] = { ...doc, status: status.status };
+    next[docIndex] = { ...doc, status: status.status, ingestion_status: status.status };
     this.documents = next;
   }
 
-  formatDate(date: string): string {
+  formatDate(date?: string): string {
+    if (!date) {
+      return '-';
+    }
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
@@ -803,6 +987,265 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
 
   closeLibraryChat(): void {
     this.chatLibrary = null;
+  }
+
+  openShareDialog(documentIds?: string[]): void {
+    const ids = documentIds?.length ? documentIds : Array.from(this.selectedDocumentIds);
+    const shareable = this.getEligibleDocuments(ids, 'share');
+    if (!shareable.length) {
+      void Swal.fire({
+        title: 'Nothing to share',
+        text: 'Only your completed documents can be shared with another user.',
+        icon: 'info',
+        confirmButtonText: 'Close'
+      });
+      return;
+    }
+
+    if (shareable.length !== ids.length) {
+      void Swal.fire({
+        title: 'Some documents were excluded',
+        text: 'Only owned, completed documents can be shared. Deselect shared or processing files and try again.',
+        icon: 'warning',
+        confirmButtonText: 'Close'
+      });
+      return;
+    }
+
+    this.shareDocumentIds = shareable.map(doc => doc.id);
+    this.shareTargetEmail = '';
+    this.shareExpiresAt = '';
+    this.shareDialogOpen = true;
+    this.closeDocumentActions();
+  }
+
+  closeShareDialog(): void {
+    this.shareDialogOpen = false;
+    this.shareSubmitting = false;
+    this.shareTargetEmail = '';
+    this.shareExpiresAt = '';
+    this.shareDocumentIds = [];
+  }
+
+  submitShare(): void {
+    const email = this.shareTargetEmail.trim();
+    if (!email || !this.shareDocumentIds.length || this.shareSubmitting) {
+      return;
+    }
+
+    this.shareSubmitting = true;
+    this.documentShareService.share({
+      document_ids: this.shareDocumentIds,
+      target_user_email: email,
+      expires_at: this.shareExpiresAt ? new Date(this.shareExpiresAt).toISOString() : null
+    }).subscribe({
+      next: (response) => {
+        this.shareSubmitting = false;
+        this.closeShareDialog();
+        this.loadSharedByMe(true);
+        void Swal.fire({
+          title: 'Share updated',
+          text: `${response.shared_count} document${response.shared_count === 1 ? '' : 's'} shared successfully.`,
+          icon: 'success',
+          confirmButtonText: 'Close'
+        });
+      },
+      error: (err) => {
+        this.shareSubmitting = false;
+        void Swal.fire({
+          title: 'Unable to share documents',
+          text: this.extractErrorMessage(err, 'The share request could not be completed.'),
+          icon: 'error',
+          confirmButtonText: 'Close'
+        });
+      }
+    });
+  }
+
+  openMoveDialog(documentIds?: string[]): void {
+    const ids = documentIds?.length ? documentIds : Array.from(this.selectedDocumentIds);
+    const movable = this.getEligibleDocuments(ids, 'move');
+    if (!movable.length) {
+      void Swal.fire({
+        title: 'Nothing to move',
+        text: 'Only your completed documents can be moved to another DEFAULT or CUSTOM library.',
+        icon: 'info',
+        confirmButtonText: 'Close'
+      });
+      return;
+    }
+
+    if (movable.length !== ids.length) {
+      void Swal.fire({
+        title: 'Some documents were excluded',
+        text: 'Only owned, completed documents can be moved. Shared or processing files are not eligible.',
+        icon: 'warning',
+        confirmButtonText: 'Close'
+      });
+      return;
+    }
+
+    const targets = this.getMoveTargetOptions(movable.map(doc => doc.id));
+    if (!targets.length) {
+      void Swal.fire({
+        title: 'No valid destination',
+        text: 'Create or choose another DEFAULT or CUSTOM library before moving these documents.',
+        icon: 'info',
+        confirmButtonText: 'Close'
+      });
+      return;
+    }
+
+    this.moveDocumentIds = movable.map(doc => doc.id);
+    this.moveTargetVectorStoreId = targets[0]?.id || '';
+    this.moveDialogOpen = true;
+    this.closeDocumentActions();
+  }
+
+  closeMoveDialog(): void {
+    this.moveDialogOpen = false;
+    this.moveSubmitting = false;
+    this.moveDocumentIds = [];
+    this.moveTargetVectorStoreId = '';
+  }
+
+  submitMove(): void {
+    if (!this.moveDocumentIds.length || !this.moveTargetVectorStoreId || this.moveSubmitting) {
+      return;
+    }
+
+    this.moveSubmitting = true;
+    this.documentService.move({
+      document_ids: this.moveDocumentIds,
+      target_vector_store_id: this.moveTargetVectorStoreId
+    }).subscribe({
+      next: () => {
+        const movedCount = this.moveDocumentIds.length;
+        this.moveSubmitting = false;
+        this.closeMoveDialog();
+        this.clearSelection();
+        this.loadDocuments(false, true);
+        this.loadVectorStores(true);
+        this.loadSharedByMe(true);
+        void Swal.fire({
+          title: 'Documents moved',
+          text: `${movedCount} document${movedCount === 1 ? '' : 's'} moved successfully.`,
+          icon: 'success',
+          confirmButtonText: 'Close'
+        });
+      },
+      error: (err) => {
+        this.moveSubmitting = false;
+        void Swal.fire({
+          title: 'Unable to move documents',
+          text: this.extractErrorMessage(err, 'The selected documents could not be moved.'),
+          icon: 'error',
+          confirmButtonText: 'Close'
+        });
+      }
+    });
+  }
+
+  async revokeShareByOwner(item: SharedByMeItem): Promise<void> {
+    const result = await Swal.fire({
+      title: 'Revoke this share?',
+      text: `${item.document_title} will no longer be available to ${item.recipient_email}.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Revoke share',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#dc2626'
+    });
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    this.documentShareService.revokeByOwner({
+      document_ids: [item.document_id],
+      target_user_id: item.recipient_id
+    }).subscribe({
+      next: () => {
+        this.sharedByMe = this.sharedByMe.filter(share => !(share.document_id === item.document_id && share.recipient_id === item.recipient_id));
+      },
+      error: (err) => {
+        void Swal.fire({
+          title: 'Unable to revoke share',
+          text: this.extractErrorMessage(err, 'The share could not be revoked.'),
+          icon: 'error',
+          confirmButtonText: 'Close'
+        });
+      }
+    });
+  }
+
+  async revokeSharedWithMe(item: SharedWithMeItem): Promise<void> {
+    const result = await Swal.fire({
+      title: 'Remove shared document?',
+      text: `${item.document_title} will be removed from your shared surface.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Remove access',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#dc2626'
+    });
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    this.documentShareService.revokeSharedWithMe([item.document_id]).subscribe({
+      next: () => {
+        this.sharedWithMe = this.sharedWithMe.filter(share => share.document_id !== item.document_id);
+      },
+      error: (err) => {
+        void Swal.fire({
+          title: 'Unable to remove access',
+          text: this.extractErrorMessage(err, 'The shared document could not be removed from your view.'),
+          icon: 'error',
+          confirmButtonText: 'Close'
+        });
+      }
+    });
+  }
+
+  jumpToSharedLibrary(): void {
+    const sharedStore = this.vectorStores.find(store => store.vs_type === 'SHARED');
+    if (!sharedStore) {
+      return;
+    }
+    this.activeWorkspaceTab = 'documents';
+    this.onVectorStoreSelected(sharedStore);
+  }
+
+  getShareDialogDocuments(): Document[] {
+    return this.shareDocumentIds
+      .map(id => this.documents.find(doc => doc.id === id))
+      .filter((doc): doc is Document => !!doc);
+  }
+
+  getMoveDialogDocuments(): Document[] {
+    return this.moveDocumentIds
+      .map(id => this.documents.find(doc => doc.id === id))
+      .filter((doc): doc is Document => !!doc);
+  }
+
+  getShareExpiryLabel(item: SharedWithMeItem | SharedByMeItem): string {
+    if (!item.expires_at) {
+      return 'Never expires';
+    }
+    return `Expires ${this.formatDate(item.expires_at)}`;
+  }
+
+  getShareStatusLabel(item: SharedWithMeItem | SharedByMeItem): string {
+    if (item.revoked_at) {
+      return 'Revoked';
+    }
+    if (!item.is_active && !item.active) {
+      return 'Inactive';
+    }
+    if (item.expires_at && new Date(item.expires_at).getTime() < Date.now()) {
+      return 'Expired';
+    }
+    return 'Active';
   }
 
   private extractErrorMessage(error: any, fallback: string): string {
@@ -827,5 +1270,194 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       }
     }
     return fallback;
+  }
+
+  private getFileExtension(title: string): string {
+    if (!title) {
+      return '';
+    }
+    return title.split('.').pop()?.toLowerCase() || '';
+  }
+
+  private applySearchAndAttributeFilters(documents: Document[]): Document[] {
+    let docs = [...documents];
+
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      docs = docs.filter(doc =>
+        doc.title?.toLowerCase().includes(query) ||
+        this.resolvedDocumentStatus(doc).toLowerCase().includes(query) ||
+        this.getDocumentSecondaryText(doc).toLowerCase().includes(query)
+      );
+    }
+
+    if (this.fileTypeFilter !== 'all') {
+      docs = docs.filter(doc => this.getDocumentFileType(doc) === this.fileTypeFilter);
+    }
+
+    if (this.sourceFilter !== 'all') {
+      docs = docs.filter(doc => this.getDocumentSource(doc) === this.sourceFilter);
+    }
+
+    if (this.dateFilter !== 'all') {
+      const now = Date.now();
+      docs = docs.filter(doc => {
+        const resolved = this.resolvedDocumentDate(doc);
+        const dateValue = resolved ? new Date(resolved).getTime() : NaN;
+        if (Number.isNaN(dateValue)) {
+          return false;
+        }
+        const ageDays = (now - dateValue) / 86400000;
+        if (this.dateFilter === '7d') return ageDays <= 7;
+        if (this.dateFilter === '30d') return ageDays <= 30;
+        if (this.dateFilter === '90d') return ageDays <= 90;
+        return ageDays > 90;
+      });
+    }
+
+    if (this.sizeFilter !== 'all') {
+      docs = docs.filter(doc => {
+        const size = doc.file_size;
+        if (this.sizeFilter === 'unknown') {
+          return size === undefined || size === null;
+        }
+        if (size === undefined || size === null) {
+          return false;
+        }
+        if (this.sizeFilter === 'small') return size < 1024 * 1024;
+        if (this.sizeFilter === 'medium') return size >= 1024 * 1024 && size < 10 * 1024 * 1024;
+        return size >= 10 * 1024 * 1024;
+      });
+    }
+
+    return docs;
+  }
+
+  private applyRouteLibrarySelection(libraryId: string): void {
+    if (!libraryId || !this.vectorStores.length) {
+      return;
+    }
+
+    const store = this.vectorStores.find(vs => vs.id === libraryId);
+    if (!store) {
+      return;
+    }
+
+    const selectionChanged = store.id !== this.selectedVectorStore?.id;
+    this.selectedVectorStore = store;
+    this.selectedDocumentIds.clear();
+    this.selectionMode = false;
+    this.syncWorkspaceTabForSelectedStore();
+    this.syncSelectionState();
+
+    if (selectionChanged) {
+      this.loadDocuments(false, true);
+    }
+  }
+
+  private syncSelectionState(): void {
+    if (!this.isInWorkspace) {
+      return;
+    }
+    this.knowledgeContext.updateState({
+      vectorStores: this.vectorStores,
+      selectedVectorStore: this.selectedVectorStore
+    });
+  }
+
+  private syncWorkspaceTabForSelectedStore(): void {
+    if (this.isSharedVectorStoreSelected) {
+      if (this.activeWorkspaceTab === 'documents') {
+        this.activeWorkspaceTab = 'shared-with-me';
+      }
+      return;
+    }
+
+    if (this.activeWorkspaceTab !== 'documents') {
+      this.activeWorkspaceTab = 'documents';
+    }
+  }
+
+  private loadSharedWithMe(forceRefresh = false): void {
+    if (this.loadingSharedWithMe && !forceRefresh) {
+      return;
+    }
+    this.loadingSharedWithMe = true;
+    this.documentShareService.listSharedWithMe().pipe(
+      finalize(() => {
+        this.loadingSharedWithMe = false;
+      })
+    ).subscribe({
+      next: items => {
+        this.sharedWithMe = items;
+      },
+      error: err => {
+        console.error('Error loading shared-with-me documents:', err);
+      }
+    });
+  }
+
+  private loadSharedByMe(forceRefresh = false): void {
+    if (this.loadingSharedByMe && !forceRefresh) {
+      return;
+    }
+    this.loadingSharedByMe = true;
+    this.documentShareService.listSharedByMe().pipe(
+      finalize(() => {
+        this.loadingSharedByMe = false;
+      })
+    ).subscribe({
+      next: items => {
+        this.sharedByMe = items;
+      },
+      error: err => {
+        console.error('Error loading shared-by-me documents:', err);
+      }
+    });
+  }
+
+  private filterShareItems<T extends SharedWithMeItem | SharedByMeItem>(items: T[], mode: 'recipient' | 'owner'): T[] {
+    if (!this.searchQuery.trim()) {
+      return items;
+    }
+    const query = this.searchQuery.trim().toLowerCase();
+    return items.filter(item => {
+      const targetEmail = mode === 'recipient' ? item.owner_email : item.recipient_email;
+      return [
+        item.document_title,
+        item.document_id,
+        item.owner_email,
+        item.recipient_email,
+        targetEmail
+      ].filter(Boolean).join(' ').toLowerCase().includes(query);
+    });
+  }
+
+  private getSelectedShareableDocuments(): Document[] {
+    return this.getEligibleDocuments(Array.from(this.selectedDocumentIds), 'share');
+  }
+
+  private getSelectedMovableDocuments(): Document[] {
+    return this.getEligibleDocuments(Array.from(this.selectedDocumentIds), 'move');
+  }
+
+  private getEligibleDocuments(documentIds: string[], operation: 'share' | 'move'): Document[] {
+    return documentIds
+      .map(id => this.documents.find(doc => doc.id === id))
+      .filter((doc): doc is Document => !!doc)
+      .filter(doc => operation === 'share' ? this.canShareDocument(doc) : this.canMoveDocument(doc));
+  }
+
+  private getMoveTargetOptions(documentIds: string[]): VectorStore[] {
+    const sourceStoreIds = new Set(
+      documentIds
+        .map(id => this.documents.find(doc => doc.id === id)?.vector_store)
+        .filter((id): id is string => !!id)
+    );
+
+    return this.vectorStores.filter(store =>
+      store.vs_type !== 'SHARED' &&
+      !sourceStoreIds.has(store.id)
+    );
   }
 }

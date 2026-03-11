@@ -1,13 +1,17 @@
 <div class="library-picker">
   <header class="picker-header">
-    <div class="picker-title-row">
-      <div class="picker-title">
-        <div class="picker-icon" aria-hidden="true">
-          <i class="fa-solid fa-layer-group"></i>
+    <div class="picker-heading">
+      <div class="picker-title-row">
+        <div class="picker-title">
+          <div class="picker-icon" aria-hidden="true">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div>
+            <h1>Your Libraries</h1>
+            <p class="picker-subtitle">Manage knowledge stores, review ingestion health, and jump into the right retrieval surface faster.</p>
+          </div>
         </div>
-        <h1>Your Libraries</h1>
       </div>
-      <span class="picker-count">{{ vectorStores.length }} libraries</span>
     </div>
     <div class="picker-toolbar">
       <div class="picker-search">
@@ -54,7 +58,29 @@
     <p>No libraries match "{{ searchQuery }}".</p>
   </div>
 
-  <!-- Grid view: 5 cards per row -->
+  <section *ngIf="!loading && vectorStores.length > 0" class="workspace-kpis">
+    <article class="kpi-card kpi-card-primary">
+      <span class="kpi-label">Total Documents</span>
+      <span class="kpi-value">{{ totalDocuments }}</span>
+      <span class="kpi-meta">Across {{ vectorStores.length }} libraries</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Failed</span>
+      <span class="kpi-value">{{ totalFailedDocuments }}</span>
+      <span class="kpi-meta">Need review or re-ingestion</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Processing</span>
+      <span class="kpi-value">{{ totalProcessingDocuments }}</span>
+      <span class="kpi-meta">Queued, processing, or in progress</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Accessed</span>
+      <span class="kpi-value">{{ totalAccessedDocuments }}</span>
+      <span class="kpi-meta">Shared or externally surfaced docs</span>
+    </article>
+  </section>
+
   <div *ngIf="!loading && vectorStores.length > 0 && gridView && filteredVectorStores.length > 0" class="library-grid">
     <div *ngFor="let store of filteredVectorStores" class="library-card">
       <div class="library-card-main" (click)="selectLibrary(store)" tabindex="0" role="button" (keydown.enter)="selectLibrary(store)" (keydown.space)="selectLibrary(store); $event.preventDefault()">
@@ -63,13 +89,19 @@
             <i class="fa-solid fa-folder"></i>
           </div>
           <div class="library-card-title-block">
-            <h3 class="library-card-title">{{ store.name }}</h3>
-            <p class="library-card-subtitle">{{ getDocCount(store) }} document{{ getDocCount(store) !== 1 ? 's' : '' }}</p>
+            <div class="library-card-title-row">
+              <h3 class="library-card-title">{{ store.name }}</h3>
+              <span class="store-badge type">{{ getStoreTypeLabel(store) }}</span>
+              <span class="store-badge system" *ngIf="store.is_system">System</span>
+            </div>
+            <p class="library-card-subtitle">{{ getStoreHint(store) }}</p>
           </div>
         </div>
-        <div class="library-card-meta">
-          <div class="meta-row"><span class="meta-label">Updated</span><span class="meta-value">{{ getRelativeTime(store.created_at) }}</span></div>
-          <div class="meta-row"><span class="meta-label">Created</span><span class="meta-value">{{ formatDate(store.created_at) }}</span></div>
+        <div class="library-card-footer">
+          <div class="footer-meta">
+            <div class="meta-row"><span class="meta-label">Created</span><span class="meta-value">{{ formatDate(store.created_at) }}</span></div>
+            <div class="meta-row"><span class="meta-label">Updated</span><span class="meta-value">{{ getRelativeTime(store.created_at) }}</span></div>
+          </div>
         </div>
       </div>
       <div class="library-card-actions">
@@ -77,19 +109,21 @@
           type="button"
           class="card-action-button card-action-edit"
           (click)="editLibrary(store); $event.stopPropagation()"
+          [disabled]="!canEdit(store)"
           title="Rename library"
         >
           <i class="fa-solid fa-pen"></i>
-          <span>Edit</span>
+          <span>{{ canEdit(store) ? 'Edit' : 'Locked' }}</span>
         </button>
         <button
           type="button"
           class="card-action-button card-action-delete"
           (click)="deleteLibrary(store); $event.stopPropagation()"
+          [disabled]="!canDelete(store)"
           title="Delete library"
         >
           <i class="fa-solid fa-trash"></i>
-          <span>Delete</span>
+          <span>{{ canDelete(store) ? 'Delete' : 'Protected' }}</span>
         </button>
       </div>
     </div>
@@ -97,56 +131,57 @@
 
   <!-- List view -->
   <div *ngIf="!loading && vectorStores.length > 0 && !gridView && filteredVectorStores.length > 0" class="library-table-wrap">
-    <table class="library-table">
-      <thead>
-        <tr>
-          <th class="col-name">NAME</th>
-          <th class="col-created">CREATED</th>
-          <th class="col-updated">UPDATED</th>
-          <th class="col-actions">ACTIONS</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let store of filteredVectorStores" class="library-row">
-          <td class="col-name" (click)="selectLibrary(store)" tabindex="0" role="button">
-            <div class="library-list-name-cell">
-              <div class="library-list-icon">
-                <i class="fa-solid fa-folder"></i>
+    <div class="library-rows">
+      <article *ngFor="let store of filteredVectorStores" class="library-row-card">
+        <button type="button" class="library-row-main" (click)="selectLibrary(store)">
+          <div class="library-row-identity">
+            <div class="library-list-icon">
+              <i class="fa-solid fa-folder"></i>
+            </div>
+            <div class="library-list-copy">
+              <div class="library-list-title-row">
+                <span class="library-list-title">{{ store.name }}</span>
+                <span class="store-badge type">{{ getStoreTypeLabel(store) }}</span>
+                <span class="store-badge system" *ngIf="store.is_system">System</span>
               </div>
-              <span class="library-list-title">{{ store.name }}</span>
+              <span class="library-list-subtitle">{{ getStoreHint(store) }}</span>
             </div>
-          </td>
-          <td class="col-created">
-            {{ formatDate(store.created_at) }}
-          </td>
-          <td class="col-updated">
-            {{ getRelativeTime(store.created_at) }}
-          </td>
-          <td class="col-actions">
-            <div class="library-table-actions">
-              <button
-                type="button"
-                class="card-action-button card-action-edit"
-                (click)="editLibrary(store); $event.stopPropagation()"
-                title="Rename library"
-              >
-                <i class="fa-solid fa-pen"></i>
-                <span>Edit</span>
-              </button>
-              <button
-                type="button"
-                class="card-action-button card-action-delete"
-                (click)="deleteLibrary(store); $event.stopPropagation()"
-                title="Delete library"
-              >
-                <i class="fa-solid fa-trash"></i>
-                <span>Delete</span>
-              </button>
+          </div>
+          <div class="library-row-details">
+            <div class="detail-cell">
+              <span class="detail-label">Created</span>
+              <span class="detail-value">{{ formatDate(store.created_at) }}</span>
             </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            <div class="detail-cell">
+              <span class="detail-label">Updated</span>
+              <span class="detail-value">{{ getRelativeTime(store.updated_at) }}</span>
+            </div>
+          </div>
+        </button>
+        <div class="library-row-actions">
+          <button
+            type="button"
+            class="card-action-button card-action-edit"
+            (click)="editLibrary(store); $event.stopPropagation()"
+            [disabled]="!canEdit(store)"
+            title="Rename library"
+          >
+            <i class="fa-solid fa-pen"></i>
+            <span>{{ canEdit(store) ? 'Edit' : 'Locked' }}</span>
+          </button>
+          <button
+            type="button"
+            class="card-action-button card-action-delete"
+            (click)="deleteLibrary(store); $event.stopPropagation()"
+            [disabled]="!canDelete(store)"
+            title="Delete library"
+          >
+            <i class="fa-solid fa-trash"></i>
+            <span>{{ canDelete(store) ? 'Delete' : 'Protected' }}</span>
+          </button>
+        </div>
+      </article>
+    </div>
   </div>
 
   <!-- Create library modal -->

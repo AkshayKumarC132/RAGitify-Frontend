@@ -6,6 +6,10 @@
         </button>
     </div>
 
+    <div class="playground-error" *ngIf="warningMessages.length">
+        {{ warningMessages.join(' ') }}
+    </div>
+
     <div class="playground-header" *ngIf="messages.length === 0">
         <h1><i class="fa-brands fa-rocketchat" aria-hidden="true"></i> Playground</h1>
         <p>Feel free to try prompts — messages here are not saved.</p>

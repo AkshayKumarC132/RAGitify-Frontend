@@ -5,6 +5,7 @@
 
     &.user {
         align-items: flex-end;
+        font-size: small;
 
         .message-content {
             background: var(--accent-color);
@@ -19,6 +20,7 @@
 
     &.assistant {
         align-items: flex-start;
+        font-size: small;
 
         .message-content {
             background: var(--panel-bg);

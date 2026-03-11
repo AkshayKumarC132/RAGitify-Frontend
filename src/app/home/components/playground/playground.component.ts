@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Output, EventEmitter, HostListener } from '@angular/core';
 import { ConversationService } from '../../../shared/services/conversation.service';
 import { ResponseService } from '../../../shared/services/response.service';
+import { ResponseAttentionService } from '../../../shared/services/response-attention.service';
 import { ConversationMessage } from '../../../shared/models/conversation.model';
 import { ResponseRecord, ResponseCreateRequest } from '../../../shared/models/response.model';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
@@ -21,6 +22,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     loading = false;
     inputMessage = '';
     errorMessage = '';
+    warningMessages: string[] = [];
     mode: 'normal' | 'document' = 'normal';
     private responsePollSub?: Subscription;
 
@@ -74,6 +76,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     constructor(
         private conversationService: ConversationService,
         private responseService: ResponseService,
+        private responseAttentionService: ResponseAttentionService,
         private vectorStoreService: VectorStoreService
     ) { }
 
@@ -225,7 +228,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     private createTemporaryConversation(): void {
-        this.conversationService.create({ title: 'Play Ground' }).subscribe({
+        this.conversationService.create({ title: 'Play Ground', is_temporary: true }).subscribe({
             next: (conv) => {
                 this.conversationId = conv.id;
             },
@@ -279,6 +282,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.responseService.create(request).subscribe({
             next: (response) => {
+                this.warningMessages = response.warnings || [];
                 if (response.status === 'in_progress') {
                     this.startPolling(response.id);
                 } else {
@@ -297,6 +301,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         this.responsePollSub = this.responseService.pollResponseStatus(responseId).subscribe({
             next: (response) => {
                 if (response) {
+                    this.warningMessages = response.warnings || [];
                     if (response.status === 'completed') {
                         this.handleResponseComplete(response);
                         this.stopPolling();
@@ -322,6 +327,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
 
     private handleResponseComplete(response: ResponseRecord): void {
         this.loading = false;
+        this.responseAttentionService.notifyResponseReady('Playground response ready', response.output?.[0]?.content?.[0]?.text);
         if (response.output && response.output.length > 0) {
             const output = response.output[0];
             if (output.content && output.content.length > 0) {

@@ -1,8 +1,10 @@
 .models-section {
-  max-width: 860px;
+  width: 100%;
+  max-width: none;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-height: 100%;
 }
 
 .section-header {
@@ -74,7 +76,8 @@
 }
 
 .create-form {
-overflow: hidden;
+  overflow: hidden;
+
   h5 {
     margin: 0 0 0.9rem;
     display: inline-flex;
@@ -340,30 +343,89 @@ overflow: hidden;
 }
 
 @keyframes shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.models-panel {
+  border-radius: 18px;
+  border: 1px solid var(--border-color);
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.04), transparent 18%), var(--bg-secondary);
+  padding: 1rem;
+}
+
+.metrics-strip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.metric-chip {
+  min-width: 92px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+
+  &.active {
+    border-color: rgba(var(--accent-rgb), 0.28);
+    background: rgba(var(--accent-rgb), 0.08);
+  }
+
+  .label {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+  }
+
+  .value {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
 }
 
 .models-list {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  min-height: 0;
 
   &.scrollable {
-    max-height: min(58vh, calc(100vh - 23rem));
+    max-height: clamp(360px, calc(100vh - 24rem), 640px);
     overflow-y: auto;
-    padding-right: 0.2rem;
+    padding-right: 0.45rem;
+    margin-right: -0.15rem;
 
     scrollbar-width: thin;
     scrollbar-color: var(--border-color) transparent;
 
     &::-webkit-scrollbar {
-      width: 6px;
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
     }
 
     &::-webkit-scrollbar-thumb {
       border-radius: 99px;
       background: var(--border-color);
+
+      &:hover {
+        background: var(--text-secondary);
+      }
     }
   }
 }
@@ -377,7 +439,6 @@ overflow: hidden;
   .label {
     margin: 0;
     font-size: 12px;
-    text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-secondary);
     font-weight: 700;
@@ -385,7 +446,7 @@ overflow: hidden;
 
   .value {
     margin: 0;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.1;
     font-weight: 660;
     color: var(--text-primary);
@@ -545,6 +606,12 @@ overflow: hidden;
     align-items: flex-start;
   }
 
+  .list-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
   .provider-grid {
     grid-template-columns: 1fr;
   }
@@ -559,7 +626,3 @@ overflow: hidden;
     justify-content: flex-end;
   }
 }
-
-
-
-

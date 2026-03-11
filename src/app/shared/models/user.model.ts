@@ -16,6 +16,16 @@ export interface User {
   ready?: boolean;
 }
 
+export interface UserProfileUpdateRequest {
+  first_name?: string;
+  last_name?: string;
+  language?: string;
+}
+
+export interface UserPasswordUpdateRequest {
+  password: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -35,6 +45,10 @@ export interface RegisterRequest {
 export interface AuthResponse {
   token: string;
   user: User;
+  tenant?: { id: number; name: string } | null;
+  llm_setup_required?: boolean;
+  active_collection?: ActiveCollection | null;
+  warnings?: string[];
 }
 
 export interface UserStatus {
