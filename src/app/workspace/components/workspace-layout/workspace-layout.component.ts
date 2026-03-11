@@ -5,6 +5,7 @@ import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../shared/services/auth.service';
 import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
+import { VectorStoreService } from '../../../shared/services/vector-store.service';
 
 @Component({
   selector: 'app-workspace-layout',
@@ -43,7 +44,8 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private knowledgeContext: WorkspaceKnowledgeContextService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private vectorStoreService: VectorStoreService
   ) {}
 
   ngOnInit(): void {
@@ -59,12 +61,14 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     this.route.paramMap.subscribe(params => {
       this.activeDocumentId = params.get('documentId');
       this.applyLayoutRouteState();
+      this.ensureSidebarLibraries();
     });
 
     this.route.queryParamMap.subscribe(params => {
       this.currentLibraryId = params.get('libraryId');
       this.currentView = params.get('view');
       this.applyLayoutRouteState();
+      this.ensureSidebarLibraries();
     });
   }
 
@@ -184,6 +188,37 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
   private applyLayoutRouteState(): void {
     this.showLibraryPicker = !this.activeDocumentId && !this.currentLibraryId && this.currentView !== 'prompts';
     this.activeSection = this.currentView === 'prompts' ? 'prompts' : 'knowledge';
+  }
+
+  private ensureSidebarLibraries(): void {
+    if (this.activeSection !== 'knowledge') {
+      return;
+    }
+
+    if (this.layoutVectorStores.length > 0) {
+      if (!this.layoutSelectedStore && this.currentLibraryId) {
+        this.layoutSelectedStore = this.layoutVectorStores.find(store => store.id === this.currentLibraryId) || null;
+      }
+      return;
+    }
+
+    this.vectorStoreService.list().pipe(takeUntil(this.destroy$)).subscribe({
+      next: stores => {
+        this.layoutVectorStores = stores;
+        const selectedStore = this.currentLibraryId
+          ? stores.find(store => store.id === this.currentLibraryId) || null
+          : this.layoutSelectedStore;
+
+        this.layoutSelectedStore = selectedStore;
+        this.knowledgeContext.updateState({
+          vectorStores: stores,
+          selectedVectorStore: selectedStore
+        });
+      },
+      error: () => {
+        this.layoutVectorStores = [];
+      }
+    });
   }
 
   logout(): void {
