@@ -13,6 +13,7 @@ import { VectorStore } from '../../../shared/models/vector-store.model';
 })
 export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
   activeSection: 'knowledge' | 'prompts' = 'knowledge';
+  activeDocumentId: string | null = null;
   sidebarCollapsed = false;
   hoveringExpandControl = false;
   private brandExpandInteraction = false;
@@ -25,6 +26,8 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
   totalDocumentsCount = 0;
   librarySearchQuery = '';
   showLibraryPicker = true;
+  private currentLibraryId: string | null = null;
+  private currentView: string | null = null;
 
   get libraryCount(): number {
     return this.layoutVectorStores.length;
@@ -53,12 +56,15 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
         this.totalDocumentsCount = state.totalDocuments;
       });
 
-    // Show library picker when no library selected; show main UI when libraryId or view=prompts
+    this.route.paramMap.subscribe(params => {
+      this.activeDocumentId = params.get('documentId');
+      this.applyLayoutRouteState();
+    });
+
     this.route.queryParamMap.subscribe(params => {
-      const libraryId = params.get('libraryId');
-      const view = params.get('view');
-      this.showLibraryPicker = !libraryId && view !== 'prompts';
-      this.activeSection = view === 'prompts' ? 'prompts' : 'knowledge';
+      this.currentLibraryId = params.get('libraryId');
+      this.currentView = params.get('view');
+      this.applyLayoutRouteState();
     });
   }
 
@@ -102,7 +108,7 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
       this.router.navigate(['/workspace'], { queryParams: {} });
       return;
     }
-    const libraryId = this.layoutSelectedStore?.id ?? this.route.snapshot.queryParamMap.get('libraryId');
+    const libraryId = this.layoutSelectedStore?.id ?? this.currentLibraryId ?? this.route.snapshot.queryParamMap.get('libraryId');
     this.router.navigate(['/workspace'], { queryParams: libraryId ? { libraryId } : {} });
   }
 
@@ -112,6 +118,22 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
 
   goToLibraryPicker(): void {
     this.router.navigate(['/workspace'], { queryParams: {} });
+  }
+
+  goToCurrentLibrary(): void {
+    const libraryId = this.layoutSelectedStore?.id ?? this.currentLibraryId;
+    if (!libraryId) {
+      this.goToLibraryPicker();
+      return;
+    }
+
+    const queryParams: Record<string, string> = { libraryId };
+    const workspaceTab = this.route.snapshot.queryParamMap.get('workspaceTab');
+    if (workspaceTab) {
+      queryParams['workspaceTab'] = workspaceTab;
+    }
+
+    this.router.navigate(['/workspace'], { queryParams });
   }
 
   onSidebarSearchChange(value: string): void {
@@ -157,6 +179,11 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     this.brandExpandInteraction = false;
     this.toggleExpandInteraction = false;
     this.hoveringExpandControl = false;
+  }
+
+  private applyLayoutRouteState(): void {
+    this.showLibraryPicker = !this.activeDocumentId && !this.currentLibraryId && this.currentView !== 'prompts';
+    this.activeSection = this.currentView === 'prompts' ? 'prompts' : 'knowledge';
   }
 
   logout(): void {

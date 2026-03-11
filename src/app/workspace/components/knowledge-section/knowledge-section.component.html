@@ -247,7 +247,9 @@
                 <td class="col-name">
                   <i class="fa-solid doc-file-icon" [ngClass]="[getFileIcon(getDisplayDocumentName(doc)), getFileIconTone(getDisplayDocumentName(doc))]"></i>
                   <div class="doc-name-stack">
-                    <span class="doc-name-text" [title]="getDisplayDocumentName(doc)">{{ getTruncatedDocumentName(doc, 34) }}</span>
+                    <button type="button" class="doc-name-link" (click)="openDocumentDetails(doc)" [title]="getDisplayDocumentName(doc)">
+                      <span class="doc-name-text">{{ getTruncatedDocumentName(doc, 34) }}</span>
+                    </button>
                   </div>
                 </td>
                 <td class="col-type">
@@ -280,6 +282,10 @@
                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                         <span>Open file</span>
                       </a>
+                      <button type="button" class="dropdown-action-item" (click)="openDocumentDetails(doc)">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Details</span>
+                      </button>
                       <button type="button" class="dropdown-action-item" (click)="openDocumentChat(doc); closeDocumentActions()" [disabled]="resolvedDocumentStatus(doc) !== 'completed'" title="Chat">
                         <i class="fa-solid fa-comments"></i>
                         <span>Chat</span>
@@ -324,7 +330,9 @@
                   <i class="fa-solid" [ngClass]="[getFileIcon(getDisplayDocumentName(doc)), getFileIconTone(getDisplayDocumentName(doc))]"></i>
                 </div>
                 <div class="document-card-copy">
-                  <h3 class="document-card-title" [title]="getDisplayDocumentName(doc)">{{ getTruncatedDocumentName(doc, 18) }}</h3>
+                  <button type="button" class="document-card-title-btn" (click)="openDocumentDetails(doc); $event.stopPropagation()" [title]="getDisplayDocumentName(doc)">
+                    <h3 class="document-card-title">{{ getTruncatedDocumentName(doc, 18) }}</h3>
+                  </button>
                   <p class="document-card-subtitle">{{ getDocumentFileType(doc) }} document</p>
                 </div>
               </div>
@@ -343,6 +351,9 @@
               </div>
               <div class="document-card-footer">
                 <div class="document-card-footer-right">
+                  <button type="button" class="btn-premium-icon" (click)="openDocumentDetails(doc); $event.stopPropagation()" title="Details">
+                    <i class="fa-solid fa-circle-info"></i>
+                  </button>
                   <a *ngIf="canPreviewDocument(doc)" class="btn-premium-icon" [href]="doc.signed_url" target="_blank" rel="noopener noreferrer" title="Open file" (click)="$event.stopPropagation()">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
                   </a>
@@ -391,7 +402,9 @@
                 <tr *ngFor="let item of filteredSharedWithMe">
                   <td class="col-name">
                     <div class="doc-name-stack">
-                      <span class="doc-name-text" [title]="item.document_title">{{ item.document_title }}</span>
+                      <button type="button" class="doc-name-link" (click)="openDocumentDetails(item.document_id)" [title]="item.document_title">
+                        <span class="doc-name-text">{{ item.document_title }}</span>
+                      </button>
                     </div>
                   </td>
                   <td>{{ item.owner_email }}</td>
@@ -439,7 +452,9 @@
                 <tr *ngFor="let item of filteredSharedByMe">
                   <td class="col-name">
                     <div class="doc-name-stack">
-                      <span class="doc-name-text" [title]="item.document_title">{{ item.document_title }}</span>
+                      <button type="button" class="doc-name-link" (click)="openDocumentDetails(item.document_id)" [title]="item.document_title">
+                        <span class="doc-name-text">{{ item.document_title }}</span>
+                      </button>
                     </div>
                   </td>
                   <td>{{ item.recipient_email }}</td>

@@ -991,6 +991,22 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  openDocumentDetails(documentOrId: Document | string): void {
+    const documentId = typeof documentOrId === 'string' ? documentOrId : documentOrId.id;
+    const queryParams: Record<string, string> = {};
+
+    if (this.selectedVectorStore?.id) {
+      queryParams['libraryId'] = this.selectedVectorStore.id;
+    }
+
+    if (this.isSharedVectorStoreSelected && this.activeWorkspaceTab !== 'documents') {
+      queryParams['workspaceTab'] = this.activeWorkspaceTab;
+    }
+
+    this.router.navigate(['/workspace/document', documentId], { queryParams });
+    this.closeDocumentActions();
+  }
+
   openDocumentChat(document: Document): void {
     this.chatDocument = document;
   }

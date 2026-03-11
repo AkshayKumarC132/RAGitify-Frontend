@@ -1,0 +1,202 @@
+<div class="document-details-page">
+  <div class="document-details-shell" *ngIf="!loading; else loadingState">
+    <div class="document-details-error" *ngIf="errorMessage && !document && shareCount === 0">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <div>
+        <h3>Document details unavailable</h3>
+        <p>{{ errorMessage }}</p>
+      </div>
+    </div>
+
+    <ng-container *ngIf="document || shareCount > 0">
+      <section class="document-hero">
+        <div class="document-hero-main">
+          <div class="document-hero-copy">
+            <span class="details-eyebrow">Document Details</span>
+            <h1 [title]="documentName">{{ documentName }}</h1>
+            <p class="document-hero-description">
+              Inspect file identity, storage context, lifecycle timestamps, and every applicable share relationship for
+              this document.
+            </p>
+            <div class="document-hero-meta">
+              <span class="hero-chip" *ngIf="document?.file_type">{{ document?.file_type }}</span>
+              <span class="hero-chip subtle" *ngIf="vectorStore">{{ vectorStore.name }}</span>
+              <span class="hero-chip subtle" *ngIf="document?.source">{{ document?.source }}</span>
+              <span class="hero-chip subtle" *ngIf="document?.access_type">{{ document?.access_type }}</span>
+              <span class="hero-chip subtle" *ngIf="shareCount">{{ shareCount }} share{{ shareCount === 1 ? '' : 's'
+                }}</span>
+            </div>
+            <div class="document-hero-timeline" *ngIf="document?.uploaded_at || document?.updated_at">
+              <div class="hero-timeline-item" *ngIf="document?.uploaded_at">
+                <span>Uploaded</span>
+                <strong>{{ formatDateTime(document?.uploaded_at) }}</strong>
+              </div>
+              <div class="hero-timeline-item" *ngIf="document?.updated_at">
+                <span>Updated</span>
+                <strong>{{ formatDateTime(document?.updated_at) }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="document-hero-actions">
+          <a *ngIf="document?.signed_url" class="details-primary-btn" [href]="document?.signed_url" target="_blank"
+            rel="noopener noreferrer">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            <span>Open File</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="details-highlights">
+        <article class="highlight-card">
+          <span class="highlight-label">Library</span>
+          <strong>{{ vectorStore?.name || currentLibraryId || '-' }}</strong>
+          <small>{{ vectorStore?.vs_type || 'Unresolved store' }}</small>
+        </article>
+        <article class="highlight-card">
+          <span class="highlight-label">Status</span>
+          <strong>{{ document?.ingestion_status || document?.status || '-' }}</strong>
+          <small>{{ document?.access_type || 'direct access' }}</small>
+        </article>
+        <article class="highlight-card">
+          <span class="highlight-label">Source</span>
+          <strong>{{ document?.source || '-' }}</strong>
+          <small>{{ formatFileSize(document?.file_size) }}</small>
+        </article>
+        <article class="highlight-card">
+          <span class="highlight-label">Share Footprint</span>
+          <strong>{{ shareCount }}</strong>
+          <small>{{ sharedByMe.length }} outgoing / {{ sharedWithMe.length }} incoming</small>
+        </article>
+      </section>
+
+      <section class="details-grid">
+        <article class="details-card">
+          <div class="details-card-header">
+            <h3><i class="fa-solid fa-file-lines"></i><span>File Information</span></h3>
+          </div>
+          <div class="details-definition-list">
+            <div class="details-definition-row">
+              <span>Document ID</span>
+              <strong>{{ document?.id || documentId }}</strong>
+            </div>
+            <div class="details-definition-row">
+              <span>Original Name</span>
+              <strong>{{ document?.original_filename || document?.title || getSharedTitleFallback() || '-' }}</strong>
+            </div>
+            <div class="details-definition-row">
+              <span>File Type</span>
+              <strong>{{ document?.file_type || '-' }}</strong>
+            </div>
+            <div class="details-definition-row">
+              <span>File Size</span>
+              <strong>{{ formatFileSize(document?.file_size) }}</strong>
+            </div>
+            <div class="details-definition-row">
+              <span>Status</span>
+              <strong>{{ document?.ingestion_status || document?.status || '-' }}</strong>
+            </div>
+            <div class="details-definition-row">
+              <span>Checksum</span>
+              <strong>{{ document?.checksum || '-' }}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="details-card">
+          <div class="details-card-header">
+            <h3><i class="fa-solid fa-database"></i><span>Storage & Access</span></h3>
+          </div>
+          <div class="details-definition-list">
+            <div class="details-definition-row">
+              <span>Library</span>
+              <strong>{{ vectorStore?.name || currentLibraryId || '-' }}</strong>
+            </div>
+            <div class="details-definition-row">
+              <span>Vector Store Type</span>
+              <strong>{{ vectorStore?.vs_type || '-' }}</strong>
+            </div>
+            <div class="details-definition-row">
+              <span>Source</span>
+              <strong>{{ document?.source || '-' }}</strong>
+            </div>
+            <div class="details-definition-row">
+              <span>Access Type</span>
+              <strong>{{ document?.access_type || '-' }}</strong>
+            </div>
+            <div class="details-definition-row">
+              <span>Tenant</span>
+              <strong>{{ document?.tenant || '-' }}</strong>
+            </div>
+            <div class="details-definition-row">
+              <span>Uploaded By</span>
+              <strong>{{ document?.uploaded_by || (sharedWithMe.length ? sharedWithMe[0].owner_email : '-') }}</strong>
+            </div>
+          </div>
+        </article>
+
+      </section>
+
+      <section class="details-card metadata-card" *ngIf="metadataEntries.length">
+        <div class="details-card-header">
+          <h3><i class="fa-solid fa-tags"></i><span>Metadata</span></h3>
+        </div>
+        <div class="metadata-grid">
+          <div class="metadata-item" *ngFor="let entry of metadataEntries">
+            <span>{{ entry.key }}</span>
+            <strong>{{ entry.value }}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="details-card" *ngIf="sharedByMe.length">
+        <div class="details-card-header">
+          <h3><i class="fa-solid fa-share-nodes"></i><span>Shared With Others</span></h3>
+          <span>{{ sharedByMe.length }} recipient{{ sharedByMe.length === 1 ? '' : 's' }}</span>
+        </div>
+        <div class="share-list">
+          <article class="share-item" *ngFor="let item of sharedByMe">
+            <div class="share-item-head">
+              <strong>{{ item.recipient_email }}</strong>
+              <span class="share-status-pill">{{ getShareStatus(item) }}</span>
+            </div>
+            <div class="share-item-grid">
+              <div><span>Shared At</span><strong>{{ formatDateTime(item.shared_at) }}</strong></div>
+              <div><span>Expiry</span><strong>{{ formatDateTime(item.expires_at) }}</strong></div>
+              <div><span>Updated</span><strong>{{ formatDateTime(item.updated_at) }}</strong></div>
+              <div><span>Revoked</span><strong>{{ formatDateTime(item.revoked_at) }}</strong></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="details-card" *ngIf="sharedWithMe.length">
+        <div class="details-card-header">
+          <h3><i class="fa-solid fa-inbox"></i><span>Shared With You</span></h3>
+          <span>{{ sharedWithMe.length }} incoming share{{ sharedWithMe.length === 1 ? '' : 's' }}</span>
+        </div>
+        <div class="share-list">
+          <article class="share-item" *ngFor="let item of sharedWithMe">
+            <div class="share-item-head">
+              <strong>{{ item.owner_email }}</strong>
+              <span class="share-status-pill">{{ getShareStatus(item) }}</span>
+            </div>
+            <div class="share-item-grid">
+              <div><span>Shared At</span><strong>{{ formatDateTime(item.shared_at) }}</strong></div>
+              <div><span>Expiry</span><strong>{{ formatDateTime(item.expires_at) }}</strong></div>
+              <div><span>Updated</span><strong>{{ formatDateTime(item.updated_at) }}</strong></div>
+              <div><span>Revoked</span><strong>{{ formatDateTime(item.revoked_at) }}</strong></div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </ng-container>
+  </div>
+
+  <ng-template #loadingState>
+    <div class="document-details-loading">
+      <div class="spinner-small"></div>
+      <span>Loading document details...</span>
+    </div>
+  </ng-template>
+</div>

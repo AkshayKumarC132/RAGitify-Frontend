@@ -13,6 +13,7 @@ import { DocumentChatComponent } from './components/document-chat/document-chat.
 import { AssistantChatComponent } from './components/assistant-chat/assistant-chat.component';
 import { LibraryChatComponent } from './components/library-chat/library-chat.component';
 import { WorkspaceLibraryPickerComponent } from './components/workspace-library-picker/workspace-library-picker.component';
+import { DocumentDetailsPageComponent } from './components/document-details-page/document-details-page.component';
 import { WorkspaceRoutingModule } from './workspace-routing.module';
 
 @NgModule({
@@ -27,7 +28,8 @@ import { WorkspaceRoutingModule } from './workspace-routing.module';
     AssistantFormComponent,
     DocumentChatComponent,
     AssistantChatComponent,
-    LibraryChatComponent
+    LibraryChatComponent,
+    DocumentDetailsPageComponent
   ],
   imports: [
     CommonModule,
@@ -38,4 +40,3 @@ import { WorkspaceRoutingModule } from './workspace-routing.module';
   ]
 })
 export class WorkspaceModule { }
-

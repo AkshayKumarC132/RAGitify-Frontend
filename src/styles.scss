@@ -9,6 +9,17 @@
   box-sizing: border-box;
 }
 
+.knowledge-section .doc-name-link,
+.knowledge-section .document-card-title-btn {
+  display: inline-flex;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
 body {
   font-family: var(--app-font);
   background-color: var(--bg-primary);
