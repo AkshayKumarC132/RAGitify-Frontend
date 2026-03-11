@@ -28,6 +28,8 @@ export class WorkspaceKnowledgeContextService {
   readonly editLibraryRequested = new Subject<VectorStore>();
   readonly deleteLibraryRequested = new Subject<VectorStore>();
   readonly chatLibraryRequested = new Subject<VectorStore>();
+  private pendingLibraryChat = new BehaviorSubject<VectorStore | null>(null);
+  readonly pendingLibraryChat$ = this.pendingLibraryChat.asObservable();
 
   /** Sidebar search query (libraries + documents) */
   private sidebarSearch = new BehaviorSubject<string>('');
@@ -50,5 +52,17 @@ export class WorkspaceKnowledgeContextService {
 
   setSidebarSearch(query: string): void {
     this.sidebarSearch.next(query);
+  }
+
+  requestPendingLibraryChat(store: VectorStore): void {
+    this.pendingLibraryChat.next(store);
+  }
+
+  consumePendingLibraryChat(): VectorStore | null {
+    const store = this.pendingLibraryChat.value;
+    if (store) {
+      this.pendingLibraryChat.next(null);
+    }
+    return store;
   }
 }

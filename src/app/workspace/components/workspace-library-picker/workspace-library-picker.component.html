@@ -107,6 +107,15 @@
       <div class="library-card-actions">
         <button
           type="button"
+          class="card-action-button card-action-chat"
+          (click)="openLibraryChat(store); $event.stopPropagation()"
+          title="Chat with library"
+        >
+          <i class="fa-solid fa-comments"></i>
+          <span>Chat</span>
+        </button>
+        <button
+          type="button"
           class="card-action-button card-action-edit"
           (click)="editLibrary(store); $event.stopPropagation()"
           [disabled]="!canEdit(store)"
@@ -159,6 +168,15 @@
           </div>
         </button>
         <div class="library-row-actions">
+          <button
+            type="button"
+            class="card-action-button card-action-chat"
+            (click)="openLibraryChat(store); $event.stopPropagation()"
+            title="Chat with library"
+          >
+            <i class="fa-solid fa-comments"></i>
+            <span>Chat</span>
+          </button>
           <button
             type="button"
             class="card-action-button card-action-edit"

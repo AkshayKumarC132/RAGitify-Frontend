@@ -460,9 +460,12 @@
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 
   &:disabled {
-    cursor: default;
-    opacity: 0.65;
+    cursor: not-allowed;
+    opacity: 1;
     box-shadow: none;
+    background: rgba(148, 163, 184, 0.12);
+    color: #64748b;
+    border-color: rgba(148, 163, 184, 0.28);
   }
 
   i {
@@ -479,6 +482,17 @@
     }
   }
 
+  &.card-action-chat {
+    border-color: rgba(59, 130, 246, 0.28);
+    color: var(--accent-color);
+
+    &:hover {
+      background: rgba(59, 130, 246, 0.06);
+      border-color: rgba(59, 130, 246, 0.55);
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.16);
+    }
+  }
+
   &.card-action-delete {
     border-color: rgba(239, 68, 68, 0.4);
     color: #dc2626;
@@ -488,6 +502,18 @@
       border-color: rgba(239, 68, 68, 0.8);
       box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
     }
+
+    &:disabled {
+      background: rgba(239, 68, 68, 0.06);
+      border-color: rgba(239, 68, 68, 0.2);
+      color: #f08a8a;
+    }
+  }
+
+  &.card-action-edit:disabled {
+    background: rgba(148, 163, 184, 0.12);
+    border-color: rgba(148, 163, 184, 0.24);
+    color: #64748b;
   }
 }
 
@@ -608,7 +634,7 @@
 
 .library-row-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, auto);
   gap: 1rem;
   padding: 1rem 1.1rem;
   border: 1px solid var(--border-color);
@@ -623,7 +649,7 @@
   padding: 0;
   text-align: left;
   display: grid;
-  grid-template-columns: minmax(320px, 1.6fr) minmax(260px, 0.8fr);
+  grid-template-columns: minmax(320px, 1.5fr) minmax(220px, 0.75fr);
   gap: 1rem;
   cursor: pointer;
 }
@@ -713,10 +739,30 @@
 }
 
 .library-row-actions {
-  width: 220px;
+  width: auto;
+  min-width: 320px;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  .card-action-button {
+    flex: 0 0 auto;
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 1440px) {
+  .library-row-card {
+    grid-template-columns: 1fr;
+  }
+
+  .library-row-actions {
+    min-width: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 1280px) {

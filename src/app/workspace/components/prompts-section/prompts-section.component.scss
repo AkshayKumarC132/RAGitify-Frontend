@@ -341,8 +341,10 @@
     }
 
     &:disabled {
-      opacity: 0.5;
+      opacity: 1;
       cursor: not-allowed;
+      background: rgba(148, 163, 184, 0.12);
+      color: #94a3b8;
     }
 
     i {
@@ -360,6 +362,11 @@
 
       &:hover:not(:disabled) {
         background: rgba(239, 68, 68, 0.08);
+      }
+
+      &:disabled {
+        background: rgba(239, 68, 68, 0.06);
+        color: #f08a8a;
       }
     }
   }
@@ -485,6 +492,21 @@
   opacity: 0;
   transform: translateY(-4px);
   transition: all 0.2s ease;
+
+  .btn-premium-icon[disabled] {
+    cursor: not-allowed;
+    opacity: 1;
+    background: rgba(148, 163, 184, 0.12);
+    border-color: rgba(148, 163, 184, 0.24);
+    color: #94a3b8;
+    box-shadow: none;
+  }
+
+  .btn-premium-icon.danger[disabled] {
+    background: rgba(239, 68, 68, 0.06);
+    border-color: rgba(239, 68, 68, 0.18);
+    color: #f08a8a;
+  }
 }
 
 .prompt-item:hover .prompt-card-actions {

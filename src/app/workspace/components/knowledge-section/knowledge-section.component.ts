@@ -124,6 +124,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.subscribe(params => {
       const libraryId = params.get('libraryId');
       const openNewLibrary = params.get('openNewLibrary');
+      const openLibraryChat = params.get('openLibraryChat');
 
       if (openNewLibrary === '1') {
         this.showCreateVectorStoreForm = true;
@@ -132,6 +133,10 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
 
       if (libraryId) {
         this.applyRouteLibrarySelection(libraryId);
+      }
+
+      if (libraryId && openLibraryChat === '1') {
+        this.handleRouteLibraryChatRequest(libraryId);
       }
     });
 
@@ -208,6 +213,14 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
           this.documents = [];
           this.documentAccessList = [];
         }
+
+        this.tryOpenPendingLibraryChat();
+
+        const openLibraryChat = this.route.snapshot.queryParamMap.get('openLibraryChat');
+        if (this.selectedVectorStore && openLibraryChat === '1') {
+          this.handleRouteLibraryChatRequest(this.selectedVectorStore.id);
+        }
+
         this.loadingStores = false;
       },
       error: (err) => {
@@ -1232,7 +1245,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     if (!item.expires_at) {
       return 'Never expires';
     }
-    return `Expires ${this.formatDate(item.expires_at)}`;
+    return `${this.formatDate(item.expires_at)}`;
   }
 
   getShareStatusLabel(item: SharedWithMeItem | SharedByMeItem): string {
@@ -1353,6 +1366,38 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     if (selectionChanged) {
       this.loadDocuments(false, true);
     }
+  }
+
+  private handleRouteLibraryChatRequest(libraryId: string): void {
+    const store = this.vectorStores.find(vs => vs.id === libraryId);
+    if (!store) {
+      return;
+    }
+
+    if (this.chatLibrary?.id !== store.id) {
+      this.openLibraryChat(store);
+    }
+
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { openLibraryChat: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
+
+  private tryOpenPendingLibraryChat(): void {
+    const pendingStore = this.knowledgeContext.consumePendingLibraryChat();
+    if (!pendingStore || !this.selectedVectorStore) {
+      return;
+    }
+
+    if (pendingStore.id === this.selectedVectorStore.id) {
+      this.openLibraryChat(this.selectedVectorStore);
+      return;
+    }
+
+    this.knowledgeContext.requestPendingLibraryChat(pendingStore);
   }
 
   private syncSelectionState(): void {

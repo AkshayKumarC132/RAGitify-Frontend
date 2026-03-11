@@ -5,6 +5,7 @@ import { VectorStoreService } from '../../../shared/services/vector-store.servic
 import { DocumentService } from '../../../shared/services/document.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document } from '../../../shared/models/document.model';
+import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
 
 @Component({
   selector: 'app-workspace-library-picker',
@@ -72,7 +73,8 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
   constructor(
     private vectorStoreService: VectorStoreService,
     private documentService: DocumentService,
-    private router: Router
+    private router: Router,
+    private knowledgeContext: WorkspaceKnowledgeContextService
   ) {}
 
   ngOnInit(): void {
@@ -194,6 +196,13 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
 
   selectLibrary(store: VectorStore): void {
     this.router.navigate(['/workspace'], { queryParams: { libraryId: store.id } });
+  }
+
+  openLibraryChat(store: VectorStore): void {
+    this.knowledgeContext.requestPendingLibraryChat(store);
+    this.router.navigate(['/workspace'], {
+      queryParams: { libraryId: store.id }
+    });
   }
 
   setGridView(value: boolean): void {
