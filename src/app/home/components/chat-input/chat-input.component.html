@@ -16,8 +16,7 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <button type="button" (click)="openPanel('library'); $event.stopPropagation()"
-          *ngIf="!hasExistingThread || threadVectorStoreId">
+        <button type="button" (click)="openPanel('library'); $event.stopPropagation()">
           Attach Documents
         </button>
         <button type="button" (click)="openPanel('prompts'); $event.stopPropagation()">
@@ -72,7 +71,7 @@
     <span>Listening...</span>
   </div>
 
-  <div class="attachment-panel" *ngIf="activePanel === 'web'" (click)="$event.stopPropagation()">
+  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'web'" (click)="$event.stopPropagation()">
     <h4>Attach Webpage</h4>
     <input type="text" placeholder="https://example.com/article" [(ngModel)]="webForm.url" />
     <input type="text" placeholder="Optional title" [(ngModel)]="webForm.title" />
@@ -82,7 +81,7 @@
     </div>
   </div>
 
-  <div class="attachment-panel" *ngIf="activePanel === 'notes'" (click)="$event.stopPropagation()">
+  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'notes'" (click)="$event.stopPropagation()">
     <h4>Attach Notes</h4>
     <input type="text" placeholder="Note title" [(ngModel)]="noteForm.title" />
     <textarea rows="4" placeholder="Add the text you want to reference..." [(ngModel)]="noteForm.content"></textarea>
@@ -92,7 +91,7 @@
     </div>
   </div>
 
-  <div class="attachment-panel" *ngIf="activePanel === 'library'" (click)="$event.stopPropagation()">
+  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'library'" (click)="$event.stopPropagation()">
     <div class="attachment-panel-header">
       <div class="attachment-panel-copy" [class.limit-reached]="selectedDocumentsCount >= 10">
         <span>Attach Documents</span>
@@ -143,13 +142,7 @@
       </div>
     </ng-template>
 
-    <ng-container *ngIf="hasExistingThread; else librarySelection">
-      <ng-container *ngTemplateOutlet="documentsList"></ng-container>
-    </ng-container>
-
-    <ng-template #librarySelection>
-      <ng-container *ngTemplateOutlet="documentsList"></ng-container>
-    </ng-template>
+    <ng-container *ngTemplateOutlet="documentsList"></ng-container>
 
     <ng-template #emptyLibrary>
       <p class="empty-text">Create a library in Workspace first to attach it.</p>
@@ -166,7 +159,7 @@
     </div>
   </div>
 
-  <div class="attachment-panel" *ngIf="activePanel === 'prompts'" (click)="$event.stopPropagation()">
+  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'prompts'" (click)="$event.stopPropagation()">
     <h4>Use Prompts</h4>
     <ng-container *ngIf="promptsLoading; else promptsReady">
       <p class="empty-text">Loading prompts...</p>
