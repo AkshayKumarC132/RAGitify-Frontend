@@ -35,7 +35,7 @@ export class AppComponent implements OnInit {
     this.authService.ensureValidSession();
   }
 
-  onDialogConfirmed(result: boolean): void {
+  onDialogConfirmed(result: boolean | string): void {
     this.confirmDialogService.close(result);
   }
 

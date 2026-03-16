@@ -8,6 +8,9 @@ export interface ConfirmDialogOptions {
   type?: 'danger' | 'info' | 'warning';
   confirmText?: string;
   cancelText?: string;
+  isPrompt?: boolean;
+  promptValue?: string;
+  promptPlaceholder?: string;
 }
 
 @Component({
@@ -21,18 +24,27 @@ export class ConfirmDialogComponent implements OnInit, AfterViewInit, OnDestroy 
     message: '',
     type: 'danger'
   };
-  @Output() confirmed = new EventEmitter<boolean>();
+  @Output() confirmed = new EventEmitter<boolean | string>();
   @ViewChild('dialogElement') dialogElement!: ElementRef<HTMLDivElement>;
+  @ViewChild('promptInput') promptInputRef?: ElementRef<HTMLInputElement>;
+
+  promptValue: string = '';
 
   ngOnInit(): void {
     // Prevent body scroll when dialog is open
     document.body.style.overflow = 'hidden';
+    if (this.data.isPrompt) {
+      this.promptValue = this.data.promptValue || '';
+    }
   }
 
   ngAfterViewInit(): void {
-    // Focus the dialog on open for accessibility
+    // Focus the dialog or input on open for accessibility
     setTimeout(() => {
-      if (this.dialogElement?.nativeElement) {
+      if (this.data.isPrompt && this.promptInputRef?.nativeElement) {
+        this.promptInputRef.nativeElement.focus();
+        this.promptInputRef.nativeElement.select();
+      } else if (this.dialogElement?.nativeElement) {
         this.dialogElement.nativeElement.focus();
       }
     }, 0);
@@ -59,7 +71,11 @@ export class ConfirmDialogComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   onConfirm(): void {
-    this.confirmed.emit(true);
+    if (this.data.isPrompt) {
+      this.confirmed.emit(this.promptValue);
+    } else {
+      this.confirmed.emit(true);
+    }
   }
 
   onCancel(): void {

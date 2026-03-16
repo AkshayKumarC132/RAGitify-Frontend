@@ -1,7 +1,7 @@
 import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { Subscription, interval, of, Subject, forkJoin } from 'rxjs';
+import { Subscription, interval, of, Subject, forkJoin, firstValueFrom } from 'rxjs';
 import { catchError, filter, finalize, takeUntil, timeout } from 'rxjs/operators';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentService } from '../../../shared/services/document.service';
@@ -9,10 +9,13 @@ import { DocumentAccessService } from '../../../shared/services/document-access.
 import { DocumentShareService } from '../../../shared/services/document-share.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
+import { WorkspaceLibraryDeleteFlowService } from '../../services/workspace-library-delete-flow.service';
+import { AuthService } from '../../../shared/services/auth.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document, DocumentStatus } from '../../../shared/models/document.model';
 import { DocumentAccess } from '../../../shared/models/document-access.model';
 import { SharedByMeItem, SharedWithMeItem } from '../../../shared/models/document-share.model';
+import { User } from '../../../shared/models/user.model';
 import Swal from 'sweetalert2/dist/sweetalert2.js';
 
 @Component({
@@ -65,6 +68,11 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   moveSubmitting = false;
   shareTargetEmail = '';
   shareExpiresAt = '';
+  shareUsers: User[] = [];
+  filteredShareUsers: User[] = [];
+  loadingShareUsers = false;
+  showShareUserDropdown = false;
+  private hasLoadedShareUsers = false;
   shareDocumentIds: string[] = [];
   moveDocumentIds: string[] = [];
   moveTargetVectorStoreId = '';
@@ -76,7 +84,9 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     private documentAccessService: DocumentAccessService,
     private documentShareService: DocumentShareService,
     private confirmDialogService: ConfirmDialogService,
+    private authService: AuthService,
     private knowledgeContext: WorkspaceKnowledgeContextService,
+    private libraryDeleteFlow: WorkspaceLibraryDeleteFlowService,
     private fb: FormBuilder,
     private router: Router,
     private route: ActivatedRoute
@@ -124,6 +134,8 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.subscribe(params => {
       const libraryId = params.get('libraryId');
       const openNewLibrary = params.get('openNewLibrary');
+      const openEditLibrary = params.get('openEditLibrary');
+      const openDeleteLibrary = params.get('openDeleteLibrary');
       const openLibraryChat = params.get('openLibraryChat');
       const workspaceTab = params.get('workspaceTab');
 
@@ -137,6 +149,14 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       }
 
       this.applyRouteWorkspaceTab(workspaceTab);
+
+      if (libraryId && openEditLibrary === '1') {
+        this.handleRouteLibraryEditRequest(libraryId);
+      }
+
+      if (libraryId && openDeleteLibrary === '1') {
+        this.handleRouteLibraryDeleteRequest(libraryId);
+      }
 
       if (libraryId && openLibraryChat === '1') {
         this.handleRouteLibraryChatRequest(libraryId);
@@ -299,6 +319,17 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     }
   }
 
+  getDisplaySelectedLibraryName(maxLength = 80): string {
+    const name = (this.selectedVectorStore?.name || '').trim();
+    if (!name) {
+      return 'Documents';
+    }
+    if (name.length <= maxLength) {
+      return name;
+    }
+    return `${name.slice(0, maxLength)}...`;
+  }
+
   private updateUrl(libraryId: string): void {
     this.router.navigate([], {
       relativeTo: this.route,
@@ -378,28 +409,22 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       this.errorMessage = `${store.name} is a system library and cannot be deleted.`;
       return;
     }
+    const documentsForDeleteFlow = await firstValueFrom(
+      this.documentService.list(undefined, false).pipe(
+        catchError(() => of(this.documents))
+      )
+    );
 
-    const confirmed = await this.confirmDialogService.confirm({
-      title: 'Delete library?',
-      message: 'This will delete',
-      itemName: store.name,
-      secondaryMessage: 'Note: This will remove all threads and documents associated with this library.'
-    });
-    if (!confirmed) {
-      return;
-    }
-
-    this.vectorStoreService.delete(store.id).subscribe({
-      next: () => {
+    await this.libraryDeleteFlow.openDeleteLibraryFlow(store, this.vectorStores, documentsForDeleteFlow, {
+      onDeleted: () => {
         this.vectorStores = this.vectorStores.filter(vs => vs.id !== store.id);
         if (this.selectedVectorStore?.id === store.id) {
           this.selectedVectorStore = this.vectorStores[0] || null;
         }
-        this.loadDocuments();
-      },
-      error: (err) => {
-        console.error('Error deleting library:', err);
-        this.errorMessage = this.extractErrorMessage(err, 'Unable to delete library.');
+        this.loadDocuments(false, true);
+        if (this.isInWorkspace) {
+          this.syncContextState();
+        }
       }
     });
   }
@@ -415,6 +440,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       next: (store) => {
         this.vectorStores = [store, ...this.vectorStores];
         this.selectedVectorStore = store;
+        this.loadDocuments(false, true); // <--- Add this line to clear the documents list
         this.updateUrl(store.id);
         this.toggleVectorStoreForm();
         this.errorMessage = '';
@@ -504,6 +530,14 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     const docs = this.filteredDocuments;
     if (docs.length === 0) return false;
     return docs.every(doc => this.selectedDocumentIds.has(doc.id));
+  }
+
+  get isShareTargetValid(): boolean {
+    const email = this.shareTargetEmail.trim().toLowerCase();
+    if (!email) {
+      return false;
+    }
+    return this.shareUsers.some(user => (user.email || '').toLowerCase() === email);
   }
 
   toggleAllSelection(): void {
@@ -776,7 +810,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   }
 
   getDisplayDocumentName(doc: Document): string {
-    return doc.original_filename || doc.title || doc.id;
+    return doc.title || doc.original_filename || doc.id;
   }
 
   getTruncatedDocumentName(doc: Document, maxBaseLength = 14): string {
@@ -1049,6 +1083,8 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.shareDocumentIds = shareable.map(doc => doc.id);
     this.shareTargetEmail = '';
     this.shareExpiresAt = '';
+    this.showShareUserDropdown = false;
+    this.loadShareUsers();
     this.shareDialogOpen = true;
     this.closeDocumentActions();
   }
@@ -1056,14 +1092,41 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   closeShareDialog(): void {
     this.shareDialogOpen = false;
     this.shareSubmitting = false;
+    this.showShareUserDropdown = false;
     this.shareTargetEmail = '';
     this.shareExpiresAt = '';
     this.shareDocumentIds = [];
   }
 
+  onShareTargetFocus(): void {
+    this.showShareUserDropdown = true;
+    this.filteredShareUsers = this.shareUsers;
+    this.loadShareUsers();
+  }
+
+  onShareTargetInput(event: Event): void {
+    const value = ((event.target as HTMLInputElement).value || '').trim().toLowerCase();
+    this.shareTargetEmail = (event.target as HTMLInputElement).value || '';
+    this.filteredShareUsers = this.shareUsers.filter(user =>
+      (user.email || '').toLowerCase().includes(value)
+    );
+    this.showShareUserDropdown = true;
+  }
+
+  onShareTargetBlur(): void {
+    setTimeout(() => {
+      this.showShareUserDropdown = false;
+    }, 200);
+  }
+
+  selectShareUser(user: User): void {
+    this.shareTargetEmail = user.email;
+    this.showShareUserDropdown = false;
+  }
+
   submitShare(): void {
     const email = this.shareTargetEmail.trim();
-    if (!email || !this.shareDocumentIds.length || this.shareSubmitting) {
+    if (!email || !this.shareDocumentIds.length || this.shareSubmitting || !this.isShareTargetValid) {
       return;
     }
 
@@ -1407,6 +1470,38 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     });
   }
 
+  private handleRouteLibraryEditRequest(libraryId: string): void {
+    const store = this.vectorStores.find(vs => vs.id === libraryId);
+    if (!store) {
+      return;
+    }
+
+    this.startVectorStoreEdit(store);
+
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { openEditLibrary: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
+
+  private handleRouteLibraryDeleteRequest(libraryId: string): void {
+    const store = this.vectorStores.find(vs => vs.id === libraryId);
+    if (!store) {
+      return;
+    }
+
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { openDeleteLibrary: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+
+    void this.deleteVectorStore(store);
+  }
+
   private tryOpenPendingLibraryChat(): void {
     const pendingStore = this.knowledgeContext.consumePendingLibraryChat();
     if (!pendingStore || !this.selectedVectorStore) {
@@ -1488,6 +1583,26 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       },
       error: err => {
         console.error('Error loading shared-by-me documents:', err);
+      }
+    });
+  }
+
+  private loadShareUsers(): void {
+    if (this.loadingShareUsers || this.hasLoadedShareUsers) {
+      return;
+    }
+
+    this.loadingShareUsers = true;
+    this.authService.listUsers().subscribe({
+      next: users => {
+        const currentUser = this.authService.getStoredUser();
+        this.shareUsers = users.filter(user => user.id !== currentUser?.id);
+        this.filteredShareUsers = this.shareUsers;
+        this.hasLoadedShareUsers = true;
+        this.loadingShareUsers = false;
+      },
+      error: () => {
+        this.loadingShareUsers = false;
       }
     });
   }

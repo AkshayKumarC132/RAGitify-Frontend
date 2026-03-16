@@ -16,6 +16,11 @@
       <p class="dialog-secondary-message" *ngIf="data.secondaryMessage">
         {{ data.secondaryMessage }}
       </p>
+
+      <div class="dialog-prompt" *ngIf="data.isPrompt">
+        <input type="text" [(ngModel)]="promptValue" [placeholder]="data.promptPlaceholder || 'Enter value...'"
+          (keydown.enter)="onConfirm()" #promptInput />
+      </div>
     </div>
 
     <div class="dialog-actions">

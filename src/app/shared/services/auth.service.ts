@@ -53,6 +53,14 @@ export class AuthService {
     return this.api.get<{ id: number; name: string }[]>('/tenant/list/');
   }
 
+  listUsers(): Observable<User[]> {
+    const token = this.getToken();
+    if (!token) {
+      return throwError(() => new Error('Authentication token is required'));
+    }
+    return this.api.get<User[]>(`/user/${token}/list/`, token);
+  }
+
   logout(token: string): Observable<any> {
     return this.api.post(`/logout/${token}/`, {});
   }

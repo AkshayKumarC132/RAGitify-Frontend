@@ -2,6 +2,98 @@
   width: 100%;
 }
 
+.library-rename-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+}
+
+.library-rename-modal {
+  width: 360px;
+  max-width: 90vw;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 1.5rem 1.75rem 1.25rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.45);
+}
+
+.rename-header h3 {
+  margin: 0 0 0.35rem;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.rename-subtitle {
+  margin: 0 0 1rem;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.rename-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.rename-input {
+  width: 100%;
+  margin-bottom: 1.25rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.75rem;
+  font-size: 13px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+}
+
+.rename-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.rename-btn {
+  min-width: 84px;
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+  &.rename-btn-secondary {
+    background: transparent;
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+  }
+
+  &.rename-btn-primary {
+    background: var(--accent-color);
+    color: #fff;
+    border-color: var(--accent-color);
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+}
+
 .document-details-shell {
   display: flex;
   flex-direction: column;

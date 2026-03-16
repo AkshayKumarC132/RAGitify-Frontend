@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import Swal from 'sweetalert2/dist/sweetalert2.js';
 import { Router } from '@angular/router';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentService } from '../../../shared/services/document.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document } from '../../../shared/models/document.model';
 import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
+import { WorkspaceLibraryDeleteFlowService } from '../../services/workspace-library-delete-flow.service';
 
 @Component({
   selector: 'app-workspace-library-picker',
@@ -80,7 +80,8 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
     private vectorStoreService: VectorStoreService,
     private documentService: DocumentService,
     private router: Router,
-    private knowledgeContext: WorkspaceKnowledgeContextService
+    private knowledgeContext: WorkspaceKnowledgeContextService,
+    private libraryDeleteFlow: WorkspaceLibraryDeleteFlowService
   ) {}
 
   ngOnInit(): void {
@@ -169,6 +170,17 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
       return 'Shared retrieval surface. Upload and destructive actions are blocked.';
     }
     return 'Custom library for scoped retrieval, team content, and dedicated ingestion flows.';
+  }
+
+  getDisplayLibraryName(name: string, maxLength = 20): string {
+    const safeName = (name || '').trim();
+    if (!safeName) {
+      return '';
+    }
+    if (safeName.length <= maxLength) {
+      return safeName;
+    }
+    return `${safeName.slice(0, maxLength)}...`;
   }
 
   isSystemStore(store: VectorStore): boolean {
@@ -273,7 +285,12 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
     if (!this.canDelete(store)) {
       return;
     }
-    void this.openDeleteLibraryFlow(store);
+    void this.libraryDeleteFlow.openDeleteLibraryFlow(store, this.vectorStores, this.documents, {
+      onDeleted: () => {
+        this.vectorStores = this.vectorStores.filter(s => s.id !== store.id);
+        this.loadDocumentCounts();
+      }
+    });
   }
 
   createLibrary(): void {
@@ -311,227 +328,4 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
     return document.ingestion_status || document.status || 'queued';
   }
 
-  private async openDeleteLibraryFlow(store: VectorStore): Promise<void> {
-    const documentCount = this.getDocCount(store);
-    const moveTargets = this.vectorStores.filter(target =>
-      target.id !== store.id &&
-      target.vs_type !== 'SHARED'
-    );
-
-    if (documentCount === 0) {
-      const confirm = await Swal.fire({
-        title: `Delete ${store.name}?`,
-        text: 'This library is empty and will be removed immediately.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Delete library',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#dc2626'
-      });
-      if (confirm.isConfirmed) {
-        this.executeDeleteLibrary(store, false);
-      }
-      return;
-    }
-
-    const moveTargetOptions = moveTargets
-      .map(target => `<option value="${target.id}">${target.name} (${this.getStoreTypeLabel(target)})</option>`)
-      .join('');
-
-    const result = await Swal.fire({
-      title: `Delete ${store.name}?`,
-      icon: 'warning',
-      width: 560,
-      showCancelButton: true,
-      confirmButtonText: 'Continue',
-      cancelButtonText: 'Cancel',
-      confirmButtonColor: '#2563eb',
-      customClass: {
-        popup: 'ragitify-swal-popup',
-        htmlContainer: 'ragitify-swal-html',
-        actions: 'ragitify-swal-actions',
-        confirmButton: 'ragitify-swal-confirm',
-        cancelButton: 'ragitify-swal-cancel'
-      },
-      html: `
-        <div class="library-delete-modal">
-          <p class="library-delete-copy">
-            <strong>${documentCount}</strong> document${documentCount === 1 ? '' : 's'} are still inside this library.
-          </p>
-          <label class="library-delete-option">
-            <input type="radio" name="library-delete-action" value="move" ${moveTargets.length ? 'checked' : 'disabled'}>
-            <span>Move documents to another library, then delete this library</span>
-          </label>
-          <div class="library-delete-move">
-            <select id="libraryDeleteTarget" class="swal2-select" ${moveTargets.length ? '' : 'disabled'}>
-              <option value="">Select destination</option>
-              ${moveTargetOptions}
-            </select>
-          </div>
-          <label class="library-delete-option">
-            <input type="radio" name="library-delete-action" value="hard-delete" ${moveTargets.length ? '' : 'checked'}>
-            <span>Delete this library and permanently remove all documents inside it</span>
-          </label>
-          <label class="library-delete-checkbox">
-            <input id="libraryDeleteAcknowledge" type="checkbox">
-            <span>I understand documents in this library will be deleted and cannot be recovered.</span>
-          </label>
-        </div>
-      `,
-      didOpen: () => {
-        const container = Swal.getHtmlContainer();
-        if (!container) {
-          return;
-        }
-        const moveRadio = container.querySelector<HTMLInputElement>('input[value="move"]');
-        const hardDeleteRadio = container.querySelector<HTMLInputElement>('input[value="hard-delete"]');
-        const moveSelect = container.querySelector<HTMLSelectElement>('#libraryDeleteTarget');
-        const acknowledge = container.querySelector<HTMLInputElement>('#libraryDeleteAcknowledge');
-        const syncState = () => {
-          if (!moveSelect || !acknowledge || !moveRadio || !hardDeleteRadio) {
-            return;
-          }
-          const moving = moveRadio.checked;
-          moveSelect.disabled = !moving;
-          acknowledge.disabled = moving;
-          if (moving) {
-            acknowledge.checked = false;
-          }
-        };
-        moveRadio?.addEventListener('change', syncState);
-        hardDeleteRadio?.addEventListener('change', syncState);
-        syncState();
-      },
-      preConfirm: () => {
-        const container = Swal.getHtmlContainer();
-        if (!container) {
-          return null;
-        }
-        const selectedAction = container.querySelector<HTMLInputElement>('input[name="library-delete-action"]:checked')?.value;
-        const moveTargetId = (container.querySelector<HTMLSelectElement>('#libraryDeleteTarget')?.value || '').trim();
-        const acknowledge = !!container.querySelector<HTMLInputElement>('#libraryDeleteAcknowledge')?.checked;
-
-        if (selectedAction === 'move') {
-          if (!moveTargetId) {
-            Swal.showValidationMessage('Select a destination library before continuing.');
-            return null;
-          }
-          return { action: 'move', moveTargetId };
-        }
-
-        if (!acknowledge) {
-          Swal.showValidationMessage('Confirm that deleting this library will also remove its documents.');
-          return null;
-        }
-
-        return { action: 'hard-delete', moveTargetId: null };
-      }
-    });
-
-    if (!result.isConfirmed || !result.value) {
-      return;
-    }
-
-    if (result.value.action === 'move' && result.value.moveTargetId) {
-      this.moveDocumentsAndDeleteLibrary(store, result.value.moveTargetId);
-      return;
-    }
-
-    this.executeDeleteLibrary(store, true);
-  }
-
-  private moveDocumentsAndDeleteLibrary(store: VectorStore, targetStoreId: string): void {
-    const documentsToMove = this.documents.filter(document => document.vector_store === store.id);
-    if (!documentsToMove.length) {
-      this.executeDeleteLibrary(store, false);
-      return;
-    }
-
-    void Swal.fire({
-      title: 'Moving documents',
-      text: 'Requesting a server-side move before deleting this library.',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-
-    this.documentService.move({
-      document_ids: documentsToMove.map(document => document.id),
-      target_vector_store_id: targetStoreId
-    }).subscribe({
-      next: () => {
-        this.executeDeleteLibrary(store, false, 'Documents moved successfully. Library removed.');
-      },
-      error: (err) => {
-        console.error('Error moving documents:', err);
-        void Swal.fire({
-          title: 'Unable to move documents',
-          text: this.extractErrorMessage(err, 'The selected library could not be deleted because the document move failed.'),
-          icon: 'error',
-          confirmButtonText: 'Close'
-        });
-      }
-    });
-  }
-
-  private executeDeleteLibrary(store: VectorStore, hardDelete: boolean, successMessage?: string): void {
-    void Swal.fire({
-      title: hardDelete ? 'Deleting library and documents' : 'Deleting library',
-      text: hardDelete ? 'Removing the library and all of its documents.' : 'Removing the library now.',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-
-    this.vectorStoreService.delete(store.id, { hardDelete }).subscribe({
-      next: () => {
-        this.vectorStores = this.vectorStores.filter(s => s.id !== store.id);
-        this.loadDocumentCounts();
-        void Swal.fire({
-          title: 'Library deleted',
-          text: successMessage || `${store.name} was deleted successfully.`,
-          icon: 'success',
-          confirmButtonText: 'Close'
-        });
-      },
-      error: (err) => {
-        console.error('Error deleting library:', err);
-        void Swal.fire({
-          title: 'Unable to delete library',
-          text: this.extractErrorMessage(err, 'The library could not be deleted.'),
-          icon: 'error',
-          confirmButtonText: 'Close'
-        });
-      }
-    });
-  }
-
-  private extractErrorMessage(error: any, fallback: string): string {
-    if (error?.error) {
-      if (typeof error.error === 'string') {
-        return error.error;
-      }
-      if (typeof error.error?.detail === 'string') {
-        return error.error.detail;
-      }
-      if (typeof error.error?.error === 'string') {
-        return error.error.error;
-      }
-      if (typeof error.error === 'object') {
-        const firstKey = Object.keys(error.error)[0];
-        if (firstKey) {
-          const value = error.error[firstKey];
-          if (Array.isArray(value)) {
-            return value.join(', ');
-          }
-          if (typeof value === 'string') {
-            return value;
-          }
-        }
-      }
-    }
-    return fallback;
-  }
 }

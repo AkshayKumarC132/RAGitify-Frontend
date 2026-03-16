@@ -90,7 +90,7 @@
           </div>
           <div class="library-card-title-block">
             <div class="library-card-title-row">
-              <h3 class="library-card-title">{{ store.name }}</h3>
+              <h3 class="library-card-title" [title]="store.name">{{ getDisplayLibraryName(store.name) }}</h3>
               <span class="store-badge type">{{ getStoreTypeLabel(store) }}</span>
               <span class="store-badge system" *ngIf="store.is_system">System</span>
             </div>
@@ -159,7 +159,7 @@
               </span>
               <span class="library-list-copy">
                 <span class="library-list-title-row">
-                  <span class="library-list-title">{{ store.name }}</span>
+                  <span class="library-list-title" [title]="store.name">{{ getDisplayLibraryName(store.name) }}</span>
                   <span class="store-badge type">{{ getStoreTypeLabel(store) }}</span>
                   <span class="store-badge system" *ngIf="store.is_system">System</span>
                 </span>

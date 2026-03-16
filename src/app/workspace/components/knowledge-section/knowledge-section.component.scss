@@ -1057,6 +1057,49 @@
   }
 }
 
+.share-user-autocomplete {
+  position: relative;
+}
+
+.share-user-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-top: 0.25rem;
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 120;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.share-user-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-size: 0.8rem;
+
+  i {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  &:hover {
+    background: var(--bg-tertiary);
+  }
+
+  &.loading {
+    cursor: default;
+  }
+}
+
 .rename-actions {
   display: flex;
   justify-content: flex-end;

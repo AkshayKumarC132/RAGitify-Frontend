@@ -400,10 +400,18 @@ export class ThreadSidebarComponent implements OnChanges {
     this.updateThreadMenuPosition();
   }
 
-  editThread(thread: Conversation, event?: MouseEvent): void {
+  async editThread(thread: Conversation, event?: MouseEvent): Promise<void> {
     event?.stopPropagation();
     const currentTitle = this.getThreadTitle(thread);
-    const updatedTitle = window.prompt('Edit thread title', currentTitle);
+    const updatedTitle = await this.confirmDialogService.prompt({
+      title: 'Rename Chat',
+      message: 'Enter a new title for this conversation:',
+      promptValue: currentTitle,
+      promptPlaceholder: 'Chat title...',
+      confirmText: 'Rename',
+      cancelText: 'Cancel'
+    });
+
     if (updatedTitle && updatedTitle.trim() && updatedTitle.trim() !== currentTitle) {
       this.renameThread.emit({ thread, title: updatedTitle.trim() });
       this.closeThreadMenu();

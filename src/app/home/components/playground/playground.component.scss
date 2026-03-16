@@ -111,7 +111,7 @@
     width: 34px;
     height: 34px;
     border: 1px solid var(--border-color);
-    border-radius: 10px;
+    border-radius: 17px;
     background: var(--bg-tertiary);
     color: var(--text-secondary);
     cursor: pointer;
@@ -147,7 +147,7 @@
 
     p {
         color: var(--text-secondary);
-        font-size: 0.5rem;
+        font-size: 0.8rem;
     }
 }
 
@@ -208,8 +208,8 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             color: var(--text-primary);
             padding: 0.55rem 1rem;
-            border-radius: 10px;
-            font-size: 11px;
+            border-radius: 18px;
+            font-size: 14px;
             cursor: pointer;
             text-align: left;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);

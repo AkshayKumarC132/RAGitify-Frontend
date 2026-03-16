@@ -101,7 +101,7 @@
     <div class="documents-column">
       <div class="documents-panel">
         <div class="documents-panel-header">
-          <h2 class="documents-title">{{ selectedVectorStore?.name || 'Documents' }}</h2>
+          <h2 class="documents-title" [title]="selectedVectorStore?.name || 'Documents'">{{ getDisplaySelectedLibraryName() }}</h2>
           <!-- <span class="meta-chip">{{ selectedVectorStore?.vs_type || 'CUSTOM' }}</span>
           <span class="meta-chip subtle" *ngIf="selectedVectorStore?.is_system">System Store</span>
           <p class="documents-subtitle">{{ getWorkspaceSubtitle() }}</p> -->
@@ -519,9 +519,28 @@
       <div class="operation-preview-list">
         <span class="operation-preview-chip" *ngFor="let doc of getShareDialogDocuments()">{{ getTruncatedDocumentName(doc, 20) }}</span>
       </div>
-      <div class="rename-field">
+      <div class="rename-field share-user-autocomplete">
         <label for="shareTargetEmail">Recipient email</label>
-        <input id="shareTargetEmail" type="email" [(ngModel)]="shareTargetEmail" placeholder="user@example.com" />
+        <input
+          id="shareTargetEmail"
+          type="email"
+          [(ngModel)]="shareTargetEmail"
+          placeholder="Select recipient..."
+          autocomplete="off"
+          (focus)="onShareTargetFocus()"
+          (blur)="onShareTargetBlur()"
+          (input)="onShareTargetInput($event)"
+        />
+        <div class="share-user-dropdown" *ngIf="showShareUserDropdown && (filteredShareUsers.length > 0 || loadingShareUsers)">
+          <div class="share-user-option loading" *ngIf="loadingShareUsers">
+            <i class="fa-solid fa-circle-notch fa-spin"></i>
+            <span>Loading users...</span>
+          </div>
+          <div *ngFor="let user of filteredShareUsers" class="share-user-option" (mousedown)="selectShareUser(user)">
+            <i class="fa-regular fa-user"></i>
+            <span>{{ user.email }}</span>
+          </div>
+        </div>
       </div>
       <div class="rename-field">
         <label for="shareExpiresAt">Expires at (optional)</label>
@@ -529,7 +548,7 @@
       </div>
       <div class="rename-actions">
         <button type="button" class="rename-btn rename-btn-secondary" (click)="closeShareDialog()">Cancel</button>
-        <button type="button" class="rename-btn rename-btn-primary" (click)="submitShare()" [disabled]="!shareTargetEmail.trim() || shareSubmitting">
+        <button type="button" class="rename-btn rename-btn-primary" (click)="submitShare()" [disabled]="!isShareTargetValid || shareSubmitting">
           {{ shareSubmitting ? 'Sharing...' : 'Share' }}
         </button>
       </div>

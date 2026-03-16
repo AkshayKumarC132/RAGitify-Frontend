@@ -1,4 +1,27 @@
 <div class="document-details-page">
+  <div class="library-rename-backdrop" *ngIf="editingVectorStore" (click)="cancelVectorStoreEdit()">
+    <div class="library-rename-modal" (click)="$event.stopPropagation()">
+      <div class="rename-header">
+        <h3>Rename Library</h3>
+        <p class="rename-subtitle">Update the name for <strong>{{ editingVectorStore.name }}</strong>.</p>
+      </div>
+      <form [formGroup]="editVectorStoreForm" (ngSubmit)="updateVectorStore()">
+        <label for="detailsEditLibraryName" class="rename-label">Library name</label>
+        <input
+          id="detailsEditLibraryName"
+          type="text"
+          class="rename-input"
+          formControlName="name"
+          placeholder="Enter library name"
+        />
+        <div class="rename-actions">
+          <button type="button" class="rename-btn rename-btn-secondary" (click)="cancelVectorStoreEdit()">Cancel</button>
+          <button type="submit" class="rename-btn rename-btn-primary" [disabled]="editVectorStoreForm.invalid">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="document-details-shell" *ngIf="!loading; else loadingState">
     <div class="document-details-error" *ngIf="errorMessage && !document && shareCount === 0">
       <i class="fa-solid fa-triangle-exclamation"></i>
@@ -199,4 +222,6 @@
       <span>Loading document details...</span>
     </div>
   </ng-template>
+
+  <app-library-chat *ngIf="chatLibrary" [vectorStore]="chatLibrary" (closed)="closeLibraryChat()"></app-library-chat>
 </div>

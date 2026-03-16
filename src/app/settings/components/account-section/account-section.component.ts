@@ -21,6 +21,8 @@ export class AccountSectionComponent implements OnInit {
   passwordMessage = '';
   profileMessageType: 'success' | 'error' = 'success';
   passwordMessageType: 'success' | 'error' = 'success';
+  editingProfile = false;
+  editingPassword = false;
 
   constructor(
     private authService: AuthService,
@@ -77,6 +79,7 @@ export class AccountSectionComponent implements OnInit {
         this.profileLoading = false;
         this.profileMessage = 'Profile updated successfully';
         this.profileMessageType = 'success';
+        this.editingProfile = false;
         this.clearMessageLater('profile');
       },
       error: (error) => {
@@ -123,6 +126,34 @@ export class AccountSectionComponent implements OnInit {
         this.passwordMessageType = 'error';
       }
     });
+  }
+
+  startProfileEdit(): void {
+    this.editingProfile = true;
+    this.profileMessage = '';
+  }
+
+  cancelProfileEdit(): void {
+    this.editingProfile = false;
+    this.profileMessage = '';
+    if (this.currentUser) {
+      this.accountForm.patchValue({
+        first_name: this.currentUser.first_name || '',
+        last_name: this.currentUser.last_name || '',
+        email: this.currentUser.email || ''
+      });
+    }
+  }
+
+  startPasswordEdit(): void {
+    this.editingPassword = true;
+    this.passwordMessage = '';
+  }
+
+  cancelPasswordEdit(): void {
+    this.editingPassword = false;
+    this.passwordMessage = '';
+    this.passwordForm.reset();
   }
 
   get providerDisplay(): string {

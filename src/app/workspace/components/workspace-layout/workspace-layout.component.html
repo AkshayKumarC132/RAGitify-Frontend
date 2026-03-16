@@ -115,12 +115,12 @@
         </button>
         <ng-container *ngIf="!showLibraryPicker && layoutSelectedStore && !activeDocumentId">
           <span class="crumb-separator">/</span>
-          <span class="crumb-current">{{ layoutSelectedStore.name }}</span>
+          <span class="crumb-current" [title]="layoutSelectedStore.name">{{ getBreadcrumbLibraryName(layoutSelectedStore.name) }}</span>
         </ng-container>
         <ng-container *ngIf="activeDocumentId && (layoutSelectedStore || activeDocumentId)">
           <span class="crumb-separator">/</span>
           <button type="button" class="crumb-link" (click)="goToCurrentLibrary()">
-            <span>{{ layoutSelectedStore?.name || 'Library' }}</span>
+            <span [title]="layoutSelectedStore?.name || 'Library'">{{ getBreadcrumbLibraryName(layoutSelectedStore?.name) }}</span>
           </button>
         </ng-container>
         <ng-container *ngIf="activeDocumentId">

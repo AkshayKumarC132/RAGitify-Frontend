@@ -21,73 +21,112 @@
 
   <div class="settings-grid">
     <div class="settings-card">
-      <h3><i class="fa-solid fa-user-gear"></i> Personal Information</h3>
-      <form [formGroup]="accountForm" (ngSubmit)="saveAccount()" class="account-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label>First Name</label>
-            <input type="text" formControlName="first_name" class="form-input" placeholder="First name" />
+      <div class="section-head">
+        <h3><i class="fa-solid fa-user"></i> Personal Information</h3>
+        <button type="button" class="section-action-btn" *ngIf="!editingProfile" (click)="startProfileEdit()">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+      </div>
+
+      <ng-container *ngIf="!editingProfile; else profileEditView">
+        <div class="personal-summary-grid">
+          <div class="summary-item">
+            <span>First Name</span>
+            <strong>{{ currentUser?.first_name || '-' }}</strong>
           </div>
-          <div class="form-group">
-            <label>Last Name</label>
-            <input type="text" formControlName="last_name" class="form-input" placeholder="Last name" />
+          <div class="summary-item">
+            <span>Last Name</span>
+            <strong>{{ currentUser?.last_name || '-' }}</strong>
+          </div>
+          <div class="summary-item full-row">
+            <span>Email Address</span>
+            <strong>{{ currentUser?.email || '-' }}</strong>
           </div>
         </div>
+      </ng-container>
 
-        <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" formControlName="email" class="form-input" placeholder="email@example.com" readonly />
-          <small class="input-hint">Email cannot be changed.</small>
-        </div>
+      <ng-template #profileEditView>
+        <form [formGroup]="accountForm" (ngSubmit)="saveAccount()" class="account-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" formControlName="first_name" class="form-input" placeholder="First name" />
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" formControlName="last_name" class="form-input" placeholder="Last name" />
+            </div>
+          </div>
 
-        <div *ngIf="profileMessage" class="message-alert" [class.success]="profileMessageType === 'success'"
-          [class.error]="profileMessageType === 'error'">
-          <i class="fa-solid" [ngClass]="profileMessageType === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
-          {{ profileMessage }}
-        </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" formControlName="email" class="form-input" placeholder="email@example.com" readonly />
+            <small class="input-hint">Email cannot be changed.</small>
+          </div>
 
-        <div class="form-actions">
-          <button type="submit" class="btn-primary" [disabled]="profileLoading || accountForm.invalid">
-            <i class="fa-solid" [ngClass]="profileLoading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
-            <span>{{ profileLoading ? 'Saving...' : 'Save Changes' }}</span>
-          </button>
-        </div>
-      </form>
+          <div *ngIf="profileMessage" class="message-alert" [class.success]="profileMessageType === 'success'"
+            [class.error]="profileMessageType === 'error'">
+            <i class="fa-solid" [ngClass]="profileMessageType === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+            {{ profileMessage }}
+          </div>
+
+          <div class="form-actions inline-actions">
+            <button type="button" class="btn-secondary" (click)="cancelProfileEdit()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="profileLoading || accountForm.invalid">
+              <i class="fa-solid" [ngClass]="profileLoading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+              <span>{{ profileLoading ? 'Saving...' : 'Save Changes' }}</span>
+            </button>
+          </div>
+        </form>
+      </ng-template>
     </div>
 
     <div class="settings-card password-card">
-      <h3><i class="fa-solid fa-lock"></i> Password</h3>
-      <form [formGroup]="passwordForm" (ngSubmit)="savePassword()" class="account-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label>New Password</label>
-            <input type="password" formControlName="password" class="form-input" placeholder="Enter new password" />
-            <small class="input-hint" *ngIf="passwordForm.get('password')?.invalid && passwordForm.get('password')?.touched">
-              Minimum 6 characters required.
-            </small>
-          </div>
-          <div class="form-group">
-            <label>Confirm Password</label>
-            <input type="password" formControlName="confirmPassword" class="form-input" placeholder="Re-enter new password" />
-            <small class="input-hint" *ngIf="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched">
-              Passwords must match.
-            </small>
-          </div>
-        </div>
+      <div class="section-head">
+        <h3><i class="fa-solid fa-lock"></i> Password</h3>
+        <button type="button" class="section-action-btn" *ngIf="!editingPassword" (click)="startPasswordEdit()">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+      </div>
 
-        <div *ngIf="passwordMessage" class="message-alert" [class.success]="passwordMessageType === 'success'"
-          [class.error]="passwordMessageType === 'error'">
-          <i class="fa-solid" [ngClass]="passwordMessageType === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
-          {{ passwordMessage }}
-        </div>
+      <ng-container *ngIf="!editingPassword; else passwordEditView">
+        <p class="password-summary-copy">Your password is set.</p>
+      </ng-container>
 
-        <div class="form-actions">
-          <button type="submit" class="btn-primary" [disabled]="passwordLoading || passwordForm.invalid">
-            <i class="fa-solid" [ngClass]="passwordLoading ? 'fa-spinner fa-spin' : 'fa-key'"></i>
-            <span>{{ passwordLoading ? 'Updating...' : 'Update Password' }}</span>
-          </button>
-        </div>
-      </form>
+      <ng-template #passwordEditView>
+        <form [formGroup]="passwordForm" (ngSubmit)="savePassword()" class="account-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>New Password</label>
+              <input type="password" formControlName="password" class="form-input" placeholder="Enter new password" />
+              <small class="input-hint" *ngIf="passwordForm.get('password')?.invalid && passwordForm.get('password')?.touched">
+                Minimum 6 characters required.
+              </small>
+            </div>
+            <div class="form-group">
+              <label>Confirm Password</label>
+              <input type="password" formControlName="confirmPassword" class="form-input" placeholder="Re-enter new password" />
+              <small class="input-hint" *ngIf="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched">
+                Passwords must match.
+              </small>
+            </div>
+          </div>
+
+          <div *ngIf="passwordMessage" class="message-alert" [class.success]="passwordMessageType === 'success'"
+            [class.error]="passwordMessageType === 'error'">
+            <i class="fa-solid" [ngClass]="passwordMessageType === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+            {{ passwordMessage }}
+          </div>
+
+          <div class="form-actions inline-actions">
+            <button type="button" class="btn-secondary" (click)="cancelPasswordEdit()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="passwordLoading || passwordForm.invalid">
+              <i class="fa-solid" [ngClass]="passwordLoading ? 'fa-spinner fa-spin' : 'fa-key'"></i>
+              <span>{{ passwordLoading ? 'Updating...' : 'Update Password' }}</span>
+            </button>
+          </div>
+        </form>
+      </ng-template>
     </div>
 
     <div class="account-meta-grid" *ngIf="status">

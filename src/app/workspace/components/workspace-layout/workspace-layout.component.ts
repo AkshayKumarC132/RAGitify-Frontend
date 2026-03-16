@@ -82,6 +82,17 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     this.router.navigate(['/workspace'], { queryParams: { libraryId: store.id } });
   }
 
+  getBreadcrumbLibraryName(name: string | null | undefined, maxLength = 20): string {
+    const safeName = (name || '').trim();
+    if (!safeName) {
+      return 'Library';
+    }
+    if (safeName.length <= maxLength) {
+      return safeName;
+    }
+    return `${safeName.slice(0, maxLength)}...`;
+  }
+
   openUploadOrNewLibrary(action: 'upload' | 'library'): void {
     if (action === 'upload') {
       this.knowledgeContext.openUploadPanel.next();
