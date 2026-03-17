@@ -327,7 +327,8 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   private getLibraryName(libraryId: string): string {
     const match = this.libraries.find(lib => lib.id === libraryId);
-    return match ? match.name : 'Unknown Library';
+    const name = match ? match.name : 'Unknown Library';
+    return name.length > 75 ? `${name.slice(0, 75)}...` : name;
   }
 
   isDocumentSelected(documentId: string): boolean {

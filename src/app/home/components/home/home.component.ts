@@ -289,6 +289,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.currentThread = null;
     this.messages = [];
     this.currentRun = null;
+    this.selectedLibraryId = null;
+    this.selectedDocumentIds = [];
+    this.selectedPromptId = null;
+    this.attachmentMessage = '';
+    this.updateModeFromSelection(true);
     this.warningMessages = [];
     this.errorMessage = '';
     this.stopResponsePolling();
@@ -353,6 +358,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     try {
       const conversation = await this.ensureConversation(trimmed);
       const request = await this.buildResponseRequest(trimmed, conversation.id);
+      this.selectedDocumentIds = [];
+      this.updateModeFromSelection(true);
       const response = await lastValueFrom(this.responseService.create(request));
       this.currentRun = response;
       this.applyWarnings(response.warnings);
@@ -418,7 +425,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (!selection || selection.type === 'clear' || (selection.type === 'library' && !selection.libraryId)) {
       this.selectedLibraryId = null;
       this.selectedDocumentIds = [];
-      this.setAttachmentMessage('Library selection cleared.');
+      // this.setAttachmentMessage('Library selection cleared.');
       this.updateModeFromSelection(true);
       return;
     }
@@ -435,12 +442,12 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.selectedLibraryId = null;
 
     if (!this.selectedDocumentIds.length) {
-      this.setAttachmentMessage('Document selection cleared.');
+      // this.setAttachmentMessage('Document selection cleared.');
       this.updateModeFromSelection(true);
       return;
     }
 
-    this.setAttachmentMessage(`${this.selectedDocumentIds.length} document(s) selected for the next reply.`);
+    // this.setAttachmentMessage(`${this.selectedDocumentIds.length} document(s) selected for the next reply.`);
     this.updateModeFromSelection();
   }
 
@@ -626,12 +633,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private loadMessages(threadId: string): void {
+    this.ensureDocumentsLoaded();
     this.conversationService.getMessages(threadId).subscribe({
       next: (messages) => {
         if (this.currentThread?.id !== threadId && this.pendingThreadId !== threadId) {
           return;
         }
-        this.messages = messages || [];
+        this.messages = this.decorateMessagesWithAttachments(messages || []);
       },
       error: (error) => {
         console.error('Error loading conversation messages:', error);
@@ -724,6 +732,9 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.allDocuments = Array.from(deduped.values());
       this.documentsLoaded = true;
       this.documentsLoading = false;
+      if (this.messages.length) {
+        this.messages = this.decorateMessagesWithAttachments(this.messages);
+      }
     }).catch(error => {
       this.documentsLoading = false;
       console.error('Error loading documents:', error);
@@ -943,12 +954,90 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private buildLocalMessage(role: 'user' | 'assistant', content: string): ConversationMessage {
+    const attachedDocuments = role === 'user'
+      ? this.getAttachedDocumentsByIds(this.selectedDocumentIds)
+      : [];
+
     return {
       id: `${role}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       role,
       content,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      metadata: attachedDocuments.length ? { attached_documents: attachedDocuments } : undefined
     };
+  }
+
+  private decorateMessagesWithAttachments(messages: ConversationMessage[]): ConversationMessage[] {
+    return messages.map((message, index) => {
+      if (message.role !== 'user' || message.metadata?.['attached_documents']) {
+        return message;
+      }
+
+      const documentIds = this.getPersistedDocumentIdsForMessage(message, messages[index + 1]);
+      const attachedDocuments = this.getAttachedDocumentsByIds(documentIds);
+      if (!attachedDocuments.length) {
+        return message;
+      }
+
+      return {
+        ...message,
+        metadata: {
+          ...(message.metadata || {}),
+          attached_documents: attachedDocuments
+        }
+      };
+    });
+  }
+
+  private getPersistedDocumentIdsForMessage(message: ConversationMessage, nextMessage?: ConversationMessage): string[] {
+    const directIds = this.extractDocumentIdsFromMetadata(message.metadata);
+    if (directIds.length) {
+      return directIds;
+    }
+
+    if (nextMessage?.role === 'assistant') {
+      return this.extractDocumentIdsFromMetadata(nextMessage.metadata);
+    }
+
+    return [];
+  }
+
+  private extractDocumentIdsFromMetadata(metadata?: Record<string, any>): string[] {
+    if (!metadata) {
+      return [];
+    }
+
+    const directIds = metadata['document_ids'];
+    if (Array.isArray(directIds)) {
+      return directIds.map(id => String(id)).filter(Boolean);
+    }
+
+    const usedIds = metadata['used_document_ids'];
+    if (Array.isArray(usedIds)) {
+      return usedIds.map(id => String(id)).filter(Boolean);
+    }
+
+    const tools = metadata['tools'];
+    if (!Array.isArray(tools)) {
+      return [];
+    }
+
+    const ids = tools.flatMap(tool => Array.isArray(tool?.document_ids) ? tool.document_ids : []);
+    return ids.map(id => String(id)).filter(Boolean);
+  }
+
+  private getAttachedDocumentsByIds(documentIds: string[]): Array<{ id: string; name: string }> {
+    if (!documentIds.length) {
+      return [];
+    }
+
+    const selectedIds = new Set(documentIds.map(id => String(id)));
+    return this.allDocuments
+      .filter(document => selectedIds.has(String(document.id)))
+      .map(document => ({
+        id: String(document.id),
+        name: document.title || document.original_filename || `Document ${document.id}`
+      }));
   }
 
   private buildConversationTitle(content: string): string {
@@ -1026,7 +1115,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private applyWarnings(warnings?: string[]): void {
-    this.warningMessages = (warnings || []).filter(Boolean);
+    this.warningMessages = (warnings || []).filter(warning =>
+      !!warning && warning.trim() !== 'Served from semantic cache.'
+    );
     if (!this.warningMessages.length) {
       return;
     }

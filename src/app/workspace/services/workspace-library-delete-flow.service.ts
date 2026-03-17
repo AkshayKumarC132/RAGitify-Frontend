@@ -38,8 +38,7 @@ export class WorkspaceLibraryDeleteFlowService {
         html: `
           <div class="library-delete-empty-modal">
             <p class="library-delete-empty-copy">
-              Are you sure you want to delete "${shortSafeStoreName}"?<br>
-              This library is empty and this action cannot be undone.
+              Are you sure you want to delete "<b>${shortSafeStoreName}</b>"?<br>
             </p>
           </div>
         `,
@@ -63,7 +62,7 @@ export class WorkspaceLibraryDeleteFlowService {
     }
 
     const moveTargetOptions = moveTargets
-      .map(target => `<option value="${target.id}">${target.name} (${target.vs_type || 'CUSTOM'})</option>`)
+      .map(target => `<option value="${target.id}">${this.truncateText(target.name, 25)} (${target.vs_type || 'CUSTOM'})</option>`)
       .join('');
 
     const result = await Swal.fire({

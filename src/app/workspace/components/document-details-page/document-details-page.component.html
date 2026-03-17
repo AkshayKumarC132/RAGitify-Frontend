@@ -3,7 +3,7 @@
     <div class="library-rename-modal" (click)="$event.stopPropagation()">
       <div class="rename-header">
         <h3>Rename Library</h3>
-        <p class="rename-subtitle">Update the name for <strong>{{ editingVectorStore.name }}</strong>.</p>
+        
       </div>
       <form [formGroup]="editVectorStoreForm" (ngSubmit)="updateVectorStore()">
         <label for="detailsEditLibraryName" class="rename-label">Library name</label>

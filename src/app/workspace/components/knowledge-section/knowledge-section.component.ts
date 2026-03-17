@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Subscription, interval, of, Subject, forkJoin, firstValueFrom } from 'rxjs';
@@ -24,6 +24,8 @@ import Swal from 'sweetalert2/dist/sweetalert2.js';
   styleUrls: ['./knowledge-section.component.scss']
 })
 export class KnowledgeSectionComponent implements OnInit, OnDestroy {
+  @ViewChild('createLibraryNameInput') createLibraryNameInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('renameLibraryInput') renameLibraryInput?: ElementRef<HTMLInputElement>;
   vectorStores: VectorStore[] = [];
   documents: Document[] = [];
   documentAccessList: DocumentAccess[] = [];
@@ -58,6 +60,10 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   dateFilter: 'all' | '7d' | '30d' | '90d' | 'older' = 'all';
   sizeFilter: 'all' | 'unknown' | 'small' | 'medium' | 'large' = 'all';
   fileTypeFilter = 'all';
+  sharedOwnerFilter = 'all';
+  sharedDateFilter: 'all' | '7d' | '30d' | '90d' | 'older' = 'all';
+  sharedRecipientFilter = 'all';
+  sharedByMeDateFilter: 'all' | '7d' | '30d' | '90d' | 'older' = 'all';
   activeWorkspaceTab: 'documents' | 'shared-with-me' | 'shared-by-me' = 'documents';
   openActionsDocId: string | null = null;
   loadingSharedWithMe = false;
@@ -119,6 +125,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       this.knowledgeContext.openNewLibraryPanel.pipe(takeUntil(this.destroy$)).subscribe(() => {
         this.showCreateVectorStoreForm = true;
         this.showUploadForm = false;
+        setTimeout(() => this.createLibraryNameInput?.nativeElement.focus(), 0);
       });
       this.knowledgeContext.editLibraryRequested.pipe(takeUntil(this.destroy$)).subscribe(store => {
         this.startVectorStoreEdit(store);
@@ -142,6 +149,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       if (openNewLibrary === '1') {
         this.showCreateVectorStoreForm = true;
         this.showUploadForm = false;
+        setTimeout(() => this.createLibraryNameInput?.nativeElement.focus(), 0);
       }
 
       if (libraryId) {
@@ -367,6 +375,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   startVectorStoreEdit(store: VectorStore): void {
     this.editingVectorStore = store;
     this.editVectorStoreForm.reset({ name: store.name });
+    setTimeout(() => this.renameLibraryInput?.nativeElement.focus(), 0);
   }
 
   cancelVectorStoreEdit(): void {
@@ -682,11 +691,53 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   }
 
   get filteredSharedWithMe(): SharedWithMeItem[] {
-    return this.filterShareItems(this.sharedWithMe, 'recipient');
+    let items = this.filterShareItems(this.sharedWithMe, 'recipient');
+
+    if (this.sharedOwnerFilter !== 'all') {
+      items = items.filter(item => item.owner_email === this.sharedOwnerFilter);
+    }
+
+    if (this.sharedDateFilter !== 'all') {
+      const now = Date.now();
+      items = items.filter(item => {
+        const dateValue = item.shared_at ? new Date(item.shared_at).getTime() : NaN;
+        if (Number.isNaN(dateValue)) {
+          return false;
+        }
+        const ageDays = (now - dateValue) / 86400000;
+        if (this.sharedDateFilter === '7d') return ageDays <= 7;
+        if (this.sharedDateFilter === '30d') return ageDays <= 30;
+        if (this.sharedDateFilter === '90d') return ageDays <= 90;
+        return ageDays > 90;
+      });
+    }
+
+    return items;
   }
 
   get filteredSharedByMe(): SharedByMeItem[] {
-    return this.filterShareItems(this.sharedByMe, 'owner');
+    let items = this.filterShareItems(this.sharedByMe, 'owner');
+
+    if (this.sharedRecipientFilter !== 'all') {
+      items = items.filter(item => item.recipient_email === this.sharedRecipientFilter);
+    }
+
+    if (this.sharedByMeDateFilter !== 'all') {
+      const now = Date.now();
+      items = items.filter(item => {
+        const dateValue = item.shared_at ? new Date(item.shared_at).getTime() : NaN;
+        if (Number.isNaN(dateValue)) {
+          return false;
+        }
+        const ageDays = (now - dateValue) / 86400000;
+        if (this.sharedByMeDateFilter === '7d') return ageDays <= 7;
+        if (this.sharedByMeDateFilter === '30d') return ageDays <= 30;
+        if (this.sharedByMeDateFilter === '90d') return ageDays <= 90;
+        return ageDays > 90;
+      });
+    }
+
+    return items;
   }
 
   get isSharedVectorStoreSelected(): boolean {
@@ -705,6 +756,42 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       || this.sizeFilter !== 'all'
       || this.fileTypeFilter !== 'all'
       || this.activeStatusFilter !== 'all';
+  }
+
+  get availableSharedOwners(): string[] {
+    return Array.from(
+      new Set(
+        this.sharedWithMe
+          .map(item => item.owner_email)
+          .filter((owner): owner is string => !!owner)
+      )
+    ).sort((a, b) => a.localeCompare(b));
+  }
+
+  get hasActiveSharedFilters(): boolean {
+    return this.sharedOwnerFilter !== 'all' || this.sharedDateFilter !== 'all';
+  }
+
+  get availableSharedRecipients(): string[] {
+    return Array.from(
+      new Set(
+        this.sharedByMe
+          .map(item => item.recipient_email)
+          .filter((recipient): recipient is string => !!recipient)
+      )
+    ).sort((a, b) => a.localeCompare(b));
+  }
+
+  get hasActiveSharedByMeFilters(): boolean {
+    return this.sharedRecipientFilter !== 'all' || this.sharedByMeDateFilter !== 'all';
+  }
+
+  getTruncatedLibraryOptionName(name: string | undefined | null): string {
+    const safeName = (name || '').trim();
+    if (safeName.length <= 25) {
+      return safeName;
+    }
+    return `${safeName.slice(0, 25)}...`;
   }
 
   get availableStatuses(): string[] {
@@ -740,6 +827,16 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.dateFilter = 'all';
     this.sizeFilter = 'all';
     this.fileTypeFilter = 'all';
+  }
+
+  resetSharedFilters(): void {
+    this.sharedOwnerFilter = 'all';
+    this.sharedDateFilter = 'all';
+  }
+
+  resetSharedByMeFilters(): void {
+    this.sharedRecipientFilter = 'all';
+    this.sharedByMeDateFilter = 'all';
   }
 
   get documentCounts(): Record<string, number> {

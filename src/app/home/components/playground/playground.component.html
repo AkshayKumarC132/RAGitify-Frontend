@@ -12,7 +12,7 @@
 
     <div class="playground-header" *ngIf="messages.length === 0">
         <h1>Playground</h1>
-        <p>Feel free to try prompts — messages here are not saved.</p>
+        <p>Feel free to try prompts - messages here are not saved.</p>
     </div>
 
     <div class="chat-messages" #messagesContainer>
@@ -32,17 +32,10 @@
 
                 <div class="attachment-menu" *ngIf="attachmentMenuOpen" (click)="$event.stopPropagation()">
                     <button type="button" (click)="openLibraryPanel()"
-                        [disabled]="librariesLoaded && !libraries.length">
+                        [disabled]="documentsLoaded && !allDocuments.length">
                         <i class="fa-solid fa-book"></i> Attach Documents
                     </button>
                 </div>
-            </div>
-
-            <div class="integrated-mode-badge temp" *ngIf="mode === 'document'">
-                <i class="fa-regular fa-clock"></i> Temp
-            </div>
-            <div class="integrated-mode-badge doc" *ngIf="mode === 'document'">
-                <i class="fa-solid fa-file-lines"></i> Docs
             </div>
 
             <textarea [(ngModel)]="inputMessage" (keydown)="onKeyPress($event)" placeholder="How can I help you today?"
@@ -54,29 +47,60 @@
                 </button>
             </div>
 
-            <!-- Library Selection Panel -->
-            <div class="attachment-panel" *ngIf="libraryPanelOpen" (click)="$event.stopPropagation()">
-                <h4>Attach Documents</h4>
-
-                <div class="library-list">
-                    <ng-container *ngIf="libraries.length; else emptyLibrary">
-                        <label *ngFor="let library of libraries"
-                            (click)="toggleLibrarySelectionClick(library.id, $event)">
-                            <input type="checkbox" [checked]="isLibrarySelected(library.id)" />
-                            <div class="library-meta">
-                                <span class="title">{{ library.name }}</span>
-                                <span class="meta">Created {{ library.created_at | date:'MMM d, y' }}</span>
-                            </div>
-                        </label>
-                    </ng-container>
+            <div class="attachment-panel" [class.open-upwards]="messages.length > 0" *ngIf="libraryPanelOpen" (click)="$event.stopPropagation()">
+                <div class="attachment-panel-header">
+                    <div class="attachment-panel-copy" [class.limit-reached]="selectionCount >= 10">
+                        <span>Attach Documents</span>
+                        <span class="selection-counter__value">{{ selectionCount }}/10</span>
+                    </div>
                 </div>
 
-                <ng-template #emptyLibrary>
-                    <p class="empty-text">Create a library in Workspace first to attach it.</p>
+                <div class="documents-list">
+                    <ng-container *ngIf="documentsLoading; else documentsReady">
+                        <p class="empty-text">Loading documents...</p>
+                    </ng-container>
+                    <ng-template #documentsReady>
+                        <div class="document-search-box" *ngIf="allDocuments.length">
+                            <input type="text" [(ngModel)]="documentSearchQuery" placeholder="Search documents"
+                                aria-label="Search documents" />
+                            <button type="button" class="clear-search-btn" *ngIf="documentSearchQuery"
+                                (click)="documentSearchQuery = ''" title="Clear search">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <ng-container *ngIf="availableDocuments.length; else emptyDocuments">
+                            <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
+                                <div class="group-header">
+                                    <div class="group-title">{{ group.name }}</div>
+                                    <div class="group-count">{{ group.documents.length }} docs</div>
+                                </div>
+                                <div class="group-documents">
+                                    <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)"
+                                        [class.disabled]="isSelectionDisabled(doc.id)" [class.selected]="isDocumentSelected(doc.id)">
+                                        <input type="checkbox" [checked]="isDocumentSelected(doc.id)"
+                                            [disabled]="isSelectionDisabled(doc.id)" />
+                                        <div class="document-card-meta">
+                                            <div class="document-card-topline">
+                                                <span class="title">{{ getDocumentDisplayName(doc) }}</span>
+                                                <div class="document-card-tags">
+                                                    <span class="document-chip">{{ getDocumentTypeLabel(doc) }}</span>
+                                                    <span class="document-chip subtle">{{ getDocumentSourceLabel(doc) }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </ng-container>
+                    </ng-template>
+                </div>
+
+                <ng-template #emptyDocuments>
+                    <p class="empty-text">No documents available. Upload knowledge in Workspace.</p>
                 </ng-template>
 
                 <div class="panel-actions">
-                    <button type="button" (click)="confirmSelection()" [disabled]="!pendingVectorStoreIds.size">
+                    <button type="button" (click)="confirmSelection()" [disabled]="!pendingDocumentIds.size">
                         Apply
                     </button>
                     <button type="button" (click)="clearSelection()">Clear</button>
@@ -92,28 +116,14 @@
             </button>
         </div>
 
-        <div class="selection-pills" *ngIf="selectionCount > 0" (mouseenter)="onSelectionPillEnter()"
-            (mouseleave)="onSelectionPillLeave()">
+        <div class="selection-pills" *ngIf="selectionCount > 0">
             <div class="attachment-pill">
                 <span>{{ selectionLabel }}</span>
-                <button type="button" (click)="clearSelection()">×</button>
+                <button type="button" (click)="clearSelection()">x</button>
             </div>
 
-            <!-- Current vector store selections (shown to the right while hovering) -->
-            <div class="attachment-pill attachment-pill--secondary"
-                *ngIf="showVectorStoreHoverDetails && selectedVectorStores.length > 0">
-                <span class="pill-title">Libraries:</span>
-                <span class="pill-chip" *ngFor="let store of selectedVectorStores">
-                    {{ store.name }}
-                    <button type="button" (click)="removeSelectedVectorStore(store.id, $event)"
-                        aria-label="Remove vector store">×</button>
-                </span>
-            </div>
         </div>
 
-        <!-- <div class="mode-indicator" [class.document]="mode === 'document'">
-            {{ mode === 'normal' ? 'Play Ground Active' : 'Document Mode Active' }}
-        </div> -->
         <div class="error-toast" *ngIf="errorMessage">{{ errorMessage }}</div>
     </div>
 </div>

@@ -10,7 +10,7 @@
     <label for="uploadLibrarySelect">Library</label>
     <select id="uploadLibrarySelect" [(ngModel)]="selectedVectorStoreId" class="upload-modal-input">
       <option value="">Select library</option>
-      <option *ngFor="let store of vectorStores" [value]="store.id">{{ store.name }}</option>
+      <option *ngFor="let store of vectorStores" [value]="store.id">{{ getTruncatedLibraryName(store.name) }}</option>
     </select>
   </div>
 

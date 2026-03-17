@@ -39,6 +39,7 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
     ngAfterViewInit(): void {
         this.scrollToBottom();
+        setTimeout(() => this.messageInput?.nativeElement.focus(), 0);
     }
 
     ngOnDestroy(): void {

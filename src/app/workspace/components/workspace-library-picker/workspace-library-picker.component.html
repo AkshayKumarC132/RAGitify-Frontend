@@ -218,6 +218,7 @@
       <div class="rename-field">
         <label for="createLibraryInput">Name</label>
         <input
+          #createLibraryInput
           id="createLibraryInput"
           type="text"
           [(ngModel)]="createName"
@@ -245,10 +246,11 @@
   <div class="library-rename-backdrop" *ngIf="renameTarget" (click)="cancelRename()">
     <div class="library-rename-modal" (click)="$event.stopPropagation()">
       <h3 class="rename-title">Rename library</h3>
-      <p class="rename-subtitle">Update the name for <strong>{{ renameTarget.name }}</strong>.</p>
+      
       <div class="rename-field">
         <label for="renameInput">New name</label>
         <input
+          #renameLibraryInput
           id="renameInput"
           type="text"
           [(ngModel)]="renameName"

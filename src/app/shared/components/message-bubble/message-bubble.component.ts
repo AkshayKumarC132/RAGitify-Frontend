@@ -98,6 +98,20 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         return this.isCancelledRun;
     }
 
+    get attachedDocuments(): Array<{ id: string; name: string }> {
+        const attachedDocuments = this.message?.metadata?.['attached_documents'];
+        if (!Array.isArray(attachedDocuments)) {
+            return [];
+        }
+
+        return attachedDocuments
+            .map(document => ({
+                id: String(document?.id || ''),
+                name: String(document?.name || '').trim()
+            }))
+            .filter(document => !!document.id && !!document.name);
+    }
+
     formatTime(timestamp: string): string {
         const date = new Date(timestamp);
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

@@ -160,6 +160,14 @@ export class DocumentUploadComponent implements OnChanges {
     return `Upload ${count} files`;
   }
 
+  getTruncatedLibraryName(name: string | undefined | null): string {
+    const safeName = (name || '').trim();
+    if (safeName.length <= 25) {
+      return safeName;
+    }
+    return `${safeName.slice(0, 25)}...`;
+  }
+
   onCancel(): void {
     this.cancel.emit();
   }

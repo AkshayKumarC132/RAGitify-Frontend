@@ -25,7 +25,7 @@
       <form [formGroup]="createVectorStoreForm" (ngSubmit)="createVectorStore()">
         <div class="rename-field">
           <label for="createLibraryName">Name *</label>
-          <input id="createLibraryName" type="text" formControlName="name" placeholder="e.g., Product manuals" />
+          <input #createLibraryNameInput id="createLibraryName" type="text" formControlName="name" placeholder="e.g., Product manuals" />
           <small *ngIf="createVectorStoreForm.get('name')?.invalid && createVectorStoreForm.get('name')?.touched">
             A descriptive name is required.
           </small>
@@ -45,11 +45,11 @@
   <div class="library-rename-backdrop" *ngIf="editingVectorStore" (click)="cancelVectorStoreEdit()">
     <div class="library-rename-modal" (click)="$event.stopPropagation()">
       <h3 class="rename-title">Rename library</h3>
-      <p class="rename-subtitle">Update the name for <strong>{{ editingVectorStore.name }}</strong>.</p>
+      
       <form [formGroup]="editVectorStoreForm" (ngSubmit)="updateVectorStore()">
         <div class="rename-field">
           <label for="renameLibraryInput">New name</label>
-          <input id="renameLibraryInput" type="text" formControlName="name" placeholder="Enter library name" />
+          <input #renameLibraryInput id="renameLibraryInput" type="text" formControlName="name" placeholder="Enter library name" />
         </div>
         <div class="rename-actions">
           <button type="button" class="rename-btn rename-btn-secondary" (click)="cancelVectorStoreEdit()">
@@ -155,7 +155,7 @@
           </div>
         </div>
 
-        <div class="document-filter-bar" *ngIf="activeWorkspaceTab === 'documents' && !isSharedVectorStoreSelected">
+        <div class="document-filter-bar" *ngIf="activeWorkspaceTab === 'documents' && !isSharedVectorStoreSelected && documents.length > 0">
           <div class="document-filter-field">
             <label for="docStatusFilter">Status</label>
             <select id="docStatusFilter" [(ngModel)]="activeStatusFilter">
@@ -381,6 +381,35 @@
             <span>Loading incoming shares...</span>
           </div>
 
+          <div
+            class="document-filter-bar shared-filter-bar"
+            *ngIf="!loadingSharedWithMe && (sharedWithMe.length > 0 || hasActiveSharedFilters)"
+          >
+            <div class="document-filter-field">
+              <label for="sharedOwnerFilter">Owner</label>
+              <select id="sharedOwnerFilter" [(ngModel)]="sharedOwnerFilter">
+                <option value="all">All owners</option>
+                <option *ngFor="let owner of availableSharedOwners" [value]="owner">{{ owner }}</option>
+              </select>
+            </div>
+            <div class="document-filter-field">
+              <label for="sharedDateFilter">Date Shared</label>
+              <select id="sharedDateFilter" [(ngModel)]="sharedDateFilter">
+                <option value="all">Any time</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="older">Older</option>
+              </select>
+            </div>
+            <div class="document-filter-actions">
+              <span class="filter-results">{{ filteredSharedWithMe.length }} results</span>
+              <button type="button" class="filter-reset-btn" (click)="resetSharedFilters()" [disabled]="!hasActiveSharedFilters">
+                Clear filters
+              </button>
+            </div>
+          </div>
+
           <div *ngIf="!loadingSharedWithMe && filteredSharedWithMe.length === 0" class="empty-state">
             <p>No active documents have been shared with you.</p>
             <p class="empty-hint">When another user shares a document, it will appear here and in your SHARED library.</p>
@@ -429,6 +458,35 @@
           <div *ngIf="loadingSharedByMe" class="loading-state">
             <div class="spinner-small"></div>
             <span>Loading outgoing shares...</span>
+          </div>
+
+          <div
+            class="document-filter-bar shared-filter-bar"
+            *ngIf="!loadingSharedByMe && (sharedByMe.length > 0 || hasActiveSharedByMeFilters)"
+          >
+            <div class="document-filter-field">
+              <label for="sharedRecipientFilter">Recipient</label>
+              <select id="sharedRecipientFilter" [(ngModel)]="sharedRecipientFilter">
+                <option value="all">All recipients</option>
+                <option *ngFor="let recipient of availableSharedRecipients" [value]="recipient">{{ recipient }}</option>
+              </select>
+            </div>
+            <div class="document-filter-field">
+              <label for="sharedByMeDateFilter">Date Shared</label>
+              <select id="sharedByMeDateFilter" [(ngModel)]="sharedByMeDateFilter">
+                <option value="all">Any time</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="older">Older</option>
+              </select>
+            </div>
+            <div class="document-filter-actions">
+              <span class="filter-results">{{ filteredSharedByMe.length }} results</span>
+              <button type="button" class="filter-reset-btn" (click)="resetSharedByMeFilters()" [disabled]="!hasActiveSharedByMeFilters">
+                Clear filters
+              </button>
+            </div>
           </div>
 
           <div *ngIf="!loadingSharedByMe && filteredSharedByMe.length === 0" class="empty-state">
@@ -565,7 +623,7 @@
       <div class="rename-field">
         <label for="moveTargetLibrary">Destination library</label>
         <select id="moveTargetLibrary" [(ngModel)]="moveTargetVectorStoreId">
-          <option *ngFor="let store of moveTargetOptions" [value]="store.id">{{ store.name }} ({{ store.vs_type }})</option>
+          <option *ngFor="let store of moveTargetOptions" [value]="store.id">{{ getTruncatedLibraryOptionName(store.name) }} ({{ store.vs_type }})</option>
         </select>
       </div>
       <div class="rename-actions">

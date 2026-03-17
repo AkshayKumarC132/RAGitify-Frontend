@@ -181,6 +181,10 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.9));
 }
 
+.shared-filter-bar {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+}
+
 .document-filter-field {
   display: flex;
   flex-direction: column;
@@ -224,7 +228,7 @@
   border-radius: 999px;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
-  color: var(--text-primary);
+  color: #3b82f6;
   padding: 0 0.95rem;
   font-size: 12px;
   font-weight: 600;
@@ -1225,6 +1229,14 @@
   }
 }
 
+:host-context(.workspace-container:not(.sidebar-collapsed)) .selection-bar-container {
+  left: 260px;
+}
+
+:host-context(.workspace-container.sidebar-collapsed) .selection-bar-container {
+  left: 64px;
+}
+
 .selection-bar {
   pointer-events: auto;
   background: rgba(15, 23, 42, 0.85);
@@ -1375,5 +1387,12 @@
         display: none;
       }
     }
+  }
+}
+
+@media (max-width: 960px) {
+  :host-context(.workspace-container:not(.sidebar-collapsed)) .selection-bar-container,
+  :host-context(.workspace-container.sidebar-collapsed) .selection-bar-container {
+    left: 0;
   }
 }

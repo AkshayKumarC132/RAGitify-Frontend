@@ -160,6 +160,13 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     this.router.navigate(['/home']);
   }
 
+  onBrandClick(): void {
+    if (this.sidebarCollapsed) {
+      return;
+    }
+    this.goToHome();
+  }
+
   toggleSidebar(forceState?: boolean, event?: MouseEvent): void {
     event?.stopPropagation();
     const nextState = typeof forceState === 'boolean' ? forceState : !this.sidebarCollapsed;

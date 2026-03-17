@@ -1,4 +1,10 @@
 <div class="message-bubble" [class.user]="isUser" [class.assistant]="!isUser" [class.empty-state]="showEmptyState">
+    <div class="attached-documents" *ngIf="isUser && attachedDocuments.length">
+        <span class="attached-document-chip" *ngFor="let document of attachedDocuments">
+            <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
+            <span>{{ document.name }}</span>
+        </span>
+    </div>
     <div class="message-content" [class.has-run-error]="showRunErrorInfo">
         <div *ngIf="showRunErrorInfo" class="run-error-info" aria-hidden="true">
             <span class="run-error-icon">i</span>

@@ -614,9 +614,20 @@ button.thread-menu {
   min-width: 32px;
   height: 32px;
   transition: background-color 0.2s ease, color 0.2s ease;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 
   i {
     font-size: 12px;
+  }
+
+  .thread-item:hover &,
+  .thread-item:focus-within &,
+  &[aria-expanded="true"] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
 
   &:hover {

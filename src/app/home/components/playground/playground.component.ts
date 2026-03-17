@@ -1,12 +1,15 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Output, EventEmitter, HostListener, ChangeDetectorRef } from '@angular/core';
+import { Subscription, lastValueFrom } from 'rxjs';
 import { ConversationService } from '../../../shared/services/conversation.service';
 import { ResponseService } from '../../../shared/services/response.service';
 import { ResponseAttentionService } from '../../../shared/services/response-attention.service';
+import { VectorStoreService } from '../../../shared/services/vector-store.service';
+import { DocumentService } from '../../../shared/services/document.service';
+import { DocumentShareService } from '../../../shared/services/document-share.service';
 import { ConversationMessage } from '../../../shared/models/conversation.model';
 import { ResponseRecord, ResponseCreateRequest } from '../../../shared/models/response.model';
-import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
-import { Subscription } from 'rxjs';
+import { Document } from '../../../shared/models/document.model';
 
 @Component({
     selector: 'app-playground',
@@ -14,6 +17,8 @@ import { Subscription } from 'rxjs';
     styleUrls: ['./playground.component.scss']
 })
 export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
+    private readonly maxSelectedDocuments = 10;
+
     @ViewChild('messagesContainer') messagesContainer?: ElementRef<HTMLDivElement>;
     @Output() closed = new EventEmitter<void>();
 
@@ -26,68 +31,95 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     mode: 'normal' | 'document' = 'normal';
     private responsePollSub?: Subscription;
 
-    // Library selection
     libraries: VectorStore[] = [];
+    allDocuments: Document[] = [];
     attachmentMenuOpen = false;
     libraryPanelOpen = false;
-    /**
-     * Multi-vector-store selection (libraries) for temporary chat.
-     * This enables sending multiple vector_store_ids in a single request.
-     */
-    selectedVectorStoreIds: string[] = [];
-    pendingVectorStoreIds = new Set<string>();
+    selectedDocumentIds: string[] = [];
+    pendingDocumentIds = new Set<string>();
+    documentSearchQuery = '';
     librariesLoaded = false;
     private librariesLoading = false;
-    showVectorStoreHoverDetails = false;
+    documentsLoaded = false;
+    documentsLoading = false;
 
     private allDefaultQuestions = [
-        "How can I improve my productivity?",
-        "What are some effective time management techniques?",
-        "Can you recommend some good books to read?",
-        "Tell me a fun fact about technology.",
-        "How can I stay motivated?",
-        "What are popular travel destinations?",
-        "Tell me an interesting historical fact.",
-        "How can I learn a new language?",
-        "What are the latest trends in technology?",
-        "Can you suggest some fun hobbies?"
+        'How can I improve my productivity?',
+        'What are some effective time management techniques?',
+        'Can you recommend some good books to read?',
+        'Tell me a fun fact about technology.',
+        'How can I stay motivated?',
+        'What are popular travel destinations?',
+        'Tell me an interesting historical fact.',
+        'How can I learn a new language?',
+        'What are the latest trends in technology?',
+        'Can you suggest some fun hobbies?'
     ];
 
     defaultQuestions: string[] = [];
 
     documentQuestions = [
-        "Summarize these libraries",
-        "What are the main insights?",
-        "Analyze themes across documents",
-        "Key takeaways from attachments"
+        'Summarize the attached documents',
+        'What are the main insights?',
+        'Analyze themes across documents',
+        'Key takeaways from attachments'
     ];
 
     get suggestedQuestions(): string[] {
-        if (this.mode === 'document') {
-            return this.documentQuestions;
-        }
-        return this.defaultQuestions;
+        return this.mode === 'document' ? this.documentQuestions : this.defaultQuestions;
     }
 
-    onQuestionClick(question: string): void {
-        this.inputMessage = question;
+    get selectionCount(): number {
+        return this.selectedDocumentIds.length;
+    }
+
+    get selectionLabel(): string {
+        if (!this.selectedDocumentIds.length) {
+            return '';
+        }
+        return `${this.selectedDocumentIds.length}/${this.maxSelectedDocuments} documents selected`;
+    }
+
+    get selectedDocuments(): Document[] {
+        const ids = new Set(this.selectedDocumentIds.map(String));
+        return this.allDocuments.filter(document => ids.has(String(document.id)));
+    }
+
+    get availableDocuments(): Document[] {
+        const query = this.documentSearchQuery.trim().toLowerCase();
+        return (this.allDocuments || []).filter(document => {
+            if (this.getDocumentStatus(document) === 'failed') {
+                return false;
+            }
+
+            if (!query) {
+                return true;
+            }
+
+            const haystack = [
+                document.title,
+                document.original_filename,
+                document.file_type,
+                document.id
+            ].filter(Boolean).join(' ').toLowerCase();
+
+            return haystack.includes(query);
+        });
     }
 
     constructor(
         private conversationService: ConversationService,
         private responseService: ResponseService,
         private responseAttentionService: ResponseAttentionService,
-        private vectorStoreService: VectorStoreService
+        private vectorStoreService: VectorStoreService,
+        private documentService: DocumentService,
+        private documentShareService: DocumentShareService,
+        private cdr: ChangeDetectorRef
     ) { }
 
     ngOnInit(): void {
         this.shuffleDefaultQuestions();
         this.createTemporaryConversation();
-    }
-
-    private shuffleDefaultQuestions(): void {
-        const shuffled = [...this.allDefaultQuestions].sort(() => 0.5 - Math.random());
-        this.defaultQuestions = shuffled.slice(0, 5);
     }
 
     ngOnDestroy(): void {
@@ -96,6 +128,213 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
 
     ngAfterViewInit(): void {
         this.scrollToBottom();
+    }
+
+    onQuestionClick(question: string): void {
+        this.inputMessage = question;
+    }
+
+    toggleAttachmentMenu(): void {
+        this.attachmentMenuOpen = !this.attachmentMenuOpen;
+        if (this.attachmentMenuOpen) {
+            this.loadLibraries();
+            this.loadDocuments();
+            this.libraryPanelOpen = false;
+        }
+    }
+
+    openLibraryPanel(): void {
+        this.attachmentMenuOpen = false;
+        this.loadLibraries();
+        this.loadDocuments();
+        this.libraryPanelOpen = true;
+        this.pendingDocumentIds = new Set(this.selectedDocumentIds.map(String));
+        this.documentSearchQuery = '';
+    }
+
+    closePanel(): void {
+        this.libraryPanelOpen = false;
+        this.documentSearchQuery = '';
+    }
+
+    @HostListener('document:click', ['$event'])
+    onDocumentClick(event: MouseEvent): void {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.attachment-controls') && !target.closest('.attachment-panel') && !target.closest('.attachment-menu')) {
+            this.attachmentMenuOpen = false;
+            this.libraryPanelOpen = false;
+            this.documentSearchQuery = '';
+        }
+    }
+
+    confirmSelection(): void {
+        this.selectedDocumentIds = Array.from(this.pendingDocumentIds);
+        this.mode = this.selectedDocumentIds.length ? 'document' : 'normal';
+        this.libraryPanelOpen = false;
+    }
+
+    clearSelection(): void {
+        this.selectedDocumentIds = [];
+        this.pendingDocumentIds.clear();
+        this.mode = 'normal';
+        this.libraryPanelOpen = false;
+        this.documentSearchQuery = '';
+    }
+
+    removeSelectedDocument(id: string, event?: MouseEvent): void {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        const next = new Set(this.selectedDocumentIds.map(String));
+        next.delete(String(id));
+        this.selectedDocumentIds = Array.from(next);
+        if (!this.selectedDocumentIds.length) {
+            this.mode = 'normal';
+        }
+    }
+
+    getDocumentsByLibrary(): { libraryId: string; name: string; documents: Document[] }[] {
+        const grouping = new Map<string, Document[]>();
+        this.availableDocuments.forEach(document => {
+            const list = grouping.get(document.vector_store) || [];
+            list.push(document);
+            grouping.set(document.vector_store, list);
+        });
+
+        return Array.from(grouping.entries())
+            .map(([libraryId, documents]) => ({
+                libraryId,
+                name: this.getLibraryName(libraryId),
+                documents
+            }))
+            .filter(group => group.documents.length > 0);
+    }
+
+    isDocumentSelected(documentId: string): boolean {
+        return this.pendingDocumentIds.has(String(documentId));
+    }
+
+    isSelectionDisabled(documentId: string): boolean {
+        return !this.isDocumentSelected(documentId) && this.pendingDocumentIds.size >= this.maxSelectedDocuments;
+    }
+
+    toggleDocumentSelectionClick(documentId: string, event: MouseEvent): void {
+        event.preventDefault();
+        event.stopPropagation();
+        const isCurrentlySelected = this.pendingDocumentIds.has(String(documentId));
+        const newState = !isCurrentlySelected;
+        const updated = this.toggleDocumentSelectionById(documentId, newState);
+        if (!updated) {
+            return;
+        }
+
+        const label = event.currentTarget as HTMLElement;
+        const checkbox = label.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
+        if (checkbox) {
+            checkbox.checked = newState;
+        }
+    }
+
+    getDocumentTypeLabel(document: Document): string {
+        return (document.file_type || document.original_filename?.split('.').pop() || 'file').toUpperCase();
+    }
+
+    getDocumentSourceLabel(document: Document): string {
+        return document.access_type === 'shared' ? 'Shared' : 'Owned';
+    }
+
+    getDocumentDisplayName(document: Document): string {
+        return document.title || document.original_filename || `Document ${document.id}`;
+    }
+
+    getDocumentDate(document: Document): string | undefined {
+        return document.created_at || document.updated_at || document.uploaded_at;
+    }
+
+    getDocumentStatus(document: Document): string {
+        return document.ingestion_status || document.status || 'completed';
+    }
+
+    sendMessage(): void {
+        if (!this.inputMessage.trim() || this.loading || !this.conversationId) return;
+
+        const content = this.inputMessage.trim();
+        const attachedDocuments = this.selectedDocuments.map(document => ({
+            id: String(document.id),
+            name: this.getDocumentDisplayName(document)
+        }));
+        this.inputMessage = '';
+        this.loading = true;
+
+        const tempMsg: ConversationMessage = {
+            id: 'temp-' + Date.now(),
+            role: 'user',
+            content: content,
+            created_at: new Date().toISOString(),
+            metadata: attachedDocuments.length ? {
+                attached_documents: attachedDocuments
+            } : undefined
+        };
+        this.messages.push(tempMsg);
+        this.scrollToBottom();
+
+        const request: ResponseCreateRequest = {
+            conversation: this.conversationId,
+            model: this.responseService.getDefaultModel(),
+            input: [{
+                role: 'user',
+                content: [{ type: 'input_text', text: content }]
+            }]
+        };
+
+        if (this.mode === 'document' && this.selectedDocumentIds.length > 0) {
+            const vectorStoreIds = Array.from(new Set(
+                this.allDocuments
+                    .filter(document => this.selectedDocumentIds.includes(document.id))
+                    .map(document => String(document.vector_store))
+                    .filter(Boolean)
+            ));
+
+            if (vectorStoreIds.length > 0) {
+                request.tools = [{
+                    type: 'document',
+                    vector_store_ids: vectorStoreIds,
+                    document_ids: [...this.selectedDocumentIds]
+                }];
+            }
+        }
+
+        this.selectedDocumentIds = [];
+        this.pendingDocumentIds.clear();
+        this.mode = 'normal';
+
+        this.responseService.create(request).subscribe({
+            next: (response) => {
+                this.warningMessages = this.filterWarnings(response.warnings);
+                if (response.status === 'in_progress') {
+                    this.startPolling(response.id);
+                } else {
+                    this.handleResponseComplete(response);
+                }
+            },
+            error: (err: any) => {
+                this.handleError('Failed to send message', err);
+                this.messages = this.messages.filter(m => m.id !== tempMsg.id);
+            }
+        });
+    }
+
+    onKeyPress(event: KeyboardEvent): void {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            this.sendMessage();
+        }
+    }
+
+    private shuffleDefaultQuestions(): void {
+        const shuffled = [...this.allDefaultQuestions].sort(() => 0.5 - Math.random());
+        this.defaultQuestions = shuffled.slice(0, 5);
     }
 
     private loadLibraries(): void {
@@ -117,114 +356,33 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         });
     }
 
-
-    toggleAttachmentMenu(): void {
-        this.attachmentMenuOpen = !this.attachmentMenuOpen;
-        if (this.attachmentMenuOpen) {
-            this.loadLibraries();
-            this.libraryPanelOpen = false;
+    private loadDocuments(): void {
+        if (this.documentsLoaded || this.documentsLoading) {
+            return;
         }
-    }
+        this.documentsLoading = true;
+        Promise.all([
+            lastValueFrom(this.documentService.list(undefined, true)),
+            lastValueFrom(this.documentShareService.listSharedWithMe()),
+            this.librariesLoaded ? Promise.resolve(this.libraries) : lastValueFrom(this.vectorStoreService.list())
+        ]).then(([documents, sharedWithMe, libraries]) => {
+            this.libraries = libraries || [];
+            this.librariesLoaded = true;
+            const ownedDocuments = documents || [];
+            const sharedDocuments = this.mapSharedDocuments(sharedWithMe || []);
+            const deduped = new Map<string, Document>();
 
-    openLibraryPanel(): void {
-        this.attachmentMenuOpen = false;
-        this.libraryPanelOpen = true;
-        this.pendingVectorStoreIds = new Set(this.selectedVectorStoreIds || []);
-    }
+            [...ownedDocuments, ...sharedDocuments].forEach(document => {
+                deduped.set(document.id, document);
+            });
 
-    closePanel(): void {
-        this.libraryPanelOpen = false;
-    }
-
-    @HostListener('document:click', ['$event'])
-    onDocumentClick(event: MouseEvent): void {
-        const target = event.target as HTMLElement;
-        if (!target.closest('.attachment-controls') && !target.closest('.attachment-panel') && !target.closest('.attachment-menu')) {
-            this.attachmentMenuOpen = false;
-            this.libraryPanelOpen = false;
-        }
-    }
-
-
-    isLibrarySelected(libraryId: string): boolean {
-        return this.pendingVectorStoreIds.has(String(libraryId));
-    }
-
-    toggleLibrarySelectionClick(libraryId: string, event: MouseEvent): void {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const id = String(libraryId);
-        const isSelected = this.pendingVectorStoreIds.has(id);
-        const next = new Set(this.pendingVectorStoreIds);
-
-        if (isSelected) {
-            next.delete(id);
-        } else {
-            next.add(id);
-        }
-
-        this.pendingVectorStoreIds = next;
-
-        // Keep the visual checkbox state in sync immediately
-        const label = event.currentTarget as HTMLElement;
-        const checkbox = label.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
-        if (checkbox) {
-            checkbox.checked = !isSelected;
-        }
-    }
-
-    confirmSelection(): void {
-        this.selectedVectorStoreIds = Array.from(this.pendingVectorStoreIds);
-
-        if (this.selectedVectorStoreIds.length > 0) {
-            this.mode = 'document';
-        }
-        this.libraryPanelOpen = false;
-    }
-
-    clearSelection(): void {
-        this.selectedVectorStoreIds = [];
-        this.pendingVectorStoreIds.clear();
-        this.mode = 'normal';
-        this.libraryPanelOpen = false;
-    }
-
-    get selectionCount(): number {
-        return this.selectedVectorStoreIds.length;
-    }
-
-    get selectionLabel(): string {
-        if (this.selectedVectorStoreIds.length === 0) {
-            return '';
-        }
-        return `${this.selectedVectorStoreIds.length} librar${this.selectedVectorStoreIds.length === 1 ? 'y' : 'ies'} selected`;
-    }
-
-    get selectedVectorStores(): VectorStore[] {
-        const ids = new Set((this.selectedVectorStoreIds || []).map(String));
-        return (this.libraries || []).filter(l => ids.has(String(l.id)));
-    }
-
-    removeSelectedVectorStore(id: string, event?: MouseEvent): void {
-        if (event) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        const next = new Set((this.selectedVectorStoreIds || []).map(String));
-        next.delete(String(id));
-        this.selectedVectorStoreIds = Array.from(next);
-        if (!this.selectedVectorStoreIds.length) {
-            this.mode = 'normal';
-        }
-    }
-
-    onSelectionPillEnter(): void {
-        this.showVectorStoreHoverDetails = true;
-    }
-
-    onSelectionPillLeave(): void {
-        this.showVectorStoreHoverDetails = false;
+            this.allDocuments = Array.from(deduped.values());
+            this.documentsLoaded = true;
+            this.documentsLoading = false;
+        }).catch(err => {
+            console.error('Failed to load documents', err);
+            this.documentsLoading = false;
+        });
     }
 
     private createTemporaryConversation(): void {
@@ -244,64 +402,12 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         this.stopPolling();
     }
 
-    sendMessage(): void {
-        if (!this.inputMessage.trim() || this.loading || !this.conversationId) return;
-
-        const content = this.inputMessage.trim();
-        this.inputMessage = '';
-        this.loading = true;
-
-        const tempMsg: ConversationMessage = {
-            id: 'temp-' + Date.now(),
-            role: 'user',
-            content: content,
-            created_at: new Date().toISOString()
-        };
-        this.messages.push(tempMsg);
-        this.scrollToBottom();
-
-        const request: ResponseCreateRequest = {
-            conversation: this.conversationId,
-            model: this.responseService.getDefaultModel(),
-            input: [{
-                role: 'user',
-                content: [{ type: 'input_text', text: content }]
-            }]
-        };
-
-        // Add tools if libraries selected
-        if (this.mode === 'document' && this.selectedVectorStoreIds.length > 0) {
-            const uniqueIds = Array.from(new Set(this.selectedVectorStoreIds.filter(Boolean).map(String)));
-            if (uniqueIds.length > 0) {
-                request.tools = [{
-                    type: 'document',
-                    vector_store_ids: uniqueIds
-                }];
-            }
-        }
-
-        this.responseService.create(request).subscribe({
-            next: (response) => {
-                this.warningMessages = response.warnings || [];
-                if (response.status === 'in_progress') {
-                    this.startPolling(response.id);
-                } else {
-                    this.handleResponseComplete(response);
-                }
-            },
-            error: (err: any) => {
-                this.handleError('Failed to send message', err);
-                this.messages = this.messages.filter(m => m.id !== tempMsg.id);
-            }
-        });
-    }
-
     private startPolling(responseId: string): void {
         this.stopPolling();
         this.responsePollSub = this.responseService.pollResponseStatus(responseId).subscribe({
             next: (response) => {
                 if (response) {
-                    this.warningMessages = response.warnings || [];
+                    this.warningMessages = this.filterWarnings(response.warnings);
                     if (response.status === 'completed') {
                         this.handleResponseComplete(response);
                         this.stopPolling();
@@ -350,18 +456,57 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         setTimeout(() => this.errorMessage = '', 5000);
     }
 
+    private filterWarnings(warnings?: string[]): string[] {
+        return (warnings || []).filter(warning =>
+            !!warning && warning.trim() !== 'Served from semantic cache.'
+        );
+    }
+
+    private toggleDocumentSelectionById(documentId: string, selected: boolean): boolean {
+        if (selected && !this.pendingDocumentIds.has(String(documentId)) && this.pendingDocumentIds.size >= this.maxSelectedDocuments) {
+            return false;
+        }
+        const next = new Set(this.pendingDocumentIds);
+        if (selected) {
+            next.add(String(documentId));
+        } else {
+            next.delete(String(documentId));
+        }
+        this.pendingDocumentIds = next;
+        this.cdr.detectChanges();
+        return true;
+    }
+
+    private getLibraryName(libraryId: string): string {
+        const match = this.libraries.find(library => library.id === libraryId);
+        const name = match ? match.name : 'Unknown Library';
+        return name.length > 75 ? `${name.slice(0, 75)}...` : name;
+    }
+
+    private mapSharedDocuments(items: Array<{ document_id: string; document_title: string; shared_at: string; updated_at: string; expires_at: string | null }>): Document[] {
+        const sharedLibraryId = this.libraries.find(library => library.vs_type === 'SHARED')?.id || 'shared';
+
+        return items.map(item => ({
+            id: item.document_id,
+            title: item.document_title,
+            original_filename: item.document_title,
+            vector_store: sharedLibraryId,
+            uploaded_at: item.shared_at,
+            created_at: item.shared_at,
+            updated_at: item.updated_at || item.shared_at,
+            status: 'completed',
+            ingestion_status: 'completed',
+            access_type: 'shared',
+            source: 'LOCAL',
+            metadata: item.expires_at ? { expires_at: item.expires_at } : undefined
+        }));
+    }
+
     private scrollToBottom(): void {
         setTimeout(() => {
             if (this.messagesContainer?.nativeElement) {
                 this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight;
             }
         }, 0);
-    }
-
-    onKeyPress(event: KeyboardEvent): void {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            this.sendMessage();
-        }
     }
 }

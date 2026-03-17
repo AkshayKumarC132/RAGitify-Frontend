@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentService } from '../../../shared/services/document.service';
@@ -13,6 +13,8 @@ import { WorkspaceLibraryDeleteFlowService } from '../../services/workspace-libr
   styleUrls: ['./workspace-library-picker.component.scss']
 })
 export class WorkspaceLibraryPickerComponent implements OnInit {
+  @ViewChild('createLibraryInput') createLibraryInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('renameLibraryInput') renameLibraryInput?: ElementRef<HTMLInputElement>;
   vectorStores: VectorStore[] = [];
   documents: Document[] = [];
   documentCounts: Record<string, number> = {};
@@ -252,6 +254,7 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
     this.renameTarget = store;
     this.renameName = store.name || '';
     this.errorMessage = '';
+    this.focusRenameInput();
   }
 
   cancelRename(): void {
@@ -297,6 +300,15 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
     this.creating = true;
     this.createName = '';
     this.errorMessage = '';
+    this.focusCreateInput();
+  }
+
+  private focusCreateInput(): void {
+    setTimeout(() => this.createLibraryInput?.nativeElement.focus(), 0);
+  }
+
+  private focusRenameInput(): void {
+    setTimeout(() => this.renameLibraryInput?.nativeElement.focus(), 0);
   }
 
   cancelCreateLibrary(): void {
