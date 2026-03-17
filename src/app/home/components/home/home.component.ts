@@ -358,8 +358,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     try {
       const conversation = await this.ensureConversation(trimmed);
       const request = await this.buildResponseRequest(trimmed, conversation.id);
-      this.selectedDocumentIds = [];
-      this.updateModeFromSelection(true);
       const response = await lastValueFrom(this.responseService.create(request));
       this.currentRun = response;
       this.applyWarnings(response.warnings);

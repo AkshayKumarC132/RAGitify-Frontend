@@ -305,10 +305,6 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
             }
         }
 
-        this.selectedDocumentIds = [];
-        this.pendingDocumentIds.clear();
-        this.mode = 'normal';
-
         this.responseService.create(request).subscribe({
             next: (response) => {
                 this.warningMessages = this.filterWarnings(response.warnings);
