@@ -1,11 +1,14 @@
-import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subject, forkJoin, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
+import Swal from 'sweetalert2';
 import { Document } from '../../../shared/models/document.model';
 import { SharedByMeItem, SharedWithMeItem } from '../../../shared/models/document-share.model';
+import { User } from '../../../shared/models/user.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
+import { AuthService } from '../../../shared/services/auth.service';
 import { DocumentService } from '../../../shared/services/document.service';
 import { DocumentShareService } from '../../../shared/services/document-share.service';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
@@ -25,16 +28,31 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
   document: Document | null = null;
   vectorStore: VectorStore | null = null;
   vectorStores: VectorStore[] = [];
+  @ViewChild('createLibraryNameInput') createLibraryNameInput?: ElementRef<HTMLInputElement>;
   allDocuments: Document[] = [];
   sharedWithMe: SharedWithMeItem[] = [];
   sharedByMe: SharedByMeItem[] = [];
+  shareDialogOpen = false;
+  shareSubmitting = false;
+  shareTargetEmail = '';
+  shareExpiresAt = '';
+  shareUsers: User[] = [];
+  filteredShareUsers: User[] = [];
+  loadingShareUsers = false;
+  showShareUserDropdown = false;
+  private hasLoadedShareUsers = false;
   editingVectorStore: VectorStore | null = null;
   chatLibrary: VectorStore | null = null;
   editVectorStoreForm: FormGroup;
+  showCreateLibraryModal = false;
+  createLibraryForm: FormGroup;
+  createLibraryError = '';
   private destroy$ = new Subject<void>();
+  summaryCopied = false;
 
   constructor(
     private fb: FormBuilder,
+    private authService: AuthService,
     private documentService: DocumentService,
     private documentShareService: DocumentShareService,
     private vectorStoreService: VectorStoreService,
@@ -43,6 +61,9 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
     private libraryDeleteFlow: WorkspaceLibraryDeleteFlowService
   ) {
     this.editVectorStoreForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(3)]]
+    });
+    this.createLibraryForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]]
     });
   }
@@ -59,6 +80,10 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
     this.knowledgeContext.chatLibraryRequested.pipe(takeUntil(this.destroy$)).subscribe(store => {
       this.openLibraryChat(store);
     });
+
+    this.knowledgeContext.openNewLibraryPanel.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.openCreateLibraryModal();
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -73,15 +98,34 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
   }
 
   get documentName(): string {
-    return this.document?.original_filename || this.document?.title || this.getSharedTitleFallback() || 'Document';
+    return this.document?.title || this.document?.original_filename || this.getSharedTitleFallback() || 'Document';
   }
 
   get shareCount(): number {
     return this.sharedWithMe.length + this.sharedByMe.length;
   }
 
+  get isShareTargetValid(): boolean {
+    const email = this.shareTargetEmail.trim().toLowerCase();
+    if (!email) {
+      return false;
+    }
+    return this.shareUsers.some(user => (user.email || '').toLowerCase() === email);
+  }
+
+  get canShareDocument(): boolean {
+    return !!this.document
+      && this.document.access_type !== 'shared'
+      && (this.document.ingestion_status || this.document.status) === 'completed';
+  }
+
   get currentLibraryId(): string | null {
     return this.route.snapshot.queryParamMap.get('libraryId');
+  }
+
+  get truncatedLibraryName(): string {
+    const name = this.vectorStore?.name || this.currentLibraryId || '-';
+    return name.length > 50 ? `${name.slice(0, 50)}...` : name;
   }
 
   get metadataEntries(): Array<{ key: string; value: string }> {
@@ -90,6 +134,43 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
       key,
       value: this.formatValue(value)
     }));
+  }
+
+  get documentSummary(): string {
+    const summary = (this.document as any)?.summary;
+    return typeof summary === 'string' && summary.trim()
+      ? summary.trim()
+      : 'No summary is available for this document yet.';
+  }
+
+  copySummary(): void {
+    if (this.documentSummary && this.documentSummary !== 'No summary is available for this document yet.') {
+      navigator.clipboard.writeText(this.documentSummary).then(() => {
+        this.summaryCopied = true;
+        setTimeout(() => {
+          this.summaryCopied = false;
+        }, 2000);
+      });
+    }
+  }
+
+  get documentKeywords(): string[] {
+    const keywords = (this.document as any)?.keywords;
+
+    if (Array.isArray(keywords)) {
+      return keywords
+        .map(keyword => String(keyword).trim())
+        .filter(Boolean);
+    }
+
+    if (typeof keywords === 'string' && keywords.trim()) {
+      return keywords
+        .split(',')
+        .map(keyword => keyword.trim())
+        .filter(Boolean);
+    }
+
+    return [];
   }
 
   formatDateTime(value?: string | null): string {
@@ -190,6 +271,145 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
     return this.sharedWithMe[0]?.document_title || this.sharedByMe[0]?.document_title || null;
   }
 
+  openShareDialog(): void {
+    if (!this.document || !this.canShareDocument) {
+      void Swal.fire({
+        title: 'Nothing to share',
+        text: 'Only your completed documents can be shared with another user.',
+        icon: 'info',
+        confirmButtonText: 'Close'
+      });
+      return;
+    }
+
+    this.shareTargetEmail = '';
+    this.shareExpiresAt = '';
+    this.showShareUserDropdown = false;
+    this.loadShareUsers();
+    this.shareDialogOpen = true;
+  }
+
+  closeShareDialog(): void {
+    this.shareDialogOpen = false;
+    this.shareSubmitting = false;
+    this.showShareUserDropdown = false;
+    this.shareTargetEmail = '';
+    this.shareExpiresAt = '';
+  }
+
+  onShareTargetFocus(): void {
+    this.showShareUserDropdown = true;
+    this.filteredShareUsers = this.shareUsers;
+    this.loadShareUsers();
+  }
+
+  onShareTargetInput(event: Event): void {
+    const value = ((event.target as HTMLInputElement).value || '').trim().toLowerCase();
+    this.shareTargetEmail = (event.target as HTMLInputElement).value || '';
+    this.filteredShareUsers = this.shareUsers.filter(user =>
+      (user.email || '').toLowerCase().includes(value)
+    );
+    this.showShareUserDropdown = true;
+  }
+
+  onShareTargetBlur(): void {
+    setTimeout(() => {
+      this.showShareUserDropdown = false;
+    }, 200);
+  }
+
+  selectShareUser(user: User): void {
+    this.shareTargetEmail = user.email;
+    this.showShareUserDropdown = false;
+  }
+
+  submitShare(): void {
+    const email = this.shareTargetEmail.trim();
+    if (!this.document || !email || this.shareSubmitting || !this.isShareTargetValid) {
+      return;
+    }
+
+    this.shareSubmitting = true;
+    this.documentShareService.share({
+      document_ids: [this.document.id],
+      target_user_email: email,
+      expires_at: this.shareExpiresAt ? new Date(this.shareExpiresAt).toISOString() : null
+    }).subscribe({
+      next: (response) => {
+        this.shareSubmitting = false;
+        this.closeShareDialog();
+        this.loadDetails();
+        void Swal.fire({
+          icon: 'success',
+          iconHtml: '<i class="fa-solid fa-check"></i>',
+          title: 'Share updated',
+          html: `
+            <div class="ragitify-swal-success-body">
+              <p class="ragitify-swal-success-copy">
+                <strong>${response.shared_count}</strong> document${response.shared_count === 1 ? '' : 's'} shared successfully.
+              </p>
+              <div class="ragitify-swal-success-meta">
+                The selected recipient can now access the shared document${response.shared_count === 1 ? '' : 's'}.
+              </div>
+            </div>
+          `,
+          confirmButtonText: 'Done',
+          customClass: {
+            popup: 'ragitify-swal-success-popup',
+            title: 'ragitify-swal-success-title',
+            htmlContainer: 'ragitify-swal-success-html',
+            actions: 'ragitify-swal-success-actions',
+            confirmButton: 'ragitify-swal-success-confirm'
+          }
+        });
+      },
+      error: (err) => {
+        this.shareSubmitting = false;
+        void Swal.fire({
+          title: 'Unable to share document',
+          text: this.extractErrorMessage(err, 'The share request could not be completed.'),
+          icon: 'error',
+          confirmButtonText: 'Close'
+        });
+      }
+    });
+  }
+
+  openCreateLibraryModal(): void {
+    this.createLibraryForm.reset();
+    this.createLibraryError = '';
+    this.showCreateLibraryModal = true;
+    setTimeout(() => this.createLibraryNameInput?.nativeElement.focus(), 0);
+  }
+
+  cancelCreateLibrary(): void {
+    this.showCreateLibraryModal = false;
+    this.createLibraryForm.reset();
+    this.createLibraryError = '';
+  }
+
+  submitCreateLibrary(): void {
+    if (this.createLibraryForm.invalid) {
+      this.createLibraryForm.markAllAsTouched();
+      return;
+    }
+    const { name } = this.createLibraryForm.value;
+    this.vectorStoreService.create({ name }).subscribe({
+      next: (store) => {
+        const updatedStores = [store, ...this.vectorStores];
+        this.vectorStores = updatedStores;
+        this.knowledgeContext.updateState({
+          vectorStores: updatedStores,
+          selectedVectorStore: this.vectorStore
+        });
+        this.cancelCreateLibrary();
+      },
+      error: (err) => {
+        this.createLibraryError = this.extractErrorMessage(err, 'Unable to create library.');
+      }
+    });
+  }
+
   startVectorStoreEdit(store: VectorStore): void {
     this.editingVectorStore = store;
     this.editVectorStoreForm.reset({ name: store.name });
@@ -273,5 +493,25 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
   private extractErrorMessage(error: unknown, fallback: string): string {
     const candidate = error as { error?: { detail?: string; message?: string }; message?: string };
     return candidate?.error?.detail || candidate?.error?.message || candidate?.message || fallback;
+  }
+
+  private loadShareUsers(): void {
+    if (this.loadingShareUsers || this.hasLoadedShareUsers) {
+      return;
+    }
+
+    this.loadingShareUsers = true;
+    this.authService.listUsers().subscribe({
+      next: users => {
+        const currentUser = this.authService.getStoredUser();
+        this.shareUsers = users.filter(user => user.id !== currentUser?.id);
+        this.filteredShareUsers = this.shareUsers;
+        this.hasLoadedShareUsers = true;
+        this.loadingShareUsers = false;
+      },
+      error: () => {
+        this.loadingShareUsers = false;
+      }
+    });
   }
 }

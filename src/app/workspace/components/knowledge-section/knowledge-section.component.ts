@@ -341,7 +341,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   private updateUrl(libraryId: string): void {
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { libraryId },
+      queryParams: { libraryId, openNewLibrary: null },
       queryParamsHandling: 'merge'
     });
   }
@@ -1238,10 +1238,27 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         this.closeShareDialog();
         this.loadSharedByMe(true);
         void Swal.fire({
-          title: 'Share updated',
-          text: `${response.shared_count} document${response.shared_count === 1 ? '' : 's'} shared successfully.`,
           icon: 'success',
-          confirmButtonText: 'Close'
+          iconHtml: '<i class="fa-solid fa-check"></i>',
+          title: 'Share updated',
+          html: `
+            <div class="ragitify-swal-success-body">
+              <p class="ragitify-swal-success-copy">
+                <strong>${response.shared_count}</strong> document${response.shared_count === 1 ? '' : 's'} shared successfully.
+              </p>
+              <div class="ragitify-swal-success-meta">
+                The selected recipient can now access the shared document${response.shared_count === 1 ? '' : 's'}.
+              </div>
+            </div>
+          `,
+          confirmButtonText: 'Done',
+          customClass: {
+            popup: 'ragitify-swal-success-popup',
+            title: 'ragitify-swal-success-title',
+            htmlContainer: 'ragitify-swal-success-html',
+            actions: 'ragitify-swal-success-actions',
+            confirmButton: 'ragitify-swal-success-confirm'
+          }
         });
       },
       error: (err) => {
@@ -1322,10 +1339,27 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         this.loadVectorStores(true);
         this.loadSharedByMe(true);
         void Swal.fire({
-          title: 'Documents moved',
-          text: `${movedCount} document${movedCount === 1 ? '' : 's'} moved successfully.`,
           icon: 'success',
-          confirmButtonText: 'Close'
+          iconHtml: '<i class="fa-solid fa-check"></i>',
+          title: 'Documents moved',
+          html: `
+            <div class="ragitify-swal-success-body">
+              <p class="ragitify-swal-success-copy">
+                <strong>${movedCount}</strong> document${movedCount === 1 ? '' : 's'} moved successfully.
+              </p>
+              <div class="ragitify-swal-success-meta">
+                Your library view has been refreshed with the updated location.
+              </div>
+            </div>
+          `,
+          confirmButtonText: 'Done',
+          customClass: {
+            popup: 'ragitify-swal-success-popup',
+            title: 'ragitify-swal-success-title',
+            htmlContainer: 'ragitify-swal-success-html',
+            actions: 'ragitify-swal-success-actions',
+            confirmButton: 'ragitify-swal-success-confirm'
+          }
         });
       },
       error: (err) => {

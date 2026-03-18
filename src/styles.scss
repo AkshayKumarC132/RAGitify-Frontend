@@ -450,6 +450,103 @@ body.style-neumorphic.theme-dark {
   padding: 4px 24px 0 !important;
 }
 
+.ragitify-swal-success-popup {
+  width: min(500px, calc(100vw - 1.25rem)) !important;
+  padding: 0 !important;
+  border-radius: 22px !important;
+  border: 1px solid #dbe5f4 !important;
+  background:
+    radial-gradient(circle at top center, rgba(16, 185, 129, 0.09), transparent 28%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+  box-shadow: 0 28px 60px -24px rgba(15, 23, 42, 0.35) !important;
+  overflow: hidden !important;
+}
+
+.ragitify-swal-success-popup .swal2-icon.swal2-success {
+  width: 68px !important;
+  height: 68px !important;
+  margin: 24px auto 12px !important;
+  border: 2px solid #d8f0df !important;
+  background: linear-gradient(180deg, #f6fff9 0%, #edfdf3 100%) !important;
+  color: #1f9d63 !important;
+}
+
+.ragitify-swal-success-popup .swal2-icon.swal2-success [class^='swal2-success-line'],
+.ragitify-swal-success-popup .swal2-icon.swal2-success .swal2-success-ring,
+.ragitify-swal-success-popup .swal2-icon.swal2-success .swal2-success-fix,
+.ragitify-swal-success-popup .swal2-icon.swal2-success [class^='swal2-success-circular-line'] {
+  display: none !important;
+}
+
+.ragitify-swal-success-popup .swal2-icon.swal2-success .swal2-icon-content {
+  font-size: 1.85rem !important;
+  line-height: 1 !important;
+}
+
+.ragitify-swal-success-title {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.03em !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+  padding: 0 28px !important;
+}
+
+.ragitify-swal-success-html {
+  margin: 0 !important;
+  padding: 12px 28px 22px !important;
+}
+
+.ragitify-swal-success-body {
+  text-align: center;
+}
+
+.ragitify-swal-success-copy {
+  margin: 0 !important;
+  color: #334155;
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+.ragitify-swal-success-copy strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.ragitify-swal-success-meta {
+  margin: 0.9rem auto 0;
+  max-width: 320px;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  background: rgba(76, 119, 234, 0.08);
+  color: #49617f;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.ragitify-swal-success-actions {
+  margin: 0 !important;
+  width: 100% !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  padding: 0 28px 28px !important;
+  background: transparent !important;
+  border-top: none !important;
+}
+
+.ragitify-swal-success-confirm {
+  min-width: 132px !important;
+  margin: 0 !important;
+  border: 1px solid #4b77ea !important;
+  border-radius: 12px !important;
+  padding: 0.72rem 1.1rem !important;
+  font-size: 0.96rem !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #5f8eff 0%, #4b77ea 100%) !important;
+  box-shadow: 0 12px 24px -12px rgba(75, 119, 234, 0.85) !important;
+}
+
 .ragitify-swal-html {
   margin: 0 !important;
   padding: 10px 24px 16px !important;

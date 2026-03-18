@@ -251,10 +251,27 @@ export class WorkspaceLibraryDeleteFlowService {
       next: () => {
         callbacks.onDeleted?.();
         void Swal.fire({
-          title: 'Library deleted',
-          text: successMessage || `${store.name} was deleted successfully.`,
           icon: 'success',
-          confirmButtonText: 'Close'
+          iconHtml: '<i class="fa-solid fa-check"></i>',
+          title: 'Library deleted',
+          html: `
+            <div class="ragitify-swal-success-body">
+              <p class="ragitify-swal-success-copy">
+                <strong>"${this.escapeHtml(this.truncateText(store.name, 20))}"</strong> was deleted successfully.
+              </p>
+              <div class="ragitify-swal-success-meta">
+                ${this.escapeHtml(successMessage || 'The library has been removed from your workspace.')}
+              </div>
+            </div>
+          `,
+          confirmButtonText: 'Done',
+          customClass: {
+            popup: 'ragitify-swal-success-popup',
+            title: 'ragitify-swal-success-title',
+            htmlContainer: 'ragitify-swal-success-html',
+            actions: 'ragitify-swal-success-actions',
+            confirmButton: 'ragitify-swal-success-confirm'
+          }
         });
       },
       error: (err) => {
