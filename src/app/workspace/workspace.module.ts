@@ -14,6 +14,7 @@ import { AssistantChatComponent } from './components/assistant-chat/assistant-ch
 import { LibraryChatComponent } from './components/library-chat/library-chat.component';
 import { WorkspaceLibraryPickerComponent } from './components/workspace-library-picker/workspace-library-picker.component';
 import { DocumentDetailsPageComponent } from './components/document-details-page/document-details-page.component';
+import { DocumentSidebarListComponent } from './components/document-sidebar-list/document-sidebar-list.component';
 import { WorkspaceRoutingModule } from './workspace-routing.module';
 
 @NgModule({
@@ -29,7 +30,8 @@ import { WorkspaceRoutingModule } from './workspace-routing.module';
     DocumentChatComponent,
     AssistantChatComponent,
     LibraryChatComponent,
-    DocumentDetailsPageComponent
+    DocumentDetailsPageComponent,
+    DocumentSidebarListComponent
   ],
   imports: [
     CommonModule,

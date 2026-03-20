@@ -183,7 +183,8 @@
   margin: 0.25rem 0.5rem 0.5rem 0.5rem;
 }
 
-.sidebar-library-list {
+.sidebar-library-list,
+.sidebar-document-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -454,6 +455,7 @@
   }
 
   .knowledge-sidebar-block .sidebar-library-list,
+  .knowledge-sidebar-block .sidebar-document-list,
   .knowledge-sidebar-block .sidebar-summary,
   .knowledge-sidebar-block .library-search-row {
     display: none;

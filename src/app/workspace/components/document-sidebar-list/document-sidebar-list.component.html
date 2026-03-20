@@ -1,0 +1,25 @@
+<div class="document-sidebar-list">
+  <div *ngIf="loading" class="sidebar-loading">
+    <div class="spinner-small"></div>
+  </div>
+  <div *ngIf="!loading && documents.length === 0" class="empty-state">
+    No documents found in this library.
+  </div>
+  <div class="sidebar-document-list-items" *ngIf="!loading && documents.length > 0">
+    <div *ngFor="let doc of documents" 
+         class="sidebar-doc-item card-premium"
+         [class.selected]="activeDocumentId === doc.id"
+         (click)="selectDocument(doc)">
+      
+      <div class="doc-icon-container" [ngClass]="getIconClass(doc)">
+         <span class="doc-type-text">{{ getFileExt(doc) }}</span>
+      </div>
+
+      <div class="doc-info">
+         <div class="doc-title" [title]="getDisplayName(doc)">{{ getTruncatedName(getDisplayName(doc)) }}</div>
+         <div class="doc-subtitle">Last edited {{ formatDate(doc.updated_at || doc.uploaded_at || doc.created_at) }}, {{ formatSize(doc.file_size) }}</div>
+      </div>
+
+    </div>
+  </div>
+</div>

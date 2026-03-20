@@ -219,6 +219,15 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
     return item.active || item.is_active ? 'Active' : 'Inactive';
   }
 
+  getStatusColor(status: string | undefined | null): string {
+    if (!status) return 'inherit';
+    const s = status.toLowerCase();
+    if (s === 'failed' || s.includes('fail') || s.includes('error')) return 'red';
+    if (s === 'success' || s === 'completed' || s.includes('success')) return 'green';
+    if (s === 'inprogress' || s.includes('progress') || s === 'queued' || s.includes('queued')) return 'orange';
+    return 'inherit';
+  }
+
   private loadDetails(): void {
     if (!this.documentId) {
       this.document = null;

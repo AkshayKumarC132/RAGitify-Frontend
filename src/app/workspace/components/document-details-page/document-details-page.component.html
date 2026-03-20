@@ -130,7 +130,7 @@
         </article>
         <article class="highlight-card">
           <span class="highlight-label">Status</span>
-          <strong>{{ document?.ingestion_status || document?.status || '-' }}</strong>
+          <strong [style.color]="getStatusColor(document?.ingestion_status || document?.status)">{{ document?.ingestion_status || document?.status || '-' }}</strong>
         </article>
         <article class="highlight-card">
           <span class="highlight-label">Source</span>

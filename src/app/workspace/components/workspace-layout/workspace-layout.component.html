@@ -72,11 +72,14 @@
         >
           <i class="fa-solid fa-plus"></i>
         </button>
-        <div class="sidebar-library-list" *ngIf="!sidebarCollapsed">
+        <div class="sidebar-library-list" *ngIf="!sidebarCollapsed && !activeDocumentId">
           <app-vector-store-list [vectorStores]="filteredVectorStores" [selectedVectorStore]="layoutSelectedStore"
             [documentCounts]="libraryDocCounts" (vectorStoreSelected)="onLayoutLibrarySelect($event)"
             (editRequested)="onLayoutEditLibrary($event)" (deleteRequested)="onLayoutDeleteLibrary($event)"
             (chatRequested)="onLayoutChatLibrary($event)"></app-vector-store-list>
+        </div>
+        <div class="sidebar-document-list" *ngIf="!sidebarCollapsed && activeDocumentId">
+          <app-document-sidebar-list [libraryId]="layoutSelectedStore?.id" [activeDocumentId]="activeDocumentId"></app-document-sidebar-list>
         </div>
       </div>
     </ng-container>
