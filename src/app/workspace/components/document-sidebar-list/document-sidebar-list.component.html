@@ -5,8 +5,11 @@
   <div *ngIf="!loading && documents.length === 0" class="empty-state">
     No documents found in this library.
   </div>
-  <div class="sidebar-document-list-items" *ngIf="!loading && documents.length > 0">
-    <div *ngFor="let doc of documents" 
+  <div *ngIf="!loading && documents.length > 0 && filteredDocuments.length === 0" class="empty-state">
+    No documents match "{{ searchQuery }}".
+  </div>
+  <div class="sidebar-document-list-items" *ngIf="!loading && filteredDocuments.length > 0">
+    <div *ngFor="let doc of filteredDocuments" 
          class="sidebar-doc-item card-premium"
          [class.selected]="activeDocumentId === doc.id"
          (click)="selectDocument(doc)">
@@ -16,8 +19,10 @@
       </div>
 
       <div class="doc-info">
-         <div class="doc-title" [title]="getDisplayName(doc)">{{ getTruncatedName(getDisplayName(doc)) }}</div>
-         <div class="doc-subtitle">Last edited {{ formatDate(doc.updated_at || doc.uploaded_at || doc.created_at) }}, {{ formatSize(doc.file_size) }}</div>
+         <div class="doc-title-row">
+           <div class="doc-title" [title]="getDisplayName(doc)">{{ getTruncatedName(getDisplayName(doc)) }}</div>
+           <i *ngIf="getStatusIcon(doc)" [ngClass]="getStatusIcon(doc)!.class" [title]="getStatusIcon(doc)!.title" class="status-icon"></i>
+         </div>
       </div>
 
     </div>

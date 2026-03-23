@@ -1,6 +1,6 @@
-import { Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, forkJoin, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
@@ -47,7 +47,10 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
   showCreateLibraryModal = false;
   createLibraryForm: FormGroup;
   createLibraryError = '';
+  showUploadForm = false;
+  showDocumentChat = false;
   private destroy$ = new Subject<void>();
+  private statusPollTimer: ReturnType<typeof setTimeout> | null = null;
   summaryCopied = false;
 
   constructor(
@@ -57,6 +60,8 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
     private documentShareService: DocumentShareService,
     private vectorStoreService: VectorStoreService,
     private route: ActivatedRoute,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
     private knowledgeContext: WorkspaceKnowledgeContextService,
     private libraryDeleteFlow: WorkspaceLibraryDeleteFlowService
   ) {
@@ -84,6 +89,22 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
     this.knowledgeContext.openNewLibraryPanel.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.openCreateLibraryModal();
     });
+
+    this.knowledgeContext.openUploadPanel.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.showUploadForm = true;
+    });
+  }
+
+  onDocumentUploaded(documentId: string): void {
+    this.showUploadForm = false;
+    this.knowledgeContext.documentUploaded.next();
+    if (documentId) {
+      this.router.navigate(['/workspace/document', documentId], {
+        queryParams: this.currentLibraryId ? { libraryId: this.currentLibraryId } : {}
+      });
+    } else {
+      this.loadDetails();
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -93,6 +114,7 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
   }
 
   ngOnDestroy(): void {
+    this.stopStatusPolling();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -229,6 +251,8 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
   }
 
   private loadDetails(): void {
+    this.stopStatusPolling();
+
     if (!this.documentId) {
       this.document = null;
       this.vectorStore = null;
@@ -268,12 +292,69 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
         }
 
         this.loading = false;
+        this.startStatusPolling();
       },
       error: () => {
         this.errorMessage = 'Unable to load the requested document.';
         this.loading = false;
       }
     });
+  }
+
+  private isTerminalStatus(status: string | undefined | null): boolean {
+    if (!status) return false;
+    const s = status.toLowerCase();
+    return s === 'completed' || s === 'failed';
+  }
+
+  isQueuedStatus(status: string | undefined | null): boolean {
+    if (!status) return false;
+    const s = status.toLowerCase();
+    return s === 'inprogress' || s.includes('progress') || s === 'queued' || s.includes('queued');
+  }
+
+  private startStatusPolling(): void {
+    this.stopStatusPolling();
+
+    if (!this.document || !this.documentId) return;
+
+    const currentStatus = this.document.ingestion_status || this.document.status;
+    if (this.isTerminalStatus(currentStatus)) return;
+
+    this.statusPollTimer = setTimeout(() => {
+      if (!this.documentId) return;
+
+      this.documentService.getStatus(this.documentId).subscribe({
+        next: (statusResponse) => {
+          console.log('[Status Poll] Got status:', statusResponse.status);
+          if (this.document) {
+            this.document = {
+              ...this.document,
+              ingestion_status: statusResponse.status,
+              status: statusResponse.status
+            };
+            this.cdr.detectChanges();
+          }
+
+          if (this.isTerminalStatus(statusResponse.status)) {
+            this.loadDetails();
+          } else {
+            this.startStatusPolling();
+          }
+        },
+        error: () => {
+          // Retry on error
+          this.startStatusPolling();
+        }
+      });
+    }, 5000);
+  }
+
+  private stopStatusPolling(): void {
+    if (this.statusPollTimer !== null) {
+      clearTimeout(this.statusPollTimer);
+      this.statusPollTimer = null;
+    }
   }
 
   getSharedTitleFallback(): string | null {
@@ -487,6 +568,14 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
 
   closeLibraryChat(): void {
     this.chatLibrary = null;
+  }
+
+  openDocumentChat(): void {
+    this.showDocumentChat = true;
+  }
+
+  closeDocumentChat(): void {
+    this.showDocumentChat = false;
   }
 
   private formatValue(value: unknown): string {

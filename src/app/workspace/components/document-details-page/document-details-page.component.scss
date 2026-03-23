@@ -23,6 +23,17 @@
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.45);
 }
 
+.upload-modal {
+  width: 560px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 1.5rem 1.75rem 1.25rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.45);
+}
+
 .rename-header h3 {
   margin: 0 0 0.35rem;
   font-size: 16px;
@@ -419,6 +430,16 @@
   small {
     color: #64748b;
     font-size: 0.82rem;
+  }
+
+  &.failed-status {
+    background: linear-gradient(180deg, rgba(254, 242, 242, 0.98), rgba(254, 226, 226, 0.94));
+    border-color: rgba(239, 68, 68, 0.2);
+  }
+
+  &.queued-status {
+    background: linear-gradient(180deg, rgba(255, 247, 237, 0.98), rgba(255, 237, 213, 0.94));
+    border-color: rgba(249, 115, 22, 0.2);
   }
 }
 

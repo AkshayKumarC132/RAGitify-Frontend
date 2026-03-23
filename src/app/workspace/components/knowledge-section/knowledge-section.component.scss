@@ -270,7 +270,7 @@
   }
 
   td {
-    padding: 0.75rem 1rem;
+    padding: 0.45rem 0.6rem;
     border-bottom: 1px solid var(--border-color);
     vertical-align: middle;
   }
@@ -385,6 +385,10 @@
     position: relative;
     display: inline-block;
     transition: transform 0.18s ease;
+
+    &.active-dropdown {
+      z-index: 50;
+    }
   }
 
   tbody tr:hover .actions-cell-wrap {
@@ -1391,6 +1395,7 @@
 }
 
 @media (max-width: 960px) {
+
   :host-context(.workspace-container:not(.sidebar-collapsed)) .selection-bar-container,
   :host-context(.workspace-container.sidebar-collapsed) .selection-bar-container {
     left: 0;

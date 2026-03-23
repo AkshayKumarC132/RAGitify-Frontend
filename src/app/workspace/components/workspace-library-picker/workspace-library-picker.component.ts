@@ -19,6 +19,7 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
   documents: Document[] = [];
   documentCounts: Record<string, number> = {};
   failedCounts: Record<string, number> = {};
+
   processingCounts: Record<string, number> = {};
   accessedCounts: Record<string, number> = {};
   loading = true;
@@ -29,6 +30,8 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
   renameName = '';
   creating = false;
   createName = '';
+  showFailedView = false;
+  showProcessingView = false;
 
   get filteredVectorStores(): VectorStore[] {
     const q = this.searchQuery.trim().toLowerCase();
@@ -56,6 +59,44 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
 
   get totalFailedDocuments(): number {
     return this.documents.filter(doc => this.getResolvedStatus(doc) === 'failed').length;
+  }
+
+  get failedDocumentGroups(): { libraryName: string, documents: Document[] }[] {
+    const failedDocs = this.documents.filter(doc => this.getResolvedStatus(doc) === 'failed');
+    
+    const grouped = failedDocs.reduce((acc, doc) => {
+      const vsId = doc.vector_store;
+      if (!acc[vsId]) {
+        acc[vsId] = [];
+      }
+      acc[vsId].push(doc);
+      return acc;
+    }, {} as Record<string, Document[]>);
+
+    return Object.entries(grouped).map(([vsId, docs]) => {
+      const store = this.vectorStores.find(s => s.id === vsId);
+      const libraryName = store ? this.getDisplayLibraryName(store.name) : 'Unknown Library';
+      return { libraryName, documents: docs };
+    }).sort((a, b) => a.libraryName.localeCompare(b.libraryName));
+  }
+
+  get processingDocumentGroups(): { libraryName: string, documents: Document[] }[] {
+    const processingDocs = this.documents.filter(doc => ['queued', 'processing', 'in_progress'].includes(this.getResolvedStatus(doc)));
+    
+    const grouped = processingDocs.reduce((acc, doc) => {
+      const vsId = doc.vector_store;
+      if (!acc[vsId]) {
+        acc[vsId] = [];
+      }
+      acc[vsId].push(doc);
+      return acc;
+    }, {} as Record<string, Document[]>);
+
+    return Object.entries(grouped).map(([vsId, docs]) => {
+      const store = this.vectorStores.find(s => s.id === vsId);
+      const libraryName = store ? this.getDisplayLibraryName(store.name) : 'Unknown Library';
+      return { libraryName, documents: docs };
+    }).sort((a, b) => a.libraryName.localeCompare(b.libraryName));
   }
 
   get totalProcessingDocuments(): number {
@@ -222,6 +263,12 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
     this.router.navigate(['/workspace'], { queryParams: { libraryId: store.id } });
   }
 
+  selectDocument(doc: Document): void {
+    this.router.navigate(['/workspace/document', doc.id], { 
+      queryParams: { libraryId: doc.vector_store } 
+    });
+  }
+
   openLibraryChat(store: VectorStore): void {
     this.knowledgeContext.requestPendingLibraryChat(store);
     this.router.navigate(['/workspace'], {
@@ -245,6 +292,29 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
 
   setGridView(value: boolean): void {
     this.gridView = value;
+  }
+
+  toggleFailedView(): void {
+    if (this.totalFailedDocuments > 0 || this.showFailedView) {
+      this.showFailedView = !this.showFailedView;
+      if (this.showFailedView) {
+        this.showProcessingView = false;
+      }
+    }
+  }
+
+  toggleProcessingView(): void {
+    if (this.totalProcessingDocuments > 0 || this.showProcessingView) {
+      this.showProcessingView = !this.showProcessingView;
+      if (this.showProcessingView) {
+        this.showFailedView = false;
+      }
+    }
+  }
+
+  showAllLibraries(): void {
+    this.showFailedView = false;
+    this.showProcessingView = false;
   }
 
   editLibrary(store: VectorStore): void {
@@ -338,6 +408,22 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
 
   private getResolvedStatus(document: Document): string {
     return document.ingestion_status || document.status || 'queued';
+  }
+
+  getFileExt(doc: Document): string {
+    const name = (doc.title || doc.original_filename || 'Untitled').trim();
+    const parts = name.split('.');
+    if (parts.length > 1) {
+      return parts[parts.length - 1].toUpperCase().substring(0, 4);
+    }
+    return 'DOC';
+  }
+
+  formatSize(bytes: number | undefined): string {
+    if (bytes == null) return '0 KB';
+    if (bytes === 0) return '0 KB';
+    const kb = bytes / 1024;
+    return kb >= 10 ? `${Math.round(kb)} KB` : `${kb.toFixed(1)} KB`;
   }
 
 }

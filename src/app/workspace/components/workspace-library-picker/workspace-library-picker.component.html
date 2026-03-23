@@ -59,17 +59,25 @@
   </div>
 
   <section *ngIf="!loading && vectorStores.length > 0" class="workspace-kpis">
-    <article class="kpi-card kpi-card-primary">
+    <article class="kpi-card kpi-card-primary clickable" 
+             [class.active]="!showFailedView && !showProcessingView"
+             (click)="showAllLibraries()">
       <span class="kpi-label">Total Documents</span>
       <span class="kpi-value">{{ totalDocuments }}</span>
       <span class="kpi-meta">Across {{ vectorStores.length }} libraries</span>
     </article>
-    <article class="kpi-card">
+    <article class="kpi-card" 
+             [class.clickable]="totalFailedDocuments > 0" 
+             [class.active]="showFailedView" 
+             (click)="toggleFailedView()">
       <span class="kpi-label">Failed</span>
       <span class="kpi-value">{{ totalFailedDocuments }}</span>
       <span class="kpi-meta">Need review or re-ingestion</span>
     </article>
-    <article class="kpi-card">
+    <article class="kpi-card" 
+             [class.clickable]="totalProcessingDocuments > 0" 
+             [class.active]="showProcessingView" 
+             (click)="toggleProcessingView()">
       <span class="kpi-label">Processing</span>
       <span class="kpi-value">{{ totalProcessingDocuments }}</span>
       <span class="kpi-meta">Queued, processing, or in progress</span>
@@ -81,7 +89,98 @@
     </article>
   </section>
 
-  <div *ngIf="!loading && vectorStores.length > 0 && gridView && filteredVectorStores.length > 0" class="library-grid">
+  <div *ngIf="!loading && vectorStores.length > 0 && showFailedView" class="failed-documents-view documents-list">
+    <div *ngIf="failedDocumentGroups.length === 0" class="empty-state">
+      <p>No failed documents.</p>
+    </div>
+    
+    <div class="library-group" *ngFor="let group of failedDocumentGroups">
+      <div class="group-header">
+        <div class="group-title"><i class="fa-regular fa-folder"></i> {{ group.libraryName }}</div>
+        <div class="group-count">{{ group.documents.length }} docs</div>
+      </div>
+      <div class="group-documents" [class.grid-layout]="gridView">
+        <ng-container *ngIf="!gridView">
+          <div class="failed-document-row" *ngFor="let doc of group.documents" (click)="selectDocument(doc)">
+            <div class="document-card-meta">
+              <div class="document-card-topline">
+                <span class="title">{{ doc.title || doc.original_filename || 'Unknown Document' }}</span>
+                <div class="document-card-tags">
+                  <span class="document-chip error">Failed</span>
+                </div>
+              </div>
+              <div class="document-card-subline">
+                <span class="meta error-text">Ingestion failed</span>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+        
+        <ng-container *ngIf="gridView">
+          <div class="failed-document-card" *ngFor="let doc of group.documents" (click)="selectDocument(doc)">
+            <div class="card-top">
+              <i class="fa-regular fa-file-lines doc-icon"></i>
+              <span class="document-chip error"><i class="fa-solid fa-circle-exclamation"></i> Failed</span>
+            </div>
+            <div class="card-title" [style.color]="getFileExt(doc).toLowerCase() === 'docx' ? '#1a73e8' : '#4b5563'">{{ doc.title || doc.original_filename || 'Unknown Document' }}</div>
+            <div class="card-bottom">
+              <span class="type-badge" [ngClass]="'badge-' + getFileExt(doc).toLowerCase()">{{ getFileExt(doc) }}</span>
+              <span class="size-text">{{ formatSize(doc.file_size) }}</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && vectorStores.length > 0 && showProcessingView" class="failed-documents-view processing-documents-view documents-list">
+    <div *ngIf="processingDocumentGroups.length === 0" class="empty-state">
+      <p>No processing documents.</p>
+    </div>
+    
+    <div class="library-group" *ngFor="let group of processingDocumentGroups">
+      <div class="group-header">
+        <div class="group-title"><i class="fa-regular fa-folder"></i> {{ group.libraryName }}</div>
+        <div class="group-count">{{ group.documents.length }} docs</div>
+      </div>
+      <div class="group-documents" [class.grid-layout]="gridView">
+        <ng-container *ngIf="!gridView">
+          <div class="failed-document-row processing-document-row" *ngFor="let doc of group.documents" (click)="selectDocument(doc)">
+            <div class="document-card-meta">
+              <div class="document-card-topline">
+                <span class="title">{{ doc.title || doc.original_filename || 'Unknown Document' }}</span>
+                <div class="document-card-tags">
+                  <span class="document-chip processing" *ngIf="doc.status !== 'completed'">Processing</span>
+                  <span class="document-chip success" *ngIf="doc.status === 'completed'">Ingested</span>
+                </div>
+              </div>
+              <div class="document-card-subline">
+                <span class="meta processing-text" *ngIf="doc.status !== 'completed'">Ingestion in progress</span>
+                <span class="meta success-text" *ngIf="doc.status === 'completed'">Ingestion successful</span>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="gridView">
+          <div class="failed-document-card" *ngFor="let doc of group.documents" (click)="selectDocument(doc)">
+            <div class="card-top">
+              <i class="fa-regular fa-file-lines doc-icon"></i>
+              <span class="document-chip success" *ngIf="doc.status === 'completed'"><i class="fa-regular fa-circle-check"></i> Ingested</span>
+              <span class="document-chip processing" *ngIf="doc.status !== 'completed'"><i class="fa-regular fa-clock"></i> Processing</span>
+            </div>
+            <div class="card-title" [style.color]="getFileExt(doc).toLowerCase() === 'docx' ? '#1a73e8' : '#4b5563'">{{ doc.title || doc.original_filename || 'Unknown Document' }}</div>
+            <div class="card-bottom">
+              <span class="type-badge" [ngClass]="'badge-' + getFileExt(doc).toLowerCase()">{{ getFileExt(doc) }}</span>
+              <span class="size-text">{{ formatSize(doc.file_size) }}</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && vectorStores.length > 0 && gridView && !showFailedView && !showProcessingView && filteredVectorStores.length > 0" class="library-grid">
     <div *ngFor="let store of filteredVectorStores" class="library-card">
       <div class="library-card-main" (click)="selectLibrary(store)" tabindex="0" role="button" (keydown.enter)="selectLibrary(store)" (keydown.space)="selectLibrary(store); $event.preventDefault()">
         <div class="library-card-head">
@@ -139,7 +238,7 @@
   </div>
 
   <!-- List view -->
-  <div *ngIf="!loading && vectorStores.length > 0 && !gridView && filteredVectorStores.length > 0" class="library-table-wrap">
+  <div *ngIf="!loading && vectorStores.length > 0 && !gridView && !showFailedView && !showProcessingView && filteredVectorStores.length > 0" class="library-table-wrap">
     <table class="library-table">
       <thead>
         <tr>

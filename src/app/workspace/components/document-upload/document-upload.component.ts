@@ -19,7 +19,7 @@ interface FileUploadStatus {
 export class DocumentUploadComponent implements OnChanges {
   @Input() vectorStores: VectorStore[] = [];
   @Input() defaultVectorStoreId: string | null = null;
-  @Output() uploaded = new EventEmitter<void>();
+  @Output() uploaded = new EventEmitter<string>();
   @Output() cancel = new EventEmitter<void>();
 
   fileStatuses: FileUploadStatus[] = [];
@@ -27,6 +27,7 @@ export class DocumentUploadComponent implements OnChanges {
   loading = false;
   currentUploadIndex = -1;
   private hasProgressEvents = false;
+  private lastUploadedDocumentId = '';
   errorMessage = '';
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -75,7 +76,7 @@ export class DocumentUploadComponent implements OnChanges {
       // All files processed
       this.loading = false;
       this.currentUploadIndex = -1;
-      this.uploaded.emit();
+      this.uploaded.emit(this.lastUploadedDocumentId);
       return;
     }
 
@@ -100,6 +101,14 @@ export class DocumentUploadComponent implements OnChanges {
         if (event.type === HttpEventType.Response) {
           fileStatus.progress = 100;
           fileStatus.status = 'completed';
+
+          // Capture the document ID from the response for navigation
+          const body = event.body as any;
+          if (body?.document_id) {
+            this.lastUploadedDocumentId = body.document_id;
+          } else if (body?.id) {
+            this.lastUploadedDocumentId = body.id;
+          }
 
           // Move to next file after a brief delay
           setTimeout(() => {

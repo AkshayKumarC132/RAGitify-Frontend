@@ -111,6 +111,10 @@
             <i class="fa-solid fa-share-nodes"></i>
             <span>Share</span>
           </button>
+          <button *ngIf="document" type="button" class="details-secondary-btn" (click)="openDocumentChat()">
+            <i class="fa-solid fa-comments"></i>
+            <span>Chat</span>
+          </button>
           <a *ngIf="document?.signed_url" class="details-primary-btn" [href]="document?.signed_url" target="_blank"
             rel="noopener noreferrer">
             <i class="fa-solid fa-arrow-up-right-from-square"></i>
@@ -128,7 +132,9 @@
           <span class="highlight-label">Library Type</span>
           <strong>{{ vectorStore?.vs_type || '-' }}</strong>
         </article>
-        <article class="highlight-card">
+        <article class="highlight-card" 
+          [class.failed-status]="(document?.ingestion_status || document?.status)?.toLowerCase() === 'failed'"
+          [class.queued-status]="isQueuedStatus(document?.ingestion_status || document?.status)">
           <span class="highlight-label">Status</span>
           <strong [style.color]="getStatusColor(document?.ingestion_status || document?.status)">{{ document?.ingestion_status || document?.status || '-' }}</strong>
         </article>
@@ -137,7 +143,7 @@
           <strong>{{ document?.source || '-' }}</strong>
         </article>
         <article class="highlight-card">
-          <span class="highlight-label">Share Footprint</span>
+          <span class="highlight-label">Shared</span>
           <strong>{{ shareCount }}</strong>
         </article>
         <article class="highlight-card">
@@ -251,4 +257,17 @@
   </ng-template>
 
   <app-library-chat *ngIf="chatLibrary" [vectorStore]="chatLibrary" (closed)="closeLibraryChat()"></app-library-chat>
+
+  <app-document-chat *ngIf="showDocumentChat && document" [document]="document" (closed)="closeDocumentChat()"></app-document-chat>
+
+  <div class="library-rename-backdrop" *ngIf="showUploadForm" (click)="showUploadForm = false">
+    <div class="upload-modal" (click)="$event.stopPropagation()">
+      <app-document-upload
+        [vectorStores]="vectorStores"
+        [defaultVectorStoreId]="vectorStore?.id || null"
+        (uploaded)="onDocumentUploaded($event)"
+        (cancel)="showUploadForm = false"
+      ></app-document-upload>
+    </div>
+  </div>
 </div>

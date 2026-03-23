@@ -11,7 +11,7 @@ export class LlmReadyGuard implements CanActivate {
   constructor(
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) { }
 
   canActivate(): Observable<boolean | UrlTree> {
     const token = this.authService.getToken();

@@ -2,9 +2,9 @@
   <aside class="workspace-sidebar" [class.collapsed]="sidebarCollapsed">
     <div class="sidebar-header" [class.show-expand-control]="sidebarCollapsed && hoveringExpandControl">
       <button type="button" class="brand-toggle" (click)="onBrandClick()"
-        [attr.title]="sidebarCollapsed ? null : 'Home'"
-        (mouseenter)="handleBrandExpandInteraction(true)" (mouseleave)="handleBrandExpandInteraction(false)"
-        (focus)="handleBrandExpandInteraction(true)" (blur)="handleBrandExpandInteraction(false)">
+        [attr.title]="sidebarCollapsed ? null : 'Home'" (mouseenter)="handleBrandExpandInteraction(true)"
+        (mouseleave)="handleBrandExpandInteraction(false)" (focus)="handleBrandExpandInteraction(true)"
+        (blur)="handleBrandExpandInteraction(false)">
         <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" class="brand-logo" />
         <div class="brand-text" *ngIf="!sidebarCollapsed">
           <div class="brand-title">RAGitify</div>
@@ -21,15 +21,18 @@
 
     <!-- New Chat / Workspace / Prompts: hidden when in Knowledge Library -->
     <nav class="sidebar-actions" *ngIf="showLibraryPicker || activeSection === 'prompts'">
-      <button type="button" class="new-thread-button" (click)="goToNewChat()" [attr.title]="sidebarCollapsed ? 'Start a new chat' : null">
+      <button type="button" class="new-thread-button" (click)="goToNewChat()"
+        [attr.title]="sidebarCollapsed ? 'Start a new chat' : null">
         <i class="fa-solid fa-plus"></i>
         <span class="button-text" *ngIf="!sidebarCollapsed">New Chat</span>
       </button>
-      <button type="button" class="workspace-button" [class.active]="activeSection !== 'prompts'" (click)="goToWorkspace()" [attr.title]="sidebarCollapsed ? 'Open workspace' : null">
+      <button type="button" class="workspace-button" [class.active]="activeSection !== 'prompts'"
+        (click)="goToWorkspace()" [attr.title]="sidebarCollapsed ? 'Open workspace' : null">
         <i class="fa-solid fa-briefcase"></i>
         <span class="button-text" *ngIf="!sidebarCollapsed">Workspace</span>
       </button>
-      <button type="button" class="workspace-button" [class.active]="activeSection === 'prompts'" (click)="goToPrompts()" [attr.title]="sidebarCollapsed ? 'Open prompts' : null">
+      <button type="button" class="workspace-button" [class.active]="activeSection === 'prompts'"
+        (click)="goToPrompts()" [attr.title]="sidebarCollapsed ? 'Open prompts' : null">
         <i class="fa-solid fa-robot"></i>
         <span class="button-text" *ngIf="!sidebarCollapsed">Prompts</span>
       </button>
@@ -41,36 +44,24 @@
         <div class="library-search-row" *ngIf="!sidebarCollapsed">
           <div class="library-search">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input
-              class="library-search-input"
-              type="text"
-              [(ngModel)]="librarySearchQuery"
-              (ngModelChange)="onSidebarSearchChange($event)"
-              placeholder="Search libraries..."
-              aria-label="Search libraries"
-            />
-            <button
-              type="button"
-              class="library-search-clear"
-              *ngIf="librarySearchQuery"
-              (click)="librarySearchQuery = ''"
-              title="Clear search"
-            >
+            <input class="library-search-input" type="text" [(ngModel)]="librarySearchQuery"
+              (ngModelChange)="onSidebarSearchChange($event)" [placeholder]="activeDocumentId ? 'Search documents' : 'Search libraries...'"
+              [attr.aria-label]="activeDocumentId ? 'Search documents' : 'Search libraries'" />
+            <button type="button" class="library-search-clear" *ngIf="librarySearchQuery"
+              (click)="librarySearchQuery = ''" title="Clear search">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
-          <button type="button" class="library-add-btn" (click)="openUploadOrNewLibrary('library')" title="New Library">
-            <i class="fa-solid fa-plus"></i>
+          <button type="button" class="library-add-btn"
+            (click)="openUploadOrNewLibrary(activeDocumentId ? 'upload' : 'library')"
+            [title]="activeDocumentId ? 'Upload Document' : 'New Library'">
+            <i class="fa-solid" [ngClass]="activeDocumentId ? 'fa-arrow-up' : 'fa-plus'"></i>
           </button>
         </div>
-        <button
-          type="button"
-          class="library-add-btn library-add-btn-collapsed"
-          *ngIf="sidebarCollapsed"
-          (click)="openUploadOrNewLibrary('library')"
-          title="New Library"
-        >
-          <i class="fa-solid fa-plus"></i>
+        <button type="button" class="library-add-btn library-add-btn-collapsed" *ngIf="sidebarCollapsed"
+          (click)="openUploadOrNewLibrary(activeDocumentId ? 'upload' : 'library')"
+          [title]="activeDocumentId ? 'Upload Document' : 'New Library'">
+          <i class="fa-solid" [ngClass]="activeDocumentId ? 'fa-arrow-up' : 'fa-plus'"></i>
         </button>
         <div class="sidebar-library-list" *ngIf="!sidebarCollapsed && !activeDocumentId">
           <app-vector-store-list [vectorStores]="filteredVectorStores" [selectedVectorStore]="layoutSelectedStore"
@@ -79,7 +70,8 @@
             (chatRequested)="onLayoutChatLibrary($event)"></app-vector-store-list>
         </div>
         <div class="sidebar-document-list" *ngIf="!sidebarCollapsed && activeDocumentId">
-          <app-document-sidebar-list [libraryId]="layoutSelectedStore?.id" [activeDocumentId]="activeDocumentId"></app-document-sidebar-list>
+          <app-document-sidebar-list [libraryId]="layoutSelectedStore?.id"
+            [activeDocumentId]="activeDocumentId"></app-document-sidebar-list>
         </div>
       </div>
     </ng-container>
@@ -87,7 +79,6 @@
     <!-- Bottom: Home and Logout (hidden inside Knowledge Library workspace view) -->
     <div class="sidebar-footer" *ngIf="showLibraryPicker || activeSection === 'prompts'">
       <button type="button" class="sidebar-footer-btn" (click)="goToHome()" title="Home">
-        <i class="fa-solid fa-house"></i>
         <span>Home</span>
       </button>
       <button type="button" class="sidebar-footer-btn danger" (click)="logout()" title="Log out">
@@ -108,31 +99,32 @@
     <div class="workspace-top-bar" *ngIf="activeSection === 'knowledge'">
       <div class="top-bar-brand">
         <button type="button" class="crumb-link" (click)="goToHome()">
-          <i class="fa-solid fa-house"></i>
           <span>Home</span>
         </button>
-        <span class="crumb-separator">/</span>
+        <span class="crumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
         <button type="button" class="crumb-link" (click)="goToLibraryPicker()">
-          <i class="fa-solid fa-file-lines top-bar-icon"></i>
           <span>Knowledge Library</span>
         </button>
         <ng-container *ngIf="!showLibraryPicker && layoutSelectedStore && !activeDocumentId">
-          <span class="crumb-separator">/</span>
-          <span class="crumb-current" [title]="layoutSelectedStore.name">{{ getBreadcrumbLibraryName(layoutSelectedStore.name) }}</span>
+          <span class="crumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
+          <span class="crumb-current" [title]="layoutSelectedStore.name">{{
+            getBreadcrumbLibraryName(layoutSelectedStore.name) }}</span>
         </ng-container>
         <ng-container *ngIf="activeDocumentId && (layoutSelectedStore || activeDocumentId)">
-          <span class="crumb-separator">/</span>
+          <span class="crumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
           <button type="button" class="crumb-link" (click)="goToCurrentLibrary()">
-            <span [title]="layoutSelectedStore?.name || 'Library'">{{ getBreadcrumbLibraryName(layoutSelectedStore?.name) }}</span>
+            <span [title]="layoutSelectedStore?.name || 'Library'">{{
+              getBreadcrumbLibraryName(layoutSelectedStore?.name) }}</span>
           </button>
         </ng-container>
         <ng-container *ngIf="activeDocumentId">
-          <span class="crumb-separator">/</span>
+          <span class="crumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
           <span class="crumb-current">Document Details</span>
         </ng-container>
       </div>
       <div class="top-bar-right">
-        <button type="button" class="upload-button" (click)="openUploadOrNewLibrary('upload')" *ngIf="activeSection === 'knowledge' && !activeDocumentId">
+        <button type="button" class="upload-button" (click)="openUploadOrNewLibrary('upload')"
+          *ngIf="activeSection === 'knowledge' && !activeDocumentId">
           <i class="fa-solid fa-arrow-up"></i>
           <span>Upload</span>
         </button>
@@ -141,7 +133,8 @@
 
     <div class="workspace-panels">
       <app-prompts-section *ngIf="activeSection === 'prompts'"></app-prompts-section>
-      <app-document-details-page *ngIf="activeSection === 'knowledge' && activeDocumentId" [documentId]="activeDocumentId"></app-document-details-page>
+      <app-document-details-page *ngIf="activeSection === 'knowledge' && activeDocumentId"
+        [documentId]="activeDocumentId"></app-document-details-page>
       <app-knowledge-section *ngIf="activeSection === 'knowledge' && !activeDocumentId"></app-knowledge-section>
     </div>
   </div>

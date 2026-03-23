@@ -12,7 +12,6 @@
       </div>
 
       <button class="home-link" type="button" (click)="goToHome()">
-        <i class="fa-solid fa-house"></i>
         <span>Home</span>
       </button>
 
@@ -39,12 +38,11 @@
       <header class="settings-topbar">
         <div class="breadcrumb-bar" aria-label="Breadcrumb">
           <button class="breadcrumb-home" type="button" (click)="goToHome()">
-            <i class="fa-solid fa-house"></i>
             <span>Home</span>
           </button>
-          <span class="breadcrumb-separator">/</span>
+          <span class="breadcrumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
           <span class="breadcrumb-link">Settings</span>
-          <span class="breadcrumb-separator">/</span>
+          <span class="breadcrumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
           <span class="breadcrumb-current">{{ currentSectionLabel }}</span>
         </div>
       </header>

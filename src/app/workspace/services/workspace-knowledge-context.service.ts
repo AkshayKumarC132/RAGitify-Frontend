@@ -22,6 +22,8 @@ export class WorkspaceKnowledgeContextService {
 
   /** Fired when layout wants to open the upload panel */
   readonly openUploadPanel = new Subject<void>();
+  /** Fired when a document finishes uploading, notifying lists to refresh */
+  readonly documentUploaded = new Subject<void>();
   /** Fired when layout wants to open the new library form */
   readonly openNewLibraryPanel = new Subject<void>();
   /** Fired when user requests edit/delete/chat from layout sidebar */

@@ -273,7 +273,7 @@
                 <td class="col-size">{{ formatFileSize(doc) }}</td>
                 <td class="col-date">{{ formatDate(resolvedDocumentDate(doc)) }}</td>
                 <td class="col-actions">
-                  <div class="actions-cell-wrap" (click)="$event.stopPropagation()">
+                  <div class="actions-cell-wrap" (click)="$event.stopPropagation()" [class.active-dropdown]="isActionsOpen(doc.id)">
                     <button type="button" class="action-menu-btn" title="Actions" (click)="toggleDocumentActions(doc.id, $event)">
                       <i class="fa-solid fa-ellipsis-vertical"></i>
                     </button>
