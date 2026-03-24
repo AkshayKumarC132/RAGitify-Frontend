@@ -1,4 +1,4 @@
-<div class="message-bubble" [class.user]="isUser" [class.assistant]="!isUser" [class.empty-state]="showEmptyState">
+<div class="message-bubble" [class.user]="isUser" [class.assistant]="!isUser" [class.empty-state]="showEmptyState" [class.streaming]="isStreaming">
   <div class="message-content" [class.has-run-error]="showRunErrorInfo">
     <div *ngIf="showRunErrorInfo" class="run-error-info" aria-hidden="true">
       <span class="run-error-icon">i</span>

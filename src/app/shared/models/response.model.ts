@@ -19,6 +19,7 @@ export interface ResponseCreateRequest {
   instructions?: string;
   input: ResponseInput[];
   tools?: DocumentTool[];
+  stream?: boolean;
   metadata?: Record<string, any>;
 }
 
@@ -46,4 +47,11 @@ export interface DocumentTool {
   type: 'document';
   vector_store_ids: string[];
   document_ids?: string[];
+}
+
+export interface StreamEvent {
+  type: string;
+  response?: ResponseRecord;
+  delta?: string;
+  warnings?: string[];
 }

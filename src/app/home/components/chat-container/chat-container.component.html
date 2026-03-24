@@ -1,7 +1,7 @@
 <div class="chat-container">
   <div class="messages-list" #messagesWrapper (scroll)="onScroll()">
     <app-message-bubble *ngFor="let message of messages; let last = last; trackBy: trackByMessage"
-      [message]="message" [isLast]="last">
+      [message]="message" [isLast]="last" [isStreaming]="last && isTyping && message.role === 'assistant'">
     </app-message-bubble>
 
     <app-typing-indicator *ngIf="isTyping" [cycle]="true" [statuses]="typingStatuses"></app-typing-indicator>

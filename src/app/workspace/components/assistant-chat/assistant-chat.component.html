@@ -9,7 +9,7 @@
                     <span class="assistant-status">
                         <span class="status-badge" [class.has-kb]="!!assistant?.vector_store_id">
                             {{ assistant?.model || 'Default Model' }}
-                            <ng-container *ngIf="assistant?.vector_store_id"> • Has Knowledge</ng-container>
+                            <ng-container *ngIf="assistant?.vector_store_id"> â€¢ Has Knowledge</ng-container>
                         </span>
                     </span>
                 </div>
@@ -36,7 +36,8 @@
                 </span>
             </div>
 
-            <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last">
+            <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last"
+                [isStreaming]="last && isResponseInProgress && message.role === 'assistant'">
             </app-message-bubble>
 
             <app-typing-indicator *ngIf="isResponseInProgress" [cycle]="true"></app-typing-indicator>
@@ -59,3 +60,4 @@
         </div>
     </div>
 </div>
+

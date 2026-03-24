@@ -7,7 +7,7 @@ import { VectorStoreService } from '../../../shared/services/vector-store.servic
 import { DocumentService } from '../../../shared/services/document.service';
 import { DocumentShareService } from '../../../shared/services/document-share.service';
 import { ConversationMessage } from '../../../shared/models/conversation.model';
-import { ResponseRecord, ResponseCreateRequest } from '../../../shared/models/response.model';
+import { ResponseRecord, ResponseCreateRequest, StreamEvent } from '../../../shared/models/response.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document } from '../../../shared/models/document.model';
 
@@ -29,7 +29,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     errorMessage = '';
     warningMessages: string[] = [];
     mode: 'normal' | 'document' = 'normal';
-    private responsePollSub?: Subscription;
+    private streamSub?: Subscription;
 
     libraries: VectorStore[] = [];
     allDocuments: Document[] = [];
@@ -123,6 +123,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     ngOnDestroy(): void {
+        this.stopStream();
         this.cleanupConversation();
     }
 
@@ -305,18 +306,42 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
             }
         }
 
-        this.responseService.create(request).subscribe({
-            next: (response) => {
-                this.warningMessages = this.filterWarnings(response.warnings);
-                if (response.status === 'in_progress') {
-                    this.startPolling(response.id);
-                } else {
-                    this.handleResponseComplete(response);
+        // Add a placeholder assistant message for streaming
+        const assistantMsg: ConversationMessage = {
+            id: 'streaming-' + Date.now(),
+            role: 'assistant',
+            content: '',
+            created_at: new Date().toISOString()
+        };
+        this.messages.push(assistantMsg);
+        this.scrollToBottom();
+
+        this.stopStream();
+        this.streamSub = this.responseService.createStream(request).subscribe({
+            next: (event: StreamEvent) => {
+                if (event.type === 'delta' && event.delta) {
+                    assistantMsg.content += event.delta;
+                    this.scrollToBottom();
+                } else if (event.type === 'completed') {
+                    this.loading = false;
+                    this.warningMessages = this.filterWarnings(event.warnings);
+                    this.responseAttentionService.notifyResponseReady(
+                        'Playground response ready',
+                        assistantMsg.content
+                    );
+                    this.scrollToBottom();
+                } else if (event.type === 'failed') {
+                    this.messages = this.messages.filter(m => m.id !== assistantMsg.id);
+                    this.handleError(event.response?.error_message || 'Response failed', null);
                 }
             },
             error: (err: any) => {
+                this.messages = this.messages.filter(m => m.id !== assistantMsg.id);
                 this.handleError('Failed to send message', err);
                 this.messages = this.messages.filter(m => m.id !== tempMsg.id);
+            },
+            complete: () => {
+                this.loading = false;
             }
         });
     }
@@ -395,53 +420,13 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
 
     private cleanupConversation(): void {
         this.conversationId = null;
-        this.stopPolling();
+        this.stopStream();
     }
 
-    private startPolling(responseId: string): void {
-        this.stopPolling();
-        this.responsePollSub = this.responseService.pollResponseStatus(responseId).subscribe({
-            next: (response) => {
-                if (response) {
-                    this.warningMessages = this.filterWarnings(response.warnings);
-                    if (response.status === 'completed') {
-                        this.handleResponseComplete(response);
-                        this.stopPolling();
-                    } else if (response.status === 'failed' || response.status === 'cancelled') {
-                        this.handleError(response.error_message || 'Response failed', null);
-                        this.stopPolling();
-                    }
-                }
-            },
-            error: (err: any) => {
-                this.stopPolling();
-                console.error(err);
-            }
-        });
-    }
-
-    private stopPolling(): void {
-        if (this.responsePollSub) {
-            this.responsePollSub.unsubscribe();
-            this.responsePollSub = undefined;
-        }
-    }
-
-    private handleResponseComplete(response: ResponseRecord): void {
-        this.loading = false;
-        this.responseAttentionService.notifyResponseReady('Playground response ready', response.output?.[0]?.content?.[0]?.text);
-        if (response.output && response.output.length > 0) {
-            const output = response.output[0];
-            if (output.content && output.content.length > 0) {
-                const assistantMsg: ConversationMessage = {
-                    id: output.message_id || 'msg-' + Date.now(),
-                    role: 'assistant',
-                    content: output.content[0].text,
-                    created_at: response.completed_at || new Date().toISOString()
-                };
-                this.messages.push(assistantMsg);
-                this.scrollToBottom();
-            }
+    private stopStream(): void {
+        if (this.streamSub) {
+            this.streamSub.unsubscribe();
+            this.streamSub = undefined;
         }
     }
 

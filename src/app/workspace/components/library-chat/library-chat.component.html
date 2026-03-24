@@ -1,4 +1,4 @@
-<div class="library-chat-overlay" (click)="close()">
+﻿<div class="library-chat-overlay" (click)="close()">
     <div class="library-chat-panel" (click)="$event.stopPropagation()">
         <!-- Header -->
         <div class="chat-header">
@@ -34,8 +34,7 @@
                 </span>
             </div>
 
-            <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last"
-                [showSources]="false">
+            <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last" [showSources]="false" [isStreaming]="last && isResponseInProgress && message.role === 'assistant'">
             </app-message-bubble>
 
             <app-typing-indicator *ngIf="isResponseInProgress" [cycle]="true"></app-typing-indicator>
@@ -58,3 +57,4 @@
         </div>
     </div>
 </div>
+

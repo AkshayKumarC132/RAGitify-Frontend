@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, DoCheck } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -10,7 +10,7 @@ import { Run } from '../../models/run.model';
     templateUrl: './message-bubble.component.html',
     styleUrls: ['./message-bubble.component.scss']
 })
-export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
+export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoCheck {
     // Relaxed type to accept Message (number id) or generic object with compatible fields (e.g. ConversationMessage with string id)
     @Input() message!: any;
     @Input() isLast: boolean = false;
@@ -22,6 +22,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     @Input() pagerHasPrev: boolean = false;
     @Input() pagerHasNext: boolean = false;
     @Input() showSources: boolean = true;
+    @Input() isStreaming: boolean = false;
     @Output() rerun = new EventEmitter<void>();
     @Output() pagerPrev = new EventEmitter<void>();
     @Output() pagerNext = new EventEmitter<void>();
@@ -30,6 +31,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     renderedContent: SafeHtml | null = null;
     copied = false;
     private copyResetTimeout?: ReturnType<typeof setTimeout>;
+    private previousContent: string = '';
 
     constructor(private sanitizer: DomSanitizer) { }
 
@@ -47,6 +49,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     ngOnInit() {
+        this.previousContent = this.message?.content || '';
         const safeContent = this.sanitizeContent(this.message.content);
         this.displayContent = safeContent;
         this.updateRenderedContent();
@@ -56,7 +59,18 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         // When run status updates (e.g. in_progress -> failed), recompute displayed content
         // so we show "Oops! Server error." in the bubble.
         if (changes['run'] || changes['message']) {
-            const safeContent = this.sanitizeContent(this.message?.content);
+            this.previousContent = this.message?.content || '';
+            const safeContent = this.sanitizeContent(this.message?.content || '');
+            this.displayContent = safeContent;
+            this.updateRenderedContent();
+        }
+    }
+
+    ngDoCheck(): void {
+        const currentContent = this.message?.content || '';
+        if (this.message && currentContent !== this.previousContent) {
+            this.previousContent = currentContent;
+            const safeContent = this.sanitizeContent(currentContent);
             this.displayContent = safeContent;
             this.updateRenderedContent();
         }
@@ -98,6 +112,15 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         return this.isCancelledRun;
     }
 
+    get isHidden(): boolean {
+        if (this.isUser) return false;
+        const hasContent = !!this.displayContent && this.displayContent.trim().length > 0;
+        if (hasContent) return false;
+        if (this.showEmptyState) return false;
+        if (this.showRunErrorInfo) return false;
+        return true;
+    }
+
     get attachedDocuments(): Array<{ id: string; name: string }> {
         const attachedDocuments = this.message?.metadata?.['attached_documents'];
         if (!Array.isArray(attachedDocuments)) {
@@ -124,6 +147,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         }
 
         const raw = this.displayContent || '';
+
         // Configure marked options
         marked.setOptions({
             breaks: true,
@@ -195,7 +219,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         }
     }
 
-    getDocumentIds(message: Message): string[] {
+    getDocumentIds(message: any): string[] {
         if (!message.metadata || !message.metadata['used_document_ids']) {
             return [];
         }

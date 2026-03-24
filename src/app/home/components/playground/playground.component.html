@@ -1,4 +1,4 @@
-<div class="playground-container" [class.has-messages]="messages.length > 0">
+﻿<div class="playground-container" [class.has-messages]="messages.length > 0">
     <div class="playground-topbar">
         <button class="close-btn" type="button" (click)="closed.emit()" title="Exit Playground"
             aria-label="Exit Playground">
@@ -16,7 +16,7 @@
     </div>
 
     <div class="chat-messages" #messagesContainer>
-        <app-message-bubble *ngFor="let msg of messages; let last = last" [message]="msg" [isLast]="last">
+        <app-message-bubble *ngFor="let msg of messages; let last = last" [message]="msg" [isLast]="last" [isStreaming]="last && loading && msg.role === 'assistant'">
         </app-message-bubble>
 
         <app-typing-indicator *ngIf="loading" [cycle]="true"></app-typing-indicator>
@@ -127,3 +127,4 @@
         <div class="error-toast" *ngIf="errorMessage">{{ errorMessage }}</div>
     </div>
 </div>
+

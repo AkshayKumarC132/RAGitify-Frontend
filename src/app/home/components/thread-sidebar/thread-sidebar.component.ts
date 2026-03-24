@@ -61,7 +61,7 @@ export class ThreadSidebarComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if ('threads' in changes) {
       // Whenever the input threads change, reset the filtered list
-      this.filteredThreads = [...this.threads];
+      this.filteredThreads = this.sortThreads([...this.threads]);
       // Re-apply current search query if any
       if (this.searchQuery.trim()) {
         this.applyFilter();
@@ -219,7 +219,7 @@ export class ThreadSidebarComponent implements OnChanges {
     const query = this.searchQuery.trim().toLowerCase();
 
     if (!query) {
-      this.filteredThreads = [...this.threads];
+      this.filteredThreads = this.sortThreads([...this.threads]);
       this.matchSourceByThreadId.clear();
       return;
     }
@@ -264,7 +264,7 @@ export class ThreadSidebarComponent implements OnChanges {
 
     // Initial filtered list using titles and any cached message matches
     const nextFiltered = [...titleMatches, ...messageMatches];
-    this.filteredThreads = nextFiltered;
+    this.filteredThreads = this.sortThreads(nextFiltered);
 
     // Fetch messages for threads we haven't loaded yet
     if (threadsNeedingFetch.length) {
@@ -281,7 +281,7 @@ export class ThreadSidebarComponent implements OnChanges {
               (msg.content || '').toLowerCase().includes(currentQuery)
             );
             if (hasMatch && !this.filteredThreads.some(t => t.id === thread.id)) {
-              this.filteredThreads = [...this.filteredThreads, thread];
+              this.filteredThreads = this.sortThreads([...this.filteredThreads, thread]);
               const existing = this.matchSourceByThreadId.get(thread.id);
               if (existing === 'title') {
                 this.matchSourceByThreadId.set(thread.id, 'both');
@@ -602,5 +602,42 @@ export class ThreadSidebarComponent implements OnChanges {
     }
 
     this.profileMenuPosition = { top, left };
+  }
+
+  isPinned(thread: Conversation): boolean {
+    return !!thread.is_pinned;
+  }
+
+  togglePin(thread: Conversation, event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.closeThreadMenu();
+    
+    const previousPinnedState = !!thread.is_pinned;
+    thread.is_pinned = !previousPinnedState;
+    this.filteredThreads = this.sortThreads([...this.filteredThreads]);
+
+    this.conversationService.patch(thread.id, { is_pinned: thread.is_pinned }).subscribe({
+      next: (updatedThread) => {
+        thread.is_pinned = updatedThread.is_pinned;
+      },
+      error: (err) => {
+        console.error('Failed to update pin status', err);
+        thread.is_pinned = previousPinnedState;
+        this.filteredThreads = this.sortThreads([...this.filteredThreads]);
+      }
+    });
+  }
+
+  private sortThreads(threads: Conversation[]): Conversation[] {
+    return threads.sort((a, b) => {
+      const aPinned = !!a.is_pinned;
+      const bPinned = !!b.is_pinned;
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      
+      const timeA = new Date(this.getThreadDisplayTimestamp(a)).getTime() || 0;
+      const timeB = new Date(this.getThreadDisplayTimestamp(b)).getTime() || 0;
+      return timeB - timeA;
+    });
   }
 }

@@ -27,8 +27,7 @@
         <span class="empty-state-hint">Start a conversation to get answers based on the document content</span>
       </div>
 
-      <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last"
-        [showSources]="false">
+      <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last" [showSources]="false" [isStreaming]="last && isResponseInProgress && message.role === 'assistant'">
       </app-message-bubble>
 
       <!-- Typing Indicator -->
@@ -38,9 +37,7 @@
     <!-- Input Area -->
     <div class="input-area">
       <div class="input-wrapper">
-        <div class="integrated-mode-badge doc-mode">
-          <i class="fa-solid fa-file-lines"></i> Doc
-        </div>
+
         <textarea #messageInput [(ngModel)]="messageInputText" (keydown)="onKeyPress($event)"
           placeholder="Ask a question about this document..." class="chat-input"
           [disabled]="loading || isResponseInProgress" rows="1"></textarea>
@@ -56,3 +53,4 @@
     </div>
   </div>
 </div>
+

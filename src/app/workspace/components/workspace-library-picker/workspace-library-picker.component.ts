@@ -62,40 +62,32 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
   }
 
   get failedDocumentGroups(): { libraryName: string, documents: Document[] }[] {
-    const failedDocs = this.documents.filter(doc => this.getResolvedStatus(doc) === 'failed');
+    const failedVsIds = Array.from(new Set(
+      this.documents
+        .filter(doc => this.getResolvedStatus(doc) === 'failed')
+        .map(doc => doc.vector_store)
+    ));
     
-    const grouped = failedDocs.reduce((acc, doc) => {
-      const vsId = doc.vector_store;
-      if (!acc[vsId]) {
-        acc[vsId] = [];
-      }
-      acc[vsId].push(doc);
-      return acc;
-    }, {} as Record<string, Document[]>);
-
-    return Object.entries(grouped).map(([vsId, docs]) => {
+    return failedVsIds.map(vsId => {
       const store = this.vectorStores.find(s => s.id === vsId);
       const libraryName = store ? this.getDisplayLibraryName(store.name) : 'Unknown Library';
-      return { libraryName, documents: docs };
+      const libraryDocs = this.documents.filter(doc => doc.vector_store === vsId);
+      return { libraryName, documents: libraryDocs };
     }).sort((a, b) => a.libraryName.localeCompare(b.libraryName));
   }
 
   get processingDocumentGroups(): { libraryName: string, documents: Document[] }[] {
-    const processingDocs = this.documents.filter(doc => ['queued', 'processing', 'in_progress'].includes(this.getResolvedStatus(doc)));
+    const processingVsIds = Array.from(new Set(
+      this.documents
+        .filter(doc => ['queued', 'processing', 'in_progress'].includes(this.getResolvedStatus(doc)))
+        .map(doc => doc.vector_store)
+    ));
     
-    const grouped = processingDocs.reduce((acc, doc) => {
-      const vsId = doc.vector_store;
-      if (!acc[vsId]) {
-        acc[vsId] = [];
-      }
-      acc[vsId].push(doc);
-      return acc;
-    }, {} as Record<string, Document[]>);
-
-    return Object.entries(grouped).map(([vsId, docs]) => {
+    return processingVsIds.map(vsId => {
       const store = this.vectorStores.find(s => s.id === vsId);
       const libraryName = store ? this.getDisplayLibraryName(store.name) : 'Unknown Library';
-      return { libraryName, documents: docs };
+      const libraryDocs = this.documents.filter(doc => doc.vector_store === vsId);
+      return { libraryName, documents: libraryDocs };
     }).sort((a, b) => a.libraryName.localeCompare(b.libraryName));
   }
 
@@ -406,7 +398,7 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
     });
   }
 
-  private getResolvedStatus(document: Document): string {
+  getResolvedStatus(document: Document): string {
     return document.ingestion_status || document.status || 'queued';
   }
 

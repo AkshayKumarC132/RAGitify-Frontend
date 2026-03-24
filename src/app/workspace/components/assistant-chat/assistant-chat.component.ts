@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { Assistant } from '../../../shared/models/assistant.model';
 import { Conversation, ConversationMessage } from '../../../shared/models/conversation.model';
 import { ResponseRecord, ResponseCreateRequest } from '../../../shared/models/response.model';
@@ -25,12 +25,13 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
     loading = false;
     messageInputText = '';
     errorMessage = '';
-    private responsePollSub?: Subscription;
+    private streamSub?: Subscription;
 
-    constructor(
+  constructor(
         private responseService: ResponseService,
         private conversationService: ConversationService,
-        private responseAttentionService: ResponseAttentionService
+        private responseAttentionService: ResponseAttentionService,
+        private cdr: ChangeDetectorRef
     ) { }
 
     ngOnInit(): void {
@@ -42,11 +43,11 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
     }
 
     ngOnDestroy(): void {
-        this.stopPolling();
+        this.stopStream();
     }
 
     close(): void {
-        this.stopPolling();
+        this.stopStream();
         this.closed.emit();
     }
 
@@ -126,71 +127,54 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
             ];
         }
 
-        this.responseService.create(request).subscribe({
-            next: (response) => {
-                this.currentResponse = response;
-                if (response.status === 'in_progress') {
-                    this.startPolling(response.id);
-                } else {
-                    this.handleResponseComplete(response);
-                }
-            },
-            error: (err) => {
-                this.handleError('Failed to send message', err);
-                // Remove the user message on error
-                this.messages = this.messages.filter(m => !m.id.startsWith('temp-'));
-            }
-        });
-    }
-
-    private startPolling(responseId: string): void {
-        this.stopPolling();
-        this.responsePollSub = this.responseService.pollResponseStatus(responseId).subscribe({
-            next: (response) => {
-                if (response) {
-                    this.currentResponse = response;
-                    if (response.status === 'completed') {
-                        this.handleResponseComplete(response);
-                        this.stopPolling();
-                    } else if (response.status === 'failed' || response.status === 'cancelled') {
-                        this.handleError(response.error_message || 'Response failed');
-                        this.stopPolling();
-                    }
-                }
-            },
-            error: (err) => {
-                console.error('Error polling response:', err);
-                this.stopPolling();
-            }
-        });
-    }
-
-    private stopPolling(): void {
-        if (this.responsePollSub) {
-            this.responsePollSub.unsubscribe();
-            this.responsePollSub = undefined;
-        }
-    }
-
-    private handleResponseComplete(response: ResponseRecord): void {
-        this.loading = false;
-        this.currentResponse = null;
-        this.responseAttentionService.notifyResponseReady('Assistant test response ready', response.output?.[0]?.content?.[0]?.text);
-
-        if (response.output && response.output.length > 0) {
-            const output = response.output[0];
-            if (output.content && output.content.length > 0) {
-                const assistantMessage: ConversationMessage = {
-                    id: output.message_id || 'msg-' + Date.now(),
-                    role: 'assistant',
-                    content: output.content[0].text || '',
-                    created_at: response.completed_at || response.created_at,
-                    metadata: output.metadata || {}
-                };
-                this.messages.push(assistantMessage);
-            }
-        }
+        // Add a placeholder assistant message for streaming
+        const assistantMessage: ConversationMessage = {
+            id: 'streaming-' + Date.now(),
+            role: 'assistant',
+            content: '',
+            created_at: new Date().toISOString()
+        };
+        this.messages.push(assistantMessage);
         this.scrollToBottom();
+
+        this.stopStream();
+        this.streamSub = this.responseService.createStream(request).subscribe({
+            next: (event) => {
+                if (event.type === 'delta' && event.delta) {
+                    assistantMessage.content += event.delta;
+                    this.cdr.detectChanges();
+                    this.scrollToBottom();
+                } else if (event.type === 'completed') {
+                    this.currentResponse = null;
+                    this.loading = false;
+                    if (event.response) {
+                        this.responseAttentionService.notifyResponseReady(
+                            'Assistant test response ready',
+                            assistantMessage.content
+                        );
+                    }
+                    this.scrollToBottom();
+                } else if (event.type === 'failed') {
+                    this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
+                    this.handleError(event.response?.error_message || 'Response failed');
+                }
+            },
+            error: (err) => {
+                this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
+                this.handleError('Failed to send message', err);
+                this.messages = this.messages.filter(m => !m.id.startsWith('temp-'));
+            },
+            complete: () => {
+                this.loading = false;
+            }
+        });
+    }
+
+    private stopStream(): void {
+        if (this.streamSub) {
+            this.streamSub.unsubscribe();
+            this.streamSub = undefined;
+        }
     }
 
     getDocumentIds(message: ConversationMessage): string[] {
@@ -203,18 +187,9 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
     }
 
     cancelResponse(): void {
-        if (this.currentResponse && this.currentResponse.status === 'in_progress') {
-            this.responseService.cancel(this.currentResponse.id).subscribe({
-                next: () => {
-                    this.currentResponse = null;
-                    this.loading = false;
-                    this.stopPolling();
-                },
-                error: (err) => {
-                    console.error('Error cancelling response:', err);
-                }
-            });
-        }
+        this.stopStream();
+        this.currentResponse = null;
+        this.loading = false;
     }
 
     private handleError(message: string, error?: any): void {

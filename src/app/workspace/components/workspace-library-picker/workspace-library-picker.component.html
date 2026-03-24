@@ -106,11 +106,15 @@
               <div class="document-card-topline">
                 <span class="title">{{ doc.title || doc.original_filename || 'Unknown Document' }}</span>
                 <div class="document-card-tags">
-                  <span class="document-chip error">Failed</span>
+                  <span class="document-chip error" *ngIf="getResolvedStatus(doc) === 'failed'">Failed</span>
+                  <span class="document-chip processing" *ngIf="['queued', 'processing', 'in_progress'].includes(getResolvedStatus(doc))">Processing</span>
+                  <span class="document-chip success" *ngIf="getResolvedStatus(doc) === 'completed'">Ingested</span>
                 </div>
               </div>
               <div class="document-card-subline">
-                <span class="meta error-text">Ingestion failed</span>
+                <span class="meta error-text" *ngIf="getResolvedStatus(doc) === 'failed'">Ingestion failed</span>
+                <span class="meta processing-text" *ngIf="['queued', 'processing', 'in_progress'].includes(getResolvedStatus(doc))">Ingestion in progress</span>
+                <span class="meta success-text" *ngIf="getResolvedStatus(doc) === 'completed'">Ingestion successful</span>
               </div>
             </div>
           </div>
@@ -120,7 +124,9 @@
           <div class="failed-document-card" *ngFor="let doc of group.documents" (click)="selectDocument(doc)">
             <div class="card-top">
               <i class="fa-regular fa-file-lines doc-icon"></i>
-              <span class="document-chip error"><i class="fa-solid fa-circle-exclamation"></i> Failed</span>
+              <span class="document-chip error" *ngIf="getResolvedStatus(doc) === 'failed'"><i class="fa-solid fa-circle-exclamation"></i> Failed</span>
+              <span class="document-chip processing" *ngIf="['queued', 'processing', 'in_progress'].includes(getResolvedStatus(doc))"><i class="fa-regular fa-clock"></i> Processing</span>
+              <span class="document-chip success" *ngIf="getResolvedStatus(doc) === 'completed'"><i class="fa-regular fa-circle-check"></i> Ingested</span>
             </div>
             <div class="card-title" [style.color]="getFileExt(doc).toLowerCase() === 'docx' ? '#1a73e8' : '#4b5563'">{{ doc.title || doc.original_filename || 'Unknown Document' }}</div>
             <div class="card-bottom">

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, DoCheck } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -10,7 +10,7 @@ import { Run } from '../../../shared/models/run.model';
   templateUrl: './message-bubble.component.html',
   styleUrls: ['./message-bubble.component.scss']
 })
-export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
+export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoCheck {
   @Input() message!: Message;
   @Input() isLast: boolean = false;
   @Input() canRerun: boolean = false;
@@ -20,6 +20,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   @Input() pageLabel: string = '';
   @Input() pagerHasPrev: boolean = false;
   @Input() pagerHasNext: boolean = false;
+  @Input() isStreaming: boolean = false;
   @Output() rerun = new EventEmitter<void>();
   @Output() pagerPrev = new EventEmitter<void>();
   @Output() pagerNext = new EventEmitter<void>();
@@ -28,6 +29,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   renderedContent: SafeHtml | null = null;
   copied = false;
   private copyResetTimeout?: ReturnType<typeof setTimeout>;
+  private previousContent: string = '';
 
   constructor(private sanitizer: DomSanitizer) { }
 
@@ -45,6 +47,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnInit() {
+    this.previousContent = this.message.content;
     const safeContent = this.sanitizeContent(this.message.content);
     this.displayContent = safeContent;
     this.updateRenderedContent();
@@ -54,7 +57,18 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     // When run status updates (e.g. in_progress -> failed), recompute displayed content
     // so we show "Oops! Server error." in the bubble.
     if (changes['run'] || changes['message']) {
+      this.previousContent = this.message?.content || '';
       const safeContent = this.sanitizeContent(this.message?.content);
+      this.displayContent = safeContent;
+      this.updateRenderedContent();
+    }
+  }
+
+  ngDoCheck(): void {
+    // Detect changes to content even if object reference hasn't changed (for streaming)
+    if (this.message && this.message.content !== this.previousContent) {
+      this.previousContent = this.message.content;
+      const safeContent = this.sanitizeContent(this.message.content);
       this.displayContent = safeContent;
       this.updateRenderedContent();
     }

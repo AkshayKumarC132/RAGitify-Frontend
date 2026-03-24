@@ -8,7 +8,7 @@ import { ChatInputComponent, LibrarySelectionEvent } from '../chat-input/chat-in
 import { Assistant } from '../../../shared/models/assistant.model';
 import { Conversation, ConversationCreateRequest, ConversationMessage } from '../../../shared/models/conversation.model';
 import { Document } from '../../../shared/models/document.model';
-import { ResponseCreateRequest, ResponseRecord } from '../../../shared/models/response.model';
+import { ResponseCreateRequest, ResponseRecord, StreamEvent } from '../../../shared/models/response.model';
 import { SelectedLLMProvider, User } from '../../../shared/models/user.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { AssistantService } from '../../../shared/services/assistant.service';
@@ -59,6 +59,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private errorMessageTimeout?: ReturnType<typeof setTimeout>;
   private warningMessageTimeout?: ReturnType<typeof setTimeout>;
   private responsePollSub?: Subscription;
+  private streamSub?: Subscription;
   private searchPopupSub?: Subscription;
   private destroy$ = new Subject<void>();
   private activeProvider: SelectedLLMProvider | null = null;
@@ -186,6 +187,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopResponsePolling();
+    this.stopStream();
     this.searchPopupSub?.unsubscribe();
     if (this.errorMessageTimeout) {
       clearTimeout(this.errorMessageTimeout);
@@ -358,16 +360,40 @@ export class HomeComponent implements OnInit, OnDestroy {
     try {
       const conversation = await this.ensureConversation(trimmed);
       const request = await this.buildResponseRequest(trimmed, conversation.id);
-      const response = await lastValueFrom(this.responseService.create(request));
-      this.currentRun = response;
-      this.applyWarnings(response.warnings);
 
-      if (response.status === 'in_progress') {
-        this.startResponsePolling(response.id, conversation.id, optimisticMessage.id);
-        return;
-      }
+      // Add a placeholder assistant message for streaming
+      const assistantMessage = this.buildLocalMessage('assistant', '');
+      this.messages = [...this.messages, assistantMessage];
 
-      await this.finalizeResponse(response, conversation.id);
+      this.stopStream();
+      this.streamSub = this.responseService.createStream(request).subscribe({
+        next: (event: StreamEvent) => {
+          if (event.type === 'delta' && event.delta) {
+            assistantMessage.content += event.delta;
+            // Trigger change detection by reassigning the array
+            this.messages = [...this.messages];
+          } else if (event.type === 'completed') {
+            this.applyWarnings(event.warnings);
+            this.finalizeResponse(event.response!, conversation.id);
+          } else if (event.type === 'failed') {
+            this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
+            this.messages = this.messages.filter(m => m.id !== optimisticMessage.id);
+            this.currentRun = null;
+            this.loading = false;
+            this.handleError(event.response?.error_message || 'Response failed', event.response);
+          }
+        },
+        error: (error) => {
+          this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
+          this.messages = this.messages.filter(m => m.id !== optimisticMessage.id);
+          this.currentRun = null;
+          this.loading = false;
+          this.handleError('Failed to send message', error);
+        },
+        complete: () => {
+          this.loading = false;
+        }
+      });
     } catch (error) {
       this.messages = this.messages.filter(message => message.id !== optimisticMessage.id);
       this.currentRun = null;
@@ -460,6 +486,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
 
     const responseId = this.currentRun.id;
+    this.stopStream();
     this.responseService.cancel(responseId).subscribe({
       next: () => {
         this.currentRun = null;
@@ -861,6 +888,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   private stopResponsePolling(): void {
     this.responsePollSub?.unsubscribe();
     this.responsePollSub = undefined;
+  }
+
+  private stopStream(): void {
+    if (this.streamSub) {
+      this.streamSub.unsubscribe();
+      this.streamSub = undefined;
+    }
   }
 
   private async finalizeResponse(response: ResponseRecord, threadId: string): Promise<void> {

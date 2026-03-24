@@ -75,6 +75,7 @@
             <span [innerHTML]="getHighlightedSnippet(thread)"></span>
           </div>
           <div class="thread-time" *ngIf="!collapsed">
+            <i class="fa-solid fa-thumbtack pinned-icon" *ngIf="isPinned(thread)" [attr.title]="'Pinned'"></i>
             {{ formatTime(getThreadDisplayTimestamp(thread)) }}
           </div>
         </div>
@@ -133,6 +134,10 @@
   <div class="thread-menu-panel" *ngIf="threadMenuOpen && menuThread && threadMenuPosition"
     [ngStyle]="{ top: threadMenuPosition.top + 'px', left: threadMenuPosition.left + 'px' }"
     [class.open-left]="menuOpensLeft" (click)="$event.stopPropagation()">
+    <button type="button" (click)="togglePin(menuThread, $event)">
+      <i class="fa-solid" [ngClass]="isPinned(menuThread) ? 'fa-thumbtack-slash' : 'fa-thumbtack'"></i>
+      <span>{{ isPinned(menuThread) ? 'Unpin' : 'Pin' }}</span>
+    </button>
     <button type="button" (click)="editThread(menuThread, $event)">
       <i class="fa-solid fa-pen"></i>
       <span>Rename Title</span>

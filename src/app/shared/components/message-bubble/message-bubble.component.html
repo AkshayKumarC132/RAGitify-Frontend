@@ -1,4 +1,4 @@
-<div class="message-bubble" [class.user]="isUser" [class.assistant]="!isUser" [class.empty-state]="showEmptyState">
+<div *ngIf="!isHidden" class="message-bubble" [class.user]="isUser" [class.assistant]="!isUser" [class.empty-state]="showEmptyState" [class.streaming]="isStreaming">
     <div class="attached-documents" *ngIf="isUser && attachedDocuments.length">
         <span class="attached-document-chip" *ngFor="let document of attachedDocuments">
             <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
