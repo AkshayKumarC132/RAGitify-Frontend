@@ -15,6 +15,7 @@ import { VectorStoreService } from '../../../shared/services/vector-store.servic
 export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
   activeSection: 'knowledge' | 'prompts' = 'knowledge';
   activeDocumentId: string | null = null;
+  activeLibraryStatsId: string | null = null;
   sidebarCollapsed = false;
   hoveringExpandControl = false;
   private brandExpandInteraction = false;
@@ -60,6 +61,7 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
 
     this.route.paramMap.subscribe(params => {
       this.activeDocumentId = params.get('documentId');
+      this.activeLibraryStatsId = params.get('libraryId');
       this.applyLayoutRouteState();
       this.ensureSidebarLibraries();
     });
@@ -94,6 +96,16 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
   }
 
   openUploadOrNewLibrary(action: 'upload' | 'library'): void {
+    if (action === 'library' && this.activeLibraryStatsId) {
+      this.router.navigate(['/workspace'], {
+        queryParams: {
+          libraryId: this.activeLibraryStatsId,
+          openNewLibrary: '1'
+        }
+      });
+      return;
+    }
+
     if (action === 'upload') {
       this.knowledgeContext.openUploadPanel.next();
     } else {
@@ -113,6 +125,10 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     this.knowledgeContext.chatLibraryRequested.next(store);
   }
 
+  onLayoutStatsLibrary(store: VectorStore): void {
+    this.router.navigate(['/workspace/library', store.id, 'stats']);
+  }
+
   goToNewChat(): void {
     this.router.navigate(['/home']);
   }
@@ -123,7 +139,10 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
       this.router.navigate(['/workspace'], { queryParams: {} });
       return;
     }
-    const libraryId = this.layoutSelectedStore?.id ?? this.currentLibraryId ?? this.route.snapshot.queryParamMap.get('libraryId');
+    const libraryId = this.layoutSelectedStore?.id
+      ?? this.currentLibraryId
+      ?? this.activeLibraryStatsId
+      ?? this.route.snapshot.queryParamMap.get('libraryId');
     this.router.navigate(['/workspace'], { queryParams: libraryId ? { libraryId } : {} });
   }
 
@@ -136,7 +155,7 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
   }
 
   goToCurrentLibrary(): void {
-    const libraryId = this.layoutSelectedStore?.id ?? this.currentLibraryId;
+    const libraryId = this.layoutSelectedStore?.id ?? this.currentLibraryId ?? this.activeLibraryStatsId;
     if (!libraryId) {
       this.goToLibraryPicker();
       return;
@@ -204,7 +223,7 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
   }
 
   private applyLayoutRouteState(): void {
-    this.showLibraryPicker = !this.activeDocumentId && !this.currentLibraryId && this.currentView !== 'prompts';
+    this.showLibraryPicker = !this.activeDocumentId && !this.activeLibraryStatsId && !this.currentLibraryId && this.currentView !== 'prompts';
     this.activeSection = this.currentView === 'prompts' ? 'prompts' : 'knowledge';
   }
 
@@ -214,8 +233,9 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     }
 
     if (this.layoutVectorStores.length > 0) {
-      if (!this.layoutSelectedStore && this.currentLibraryId) {
-        this.layoutSelectedStore = this.layoutVectorStores.find(store => store.id === this.currentLibraryId) || null;
+      const targetLibraryId = this.currentLibraryId || this.activeLibraryStatsId;
+      if (targetLibraryId) {
+        this.layoutSelectedStore = this.layoutVectorStores.find(store => store.id === targetLibraryId) || null;
       }
       return;
     }
@@ -223,8 +243,9 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     this.vectorStoreService.list().pipe(takeUntil(this.destroy$)).subscribe({
       next: stores => {
         this.layoutVectorStores = stores;
-        const selectedStore = this.currentLibraryId
-          ? stores.find(store => store.id === this.currentLibraryId) || null
+        const targetLibraryId = this.currentLibraryId || this.activeLibraryStatsId;
+        const selectedStore = targetLibraryId
+          ? stores.find(store => store.id === targetLibraryId) || null
           : this.layoutSelectedStore;
 
         this.layoutSelectedStore = selectedStore;

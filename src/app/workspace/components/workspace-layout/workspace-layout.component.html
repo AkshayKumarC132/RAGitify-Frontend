@@ -67,7 +67,8 @@
           <app-vector-store-list [vectorStores]="filteredVectorStores" [selectedVectorStore]="layoutSelectedStore"
             [documentCounts]="libraryDocCounts" (vectorStoreSelected)="onLayoutLibrarySelect($event)"
             (editRequested)="onLayoutEditLibrary($event)" (deleteRequested)="onLayoutDeleteLibrary($event)"
-            (chatRequested)="onLayoutChatLibrary($event)"></app-vector-store-list>
+            (chatRequested)="onLayoutChatLibrary($event)"
+            (statsRequested)="onLayoutStatsLibrary($event)"></app-vector-store-list>
         </div>
         <div class="sidebar-document-list" *ngIf="!sidebarCollapsed && activeDocumentId">
           <app-document-sidebar-list [libraryId]="layoutSelectedStore?.id"
@@ -105,10 +106,18 @@
         <button type="button" class="crumb-link" (click)="goToLibraryPicker()">
           <span>Knowledge Library</span>
         </button>
-        <ng-container *ngIf="!showLibraryPicker && layoutSelectedStore && !activeDocumentId">
+        <ng-container *ngIf="!showLibraryPicker && layoutSelectedStore && !activeDocumentId && !activeLibraryStatsId">
           <span class="crumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
           <span class="crumb-current" [title]="layoutSelectedStore.name">{{
             getBreadcrumbLibraryName(layoutSelectedStore.name) }}</span>
+        </ng-container>
+        <ng-container *ngIf="activeLibraryStatsId && layoutSelectedStore">
+          <span class="crumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
+          <button type="button" class="crumb-link" (click)="goToCurrentLibrary()">
+            <span [title]="layoutSelectedStore.name">{{ getBreadcrumbLibraryName(layoutSelectedStore.name) }}</span>
+          </button>
+          <span class="crumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
+          <span class="crumb-current">Analytics</span>
         </ng-container>
         <ng-container *ngIf="activeDocumentId && (layoutSelectedStore || activeDocumentId)">
           <span class="crumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
@@ -124,7 +133,7 @@
       </div>
       <div class="top-bar-right">
         <button type="button" class="upload-button" (click)="openUploadOrNewLibrary('upload')"
-          *ngIf="activeSection === 'knowledge' && !activeDocumentId">
+          *ngIf="activeSection === 'knowledge' && !activeDocumentId && !activeLibraryStatsId">
           <i class="fa-solid fa-arrow-up"></i>
           <span>Upload</span>
         </button>
@@ -135,7 +144,9 @@
       <app-prompts-section *ngIf="activeSection === 'prompts'"></app-prompts-section>
       <app-document-details-page *ngIf="activeSection === 'knowledge' && activeDocumentId"
         [documentId]="activeDocumentId"></app-document-details-page>
-      <app-knowledge-section *ngIf="activeSection === 'knowledge' && !activeDocumentId"></app-knowledge-section>
+      <app-library-stats-page *ngIf="activeSection === 'knowledge' && activeLibraryStatsId && !activeDocumentId"
+        [libraryId]="activeLibraryStatsId"></app-library-stats-page>
+      <app-knowledge-section *ngIf="activeSection === 'knowledge' && !activeDocumentId && !activeLibraryStatsId"></app-knowledge-section>
     </div>
   </div>
 </div>

@@ -1,0 +1,164 @@
+﻿<div class="library-stats-page">
+  <div class="stats-loading-state" *ngIf="loading">
+    <div class="stats-spinner"></div>
+    <span>Loading library analytics...</span>
+  </div>
+
+  <div class="stats-error-state" *ngIf="!loading && errorMessage">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <div>
+      <h3>Analytics unavailable</h3>
+      <p>{{ errorMessage }}</p>
+    </div>
+  </div>
+
+  <ng-container *ngIf="!loading && !errorMessage && store">
+    <section class="stats-hero">
+      <div class="stats-hero-copy">
+        <span class="stats-eyebrow">Library Analytics</span>
+        <h1 [title]="store.name">{{ store.name }}</h1>
+        <p>
+          Review vector store health, document distribution, ingestion status, and the exact custom metadata saved for this library.
+        </p>
+      </div>
+    </section>
+
+    <section class="stats-overview-grid">
+      <article
+        *ngFor="let card of overviewCards"
+        class="overview-card"
+        [class.overview-card-primary]="card.tone === 'primary'"
+      >
+        <span class="overview-label">{{ card.label }}</span>
+        <strong class="overview-value">{{ card.value }}</strong>
+      </article>
+    </section>
+
+    <section class="stats-kpi-grid">
+      <article class="kpi-card" *ngFor="let row of insightRows">
+        <div class="kpi-head">
+          <span class="kpi-label">{{ row.label }}</span>
+          <span class="kpi-info" tabindex="0" aria-label="More info">
+            <i class="fa-solid fa-circle-info"></i>
+            <span class="kpi-tooltip">{{ row.helper }}</span>
+          </span>
+        </div>
+        <strong class="kpi-value">{{ row.value }}</strong>
+      </article>
+    </section>
+
+    <section class="stats-main-grid">
+      <article class="stats-panel">
+        <div class="stats-panel-header">
+          <h2>Vector Store Details</h2>
+        </div>
+        <div class="detail-list">
+          <div class="detail-row" *ngFor="let row of storeDetailRows">
+            <span class="detail-label">{{ row.label }}</span>
+            <strong class="detail-value" [class.detail-value-mono]="row.mono">{{ row.value }}</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="stats-panel">
+        <div class="stats-panel-header">
+          <h2>Custom Metadata</h2>
+        </div>
+        <div class="metadata-list" *ngIf="storeMetadataEntries.length; else noMetadata">
+          <div class="metadata-row" *ngFor="let entry of storeMetadataEntries; trackBy: trackByKey">
+            <span class="metadata-key">{{ entry.key }}</span>
+            <pre class="metadata-value">{{ entry.value }}</pre>
+          </div>
+        </div>
+        <ng-template #noMetadata>
+          <p class="empty-copy">No custom metadata has been defined for this library.</p>
+        </ng-template>
+      </article>
+    </section>
+
+    <section class="stats-breakdown-grid">
+      <article class="stats-panel">
+        <div class="stats-panel-header">
+          <h2>Ingestion Status Breakdown</h2>
+          <span
+            class="panel-info"
+            [class.panel-info-disabled]="!hasIngestionBreakdown"
+            [attr.tabindex]="hasIngestionBreakdown ? 0 : -1"
+            [attr.aria-label]="hasIngestionBreakdown ? 'View ingestion status details' : 'No ingestion status details available'"
+          >
+            <i class="fa-solid fa-circle-info"></i>
+            <span class="panel-tooltip-list" *ngIf="hasIngestionBreakdown">
+              <span class="panel-tooltip-row" *ngFor="let entry of ingestionBreakdownEntries; trackBy: trackByKey">
+                <span class="panel-tooltip-key">
+                  <span class="legend-dot" [style.background]="entry.color"></span>
+                  {{ entry.label }}
+                </span>
+                <strong>{{ formatNumber(entry.value) }}</strong>
+              </span>
+            </span>
+          </span>
+        </div>
+        <div class="breakdown-chart-layout">
+          <div class="ingestion-bars" [class.ingestion-bars-empty]="!hasIngestionBreakdown">
+            <div class="ingestion-bar-row" *ngFor="let entry of ingestionBreakdownEntries; trackBy: trackByKey">
+              <div class="ingestion-bar-head">
+                <span class="ingestion-bar-label">
+                  <span class="legend-dot" [style.background]="entry.color"></span>
+                  {{ entry.label }}
+                </span>
+                <span class="ingestion-bar-value">{{ formatNumber(entry.value) }}</span>
+              </div>
+              <div class="ingestion-bar-track">
+                <div
+                  class="ingestion-bar-fill"
+                  [style.width.%]="entry.percent"
+                  [style.background]="entry.color"
+                ></div>
+              </div>
+            </div>
+            <div class="ingestion-bar-empty-note" *ngIf="!hasIngestionBreakdown">
+              <strong>0</strong>
+              <span>No ingested documents yet.</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="stats-panel">
+        <div class="stats-panel-header">
+          <h2>File Type Breakdown</h2>
+          <span
+            class="panel-info"
+            [class.panel-info-disabled]="!hasFileTypeBreakdown"
+            [attr.tabindex]="hasFileTypeBreakdown ? 0 : -1"
+            [attr.aria-label]="hasFileTypeBreakdown ? 'View file type details' : 'No file type details available'"
+          >
+            <i class="fa-solid fa-circle-info"></i>
+            <span class="panel-tooltip-list" *ngIf="hasFileTypeBreakdown">
+              <span class="panel-tooltip-row" *ngFor="let entry of fileTypeChartEntries; trackBy: trackByKey">
+                <span class="panel-tooltip-key">
+                  <span class="legend-dot" [style.background]="entry.color"></span>
+                  {{ entry.key | uppercase }}
+                </span>
+                <strong>{{ formatNumber(entry.value) }}</strong>
+              </span>
+            </span>
+          </span>
+        </div>
+        <div class="breakdown-chart-layout breakdown-chart-layout--stacked">
+          <div class="donut-chart-wrap">
+            <div class="donut-chart-block">
+              <div class="donut-chart donut-chart-sm" [class.donut-chart-empty]="!hasFileTypeBreakdown" [style.background]="fileTypeChartBackground">
+                <div class="donut-hole">
+                  <strong>{{ fileTypeChartEntries.length }}</strong>
+                  <span>types</span>
+                </div>
+              </div>
+              <p class="chart-empty-note" *ngIf="!hasFileTypeBreakdown">No ingested file types yet.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </ng-container>
+</div>

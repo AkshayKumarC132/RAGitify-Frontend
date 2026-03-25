@@ -4,7 +4,7 @@ import { shareReplay, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { UserStateService } from './user-state.service';
-import { VectorStore, VectorStoreCreateRequest } from '../models/vector-store.model';
+import { VectorStore, VectorStoreCreateRequest, VectorStoreStats } from '../models/vector-store.model';
 
 @Injectable({
   providedIn: 'root'
@@ -57,6 +57,11 @@ export class VectorStoreService {
   getById(id: string): Observable<VectorStore> {
     const token = this.getToken();
     return this.api.get<VectorStore>(`/vector-store/${token}/${id}/`, token);
+  }
+
+  getStats(id: string): Observable<VectorStoreStats> {
+    const token = this.getToken();
+    return this.api.get<VectorStoreStats>(`/vector-store/${token}/${id}/stats/`, token);
   }
 
   update(id: string, data: Partial<VectorStoreCreateRequest>): Observable<VectorStore> {

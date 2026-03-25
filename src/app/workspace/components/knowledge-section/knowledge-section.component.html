@@ -91,6 +91,7 @@
           (editRequested)="startVectorStoreEdit($event)"
           (deleteRequested)="deleteVectorStore($event)"
           (chatRequested)="openLibraryChat($event)"
+          (statsRequested)="goToLibraryStats($event)"
         ></app-vector-store-list>
         <div *ngIf="!loadingStores && vectorStores.length === 0" class="empty-state">
           Create a library to begin uploading documents.

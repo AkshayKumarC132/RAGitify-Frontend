@@ -221,6 +221,16 @@
         </button>
         <button
           type="button"
+          class="card-action-button card-action-stats"
+          *ngIf="canViewStats(store)"
+          (click)="openLibraryStats(store); $event.stopPropagation()"
+          title="View library analytics"
+        >
+          <i class="fa-solid fa-chart-column"></i>
+          <span>Stats</span>
+        </button>
+        <button
+          type="button"
           class="card-action-button card-action-edit"
           (click)="editLibrary(store); $event.stopPropagation()"
           [disabled]="!canEdit(store)"
@@ -287,6 +297,16 @@
               >
                 <i class="fa-solid fa-comments"></i>
                 <span>Chat</span>
+              </button>
+              <button
+                type="button"
+                class="card-action-button card-action-stats"
+                *ngIf="canViewStats(store)"
+                (click)="openLibraryStats(store); $event.stopPropagation()"
+                title="View library analytics"
+              >
+                <i class="fa-solid fa-chart-column"></i>
+                <span>Stats</span>
               </button>
               <button
                 type="button"
@@ -378,4 +398,5 @@
       </div>
     </div>
   </div>
+
 </div>

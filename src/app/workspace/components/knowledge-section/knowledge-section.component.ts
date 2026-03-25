@@ -1154,6 +1154,13 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.chatLibrary = null;
   }
 
+  goToLibraryStats(store: VectorStore): void {
+    if (store.vs_type === 'SHARED') {
+      return;
+    }
+    this.router.navigate(['/workspace/library', store.id, 'stats']);
+  }
+
   openShareDialog(documentIds?: string[]): void {
     const ids = documentIds?.length ? documentIds : Array.from(this.selectedDocumentIds);
     const shareable = this.getEligibleDocuments(ids, 'share');

@@ -15,6 +15,7 @@ import { LibraryChatComponent } from './components/library-chat/library-chat.com
 import { WorkspaceLibraryPickerComponent } from './components/workspace-library-picker/workspace-library-picker.component';
 import { DocumentDetailsPageComponent } from './components/document-details-page/document-details-page.component';
 import { DocumentSidebarListComponent } from './components/document-sidebar-list/document-sidebar-list.component';
+import { LibraryStatsPageComponent } from './components/library-stats-page/library-stats-page.component';
 import { WorkspaceRoutingModule } from './workspace-routing.module';
 
 @NgModule({
@@ -30,6 +31,7 @@ import { WorkspaceRoutingModule } from './workspace-routing.module';
     DocumentChatComponent,
     AssistantChatComponent,
     LibraryChatComponent,
+    LibraryStatsPageComponent,
     DocumentDetailsPageComponent,
     DocumentSidebarListComponent
   ],

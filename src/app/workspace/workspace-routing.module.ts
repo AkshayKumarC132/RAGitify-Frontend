@@ -4,6 +4,7 @@ import { WorkspaceLayoutComponent } from './components/workspace-layout/workspac
 
 const routes: Routes = [
   { path: '', component: WorkspaceLayoutComponent },
+  { path: 'library/:libraryId/stats', component: WorkspaceLayoutComponent },
   { path: 'document/:documentId', component: WorkspaceLayoutComponent }
 ];
 

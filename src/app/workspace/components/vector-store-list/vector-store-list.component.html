@@ -29,6 +29,10 @@
       <button type="button" class="btn-premium-icon" (click)="requestChat(store, $event)" title="Chat with library">
         <i class="fa-solid fa-comments"></i>
       </button>
+      <button type="button" class="btn-premium-icon" *ngIf="canViewStats(store)" (click)="requestStats(store, $event)"
+        title="View library analytics">
+        <i class="fa-solid fa-chart-column"></i>
+      </button>
       <button type="button" class="btn-premium-icon" (click)="requestEdit(store, $event)" title="Rename library"
         [disabled]="!canEdit(store)">
         <i class="fa-solid fa-pen"></i>

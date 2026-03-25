@@ -15,6 +15,7 @@ export class VectorStoreListComponent {
   @Output() editRequested = new EventEmitter<VectorStore>();
   @Output() deleteRequested = new EventEmitter<VectorStore>();
   @Output() chatRequested = new EventEmitter<VectorStore>();
+  @Output() statsRequested = new EventEmitter<VectorStore>();
 
   getDocCount(store: VectorStore): number {
     return this.documentCounts[store.id] ?? 0;
@@ -34,6 +35,10 @@ export class VectorStoreListComponent {
 
   canDelete(store: VectorStore): boolean {
     return !this.isSystemStore(store);
+  }
+
+  canViewStats(store: VectorStore): boolean {
+    return store.vs_type !== 'SHARED';
   }
 
   getStoreTypeLabel(store: VectorStore): string {
@@ -88,5 +93,13 @@ export class VectorStoreListComponent {
   requestChat(store: VectorStore, event: MouseEvent): void {
     event.stopPropagation();
     this.chatRequested.emit(store);
+  }
+
+  requestStats(store: VectorStore, event: MouseEvent): void {
+    event.stopPropagation();
+    if (!this.canViewStats(store)) {
+      return;
+    }
+    this.statsRequested.emit(store);
   }
 }

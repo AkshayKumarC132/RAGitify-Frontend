@@ -230,6 +230,10 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
     return !this.isSystemStore(store);
   }
 
+  canViewStats(store: VectorStore): boolean {
+    return store.vs_type !== 'SHARED';
+  }
+
   isProtectedStore(store: VectorStore): boolean {
     return store.vs_type === 'DEFAULT' || store.vs_type === 'SHARED';
   }
@@ -356,6 +360,13 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
         this.loadDocumentCounts();
       }
     });
+  }
+
+  openLibraryStats(store: VectorStore): void {
+    if (!this.canViewStats(store)) {
+      return;
+    }
+    this.router.navigate(['/workspace/library', store.id, 'stats']);
   }
 
   createLibrary(): void {

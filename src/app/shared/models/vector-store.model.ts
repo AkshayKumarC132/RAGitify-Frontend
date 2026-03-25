@@ -17,3 +17,13 @@ export interface VectorStoreCreateRequest {
   metadata?: Record<string, unknown>;
 }
 
+export interface VectorStoreStats {
+  vector_store_id: string;
+  name: string;
+  vs_type: VsType | string;
+  document_count: number;
+  total_file_size: number;
+  vector_points: number;
+  ingestion_status_breakdown: Record<string, number>;
+  file_type_breakdown: Record<string, number>;
+}
