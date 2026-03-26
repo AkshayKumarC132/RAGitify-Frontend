@@ -25,7 +25,8 @@
       <form [formGroup]="createVectorStoreForm" (ngSubmit)="createVectorStore()">
         <div class="rename-field">
           <label for="createLibraryName">Name *</label>
-          <input #createLibraryNameInput id="createLibraryName" type="text" formControlName="name" placeholder="e.g., Product manuals" />
+          <input #createLibraryNameInput id="createLibraryName" type="text" formControlName="name"
+            placeholder="e.g., Product manuals" />
           <small *ngIf="createVectorStoreForm.get('name')?.invalid && createVectorStoreForm.get('name')?.touched">
             A descriptive name is required.
           </small>
@@ -45,11 +46,12 @@
   <div class="library-rename-backdrop" *ngIf="editingVectorStore" (click)="cancelVectorStoreEdit()">
     <div class="library-rename-modal" (click)="$event.stopPropagation()">
       <h3 class="rename-title">Rename library</h3>
-      
+
       <form [formGroup]="editVectorStoreForm" (ngSubmit)="updateVectorStore()">
         <div class="rename-field">
           <label for="renameLibraryInput">New name</label>
-          <input #renameLibraryInput id="renameLibraryInput" type="text" formControlName="name" placeholder="Enter library name" />
+          <input #renameLibraryInput id="renameLibraryInput" type="text" formControlName="name"
+            placeholder="Enter library name" />
         </div>
         <div class="rename-actions">
           <button type="button" class="rename-btn rename-btn-secondary" (click)="cancelVectorStoreEdit()">
@@ -65,12 +67,8 @@
 
   <div class="library-rename-backdrop" *ngIf="showUploadForm" (click)="showUploadForm = false">
     <div class="upload-modal" (click)="$event.stopPropagation()">
-      <app-document-upload
-        [vectorStores]="vectorStores"
-        [defaultVectorStoreId]="selectedVectorStore?.id || null"
-        (uploaded)="onDocumentUploaded()"
-        (cancel)="showUploadForm = false"
-      ></app-document-upload>
+      <app-document-upload [vectorStores]="vectorStores" [defaultVectorStoreId]="selectedVectorStore?.id || null"
+        (uploaded)="onDocumentUploaded()" (cancel)="showUploadForm = false"></app-document-upload>
     </div>
   </div>
 
@@ -82,17 +80,10 @@
           <span>{{ vectorStores.length }} total</span>
         </div>
         <div *ngIf="loadingStores" class="loading-state">Loading library...</div>
-        <app-vector-store-list
-          *ngIf="!loadingStores"
-          [vectorStores]="vectorStores"
-          [documentCounts]="documentCounts"
-          [selectedVectorStore]="selectedVectorStore"
-          (vectorStoreSelected)="onVectorStoreSelected($event)"
-          (editRequested)="startVectorStoreEdit($event)"
-          (deleteRequested)="deleteVectorStore($event)"
-          (chatRequested)="openLibraryChat($event)"
-          (statsRequested)="goToLibraryStats($event)"
-        ></app-vector-store-list>
+        <app-vector-store-list *ngIf="!loadingStores" [vectorStores]="vectorStores" [documentCounts]="documentCounts"
+          [selectedVectorStore]="selectedVectorStore" (vectorStoreSelected)="onVectorStoreSelected($event)"
+          (editRequested)="startVectorStoreEdit($event)" (deleteRequested)="deleteVectorStore($event)"
+          (chatRequested)="openLibraryChat($event)" (statsRequested)="goToLibraryStats($event)"></app-vector-store-list>
         <div *ngIf="!loadingStores && vectorStores.length === 0" class="empty-state">
           Create a library to begin uploading documents.
         </div>
@@ -102,19 +93,22 @@
     <div class="documents-column">
       <div class="documents-panel">
         <div class="documents-panel-header">
-          <h2 class="documents-title" [title]="selectedVectorStore?.name || 'Documents'">{{ getDisplaySelectedLibraryName() }}</h2>
+          <h2 class="documents-title" [title]="selectedVectorStore?.name || 'Documents'">{{
+            getDisplaySelectedLibraryName() }}</h2>
           <!-- <span class="meta-chip">{{ selectedVectorStore?.vs_type || 'CUSTOM' }}</span>
           <span class="meta-chip subtle" *ngIf="selectedVectorStore?.is_system">System Store</span>
           <p class="documents-subtitle">{{ getWorkspaceSubtitle() }}</p> -->
         </div>
 
         <div class="workspace-surface-tabs" *ngIf="isSharedVectorStoreSelected">
-          <button type="button" class="workspace-tab" [class.active]="activeWorkspaceTab === 'shared-with-me'" (click)="setWorkspaceTab('shared-with-me')">
+          <button type="button" class="workspace-tab" [class.active]="activeWorkspaceTab === 'shared-with-me'"
+            (click)="setWorkspaceTab('shared-with-me')">
             <i class="fa-solid fa-share-nodes"></i>
             <span>Shared With Me</span>
             <span class="workspace-tab-count">{{ sharedWithMe.length }}</span>
           </button>
-          <button type="button" class="workspace-tab" [class.active]="activeWorkspaceTab === 'shared-by-me'" (click)="setWorkspaceTab('shared-by-me')">
+          <button type="button" class="workspace-tab" [class.active]="activeWorkspaceTab === 'shared-by-me'"
+            (click)="setWorkspaceTab('shared-by-me')">
             <i class="fa-solid fa-paper-plane"></i>
             <span>Shared By Me</span>
             <span class="workspace-tab-count">{{ sharedByMe.length }}</span>
@@ -124,39 +118,36 @@
         <div class="documents-toolbar">
           <div class="search-box">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input
-              type="text"
-              [(ngModel)]="searchQuery"
-              [placeholder]="isSharedVectorStoreSelected ? (activeWorkspaceTab === 'shared-with-me' ? 'Search shared documents or owners...' : 'Search documents or recipients...') : 'Search documents...'"
-            />
+            <input type="text" [(ngModel)]="searchQuery"
+              [placeholder]="isSharedVectorStoreSelected ? (activeWorkspaceTab === 'shared-with-me' ? 'Search shared documents or owners...' : 'Search documents or recipients...') : 'Search documents...'" />
             <button class="clear-search" *ngIf="searchQuery" (click)="searchQuery = ''">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
-          <button
-            type="button"
-            class="btn-premium-primary toolbar-upload-btn"
+          <button type="button" class="btn-premium-primary toolbar-upload-btn"
             *ngIf="!isInWorkspace && activeWorkspaceTab === 'documents'"
-            [disabled]="vectorStores.length === 0 || !canUploadToSelectedStore()"
-            (click)="toggleUploadForm()"
-          >
+            [disabled]="vectorStores.length === 0 || !canUploadToSelectedStore()" (click)="toggleUploadForm()">
             <i class="fa-solid fa-cloud-arrow-up"></i>
             <span>Upload</span>
           </button>
-          <button type="button" class="toolbar-icon-btn" title="Settings" *ngIf="activeWorkspaceTab === 'documents' && !isSharedVectorStoreSelected">
+          <button type="button" class="toolbar-icon-btn" title="Settings"
+            *ngIf="activeWorkspaceTab === 'documents' && !isSharedVectorStoreSelected">
             <i class="fa-solid fa-gear"></i>
           </button>
           <div class="view-toggle" *ngIf="activeWorkspaceTab === 'documents' && !isSharedVectorStoreSelected">
-            <button type="button" class="toolbar-icon-btn" [class.active]="listView" (click)="listView = true" title="List view">
+            <button type="button" class="toolbar-icon-btn" [class.active]="listView" (click)="listView = true"
+              title="List view">
               <i class="fa-solid fa-list"></i>
             </button>
-            <button type="button" class="toolbar-icon-btn" [class.active]="!listView" (click)="listView = false" title="Grid view">
+            <button type="button" class="toolbar-icon-btn" [class.active]="!listView" (click)="listView = false"
+              title="Grid view">
               <i class="fa-solid fa-grip"></i>
             </button>
           </div>
         </div>
 
-        <div class="document-filter-bar" *ngIf="activeWorkspaceTab === 'documents' && !isSharedVectorStoreSelected && documents.length > 0">
+        <div class="document-filter-bar"
+          *ngIf="activeWorkspaceTab === 'documents' && !isSharedVectorStoreSelected && documents.length > 0">
           <div class="document-filter-field">
             <label for="docStatusFilter">Status</label>
             <select id="docStatusFilter" [(ngModel)]="activeStatusFilter">
@@ -203,7 +194,8 @@
           </div>
           <div class="document-filter-actions">
             <span class="filter-results">{{ filteredDocuments.length }} results</span>
-            <button type="button" class="filter-reset-btn" (click)="resetDocumentFilters()" [disabled]="!hasActiveAdvancedFilters">
+            <button type="button" class="filter-reset-btn" (click)="resetDocumentFilters()"
+              [disabled]="!hasActiveAdvancedFilters">
               Clear filters
             </button>
           </div>
@@ -214,11 +206,13 @@
           <span>Loading documents...</span>
         </div>
 
-        <div *ngIf="activeWorkspaceTab === 'documents' && !loadingDocuments && filteredDocuments.length === 0" class="empty-state">
+        <div *ngIf="activeWorkspaceTab === 'documents' && !loadingDocuments && filteredDocuments.length === 0"
+          class="empty-state">
           No documents found for the selected library.
         </div>
 
-        <div *ngIf="activeWorkspaceTab === 'documents' && !loadingDocuments && filteredDocuments.length > 0 && listView" class="documents-table-wrap">
+        <div *ngIf="activeWorkspaceTab === 'documents' && !loadingDocuments && filteredDocuments.length > 0 && listView"
+          class="documents-table-wrap">
           <table class="documents-table">
             <thead>
               <tr>
@@ -238,48 +232,59 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let doc of filteredDocuments; let last = last" class="document-row" [class.selected]="selectedDocumentIds.has(doc.id)" [class.document-failed]="resolvedDocumentStatus(doc) === 'failed'">
+              <tr *ngFor="let doc of filteredDocuments; let last = last" class="document-row"
+                [class.selected]="selectedDocumentIds.has(doc.id)"
+                [class.document-failed]="resolvedDocumentStatus(doc) === 'failed'">
                 <td class="col-checkbox">
                   <label class="checkbox-container">
-                    <input type="checkbox" [checked]="selectedDocumentIds.has(doc.id)" (change)="toggleDocumentSelection(doc.id)" />
+                    <input type="checkbox" [checked]="selectedDocumentIds.has(doc.id)"
+                      (change)="toggleDocumentSelection(doc.id)" />
                     <span class="checkmark"></span>
                   </label>
                 </td>
                 <td class="col-name">
-                  <i class="fa-solid doc-file-icon" [ngClass]="[getFileIcon(getDisplayDocumentName(doc)), getFileIconTone(getDisplayDocumentName(doc))]"></i>
+                  <i class="fa-solid doc-file-icon"
+                    [ngClass]="[getFileIcon(getDisplayDocumentName(doc)), getFileIconTone(getDisplayDocumentName(doc))]"></i>
                   <div class="doc-name-stack">
-                    <button type="button" class="doc-name-link" (click)="openDocumentDetails(doc)" [title]="getDisplayDocumentName(doc)">
+                    <button type="button" class="doc-name-link" (click)="openDocumentDetails(doc)"
+                      [title]="getDisplayDocumentName(doc)">
                       <span class="doc-name-text">{{ getTruncatedDocumentName(doc, 34) }}</span>
                     </button>
                   </div>
                 </td>
                 <td class="col-type">
-                  <span class="type-badge" [ngClass]="getDocumentTypeLabel(doc) === 'Accessed' ? 'type-accessed' : 'type-uploaded'">
-                    <i class="fa-solid" [ngClass]="getDocumentTypeLabel(doc) === 'Accessed' ? 'fa-eye' : 'fa-arrow-up'"></i>
+                  <span class="type-badge"
+                    [ngClass]="getDocumentTypeLabel(doc) === 'Accessed' ? 'type-accessed' : 'type-uploaded'">
+                    <i class="fa-solid"
+                      [ngClass]="getDocumentTypeLabel(doc) === 'Accessed' ? 'fa-eye' : 'fa-arrow-up'"></i>
                     {{ getDocumentTypeLabel(doc) }}
                   </span>
                 </td>
                 <td class="col-status">
                   <span class="status-badge" [ngClass]="getStatusBadgeClass(resolvedDocumentStatus(doc))">
-                    <i class="fa-solid" [ngClass]="resolvedDocumentStatus(doc) === 'completed' ? 'fa-circle-check' : resolvedDocumentStatus(doc) === 'failed' ? 'fa-triangle-exclamation' : 'fa-clock'"></i>
+                    <i class="fa-solid"
+                      [ngClass]="resolvedDocumentStatus(doc) === 'completed' ? 'fa-circle-check' : resolvedDocumentStatus(doc) === 'failed' ? 'fa-triangle-exclamation' : 'fa-clock'"></i>
                     {{ getDisplayStatus(resolvedDocumentStatus(doc)) }}
                   </span>
                 </td>
                 <td class="col-source">
                   <div class="doc-meta-stack">
                     <span>{{ getDocumentSource(doc) }}</span>
-                    <span class="doc-subtext">{{ doc.access_type || 'owned' }}</span>
                   </div>
                 </td>
                 <td class="col-size">{{ formatFileSize(doc) }}</td>
                 <td class="col-date">{{ formatDate(resolvedDocumentDate(doc)) }}</td>
                 <td class="col-actions">
-                  <div class="actions-cell-wrap" (click)="$event.stopPropagation()" [class.active-dropdown]="isActionsOpen(doc.id)">
-                    <button type="button" class="action-menu-btn" title="Actions" (click)="toggleDocumentActions(doc.id, $event)">
+                  <div class="actions-cell-wrap" (click)="$event.stopPropagation()"
+                    [class.active-dropdown]="isActionsOpen(doc.id)">
+                    <button type="button" class="action-menu-btn" title="Actions"
+                      (click)="toggleDocumentActions(doc.id, $event)">
                       <i class="fa-solid fa-ellipsis-vertical"></i>
                     </button>
-                    <div class="document-actions-dropdown" *ngIf="!selectionMode && isActionsOpen(doc.id)" [class.open-above]="last && filteredDocuments.length > 1">
-                      <a *ngIf="canPreviewDocument(doc)" class="dropdown-action-item" [href]="doc.signed_url" target="_blank" rel="noopener noreferrer">
+                    <div class="document-actions-dropdown" *ngIf="!selectionMode && isActionsOpen(doc.id)"
+                      [class.open-above]="last && filteredDocuments.length > 1">
+                      <a *ngIf="canPreviewDocument(doc)" class="dropdown-action-item" [href]="doc.signed_url"
+                        target="_blank" rel="noopener noreferrer">
                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                         <span>Open file</span>
                       </a>
@@ -287,19 +292,26 @@
                         <i class="fa-solid fa-circle-info"></i>
                         <span>Details</span>
                       </button>
-                      <button type="button" class="dropdown-action-item" (click)="openDocumentChat(doc); closeDocumentActions()" [disabled]="resolvedDocumentStatus(doc) !== 'completed'" title="Chat">
+                      <button type="button" class="dropdown-action-item"
+                        (click)="openDocumentChat(doc); closeDocumentActions()"
+                        [disabled]="resolvedDocumentStatus(doc) !== 'completed'" title="Chat">
                         <i class="fa-solid fa-comments"></i>
                         <span>Chat</span>
                       </button>
-                      <button type="button" class="dropdown-action-item" (click)="openShareDialog([doc.id]); closeDocumentActions()" [disabled]="!canShareDocument(doc)" title="Share">
+                      <button type="button" class="dropdown-action-item"
+                        (click)="openShareDialog([doc.id]); closeDocumentActions()" [disabled]="!canShareDocument(doc)"
+                        title="Share">
                         <i class="fa-solid fa-share-nodes"></i>
                         <span>Share</span>
                       </button>
-                      <button type="button" class="dropdown-action-item" (click)="openMoveDialog([doc.id]); closeDocumentActions()" [disabled]="!canMoveDocument(doc)" title="Move">
+                      <button type="button" class="dropdown-action-item"
+                        (click)="openMoveDialog([doc.id]); closeDocumentActions()" [disabled]="!canMoveDocument(doc)"
+                        title="Move">
                         <i class="fa-solid fa-right-left"></i>
                         <span>Move</span>
                       </button>
-                      <button type="button" class="dropdown-action-item danger" (click)="deleteDocument(doc.id); closeDocumentActions()" title="Delete">
+                      <button type="button" class="dropdown-action-item danger"
+                        (click)="deleteDocument(doc.id); closeDocumentActions()" title="Delete">
                         <i class="fa-solid fa-trash"></i>
                         <span>Delete</span>
                       </button>
@@ -311,27 +323,37 @@
           </table>
         </div>
 
-        <div *ngIf="activeWorkspaceTab === 'documents' && !loadingDocuments && filteredDocuments.length > 0 && !listView" class="documents-grid-wrap">
+        <div
+          *ngIf="activeWorkspaceTab === 'documents' && !loadingDocuments && filteredDocuments.length > 0 && !listView"
+          class="documents-grid-wrap">
           <div class="documents-grid">
-            <div *ngFor="let doc of filteredDocuments" class="document-card" [class.selected]="selectedDocumentIds.has(doc.id)" [class.document-failed]="resolvedDocumentStatus(doc) === 'failed'" (click)="onDocumentCardClick($event, doc)">
+            <div *ngFor="let doc of filteredDocuments" class="document-card"
+              [class.selected]="selectedDocumentIds.has(doc.id)"
+              [class.document-failed]="resolvedDocumentStatus(doc) === 'failed'"
+              (click)="onDocumentCardClick($event, doc)">
               <div class="document-card-header">
                 <label class="checkbox-container card-checkbox" (click)="$event.stopPropagation()">
-                  <input type="checkbox" [checked]="selectedDocumentIds.has(doc.id)" (change)="toggleDocumentSelection(doc.id)" />
+                  <input type="checkbox" [checked]="selectedDocumentIds.has(doc.id)"
+                    (change)="toggleDocumentSelection(doc.id)" />
                   <span class="checkmark"></span>
                 </label>
                 <div class="document-card-header-right">
-                  <span class="document-card-origin-chip" [class.accessed]="getDocumentTypeLabel(doc) === 'Accessed'" [title]="getDocumentTypeLabel(doc)">
-                    <i class="fa-solid" [ngClass]="getDocumentTypeLabel(doc) === 'Accessed' ? 'fa-eye' : 'fa-arrow-up-from-square'"></i>
+                  <span class="document-card-origin-chip" [class.accessed]="getDocumentTypeLabel(doc) === 'Accessed'"
+                    [title]="getDocumentTypeLabel(doc)">
+                    <i class="fa-solid"
+                      [ngClass]="getDocumentTypeLabel(doc) === 'Accessed' ? 'fa-eye' : 'fa-arrow-up-from-square'"></i>
                     <span>{{ getDocumentTypeLabel(doc) }}</span>
                   </span>
                 </div>
               </div>
               <div class="document-card-main">
                 <div class="document-card-icon">
-                  <i class="fa-solid" [ngClass]="[getFileIcon(getDisplayDocumentName(doc)), getFileIconTone(getDisplayDocumentName(doc))]"></i>
+                  <i class="fa-solid"
+                    [ngClass]="[getFileIcon(getDisplayDocumentName(doc)), getFileIconTone(getDisplayDocumentName(doc))]"></i>
                 </div>
                 <div class="document-card-copy">
-                  <button type="button" class="document-card-title-btn" (click)="openDocumentDetails(doc); $event.stopPropagation()" [title]="getDisplayDocumentName(doc)">
+                  <button type="button" class="document-card-title-btn"
+                    (click)="openDocumentDetails(doc); $event.stopPropagation()" [title]="getDisplayDocumentName(doc)">
                     <h3 class="document-card-title">{{ getTruncatedDocumentName(doc, 18) }}</h3>
                   </button>
                   <p class="document-card-subtitle">{{ getDocumentFileType(doc) }} document</p>
@@ -344,30 +366,41 @@
               </div>
               <div class="document-card-summary">
                 <div class="document-card-status-line">
-                  <span class="document-card-status" [ngClass]="getStatusBadgeClass(resolvedDocumentStatus(doc))" [title]="getDisplayStatus(resolvedDocumentStatus(doc))">
-                    <i class="fa-solid" [ngClass]="resolvedDocumentStatus(doc) === 'completed' ? 'fa-circle-check' : resolvedDocumentStatus(doc) === 'failed' ? 'fa-triangle-exclamation' : 'fa-clock'"></i>
+                  <span class="document-card-status" [ngClass]="getStatusBadgeClass(resolvedDocumentStatus(doc))"
+                    [title]="getDisplayStatus(resolvedDocumentStatus(doc))">
+                    <i class="fa-solid"
+                      [ngClass]="resolvedDocumentStatus(doc) === 'completed' ? 'fa-circle-check' : resolvedDocumentStatus(doc) === 'failed' ? 'fa-triangle-exclamation' : 'fa-clock'"></i>
                   </span>
                   <span class="document-card-status-text">{{ getDisplayStatus(resolvedDocumentStatus(doc)) }}</span>
                 </div>
               </div>
               <div class="document-card-footer">
                 <div class="document-card-footer-right">
-                  <button type="button" class="btn-premium-icon" (click)="openDocumentDetails(doc); $event.stopPropagation()" title="Details">
+                  <button type="button" class="btn-premium-icon"
+                    (click)="openDocumentDetails(doc); $event.stopPropagation()" title="Details">
                     <i class="fa-solid fa-circle-info"></i>
                   </button>
-                  <a *ngIf="canPreviewDocument(doc)" class="btn-premium-icon" [href]="doc.signed_url" target="_blank" rel="noopener noreferrer" title="Open file" (click)="$event.stopPropagation()">
+                  <a *ngIf="canPreviewDocument(doc)" class="btn-premium-icon" [href]="doc.signed_url" target="_blank"
+                    rel="noopener noreferrer" title="Open file" (click)="$event.stopPropagation()">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
                   </a>
-                  <button type="button" class="btn-premium-icon" (click)="openDocumentChat(doc); $event.stopPropagation()" [disabled]="resolvedDocumentStatus(doc) !== 'completed'" title="Chat">
+                  <button type="button" class="btn-premium-icon"
+                    (click)="openDocumentChat(doc); $event.stopPropagation()"
+                    [disabled]="resolvedDocumentStatus(doc) !== 'completed'" title="Chat">
                     <i class="fa-solid fa-comments"></i>
                   </button>
-                  <button type="button" class="btn-premium-icon" (click)="openShareDialog([doc.id]); $event.stopPropagation()" [disabled]="!canShareDocument(doc)" title="Share">
+                  <button type="button" class="btn-premium-icon"
+                    (click)="openShareDialog([doc.id]); $event.stopPropagation()" [disabled]="!canShareDocument(doc)"
+                    title="Share">
                     <i class="fa-solid fa-share-nodes"></i>
                   </button>
-                  <button type="button" class="btn-premium-icon" (click)="openMoveDialog([doc.id]); $event.stopPropagation()" [disabled]="!canMoveDocument(doc)" title="Move">
+                  <button type="button" class="btn-premium-icon"
+                    (click)="openMoveDialog([doc.id]); $event.stopPropagation()" [disabled]="!canMoveDocument(doc)"
+                    title="Move">
                     <i class="fa-solid fa-right-left"></i>
                   </button>
-                  <button type="button" class="btn-premium-icon danger" (click)="deleteDocument(doc.id); $event.stopPropagation()" title="Delete">
+                  <button type="button" class="btn-premium-icon danger"
+                    (click)="deleteDocument(doc.id); $event.stopPropagation()" title="Delete">
                     <i class="fa-solid fa-trash"></i>
                   </button>
                 </div>
@@ -382,10 +415,8 @@
             <span>Loading incoming shares...</span>
           </div>
 
-          <div
-            class="document-filter-bar shared-filter-bar"
-            *ngIf="!loadingSharedWithMe && (sharedWithMe.length > 0 || hasActiveSharedFilters)"
-          >
+          <div class="document-filter-bar shared-filter-bar"
+            *ngIf="!loadingSharedWithMe && (sharedWithMe.length > 0 || hasActiveSharedFilters)">
             <div class="document-filter-field">
               <label for="sharedOwnerFilter">Owner</label>
               <select id="sharedOwnerFilter" [(ngModel)]="sharedOwnerFilter">
@@ -405,7 +436,8 @@
             </div>
             <div class="document-filter-actions">
               <span class="filter-results">{{ filteredSharedWithMe.length }} results</span>
-              <button type="button" class="filter-reset-btn" (click)="resetSharedFilters()" [disabled]="!hasActiveSharedFilters">
+              <button type="button" class="filter-reset-btn" (click)="resetSharedFilters()"
+                [disabled]="!hasActiveSharedFilters">
                 Clear filters
               </button>
             </div>
@@ -413,7 +445,8 @@
 
           <div *ngIf="!loadingSharedWithMe && filteredSharedWithMe.length === 0" class="empty-state">
             <p>No active documents have been shared with you.</p>
-            <p class="empty-hint">When another user shares a document, it will appear here and in your SHARED library.</p>
+            <p class="empty-hint">When another user shares a document, it will appear here and in your SHARED library.
+            </p>
           </div>
 
           <div *ngIf="!loadingSharedWithMe && filteredSharedWithMe.length > 0" class="documents-table-wrap">
@@ -432,14 +465,16 @@
                 <tr *ngFor="let item of filteredSharedWithMe">
                   <td class="col-name">
                     <div class="doc-name-stack">
-                      <button type="button" class="doc-name-link" (click)="openDocumentDetails(item.document_id)" [title]="item.document_title">
+                      <button type="button" class="doc-name-link" (click)="openDocumentDetails(item.document_id)"
+                        [title]="item.document_title">
                         <span class="doc-name-text">{{ item.document_title }}</span>
                       </button>
                     </div>
                   </td>
                   <td>{{ item.owner_email }}</td>
                   <td>
-                    <span class="share-status-chip" [class.inactive]="getShareStatusLabel(item) !== 'Active'">{{ getShareStatusLabel(item) }}</span>
+                    <span class="share-status-chip" [class.inactive]="getShareStatusLabel(item) !== 'Active'">{{
+                      getShareStatusLabel(item) }}</span>
                   </td>
                   <td>{{ formatDate(item.shared_at) }}</td>
                   <td>{{ getShareExpiryLabel(item) }}</td>
@@ -461,10 +496,8 @@
             <span>Loading outgoing shares...</span>
           </div>
 
-          <div
-            class="document-filter-bar shared-filter-bar"
-            *ngIf="!loadingSharedByMe && (sharedByMe.length > 0 || hasActiveSharedByMeFilters)"
-          >
+          <div class="document-filter-bar shared-filter-bar"
+            *ngIf="!loadingSharedByMe && (sharedByMe.length > 0 || hasActiveSharedByMeFilters)">
             <div class="document-filter-field">
               <label for="sharedRecipientFilter">Recipient</label>
               <select id="sharedRecipientFilter" [(ngModel)]="sharedRecipientFilter">
@@ -484,7 +517,8 @@
             </div>
             <div class="document-filter-actions">
               <span class="filter-results">{{ filteredSharedByMe.length }} results</span>
-              <button type="button" class="filter-reset-btn" (click)="resetSharedByMeFilters()" [disabled]="!hasActiveSharedByMeFilters">
+              <button type="button" class="filter-reset-btn" (click)="resetSharedByMeFilters()"
+                [disabled]="!hasActiveSharedByMeFilters">
                 Clear filters
               </button>
             </div>
@@ -511,14 +545,16 @@
                 <tr *ngFor="let item of filteredSharedByMe">
                   <td class="col-name">
                     <div class="doc-name-stack">
-                      <button type="button" class="doc-name-link" (click)="openDocumentDetails(item.document_id)" [title]="item.document_title">
+                      <button type="button" class="doc-name-link" (click)="openDocumentDetails(item.document_id)"
+                        [title]="item.document_title">
                         <span class="doc-name-text">{{ item.document_title }}</span>
                       </button>
                     </div>
                   </td>
                   <td>{{ item.recipient_email }}</td>
                   <td>
-                    <span class="share-status-chip" [class.inactive]="getShareStatusLabel(item) !== 'Active'">{{ getShareStatusLabel(item) }}</span>
+                    <span class="share-status-chip" [class.inactive]="getShareStatusLabel(item) !== 'Active'">{{
+                      getShareStatusLabel(item) }}</span>
                   </td>
                   <td>{{ formatDate(item.shared_at) }}</td>
                   <td>{{ getShareExpiryLabel(item) }}</td>
@@ -540,7 +576,8 @@
   <app-document-chat *ngIf="chatDocument" [document]="chatDocument" (closed)="closeDocumentChat()"></app-document-chat>
   <app-library-chat *ngIf="chatLibrary" [vectorStore]="chatLibrary" (closed)="closeLibraryChat()"></app-library-chat>
 
-  <div class="selection-bar-container" [class.show]="activeWorkspaceTab === 'documents' && selectedDocumentIds.size > 0">
+  <div class="selection-bar-container"
+    [class.show]="activeWorkspaceTab === 'documents' && selectedDocumentIds.size > 0">
     <div class="selection-bar">
       <div class="selection-info">
         <span class="count-badge">{{ selectedDocumentIds.size }}</span>
@@ -574,23 +611,19 @@
   <div class="library-rename-backdrop" *ngIf="shareDialogOpen" (click)="closeShareDialog()">
     <div class="library-rename-modal operation-modal" (click)="$event.stopPropagation()">
       <h3 class="rename-title">Share documents</h3>
-      <p class="rename-subtitle">Share {{ shareDocumentIds.length }} completed document{{ shareDocumentIds.length === 1 ? '' : 's' }} with another user in your tenant.</p>
+      <p class="rename-subtitle">Share {{ shareDocumentIds.length }} completed document{{ shareDocumentIds.length === 1
+        ? '' : 's' }} with another user in your tenant.</p>
       <div class="operation-preview-list">
-        <span class="operation-preview-chip" *ngFor="let doc of getShareDialogDocuments()">{{ getTruncatedDocumentName(doc, 20) }}</span>
+        <span class="operation-preview-chip" *ngFor="let doc of getShareDialogDocuments()">{{
+          getTruncatedDocumentName(doc, 20) }}</span>
       </div>
       <div class="rename-field share-user-autocomplete">
         <label for="shareTargetEmail">Recipient email</label>
-        <input
-          id="shareTargetEmail"
-          type="email"
-          [(ngModel)]="shareTargetEmail"
-          placeholder="Select recipient..."
-          autocomplete="off"
-          (focus)="onShareTargetFocus()"
-          (blur)="onShareTargetBlur()"
-          (input)="onShareTargetInput($event)"
-        />
-        <div class="share-user-dropdown" *ngIf="showShareUserDropdown && (filteredShareUsers.length > 0 || loadingShareUsers)">
+        <input id="shareTargetEmail" type="email" [(ngModel)]="shareTargetEmail" placeholder="Select recipient..."
+          autocomplete="off" (focus)="onShareTargetFocus()" (blur)="onShareTargetBlur()"
+          (input)="onShareTargetInput($event)" />
+        <div class="share-user-dropdown"
+          *ngIf="showShareUserDropdown && (filteredShareUsers.length > 0 || loadingShareUsers)">
           <div class="share-user-option loading" *ngIf="loadingShareUsers">
             <i class="fa-solid fa-circle-notch fa-spin"></i>
             <span>Loading users...</span>
@@ -607,7 +640,8 @@
       </div>
       <div class="rename-actions">
         <button type="button" class="rename-btn rename-btn-secondary" (click)="closeShareDialog()">Cancel</button>
-        <button type="button" class="rename-btn rename-btn-primary" (click)="submitShare()" [disabled]="!isShareTargetValid || shareSubmitting">
+        <button type="button" class="rename-btn rename-btn-primary" (click)="submitShare()"
+          [disabled]="!isShareTargetValid || shareSubmitting">
           {{ shareSubmitting ? 'Sharing...' : 'Share' }}
         </button>
       </div>
@@ -617,19 +651,23 @@
   <div class="library-rename-backdrop" *ngIf="moveDialogOpen" (click)="closeMoveDialog()">
     <div class="library-rename-modal operation-modal" (click)="$event.stopPropagation()">
       <h3 class="rename-title">Move documents</h3>
-      <p class="rename-subtitle">Move {{ moveDocumentIds.length }} completed document{{ moveDocumentIds.length === 1 ? '' : 's' }} to another DEFAULT or CUSTOM library.</p>
+      <p class="rename-subtitle">Move {{ moveDocumentIds.length }} completed document{{ moveDocumentIds.length === 1 ?
+        '' : 's' }} to another DEFAULT or CUSTOM library.</p>
       <div class="operation-preview-list">
-        <span class="operation-preview-chip" *ngFor="let doc of getMoveDialogDocuments()">{{ getTruncatedDocumentName(doc, 20) }}</span>
+        <span class="operation-preview-chip" *ngFor="let doc of getMoveDialogDocuments()">{{
+          getTruncatedDocumentName(doc, 20) }}</span>
       </div>
       <div class="rename-field">
         <label for="moveTargetLibrary">Destination library</label>
         <select id="moveTargetLibrary" [(ngModel)]="moveTargetVectorStoreId">
-          <option *ngFor="let store of moveTargetOptions" [value]="store.id">{{ getTruncatedLibraryOptionName(store.name) }} ({{ store.vs_type }})</option>
+          <option *ngFor="let store of moveTargetOptions" [value]="store.id">{{
+            getTruncatedLibraryOptionName(store.name) }} ({{ store.vs_type }})</option>
         </select>
       </div>
       <div class="rename-actions">
         <button type="button" class="rename-btn rename-btn-secondary" (click)="closeMoveDialog()">Cancel</button>
-        <button type="button" class="rename-btn rename-btn-primary" (click)="submitMove()" [disabled]="!moveTargetVectorStoreId || moveSubmitting">
+        <button type="button" class="rename-btn rename-btn-primary" (click)="submitMove()"
+          [disabled]="!moveTargetVectorStoreId || moveSubmitting">
           {{ moveSubmitting ? 'Moving...' : 'Move' }}
         </button>
       </div>

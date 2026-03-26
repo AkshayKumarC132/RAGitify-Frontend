@@ -27,6 +27,23 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
   private readonly scrollThreshold = 140;
 
   get isTyping(): boolean {
+    return this.hasActiveRun;
+  }
+
+  get showTypingIndicator(): boolean {
+    if (!this.hasActiveRun) {
+      return false;
+    }
+
+    const lastMessage = this.messages[this.messages.length - 1];
+    if (!lastMessage || lastMessage.role !== 'assistant') {
+      return true;
+    }
+
+    return !lastMessage.content;
+  }
+
+  private get hasActiveRun(): boolean {
     return this.loading || (!!this.currentRun && ['queued', 'in_progress', 'requires_action'].includes(this.currentRun.status));
   }
 

@@ -1,8 +1,13 @@
 import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges } from '@angular/core';
 import { forkJoin, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { Router } from '@angular/router';
+import { Document } from '../../../shared/models/document.model';
 import { VectorStore, VectorStoreStats } from '../../../shared/models/vector-store.model';
+import { DocumentService } from '../../../shared/services/document.service';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
+import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
+import { WorkspaceLibraryDeleteFlowService } from '../../services/workspace-library-delete-flow.service';
 
 @Component({
   selector: 'app-library-stats-page',
@@ -16,9 +21,18 @@ export class LibraryStatsPageComponent implements OnInit, OnChanges, OnDestroy {
   errorMessage = '';
   store: VectorStore | null = null;
   stats: VectorStoreStats | null = null;
+  chatLibrary: VectorStore | null = null;
+  renameTarget: VectorStore | null = null;
+  renameName = '';
   private destroy$ = new Subject<void>();
 
-  constructor(private vectorStoreService: VectorStoreService) {}
+  constructor(
+    private vectorStoreService: VectorStoreService,
+    private documentService: DocumentService,
+    private knowledgeContext: WorkspaceKnowledgeContextService,
+    private libraryDeleteFlow: WorkspaceLibraryDeleteFlowService,
+    private router: Router
+  ) {}
 
   private readonly chartPalette = ['#2563eb', '#0ea5e9', '#14b8a6', '#22c55e', '#f59e0b', '#f97316', '#ef4444', '#8b5cf6'];
   private readonly ingestionStatusConfig: Array<{ key: string; label: string; aliases: string[]; color: string }> = [
@@ -28,6 +42,22 @@ export class LibraryStatsPageComponent implements OnInit, OnChanges, OnDestroy {
   ];
 
   ngOnInit(): void {
+    this.knowledgeContext.editLibraryRequested
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(store => this.startRename(store));
+
+    this.knowledgeContext.deleteLibraryRequested
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(store => {
+        void this.deleteLibrary(store);
+      });
+
+    this.knowledgeContext.chatLibraryRequested
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(store => {
+        this.openLibraryChat(store);
+      });
+
     this.loadStatsPage();
   }
 
@@ -165,6 +195,71 @@ export class LibraryStatsPageComponent implements OnInit, OnChanges, OnDestroy {
     return `${Math.round(value)}%`;
   }
 
+  openLibraryChat(store: VectorStore): void {
+    this.chatLibrary = store;
+  }
+
+  closeLibraryChat(): void {
+    this.chatLibrary = null;
+  }
+
+  startRename(store: VectorStore): void {
+    this.renameTarget = store;
+    this.renameName = store.name || '';
+  }
+
+  cancelRename(): void {
+    this.renameTarget = null;
+    this.renameName = '';
+  }
+
+  confirmRename(): void {
+    if (!this.renameTarget) {
+      return;
+    }
+
+    const trimmed = this.renameName.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const target = this.renameTarget;
+    this.vectorStoreService.update(target.id, { name: trimmed }).subscribe({
+      next: updated => {
+        if (this.store?.id === updated.id) {
+          this.store = { ...this.store, ...updated };
+        }
+        this.syncContextStoreUpdate(updated);
+        this.cancelRename();
+      },
+      error: error => {
+        this.errorMessage = this.extractErrorMessage(error, 'Unable to rename library.');
+      }
+    });
+  }
+
+  async deleteLibrary(store: VectorStore): Promise<void> {
+    const documents = await this.loadAllDocumentsForDeleteFlow();
+    const vectorStores = this.knowledgeContext.currentState.vectorStores;
+
+    await this.libraryDeleteFlow.openDeleteLibraryFlow(store, vectorStores, documents, {
+      onDeleted: () => {
+        this.syncContextStoreDelete(store.id);
+        if (this.chatLibrary?.id === store.id) {
+          this.chatLibrary = null;
+        }
+        if (this.renameTarget?.id === store.id) {
+          this.cancelRename();
+        }
+        if (this.store?.id === store.id) {
+          this.router.navigate(['/workspace']);
+          return;
+        }
+        this.loadStatsPage();
+      }
+    });
+  }
+
   private loadStatsPage(): void {
     if (!this.libraryId) {
       this.store = null;
@@ -240,6 +335,46 @@ export class LibraryStatsPageComponent implements OnInit, OnChanges, OnDestroy {
 
   private resolveStatusValue(source: Record<string, number>, aliases: string[]): number {
     return aliases.reduce((sum, alias) => sum + (source[alias] || 0), 0);
+  }
+
+  private async loadAllDocumentsForDeleteFlow(): Promise<Document[]> {
+    return new Promise(resolve => {
+      this.documentService.list(undefined, false).pipe(takeUntil(this.destroy$)).subscribe({
+        next: documents => resolve(documents),
+        error: () => resolve([])
+      });
+    });
+  }
+
+  private syncContextStoreUpdate(updated: VectorStore): void {
+    const current = this.knowledgeContext.currentState;
+    const vectorStores = current.vectorStores.map(store =>
+      store.id === updated.id ? { ...store, ...updated } : store
+    );
+    const selectedVectorStore = current.selectedVectorStore?.id === updated.id
+      ? { ...current.selectedVectorStore, ...updated }
+      : current.selectedVectorStore;
+
+    this.knowledgeContext.updateState({
+      vectorStores,
+      selectedVectorStore
+    });
+  }
+
+  private syncContextStoreDelete(storeId: string): void {
+    const current = this.knowledgeContext.currentState;
+    const vectorStores = current.vectorStores.filter(store => store.id !== storeId);
+    const selectedVectorStore = current.selectedVectorStore?.id === storeId
+      ? null
+      : current.selectedVectorStore;
+    const documentCounts = { ...current.documentCounts };
+    delete documentCounts[storeId];
+
+    this.knowledgeContext.updateState({
+      vectorStores,
+      selectedVectorStore,
+      documentCounts
+    });
   }
 
   private formatMetadataValue(value: unknown): string {

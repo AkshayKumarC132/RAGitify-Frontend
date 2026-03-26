@@ -220,6 +220,19 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
+    get showTypingIndicator(): boolean {
+        if (!this.isResponseInProgress) {
+            return false;
+        }
+
+        const lastMessage = this.messages[this.messages.length - 1];
+        if (!lastMessage || lastMessage.role !== 'assistant') {
+            return true;
+        }
+
+        return !lastMessage.content;
+    }
+
     get isResponseInProgress(): boolean {
         return this.loading || !!(this.streamSub && !this.streamSub.closed);
     }

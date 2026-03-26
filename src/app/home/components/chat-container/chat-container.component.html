@@ -4,7 +4,7 @@
       [message]="message" [isLast]="last" [isStreaming]="last && isTyping && message.role === 'assistant'">
     </app-message-bubble>
 
-    <app-typing-indicator *ngIf="isTyping" [cycle]="true" [statuses]="typingStatuses"></app-typing-indicator>
+    <app-typing-indicator *ngIf="showTypingIndicator" [cycle]="true" [statuses]="typingStatuses"></app-typing-indicator>
   </div>
 
   <button type="button" class="jump-to-bottom-btn" *ngIf="showJumpToBottom" (click)="jumpToBottom()"

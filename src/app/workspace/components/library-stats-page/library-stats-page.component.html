@@ -1,4 +1,32 @@
 ﻿<div class="library-stats-page">
+  <div class="library-rename-backdrop" *ngIf="renameTarget" (click)="cancelRename()">
+    <div class="library-rename-modal" (click)="$event.stopPropagation()">
+      <h3 class="rename-title">Rename library</h3>
+      <div class="rename-field">
+        <label for="libraryStatsRenameInput">New name</label>
+        <input
+          id="libraryStatsRenameInput"
+          type="text"
+          [(ngModel)]="renameName"
+          (keydown.enter)="confirmRename()"
+          placeholder="Enter library name"
+        />
+      </div>
+      <div class="rename-actions">
+        <button type="button" class="rename-btn rename-btn-secondary" (click)="cancelRename()">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="rename-btn rename-btn-primary"
+          (click)="confirmRename()"
+          [disabled]="!renameName.trim()"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
   <div class="stats-loading-state" *ngIf="loading">
     <div class="stats-spinner"></div>
     <span>Loading library analytics...</span>
@@ -161,4 +189,5 @@
       </article>
     </section>
   </ng-container>
+  <app-library-chat *ngIf="chatLibrary" [vectorStore]="chatLibrary" (closed)="closeLibraryChat()"></app-library-chat>
 </div>

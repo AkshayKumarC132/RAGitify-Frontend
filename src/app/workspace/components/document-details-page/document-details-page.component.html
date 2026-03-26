@@ -103,23 +103,23 @@
         </div>
         <div class="document-hero-actions">
           <a *ngIf="document?.signed_url" class="details-secondary-btn" [href]="document?.signed_url"
-            [attr.download]="documentName">
+            [attr.download]="documentName" title="Download">
             <i class="fa-solid fa-download"></i>
-            <span>Download</span>
           </a>
           <button *ngIf="document" type="button" class="details-secondary-btn" (click)="openShareDialog()"
-            [disabled]="!canShareDocument">
+            [disabled]="!canShareDocument" title="Share">
             <i class="fa-solid fa-share-nodes"></i>
-            <span>Share</span>
           </button>
-          <button *ngIf="document" type="button" class="details-secondary-btn" (click)="openDocumentChat()">
+          <button *ngIf="document" type="button" class="details-secondary-btn" (click)="openDocumentChat()"
+            title="Chat">
             <i class="fa-solid fa-comments"></i>
-            <span>Chat</span>
+          </button>
+          <button *ngIf="document && document.access_type !== 'shared'" type="button" class="details-secondary-btn delete-btn" (click)="deleteDocument()" title="Delete">
+            <i class="fa-solid fa-trash"></i>
           </button>
           <a *ngIf="document?.signed_url" class="details-primary-btn" [href]="document?.signed_url" target="_blank"
-            rel="noopener noreferrer">
+            rel="noopener noreferrer" title="Open File">
             <i class="fa-solid fa-arrow-up-right-from-square"></i>
-            <span>Open File</span>
           </a>
         </div>
       </section>
@@ -133,11 +133,12 @@
           <span class="highlight-label">Library Type</span>
           <strong>{{ vectorStore?.vs_type || '-' }}</strong>
         </article>
-        <article class="highlight-card" 
+        <article class="highlight-card"
           [class.failed-status]="(document?.ingestion_status || document?.status)?.toLowerCase() === 'failed'"
           [class.queued-status]="isQueuedStatus(document?.ingestion_status || document?.status)">
           <span class="highlight-label">Status</span>
-          <strong [style.color]="getStatusColor(document?.ingestion_status || document?.status)">{{ document?.ingestion_status || document?.status || '-' }}</strong>
+          <strong [style.color]="getStatusColor(document?.ingestion_status || document?.status)">{{
+            document?.ingestion_status || document?.status || '-' }}</strong>
         </article>
         <article class="highlight-card">
           <span class="highlight-label">Source</span>
@@ -157,13 +158,12 @@
         <article class="details-card details-card--summary">
           <div class="details-card-header">
             <h3>Document Summary</h3>
+            <button type="button" class="copy-summary-btn" (click)="copySummary()"
+              [title]="summaryCopied ? 'Copied!' : 'Copy'">
+              <i class="fa-regular" [ngClass]="summaryCopied ? 'fa-circle-check' : 'fa-copy'"></i>
+            </button>
           </div>
           <p class="details-summary-copy">{{ documentSummary }}</p>
-
-          <button type="button" class="copy-summary-btn" (click)="copySummary()">
-            <i class="fa-regular fa-clone"></i>
-            {{ summaryCopied ? 'Copied!' : 'Copy' }}
-          </button>
 
           <div class="details-card-header keywords-header">
             <h3>Keywords</h3>
@@ -259,17 +259,13 @@
 
   <app-library-chat *ngIf="chatLibrary" [vectorStore]="chatLibrary" (closed)="closeLibraryChat()"></app-library-chat>
 
-  <app-document-chat *ngIf="showDocumentChat && document" [document]="document" (closed)="closeDocumentChat()"></app-document-chat>
+  <app-document-chat *ngIf="showDocumentChat && document" [document]="document"
+    (closed)="closeDocumentChat()"></app-document-chat>
 
   <div class="library-rename-backdrop" *ngIf="showUploadForm" (click)="showUploadForm = false">
     <div class="upload-modal" (click)="$event.stopPropagation()">
-      <app-document-upload
-        [vectorStores]="vectorStores"
-        [defaultVectorStoreId]="vectorStore?.id || null"
-        (uploaded)="onDocumentUploaded($event)"
-        (cancel)="showUploadForm = false"
-      ></app-document-upload>
+      <app-document-upload [vectorStores]="vectorStores" [defaultVectorStoreId]="vectorStore?.id || null"
+        (uploaded)="onDocumentUploaded($event)" (cancel)="showUploadForm = false"></app-document-upload>
     </div>
   </div>
 </div>
-

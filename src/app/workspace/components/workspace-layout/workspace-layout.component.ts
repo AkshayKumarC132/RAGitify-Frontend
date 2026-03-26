@@ -114,14 +114,26 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
   }
 
   onLayoutEditLibrary(store: VectorStore): void {
+    if (this.activeLibraryStatsId) {
+      this.knowledgeContext.editLibraryRequested.next(store);
+      return;
+    }
     this.knowledgeContext.editLibraryRequested.next(store);
   }
 
   onLayoutDeleteLibrary(store: VectorStore): void {
+    if (this.activeLibraryStatsId) {
+      this.knowledgeContext.deleteLibraryRequested.next(store);
+      return;
+    }
     this.knowledgeContext.deleteLibraryRequested.next(store);
   }
 
   onLayoutChatLibrary(store: VectorStore): void {
+    if (this.activeLibraryStatsId) {
+      this.knowledgeContext.chatLibraryRequested.next(store);
+      return;
+    }
     this.knowledgeContext.chatLibraryRequested.next(store);
   }
 

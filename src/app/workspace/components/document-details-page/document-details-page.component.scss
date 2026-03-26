@@ -322,6 +322,17 @@
     border-color: var(--border-color);
     box-shadow: none;
   }
+
+  &.delete-btn {
+    transition: all 0.2s ease;
+    
+    &:hover,
+    &:focus {
+      color: #fff;
+      background: #ef4444;
+      border-color: #ef4444;
+    }
+  }
 }
 
 .document-hero-copy {
@@ -713,24 +724,23 @@
 .copy-summary-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.85rem;
-  border-radius: 8px;
-  border: 1px solid #35527b;
+  justify-content: center;
+  padding: 0.4rem;
+  border-radius: 6px;
+  border: none;
   background: transparent;
-  color: #35527b;
-  font-size: 0.85rem;
-  font-weight: 500;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-top: 1rem;
+  margin-top: 0;
 
   i {
-    font-size: 0.95rem;
+    font-size: 1rem;
   }
 
   &:hover {
-    background: rgba(53, 82, 123, 0.05);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
   }
 }
 

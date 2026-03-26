@@ -12,6 +12,7 @@ import { AuthService } from '../../../shared/services/auth.service';
 import { DocumentService } from '../../../shared/services/document.service';
 import { DocumentShareService } from '../../../shared/services/document-share.service';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
+import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
 import { WorkspaceLibraryDeleteFlowService } from '../../services/workspace-library-delete-flow.service';
 
@@ -63,7 +64,8 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
     private router: Router,
     private cdr: ChangeDetectorRef,
     private knowledgeContext: WorkspaceKnowledgeContextService,
-    private libraryDeleteFlow: WorkspaceLibraryDeleteFlowService
+    private libraryDeleteFlow: WorkspaceLibraryDeleteFlowService,
+    private confirmDialogService: ConfirmDialogService
   ) {
     this.editVectorStoreForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]]
@@ -325,7 +327,7 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
       if (!this.documentId) return;
 
       this.documentService.getStatus(this.documentId).subscribe({
-        next: (statusResponse) => {
+        next: (statusResponse: any) => {
           console.log('[Status Poll] Got status:', statusResponse.status);
           if (this.document) {
             this.document = {
@@ -337,6 +339,8 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
           }
 
           if (this.isTerminalStatus(statusResponse.status)) {
+            this.documentService.invalidateListCache();
+            this.knowledgeContext.documentUploaded.next();
             this.loadDetails();
           } else {
             this.startStatusPolling();
@@ -578,6 +582,32 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
     this.showDocumentChat = false;
   }
 
+  async deleteDocument(): Promise<void> {
+    if (!this.documentId || !this.document) return;
+
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete document?',
+      message: 'This will delete',
+      itemName: this.documentName,
+      secondaryMessage: 'This cannot be undone.'
+    });
+
+    if (!confirmed) return;
+
+    this.documentService.delete(this.documentId).subscribe({
+      next: () => {
+        this.knowledgeContext.documentUploaded.next();
+        this.router.navigate(['/workspace'], {
+          queryParams: this.currentLibraryId ? { libraryId: this.currentLibraryId } : {}
+        });
+      },
+      error: (err: unknown) => {
+        console.error('Error deleting document:', err);
+        this.errorMessage = this.extractErrorMessage(err, 'Unable to delete document.');
+      }
+    });
+  }
+
   private formatValue(value: unknown): string {
     if (value == null) {
       return '-';
@@ -600,9 +630,9 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
 
     this.loadingShareUsers = true;
     this.authService.listUsers().subscribe({
-      next: users => {
+      next: (users: User[]) => {
         const currentUser = this.authService.getStoredUser();
-        this.shareUsers = users.filter(user => user.id !== currentUser?.id);
+        this.shareUsers = users.filter((user: User) => user.id !== currentUser?.id);
         this.filteredShareUsers = this.shareUsers;
         this.hasLoadedShareUsers = true;
         this.loadingShareUsers = false;

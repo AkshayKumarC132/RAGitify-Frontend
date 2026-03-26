@@ -65,6 +65,19 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         'Key takeaways from attachments'
     ];
 
+    get showTypingIndicator(): boolean {
+        if (!this.loading) {
+            return false;
+        }
+
+        const lastMessage = this.messages[this.messages.length - 1];
+        if (!lastMessage || lastMessage.role !== 'assistant') {
+            return true;
+        }
+
+        return !lastMessage.content;
+    }
+
     get suggestedQuestions(): string[] {
         return this.mode === 'document' ? this.documentQuestions : this.defaultQuestions;
     }

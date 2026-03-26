@@ -19,7 +19,7 @@
         <app-message-bubble *ngFor="let msg of messages; let last = last" [message]="msg" [isLast]="last" [isStreaming]="last && loading && msg.role === 'assistant'">
         </app-message-bubble>
 
-        <app-typing-indicator *ngIf="loading" [cycle]="true"></app-typing-indicator>
+        <app-typing-indicator *ngIf="showTypingIndicator" [cycle]="true"></app-typing-indicator>
     </div>
 
     <div class="input-area-wrapper">

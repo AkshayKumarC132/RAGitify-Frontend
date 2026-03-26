@@ -1,11 +1,15 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentService } from '../../../shared/services/document.service';
+import { DocumentShareService } from '../../../shared/services/document-share.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document } from '../../../shared/models/document.model';
 import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
 import { WorkspaceLibraryDeleteFlowService } from '../../services/workspace-library-delete-flow.service';
+import { AuthService } from '../../../shared/services/auth.service';
 
 @Component({
   selector: 'app-workspace-library-picker',
@@ -67,11 +71,11 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
         .filter(doc => this.getResolvedStatus(doc) === 'failed')
         .map(doc => doc.vector_store)
     ));
-    
+
     return failedVsIds.map(vsId => {
       const store = this.vectorStores.find(s => s.id === vsId);
       const libraryName = store ? this.getDisplayLibraryName(store.name) : 'Unknown Library';
-      const libraryDocs = this.documents.filter(doc => doc.vector_store === vsId);
+      const libraryDocs = this.documents.filter(doc => doc.vector_store === vsId && this.getResolvedStatus(doc) === 'failed');
       return { libraryName, documents: libraryDocs };
     }).sort((a, b) => a.libraryName.localeCompare(b.libraryName));
   }
@@ -82,11 +86,11 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
         .filter(doc => ['queued', 'processing', 'in_progress'].includes(this.getResolvedStatus(doc)))
         .map(doc => doc.vector_store)
     ));
-    
+
     return processingVsIds.map(vsId => {
       const store = this.vectorStores.find(s => s.id === vsId);
       const libraryName = store ? this.getDisplayLibraryName(store.name) : 'Unknown Library';
-      const libraryDocs = this.documents.filter(doc => doc.vector_store === vsId);
+      const libraryDocs = this.documents.filter(doc => doc.vector_store === vsId && ['queued', 'processing', 'in_progress'].includes(this.getResolvedStatus(doc)));
       return { libraryName, documents: libraryDocs };
     }).sort((a, b) => a.libraryName.localeCompare(b.libraryName));
   }
@@ -95,8 +99,19 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
     return this.documents.filter(doc => ['queued', 'processing', 'in_progress'].includes(this.getResolvedStatus(doc))).length;
   }
 
+  sharedByMeCount = 0;
+
   get totalAccessedDocuments(): number {
-    return this.documents.filter(doc => doc.access_type === 'shared').length;
+    return this.incomingAccessedDocuments + this.outgoingAccessedDocuments;
+  }
+
+  get incomingAccessedDocuments(): number {
+    const currentUserId = this.authService.getStoredUser()?.id;
+    return this.documents.filter(doc => doc.access_type === 'shared' && doc.uploaded_by !== currentUserId).length;
+  }
+
+  get outgoingAccessedDocuments(): number {
+    return this.sharedByMeCount;
   }
 
   get systemLibraryCount(): number {
@@ -114,10 +129,12 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
   constructor(
     private vectorStoreService: VectorStoreService,
     private documentService: DocumentService,
+    private documentShareService: DocumentShareService,
     private router: Router,
     private knowledgeContext: WorkspaceKnowledgeContextService,
-    private libraryDeleteFlow: WorkspaceLibraryDeleteFlowService
-  ) {}
+    private libraryDeleteFlow: WorkspaceLibraryDeleteFlowService,
+    private authService: AuthService
+  ) { }
 
   ngOnInit(): void {
     this.loadLibraries();
@@ -141,8 +158,11 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
   }
 
   private loadDocumentCounts(): void {
-    this.documentService.list(undefined, false).subscribe({
-      next: (docs) => {
+    forkJoin({
+      docs: this.documentService.list(undefined, false).pipe(catchError(() => of([] as Document[]))),
+      sharedByMe: this.documentShareService.listSharedByMe().pipe(catchError(() => of([])))
+    }).subscribe({
+      next: ({ docs, sharedByMe }) => {
         const counts: Record<string, number> = {};
         const failed: Record<string, number> = {};
         const processing: Record<string, number> = {};
@@ -161,6 +181,7 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
           }
         });
         this.documents = docs;
+        this.sharedByMeCount = new Set(sharedByMe.map(item => item.document_id)).size;
         this.documentCounts = counts;
         this.failedCounts = failed;
         this.processingCounts = processing;
@@ -260,8 +281,8 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
   }
 
   selectDocument(doc: Document): void {
-    this.router.navigate(['/workspace/document', doc.id], { 
-      queryParams: { libraryId: doc.vector_store } 
+    this.router.navigate(['/workspace/document', doc.id], {
+      queryParams: { libraryId: doc.vector_store }
     });
   }
 
