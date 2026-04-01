@@ -642,9 +642,181 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     return this.openActionsDocId === docId;
   }
 
+  showFileTypeDropdown = false;
+  showStatusDropdown = false;
+  showSourceDropdown = false;
+  showDateDropdown = false;
+  showSizeDropdown = false;
+  showSharedOwnerDropdown = false;
+  showSharedDateDropdown = false;
+  showSharedRecipientDropdown = false;
+  showSharedByMeDateDropdown = false;
+
+  closeAllDropdowns(): void {
+    this.showFileTypeDropdown = false;
+    this.showStatusDropdown = false;
+    this.showSourceDropdown = false;
+    this.showDateDropdown = false;
+    this.showSizeDropdown = false;
+    this.showSharedOwnerDropdown = false;
+    this.showSharedDateDropdown = false;
+    this.showSharedRecipientDropdown = false;
+    this.showSharedByMeDateDropdown = false;
+  }
+
+  toggleFileTypeDropdown(event: Event): void {
+    event.stopPropagation();
+    const current = this.showFileTypeDropdown;
+    this.closeAllDropdowns();
+    this.showFileTypeDropdown = !current;
+  }
+
+  selectFileType(option: string): void {
+    this.fileTypeFilter = option;
+    this.closeAllDropdowns();
+  }
+
+  toggleStatusDropdown(event: Event): void {
+    event.stopPropagation();
+    const current = this.showStatusDropdown;
+    this.closeAllDropdowns();
+    this.showStatusDropdown = !current;
+  }
+
+  selectStatus(option: any): void {
+    this.activeStatusFilter = option;
+    this.closeAllDropdowns();
+  }
+
+  toggleSourceDropdown(event: Event): void {
+    event.stopPropagation();
+    const current = this.showSourceDropdown;
+    this.closeAllDropdowns();
+    this.showSourceDropdown = !current;
+  }
+
+  selectSource(option: any): void {
+    this.sourceFilter = option;
+    this.closeAllDropdowns();
+  }
+
+  toggleDateDropdown(event: Event): void {
+    event.stopPropagation();
+    const current = this.showDateDropdown;
+    this.closeAllDropdowns();
+    this.showDateDropdown = !current;
+  }
+
+  selectDate(option: any): void {
+    this.dateFilter = option;
+    this.closeAllDropdowns();
+  }
+
+  toggleSizeDropdown(event: Event): void {
+    event.stopPropagation();
+    const current = this.showSizeDropdown;
+    this.closeAllDropdowns();
+    this.showSizeDropdown = !current;
+  }
+
+  selectSize(option: any): void {
+    this.sizeFilter = option;
+    this.closeAllDropdowns();
+  }
+
+  get displayStatusFilter(): string {
+    switch (this.activeStatusFilter) {
+      case 'finished': return 'Finished';
+      case 'processing': return 'Processing';
+      case 'failed': return 'Failed';
+      default: return 'All statuses';
+    }
+  }
+
+  get displaySourceFilter(): string {
+    switch (this.sourceFilter) {
+      case 'LOCAL': return 'Local';
+      case 'S3': return 'S3';
+      default: return 'All sources';
+    }
+  }
+
+  private getDisplayDateValue(val: string): string {
+    switch (val) {
+      case '7d': return 'Last 7 days';
+      case '30d': return 'Last 30 days';
+      case '90d': return 'Last 90 days';
+      case 'older': return 'Older';
+      default: return 'Any time';
+    }
+  }
+
+  get displayDateFilter(): string { return this.getDisplayDateValue(this.dateFilter); }
+  get displaySharedDateFilter(): string { return this.getDisplayDateValue(this.sharedDateFilter); }
+  get displaySharedByMeDateFilter(): string { return this.getDisplayDateValue(this.sharedByMeDateFilter); }
+
+  get displaySizeFilter(): string {
+    switch (this.sizeFilter) {
+      case 'unknown': return 'Unknown';
+      case 'small': return 'Small under 1 MB';
+      case 'medium': return 'Medium 1-10 MB';
+      case 'large': return 'Large 10+ MB';
+      default: return 'Any size';
+    }
+  }
+
+  toggleSharedOwnerDropdown(event: Event): void {
+    event.stopPropagation();
+    const current = this.showSharedOwnerDropdown;
+    this.closeAllDropdowns();
+    this.showSharedOwnerDropdown = !current;
+  }
+
+  selectSharedOwner(option: string): void {
+    this.sharedOwnerFilter = option;
+    this.closeAllDropdowns();
+  }
+
+  toggleSharedDateDropdown(event: Event): void {
+    event.stopPropagation();
+    const current = this.showSharedDateDropdown;
+    this.closeAllDropdowns();
+    this.showSharedDateDropdown = !current;
+  }
+
+  selectSharedDate(option: any): void {
+    this.sharedDateFilter = option;
+    this.closeAllDropdowns();
+  }
+
+  toggleSharedRecipientDropdown(event: Event): void {
+    event.stopPropagation();
+    const current = this.showSharedRecipientDropdown;
+    this.closeAllDropdowns();
+    this.showSharedRecipientDropdown = !current;
+  }
+
+  selectSharedRecipient(option: string): void {
+    this.sharedRecipientFilter = option;
+    this.closeAllDropdowns();
+  }
+
+  toggleSharedByMeDateDropdown(event: Event): void {
+    event.stopPropagation();
+    const current = this.showSharedByMeDateDropdown;
+    this.closeAllDropdowns();
+    this.showSharedByMeDateDropdown = !current;
+  }
+
+  selectSharedByMeDate(option: any): void {
+    this.sharedByMeDateFilter = option;
+    this.closeAllDropdowns();
+  }
+
   @HostListener('document:click')
   onDocumentClick(): void {
     this.closeDocumentActions();
+    this.closeAllDropdowns();
   }
 
   setStatusFilter(filter: 'finished' | 'processing' | 'failed'): void {
@@ -745,9 +917,14 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   }
 
   get availableFileTypes(): string[] {
-    const fileTypes = new Set<string>();
-    this.documents.forEach(doc => fileTypes.add(this.getDocumentFileType(doc)));
-    return Array.from(fileTypes).sort((a, b) => a.localeCompare(b));
+    return [
+      "PDF", "DOC", "DOCX", "TXT", "LOG", "MD", "RTF", "ODT", "EPUB", "TEX", "MSG",
+      "PPT", "PPTX", "XLS", "XLSX", "CSV", "JSON", "XML", "HTML", "HTM", "YAML", "YML",
+      "INI", "CFG", "PNG", "JPG", "JPEG", "GIF", "BMP", "TIFF", "TIF", "WEBP", "AVIF",
+      "ICO", "HEIC", "HEIF", "APNG", "JFIF", "MP4", "AVI", "MOV", "WMV", "MKV", "FLV",
+      "WEBM", "M4V", "MPG", "MPEG", "3GP", "TS", "MP3", "WAV", "OGG", "FLAC", "AAC", "OPUS",
+      "7Z", "XZ", "TXZ"
+    ];
   }
 
   get hasActiveAdvancedFilters(): boolean {
@@ -1527,7 +1704,8 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     }
 
     if (this.fileTypeFilter !== 'all') {
-      docs = docs.filter(doc => this.getDocumentFileType(doc) === this.fileTypeFilter);
+      const cleanFilter = this.fileTypeFilter.replace(/^\./, '').toUpperCase();
+      docs = docs.filter(doc => this.getDocumentFileType(doc) === cleanFilter);
     }
 
     if (this.sourceFilter !== 'all') {

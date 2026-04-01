@@ -148,49 +148,78 @@
 
         <div class="document-filter-bar"
           *ngIf="activeWorkspaceTab === 'documents' && !isSharedVectorStoreSelected && documents.length > 0">
-          <div class="document-filter-field">
-            <label for="docStatusFilter">Status</label>
-            <select id="docStatusFilter" [(ngModel)]="activeStatusFilter">
-              <option value="all">All statuses</option>
-              <option value="finished">Finished</option>
-              <option value="processing">Processing</option>
-              <option value="failed">Failed</option>
-            </select>
+          <div class="document-filter-field custom-select-container" (click)="$event.stopPropagation()">
+            <label>Status</label>
+            <div class="custom-select-value" [class.open]="showStatusDropdown" (click)="toggleStatusDropdown($event)">
+              <span class="text-truncate">{{ displayStatusFilter }}</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <div class="custom-select-dropdown" *ngIf="showStatusDropdown">
+              <div class="custom-select-option" [class.selected]="activeStatusFilter === 'all'" (click)="selectStatus('all')">All statuses</div>
+              <div class="custom-select-option" [class.selected]="activeStatusFilter === 'finished'" (click)="selectStatus('finished')">Finished</div>
+              <div class="custom-select-option" [class.selected]="activeStatusFilter === 'processing'" (click)="selectStatus('processing')">Processing</div>
+              <div class="custom-select-option" [class.selected]="activeStatusFilter === 'failed'" (click)="selectStatus('failed')">Failed</div>
+            </div>
           </div>
-          <div class="document-filter-field">
-            <label for="docFileTypeFilter">File Type</label>
-            <select id="docFileTypeFilter" [(ngModel)]="fileTypeFilter">
-              <option value="all">All file types</option>
-              <option *ngFor="let option of availableFileTypes" [value]="option">{{ option }}</option>
-            </select>
+          <div class="document-filter-field custom-select-container" (click)="$event.stopPropagation()">
+            <label>File Type</label>
+            <div class="custom-select-value" [class.open]="showFileTypeDropdown" (click)="toggleFileTypeDropdown($event)">
+              <div class="selected-value-content">
+                <i *ngIf="fileTypeFilter !== 'all'" class="fa-solid dropdown-selected-icon" [ngClass]="[getFileIcon(fileTypeFilter), getFileIconTone(fileTypeFilter)]"></i>
+                <span class="text-truncate">{{ fileTypeFilter === 'all' ? 'All file types' : fileTypeFilter }}</span>
+              </div>
+              <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <div class="custom-select-dropdown" *ngIf="showFileTypeDropdown">
+              <div class="custom-select-option" [class.selected]="fileTypeFilter === 'all'" (click)="selectFileType('all')">
+                <i class="fa-solid fa-layer-group generic-icon"></i>
+                <span>ALL</span>
+              </div>
+              <div class="custom-select-option" *ngFor="let option of availableFileTypes" [class.selected]="fileTypeFilter === option" (click)="selectFileType(option)">
+                <i class="fa-solid" [ngClass]="[getFileIcon(option), getFileIconTone(option)]"></i>
+                <span>{{ option }}</span>
+              </div>
+            </div>
           </div>
-          <div class="document-filter-field">
-            <label for="docSourceFilter">Source</label>
-            <select id="docSourceFilter" [(ngModel)]="sourceFilter">
-              <option value="all">All sources</option>
-              <option value="LOCAL">Local</option>
-              <option value="S3">S3</option>
-            </select>
+          <div class="document-filter-field custom-select-container" (click)="$event.stopPropagation()">
+            <label>Source</label>
+            <div class="custom-select-value" [class.open]="showSourceDropdown" (click)="toggleSourceDropdown($event)">
+              <span class="text-truncate">{{ displaySourceFilter }}</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <div class="custom-select-dropdown" *ngIf="showSourceDropdown">
+              <div class="custom-select-option" [class.selected]="sourceFilter === 'all'" (click)="selectSource('all')">All sources</div>
+              <div class="custom-select-option" [class.selected]="sourceFilter === 'LOCAL'" (click)="selectSource('LOCAL')">Local</div>
+              <div class="custom-select-option" [class.selected]="sourceFilter === 'S3'" (click)="selectSource('S3')">S3</div>
+            </div>
           </div>
-          <div class="document-filter-field">
-            <label for="docDateFilter">Date</label>
-            <select id="docDateFilter" [(ngModel)]="dateFilter">
-              <option value="all">Any time</option>
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-              <option value="90d">Last 90 days</option>
-              <option value="older">Older</option>
-            </select>
+          <div class="document-filter-field custom-select-container" (click)="$event.stopPropagation()">
+            <label>Date</label>
+            <div class="custom-select-value" [class.open]="showDateDropdown" (click)="toggleDateDropdown($event)">
+              <span class="text-truncate">{{ displayDateFilter }}</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <div class="custom-select-dropdown" *ngIf="showDateDropdown">
+              <div class="custom-select-option" [class.selected]="dateFilter === 'all'" (click)="selectDate('all')">Any time</div>
+              <div class="custom-select-option" [class.selected]="dateFilter === '7d'" (click)="selectDate('7d')">Last 7 days</div>
+              <div class="custom-select-option" [class.selected]="dateFilter === '30d'" (click)="selectDate('30d')">Last 30 days</div>
+              <div class="custom-select-option" [class.selected]="dateFilter === '90d'" (click)="selectDate('90d')">Last 90 days</div>
+              <div class="custom-select-option" [class.selected]="dateFilter === 'older'" (click)="selectDate('older')">Older</div>
+            </div>
           </div>
-          <div class="document-filter-field">
-            <label for="docSizeFilter">Size</label>
-            <select id="docSizeFilter" [(ngModel)]="sizeFilter">
-              <option value="all">Any size</option>
-              <option value="unknown">Unknown</option>
-              <option value="small">Small under 1 MB</option>
-              <option value="medium">Medium 1-10 MB</option>
-              <option value="large">Large 10+ MB</option>
-            </select>
+          <div class="document-filter-field custom-select-container" (click)="$event.stopPropagation()">
+            <label>Size</label>
+            <div class="custom-select-value" [class.open]="showSizeDropdown" (click)="toggleSizeDropdown($event)">
+              <span class="text-truncate">{{ displaySizeFilter }}</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <div class="custom-select-dropdown" *ngIf="showSizeDropdown">
+              <div class="custom-select-option" [class.selected]="sizeFilter === 'all'" (click)="selectSize('all')">Any size</div>
+              <div class="custom-select-option" [class.selected]="sizeFilter === 'unknown'" (click)="selectSize('unknown')">Unknown</div>
+              <div class="custom-select-option" [class.selected]="sizeFilter === 'small'" (click)="selectSize('small')">Small under 1 MB</div>
+              <div class="custom-select-option" [class.selected]="sizeFilter === 'medium'" (click)="selectSize('medium')">Medium 1-10 MB</div>
+              <div class="custom-select-option" [class.selected]="sizeFilter === 'large'" (click)="selectSize('large')">Large 10+ MB</div>
+            </div>
           </div>
           <div class="document-filter-actions">
             <span class="filter-results">{{ filteredDocuments.length }} results</span>
@@ -417,22 +446,30 @@
 
           <div class="document-filter-bar shared-filter-bar"
             *ngIf="!loadingSharedWithMe && (sharedWithMe.length > 0 || hasActiveSharedFilters)">
-            <div class="document-filter-field">
-              <label for="sharedOwnerFilter">Owner</label>
-              <select id="sharedOwnerFilter" [(ngModel)]="sharedOwnerFilter">
-                <option value="all">All owners</option>
-                <option *ngFor="let owner of availableSharedOwners" [value]="owner">{{ owner }}</option>
-              </select>
+            <div class="document-filter-field custom-select-container" (click)="$event.stopPropagation()">
+              <label>Owner</label>
+              <div class="custom-select-value" [class.open]="showSharedOwnerDropdown" (click)="toggleSharedOwnerDropdown($event)">
+                <span class="text-truncate">{{ sharedOwnerFilter === 'all' ? 'All owners' : sharedOwnerFilter }}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+              <div class="custom-select-dropdown" *ngIf="showSharedOwnerDropdown">
+                <div class="custom-select-option" [class.selected]="sharedOwnerFilter === 'all'" (click)="selectSharedOwner('all')">All owners</div>
+                <div class="custom-select-option" *ngFor="let owner of availableSharedOwners" [class.selected]="sharedOwnerFilter === owner" (click)="selectSharedOwner(owner)">{{ owner }}</div>
+              </div>
             </div>
-            <div class="document-filter-field">
-              <label for="sharedDateFilter">Date Shared</label>
-              <select id="sharedDateFilter" [(ngModel)]="sharedDateFilter">
-                <option value="all">Any time</option>
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
-                <option value="older">Older</option>
-              </select>
+            <div class="document-filter-field custom-select-container" (click)="$event.stopPropagation()">
+              <label>Date Shared</label>
+              <div class="custom-select-value" [class.open]="showSharedDateDropdown" (click)="toggleSharedDateDropdown($event)">
+                <span class="text-truncate">{{ displaySharedDateFilter }}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+              <div class="custom-select-dropdown" *ngIf="showSharedDateDropdown">
+                <div class="custom-select-option" [class.selected]="sharedDateFilter === 'all'" (click)="selectSharedDate('all')">Any time</div>
+                <div class="custom-select-option" [class.selected]="sharedDateFilter === '7d'" (click)="selectSharedDate('7d')">Last 7 days</div>
+                <div class="custom-select-option" [class.selected]="sharedDateFilter === '30d'" (click)="selectSharedDate('30d')">Last 30 days</div>
+                <div class="custom-select-option" [class.selected]="sharedDateFilter === '90d'" (click)="selectSharedDate('90d')">Last 90 days</div>
+                <div class="custom-select-option" [class.selected]="sharedDateFilter === 'older'" (click)="selectSharedDate('older')">Older</div>
+              </div>
             </div>
             <div class="document-filter-actions">
               <span class="filter-results">{{ filteredSharedWithMe.length }} results</span>
@@ -498,22 +535,30 @@
 
           <div class="document-filter-bar shared-filter-bar"
             *ngIf="!loadingSharedByMe && (sharedByMe.length > 0 || hasActiveSharedByMeFilters)">
-            <div class="document-filter-field">
-              <label for="sharedRecipientFilter">Recipient</label>
-              <select id="sharedRecipientFilter" [(ngModel)]="sharedRecipientFilter">
-                <option value="all">All recipients</option>
-                <option *ngFor="let recipient of availableSharedRecipients" [value]="recipient">{{ recipient }}</option>
-              </select>
+            <div class="document-filter-field custom-select-container" (click)="$event.stopPropagation()">
+              <label>Recipient</label>
+              <div class="custom-select-value" [class.open]="showSharedRecipientDropdown" (click)="toggleSharedRecipientDropdown($event)">
+                <span class="text-truncate">{{ sharedRecipientFilter === 'all' ? 'All recipients' : sharedRecipientFilter }}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+              <div class="custom-select-dropdown" *ngIf="showSharedRecipientDropdown">
+                <div class="custom-select-option" [class.selected]="sharedRecipientFilter === 'all'" (click)="selectSharedRecipient('all')">All recipients</div>
+                <div class="custom-select-option" *ngFor="let recipient of availableSharedRecipients" [class.selected]="sharedRecipientFilter === recipient" (click)="selectSharedRecipient(recipient)">{{ recipient }}</div>
+              </div>
             </div>
-            <div class="document-filter-field">
-              <label for="sharedByMeDateFilter">Date Shared</label>
-              <select id="sharedByMeDateFilter" [(ngModel)]="sharedByMeDateFilter">
-                <option value="all">Any time</option>
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
-                <option value="older">Older</option>
-              </select>
+            <div class="document-filter-field custom-select-container" (click)="$event.stopPropagation()">
+              <label>Date Shared</label>
+              <div class="custom-select-value" [class.open]="showSharedByMeDateDropdown" (click)="toggleSharedByMeDateDropdown($event)">
+                <span class="text-truncate">{{ displaySharedByMeDateFilter }}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+              <div class="custom-select-dropdown" *ngIf="showSharedByMeDateDropdown">
+                <div class="custom-select-option" [class.selected]="sharedByMeDateFilter === 'all'" (click)="selectSharedByMeDate('all')">Any time</div>
+                <div class="custom-select-option" [class.selected]="sharedByMeDateFilter === '7d'" (click)="selectSharedByMeDate('7d')">Last 7 days</div>
+                <div class="custom-select-option" [class.selected]="sharedByMeDateFilter === '30d'" (click)="selectSharedByMeDate('30d')">Last 30 days</div>
+                <div class="custom-select-option" [class.selected]="sharedByMeDateFilter === '90d'" (click)="selectSharedByMeDate('90d')">Last 90 days</div>
+                <div class="custom-select-option" [class.selected]="sharedByMeDateFilter === 'older'" (click)="selectSharedByMeDate('older')">Older</div>
+              </div>
             </div>
             <div class="document-filter-actions">
               <span class="filter-results">{{ filteredSharedByMe.length }} results</span>
