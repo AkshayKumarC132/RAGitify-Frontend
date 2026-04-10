@@ -47,8 +47,8 @@
         <div class="input-area">
             <div class="input-wrapper">
                 <textarea #messageInput [(ngModel)]="messageInputText" (keydown)="onKeyPress($event)"
-                    placeholder="Test your assistant..." class="chat-input" [disabled]="loading || isResponseInProgress"
-                    rows="1"></textarea>
+                    (input)="autoResizeInput()" placeholder="Test your assistant..." class="chat-input"
+                    [disabled]="loading || isResponseInProgress" rows="1"></textarea>
                 <div class="input-actions">
                     <button type="button" class="send-button" (click)="sendMessage()"
                         [disabled]="!messageInputText.trim() || loading || isResponseInProgress" title="Send message"
@@ -60,4 +60,3 @@
         </div>
     </div>
 </div>
-

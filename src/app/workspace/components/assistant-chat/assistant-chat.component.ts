@@ -61,6 +61,13 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
         this.loading = true;
         this.errorMessage = '';
 
+        // Reset textarea height after sending
+        setTimeout(() => {
+            if (this.messageInput?.nativeElement) {
+                this.messageInput.nativeElement.style.height = 'auto';
+            }
+        });
+
         // Add user message to UI immediately
         const userMessage: ConversationMessage = {
             id: 'temp-' + Date.now(),
@@ -216,6 +223,14 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             this.sendMessage();
+        }
+    }
+
+    autoResizeInput(): void {
+        if (this.messageInput?.nativeElement) {
+            const textarea = this.messageInput.nativeElement;
+            textarea.style.height = 'auto';
+            textarea.style.height = `${textarea.scrollHeight}px`;
         }
     }
 

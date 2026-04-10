@@ -20,6 +20,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     private readonly maxSelectedDocuments = 10;
 
     @ViewChild('messagesContainer') messagesContainer?: ElementRef<HTMLDivElement>;
+    @ViewChild('messageInput') messageInput?: ElementRef<HTMLTextAreaElement>;
     @Output() closed = new EventEmitter<void>();
 
     messages: ConversationMessage[] = [];
@@ -29,6 +30,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     errorMessage = '';
     warningMessages: string[] = [];
     mode: 'normal' | 'document' = 'normal';
+    isExpanded = false;
     private streamSub?: Subscription;
 
     libraries: VectorStore[] = [];
@@ -279,7 +281,14 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
             name: this.getDocumentDisplayName(document)
         }));
         this.inputMessage = '';
+        this.isExpanded = false;
         this.loading = true;
+
+        setTimeout(() => {
+            if (this.messageInput?.nativeElement) {
+                this.messageInput.nativeElement.style.height = 'auto';
+            }
+        });
 
         const tempMsg: ConversationMessage = {
             id: 'temp-' + Date.now(),
@@ -357,6 +366,22 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
                 this.loading = false;
             }
         });
+    }
+
+    autoResizeInput(): void {
+        if (this.messageInput?.nativeElement) {
+            const textarea = this.messageInput.nativeElement;
+            textarea.style.height = 'auto';
+            textarea.style.height = `${textarea.scrollHeight}px`;
+
+            // Same oscillation-safe logic as home chat-input:
+            // Expand on scrollHeight threshold, only collapse when input is empty
+            if (textarea.scrollHeight > 52) {
+                this.isExpanded = true;
+            } else if (!this.inputMessage) {
+                this.isExpanded = false;
+            }
+        }
     }
 
     onKeyPress(event: KeyboardEvent): void {

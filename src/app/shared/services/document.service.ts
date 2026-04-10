@@ -37,8 +37,8 @@ export class DocumentService {
     const token = this.getToken();
     const formData = new FormData();
 
-    if (data.file) {
-      formData.append('file', data.file);
+    if (data.files && data.files.length > 0) {
+      data.files.forEach(file => formData.append('files', file));
     }
     if (data.s3_file_url) {
       formData.append('s3_file_url', data.s3_file_url);
@@ -47,7 +47,7 @@ export class DocumentService {
       formData.append('vector_store_id', data.vector_store_id);
     }
 
-    return this.api.postFormData<Document | IngestResponse>(`/document/${token}/ingest/`, formData, token).pipe(
+    return this.api.postFormData<Document | IngestResponse>(`/document/${token}/batch-ingest/`, formData, token).pipe(
       tap(() => this.invalidateListCache())
     );
   }
@@ -56,8 +56,8 @@ export class DocumentService {
     const token = this.getToken();
     const formData = new FormData();
 
-    if (data.file) {
-      formData.append('file', data.file);
+    if (data.files && data.files.length > 0) {
+      data.files.forEach(file => formData.append('files', file));
     }
     if (data.s3_file_url) {
       formData.append('s3_file_url', data.s3_file_url);
@@ -72,7 +72,7 @@ export class DocumentService {
 
     // Skip global loading spinner to prevent flickering during multi-file uploads
     const context = new HttpContext().set(SKIP_LOADING, true);
-    return this.api.postFormDataWithProgress<Document | IngestResponse>(`/document/${token}/ingest/`, formData, token, context);
+    return this.api.postFormDataWithProgress<Document | IngestResponse>(`/document/${token}/batch-ingest/`, formData, token, context);
   }
 
   list(vectorStoreId?: string, forceRefresh = false): Observable<Document[]> {

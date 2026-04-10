@@ -25,6 +25,7 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = false;
   messageInputText = '';
   errorMessage = '';
+  isExpanded = false;
   private streamSub?: Subscription;
 
   constructor(
@@ -70,8 +71,16 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const messageText = this.messageInputText.trim();
     this.messageInputText = '';
+    this.isExpanded = false;
     this.loading = true;
     this.errorMessage = '';
+
+    // Reset textarea height after sending
+    setTimeout(() => {
+      if (this.messageInput?.nativeElement) {
+        this.messageInput.nativeElement.style.height = 'auto';
+      }
+    });
 
     // Add user message to UI immediately
     const userMessage: ConversationMessage = {
@@ -243,6 +252,22 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       this.sendMessage();
+    }
+  }
+
+  autoResizeInput(): void {
+    if (this.messageInput?.nativeElement) {
+      const textarea = this.messageInput.nativeElement;
+      // Reset height to auto to get the correct scrollHeight based on the new content
+      textarea.style.height = 'auto';
+      // Set the height matching the scrollHeight. Max height is restricted by SCSS.
+      textarea.style.height = `${textarea.scrollHeight}px`;
+
+      if (textarea.scrollHeight > 52) {
+        this.isExpanded = true;
+      } else if (!this.messageInputText) {
+        this.isExpanded = false;
+      }
     }
   }
 

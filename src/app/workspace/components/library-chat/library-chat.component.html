@@ -1,4 +1,4 @@
-﻿<div class="library-chat-overlay" (click)="close()">
+<div class="library-chat-overlay" (click)="close()">
     <div class="library-chat-panel" (click)="$event.stopPropagation()">
         <!-- Header -->
         <div class="chat-header">
@@ -42,16 +42,20 @@
 
         <!-- Input Area -->
         <div class="input-area">
-            <div class="input-wrapper">
-                <textarea #messageInput [(ngModel)]="messageInputText" (keydown)="onKeyPress($event)"
-                    placeholder="Ask a question about this library..." class="chat-input"
-                    [disabled]="loading || isResponseInProgress" rows="1"></textarea>
-                <div class="input-actions">
-                    <button type="button" class="send-button" (click)="sendMessage()"
-                        [disabled]="!messageInputText.trim() || loading || isResponseInProgress" title="Send message"
-                        aria-label="Send message">
-                        <i class="fa-solid fa-arrow-up"></i>
-                    </button>
+            <div class="input-wrapper" [class.expanded]="isExpanded">
+                <div class="chat-input-shell">
+                    <textarea #messageInput [(ngModel)]="messageInputText" (keydown)="onKeyPress($event)" (input)="autoResizeInput()"
+                        placeholder="Ask a question about this library..." class="chat-input"
+                        [disabled]="loading || isResponseInProgress" rows="1"></textarea>
+                </div>
+                <div class="input-bar">
+                    <div class="input-actions">
+                        <button type="button" class="send-button" (click)="sendMessage()"
+                            [disabled]="!messageInputText.trim() || loading || isResponseInProgress" title="Send message"
+                            aria-label="Send message">
+                            <i class="fa-solid fa-arrow-up"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

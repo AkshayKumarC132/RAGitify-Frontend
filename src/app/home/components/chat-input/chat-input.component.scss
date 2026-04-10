@@ -10,11 +10,12 @@
 
 .input-wrapper {
   display: flex;
-  align-items: center;
+  flex-direction: row;
+  align-items: flex-end;
   gap: 0.75rem;
   background: var(--surface-bg);
   border: 1px solid var(--surface-border);
-  border-radius: 999px;
+  border-radius: 30px;
   padding: 0.5rem 1.1rem;
   position: relative;
   overflow: visible;
@@ -39,6 +40,52 @@
         0 0 30px rgba(var(--accent-color-rgb, 88, 115, 255), 0.15);
     }
   }
+
+  // Expanded (multi-line) state: switch to column layout
+  &.expanded {
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 24px;
+    gap: 0;
+
+    .chat-input-shell {
+      width: 100%;
+      flex: none;
+    }
+
+    .input-bar {
+      padding-top: 0.25rem;
+
+      .attachment-controls {
+        order: 0;
+      }
+
+      .input-actions {
+        order: 1;
+      }
+    }
+  }
+}
+
+// input-bar: always a flex row containing attachment-controls on left, input-actions on right
+.input-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+// In collapsed (row) state: make input-bar transparent so its children become
+// direct flex siblings of chat-input-shell inside the row wrapper
+.input-wrapper:not(.expanded) {
+  .input-bar {
+    display: contents; // children participate directly in the parent flex row
+  }
+
+  // attachment-controls must sort before the textarea (order 0) in the flex row
+  .attachment-controls {
+    order: -1;
+  }
 }
 
 .chat-input-shell {
@@ -55,15 +102,15 @@
   font-size: 15px;
   resize: none;
   min-height: 36px;
-  max-height: 240px;
+  max-height: 120px;
   font-family: inherit;
   border-radius: 14px;
   padding: 0.75rem 0.95rem;
-  line-height: 1;
+  line-height: 1.5;
   width: 100%;
   box-shadow: none;
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-  overflow-y: hidden;
+  overflow-y: auto;
 
   &:focus {
     outline: none;
@@ -79,11 +126,6 @@
     opacity: 0.6;
     cursor: not-allowed;
   }
-
-  &.overflowing {
-    overflow-y: auto;
-    padding-right: 0.5rem;
-  }
 }
 
 .input-actions {
@@ -96,6 +138,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  height: 44px;
 }
 
 .attachment-toggle {
@@ -508,7 +551,7 @@
 }
 
 .chat-input-shell {
-  flex: 1;
+  width: 100%;
   display: flex;
   align-items: flex-end;
   flex-wrap: wrap; // Allow badge to sit nicely with text or wrap if needed, though we want it inline

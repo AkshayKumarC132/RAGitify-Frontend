@@ -294,6 +294,17 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
         }
 
         this.loading = false;
+
+        // If the document is already in a terminal state when the details page
+        // is opened, the status poller won't run and never fires documentUploaded.
+        // Eagerly invalidate the list cache and notify the sidebar so it
+        // refreshes any stale "inprogress" entry right away.
+        const currentStatus = document?.ingestion_status || document?.status;
+        if (this.isTerminalStatus(currentStatus)) {
+          this.documentService.invalidateListCache();
+          this.knowledgeContext.documentUploaded.next();
+        }
+
         this.startStatusPolling();
       },
       error: () => {

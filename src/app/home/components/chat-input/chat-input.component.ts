@@ -76,6 +76,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   speechSupported = false;
   isListening = false;
   isOverflowing = false;
+  isExpanded = false;
   private recognition: SpeechRecognitionLike | null = null;
 
   constructor(private cdr: ChangeDetectorRef) { }
@@ -117,6 +118,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     if (this.canSendMessage) {
       this.messageSent.emit(this.message);
       this.message = '';
+      this.isExpanded = false;
       setTimeout(() => this.adjustTextareaHeight(), 0);
     }
   }
@@ -502,10 +504,17 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     }
 
     textarea.style.height = 'auto';
-    const baseHeight = Math.max(textarea.scrollHeight, 36);
-    const nextHeight = Math.min(baseHeight, 240);
-    textarea.style.height = `${nextHeight}px`;
-    this.isOverflowing = baseHeight > nextHeight;
+    textarea.style.height = `${textarea.scrollHeight}px`;
+
+    // Expand when content grows tall enough.
+    // Only collapse back when the message is truly empty — never based on scrollHeight alone,
+    // because switching layouts changes the textarea width, which changes scrollHeight,
+    // which would cause an oscillation loop (expand → wider → fewer lines → collapse → narrower → more lines → expand…)
+    if (textarea.scrollHeight > 52) {
+      this.isExpanded = true;
+    } else if (!this.message) {
+      this.isExpanded = false;
+    }
   }
 
   private enforceDocumentsOnlyMode(): void {

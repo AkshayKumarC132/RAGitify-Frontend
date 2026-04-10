@@ -36,18 +36,21 @@
 
     <!-- Input Area -->
     <div class="input-area">
-      <div class="input-wrapper">
-
-        <textarea #messageInput [(ngModel)]="messageInputText" (keydown)="onKeyPress($event)"
-          placeholder="Ask a question about this document..." class="chat-input"
-          [disabled]="loading || isResponseInProgress" rows="1"></textarea>
-        <div class="input-actions">
-          <button type="button" class="send-button" (click)="sendMessage()"
-            [disabled]="!messageInputText.trim() || loading || isResponseInProgress" title="Send message"
-            aria-label="Send message">
-            <i *ngIf="!loading && !isResponseInProgress" class="fa-solid fa-arrow-up"></i>
-            <i *ngIf="loading || isResponseInProgress" class="fa-solid fa-spinner fa-spin"></i>
-          </button>
+      <div class="input-wrapper" [class.expanded]="isExpanded">
+        <div class="chat-input-shell">
+          <textarea #messageInput [(ngModel)]="messageInputText" (keydown)="onKeyPress($event)" (input)="autoResizeInput()"
+            placeholder="Ask a question about this document..." class="chat-input"
+            [disabled]="loading || isResponseInProgress" rows="1"></textarea>
+        </div>
+        <div class="input-bar">
+          <div class="input-actions">
+            <button type="button" class="send-button" (click)="sendMessage()"
+              [disabled]="!messageInputText.trim() || loading || isResponseInProgress" title="Send message"
+              aria-label="Send message">
+              <i *ngIf="!loading && !isResponseInProgress" class="fa-solid fa-arrow-up"></i>
+              <i *ngIf="loading || isResponseInProgress" class="fa-solid fa-spinner fa-spin"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>

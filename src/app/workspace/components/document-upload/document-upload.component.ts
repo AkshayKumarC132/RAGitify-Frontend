@@ -67,40 +67,35 @@ export class DocumentUploadComponent implements OnChanges {
 
     this.loading = true;
     this.errorMessage = '';
-    this.currentUploadIndex = 0;
-    this.uploadNextFile();
-  }
-
-  private uploadNextFile(): void {
-    if (this.currentUploadIndex >= this.fileStatuses.length) {
-      // All files processed
-      this.loading = false;
-      this.currentUploadIndex = -1;
-      this.uploaded.emit(this.lastUploadedDocumentId);
-      return;
-    }
-
-    const fileStatus = this.fileStatuses[this.currentUploadIndex];
-    fileStatus.status = 'uploading';
-    fileStatus.progress = 0;
+    
+    // Set all to uploading
+    this.fileStatuses.forEach(fs => {
+      fs.status = 'uploading';
+      fs.progress = 0;
+    });
     this.hasProgressEvents = false;
 
+    const files = this.fileStatuses.map(fs => fs.file);
+
     this.documentService.ingestWithProgress({
-      file: fileStatus.file,
+      files: files,
       vector_store_id: this.selectedVectorStoreId || undefined
     }).subscribe({
-      next: (event: HttpEvent<Document | IngestResponse>) => {
+      next: (event) => {
         if (event.type === HttpEventType.UploadProgress) {
           this.hasProgressEvents = true;
           const total = event.total || 0;
           const computed = total > 0 ? Math.round((event.loaded / total) * 100) : 0;
-          fileStatus.progress = this.calculateProgressStep(computed);
+          const progressStep = this.calculateProgressStep(computed);
+          this.fileStatuses.forEach(fs => fs.progress = progressStep);
           return;
         }
 
         if (event.type === HttpEventType.Response) {
-          fileStatus.progress = 100;
-          fileStatus.status = 'completed';
+          this.fileStatuses.forEach(fs => {
+            fs.progress = 100;
+            fs.status = 'completed';
+          });
 
           // Capture the document ID from the response for navigation
           const body = event.body as any;
@@ -110,25 +105,25 @@ export class DocumentUploadComponent implements OnChanges {
             this.lastUploadedDocumentId = body.id;
           }
 
-          // Move to next file after a brief delay
+          // Complete upload after a brief delay
           setTimeout(() => {
-            this.currentUploadIndex++;
-            this.uploadNextFile();
+            this.loading = false;
+            this.currentUploadIndex = -1;
+            this.uploaded.emit(this.lastUploadedDocumentId);
           }, 300);
         }
       },
       error: (err) => {
-        fileStatus.status = 'failed';
-        fileStatus.errorMessage = err.error?.error || 'Upload failed';
-
-        // Continue with next file even if this one failed
-        setTimeout(() => {
-          this.currentUploadIndex++;
-          this.uploadNextFile();
-        }, 300);
+        this.fileStatuses.forEach(fs => {
+          fs.status = 'failed';
+          fs.errorMessage = err.error?.error || 'Upload failed';
+        });
+        this.loading = false;
       }
     });
   }
+
+
 
   private calculateProgressStep(rawPercent: number): number {
     if (this.hasProgressEvents && rawPercent === 0) {
@@ -152,14 +147,7 @@ export class DocumentUploadComponent implements OnChanges {
   getOverallStatus(): string {
     if (!this.loading) return '';
 
-    const completed = this.fileStatuses.filter(f => f.status === 'completed').length;
-    const total = this.fileStatuses.length;
-
-    if (this.currentUploadIndex >= 0 && this.currentUploadIndex < total) {
-      return `Uploading file ${this.currentUploadIndex + 1} of ${total}...`;
-    }
-
-    return `Processing ${completed} of ${total} files...`;
+    return `Uploading ${this.fileStatuses.length} files...`;
   }
 
   getUploadButtonText(): string {

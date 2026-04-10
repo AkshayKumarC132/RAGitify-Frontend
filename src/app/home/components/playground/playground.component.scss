@@ -174,9 +174,10 @@
     max-width: 768px;
     background: #000000;
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 999px;
+    border-radius: 30px;
     padding: 0.5rem 1.1rem;
     display: flex;
+    flex-direction: row;
     align-items: flex-end;
     gap: 0.75rem;
     box-shadow: 0 16px 50px rgba(0, 0, 0, 0.28);
@@ -199,43 +200,43 @@
         box-shadow: 0 16px 50px rgba(var(--accent-color-rgb, 88, 115, 255), 0.15), 0 0 20px rgba(var(--accent-color-rgb, 88, 115, 255), 0.1);
     }
 
-    .integrated-mode-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        padding: 0.25rem 0.6rem;
-        border-radius: 6px;
-        font-size: 10px;
-        font-weight: 600;
-        margin-right: 0.25rem;
-        flex-shrink: 0;
-        line-height: 1;
-        height: 22px;
-        margin-bottom: 5px;
+    // Expanded (multi-line): switch to column layout
+    &.expanded {
+        flex-direction: column;
+        align-items: stretch;
+        border-radius: 24px;
+        gap: 0;
 
-        i {
-            font-size: 10px;
+        .chat-input-shell {
+            width: 100%;
+            flex: none;
         }
 
-        &.temp {
-            background: rgba(245, 158, 11, 0.1);
-            color: #f59e0b;
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-
-        &.doc {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: white;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-            padding: 0.25rem 0.75rem;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
-            font-size: 9px;
+        .input-bar {
+            padding-top: 0.25rem;
         }
     }
 
+    // Collapsed: input-bar uses display:contents so children are direct flex siblings
+    &:not(.expanded) .input-bar {
+        display: contents;
+    }
+
+    // attachment-controls must sort before the textarea (order 0) in the collapsed flex row
+    &:not(.expanded) .attachment-controls {
+        order: -1;
+    }
+}
+
+// chat-input-shell: flex wrapper around the textarea
+.chat-input-shell {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+
     textarea {
         flex: 1;
+        width: 100%;
         border: none;
         background: transparent;
         padding: 0.75rem 0.5rem;
@@ -244,6 +245,7 @@
         outline: none;
         max-height: 150px;
         min-height: 24px;
+        overflow-y: auto;
         font-family: inherit;
         color: #ffffff !important;
         caret-color: #ffffff;
@@ -263,6 +265,15 @@
         }
     }
 }
+
+// input-bar: flex row for attachment-controls and right-actions in expanded state
+.input-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
 
 .attachment-controls {
     position: relative;

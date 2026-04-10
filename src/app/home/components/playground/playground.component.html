@@ -1,4 +1,4 @@
-﻿<div class="playground-container" [class.has-messages]="messages.length > 0">
+<div class="playground-container" [class.has-messages]="messages.length > 0">
     <div class="playground-topbar">
         <button class="close-btn" type="button" (click)="closed.emit()" title="Exit Playground"
             aria-label="Exit Playground">
@@ -23,28 +23,33 @@
     </div>
 
     <div class="input-area-wrapper">
-        <div class="input-card" [class.document-mode-active]="mode === 'document'">
-            <div class="attachment-controls">
-                <button class="add-button" [class.active]="attachmentMenuOpen" title="Attach Documents"
-                    (click)="toggleAttachmentMenu()">
-                    <i class="fa-solid fa-plus"></i>
-                </button>
+        <div class="input-card" [class.document-mode-active]="mode === 'document'" [class.expanded]="isExpanded">
 
-                <div class="attachment-menu" *ngIf="attachmentMenuOpen" (click)="$event.stopPropagation()">
-                    <button type="button" (click)="openLibraryPanel()"
-                        [disabled]="documentsLoaded && !allDocuments.length">
-                        <i class="fa-solid fa-book"></i> Attach Documents
-                    </button>
-                </div>
+            <div class="chat-input-shell">
+                <textarea #messageInput (input)="autoResizeInput()" [(ngModel)]="inputMessage" (keydown)="onKeyPress($event)" placeholder="How can I help you today?"
+                    [disabled]="loading || !conversationId" rows="1"></textarea>
             </div>
 
-            <textarea [(ngModel)]="inputMessage" (keydown)="onKeyPress($event)" placeholder="How can I help you today?"
-                [disabled]="loading || !conversationId" rows="1"></textarea>
+            <div class="input-bar">
+                <div class="attachment-controls">
+                    <button class="add-button" [class.active]="attachmentMenuOpen" title="Attach Documents"
+                        (click)="toggleAttachmentMenu()">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
 
-            <div class="right-actions">
-                <button class="send-btn" (click)="sendMessage()" [disabled]="!inputMessage.trim() || loading">
-                    <i class="fa-solid fa-arrow-up"></i>
-                </button>
+                    <div class="attachment-menu" *ngIf="attachmentMenuOpen" (click)="$event.stopPropagation()">
+                        <button type="button" (click)="openLibraryPanel()"
+                            [disabled]="documentsLoaded && !allDocuments.length">
+                            <i class="fa-solid fa-book"></i> Attach Documents
+                        </button>
+                    </div>
+                </div>
+
+                <div class="right-actions">
+                    <button class="send-btn" (click)="sendMessage()" [disabled]="!inputMessage.trim() || loading">
+                        <i class="fa-solid fa-arrow-up"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="attachment-panel" [class.open-upwards]="messages.length > 0" *ngIf="libraryPanelOpen" (click)="$event.stopPropagation()">

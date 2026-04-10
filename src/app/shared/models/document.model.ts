@@ -27,7 +27,7 @@ export interface Document {
 }
 
 export interface DocumentIngestRequest {
-  file?: File;
+  files?: File[];
   s3_file_url?: string;
   vector_store_id?: string;
 }

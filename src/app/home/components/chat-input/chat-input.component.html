@@ -1,45 +1,48 @@
 <div class="chat-input-container">
   <input type="file" #filePicker multiple hidden (change)="handleFilesChange($event)" />
 
-  <div class="input-wrapper" [class.document-mode-active]="mode === 'document'">
-    <div class="attachment-controls">
-      <button type="button" class="attachment-toggle" (click)="toggleAttachmentMenu()"
-        [class.active]="attachmentMenuOpen" title="Attachments" aria-label="Toggle attachments">
-        <i class="fa-solid fa-plus"></i>
-      </button>
-
-      <div class="attachment-menu" *ngIf="attachmentMenuOpen" (click)="$event.stopPropagation()">
-        <button type="button" (click)="openPanel('library'); $event.stopPropagation()">
-          Attach Documents
-        </button>
-      </div>
-    </div>
+  <div class="input-wrapper" [class.document-mode-active]="mode === 'document'" [class.expanded]="isExpanded">
 
     <div class="chat-input-shell">
       <textarea #messageArea [(ngModel)]="message" (keydown)="onKeyPress($event)" (input)="onInputChange()"
-        placeholder="How can I help you today?" class="chat-input" [class.overflowing]="isOverflowing"
+        placeholder="How can I help you today?" class="chat-input"
         [disabled]="loading" rows="1"></textarea>
     </div>
 
-    <div class="input-actions">
-      <button type="button" class="mic-button" [class.active]="isListening" [disabled]="loading || !speechSupported"
-        (click)="toggleVoiceInput()" [title]="isListening ? 'Stop voice input' : 'Voice dictation'"
-        aria-label="Toggle voice dictation">
-        <i class="fa-solid" [ngClass]="isListening ? 'fa-microphone-slash' : 'fa-microphone'"></i>
-        <span class="listening-pulse" *ngIf="isListening"></span>
-      </button>
+    <div class="input-bar">
+      <div class="attachment-controls">
+        <button type="button" class="attachment-toggle" (click)="toggleAttachmentMenu()"
+          [class.active]="attachmentMenuOpen" title="Attachments" aria-label="Toggle attachments">
+          <i class="fa-solid fa-plus"></i>
+        </button>
 
-      <button class="send-button" (click)="runActive ? onCancelRun() : sendMessage()"
-        [disabled]="(runActive && !allowCancelRun) || (!runActive && !canSendMessage)"
-        [title]="runActive ? (allowCancelRun ? 'Stop run' : 'Response in progress') : (canSendMessage ? 'Send message' : 'Enter a message to send')"
-        aria-label="Send message">
-        <ng-container *ngIf="runActive; else sendState">
-          <i class="fa-solid fa-stop"></i>
-        </ng-container>
-        <ng-template #sendState>
-          <i class="fa-solid fa-arrow-up"></i>
-        </ng-template>
-      </button>
+        <div class="attachment-menu" *ngIf="attachmentMenuOpen" (click)="$event.stopPropagation()">
+          <button type="button" (click)="openPanel('library'); $event.stopPropagation()">
+            Attach Documents
+          </button>
+        </div>
+      </div>
+
+      <div class="input-actions">
+        <button type="button" class="mic-button" [class.active]="isListening" [disabled]="loading || !speechSupported"
+          (click)="toggleVoiceInput()" [title]="isListening ? 'Stop voice input' : 'Voice dictation'"
+          aria-label="Toggle voice dictation">
+          <i class="fa-solid" [ngClass]="isListening ? 'fa-microphone-slash' : 'fa-microphone'"></i>
+          <span class="listening-pulse" *ngIf="isListening"></span>
+        </button>
+
+        <button class="send-button" (click)="runActive ? onCancelRun() : sendMessage()"
+          [disabled]="(runActive && !allowCancelRun) || (!runActive && !canSendMessage)"
+          [title]="runActive ? (allowCancelRun ? 'Stop run' : 'Response in progress') : (canSendMessage ? 'Send message' : 'Enter a message to send')"
+          aria-label="Send message">
+          <ng-container *ngIf="runActive; else sendState">
+            <i class="fa-solid fa-stop"></i>
+          </ng-container>
+          <ng-template #sendState>
+            <i class="fa-solid fa-arrow-up"></i>
+          </ng-template>
+        </button>
+      </div>
     </div>
   </div>
 

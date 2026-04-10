@@ -966,16 +966,12 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     this.attachmentsInProgress = true;
     try {
-      let uploadedCount = 0;
-      for (const file of files) {
-        await lastValueFrom(this.documentService.ingest({
-          file,
-          vector_store_id: vectorStoreId || undefined
-        }));
-        uploadedCount += 1;
-      }
+      await lastValueFrom(this.documentService.ingest({
+        files,
+        vector_store_id: vectorStoreId || undefined
+      }));
 
-      this.setAttachmentMessage(`Attached ${uploadedCount} item(s) successfully.`);
+      this.setAttachmentMessage(`Attached ${files.length} item(s) successfully.`);
       this.loadDocuments();
     } catch (error) {
       this.setAttachmentMessage('Failed to upload files.');
