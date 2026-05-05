@@ -52,7 +52,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Input() librariesLoading = false;
   @Input() documentsLoading = false;
   @Input() promptsLoading = false;
-  @Output() messageSent = new EventEmitter<string>();
+  @Output() messageSent = new EventEmitter<{content: string, webSearch: boolean} | string>();
   @Output() modeToggle = new EventEmitter<'normal' | 'web' | 'document'>();
   @Output() filesSelected = new EventEmitter<FileList>();
   @Output() webpageAttached = new EventEmitter<{ url: string; title?: string }>();
@@ -77,6 +77,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   isListening = false;
   isOverflowing = false;
   isExpanded = false;
+  isWebSearchEnabled = false;
   private recognition: SpeechRecognitionLike | null = null;
 
   constructor(private cdr: ChangeDetectorRef) { }
@@ -116,7 +117,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   sendMessage(): void {
     if (this.canSendMessage) {
-      this.messageSent.emit(this.message);
+      this.messageSent.emit({ content: this.message, webSearch: this.isWebSearchEnabled });
       this.message = '';
       this.isExpanded = false;
       setTimeout(() => this.adjustTextareaHeight(), 0);
@@ -165,6 +166,10 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     if (this.mode !== newMode) {
       this.modeToggle.emit(newMode);
     }
+  }
+
+  toggleWebSearch(): void {
+    this.isWebSearchEnabled = !this.isWebSearchEnabled;
   }
 
   toggleAttachmentMenu(): void {

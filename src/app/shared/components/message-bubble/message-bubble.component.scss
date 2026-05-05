@@ -356,6 +356,384 @@
         padding: 0.75rem 1rem 1rem 1rem;
     }
 }
+
+// ── Data Grid Bar ──────────────────────────────────────────────────
+.data-grid-bar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  padding: 0.35rem 1rem 0.35rem 0.35rem;
+  background: var(--bg-secondary, #f1f5f9);
+  border: none;
+  border-radius: 999px;
+  max-width: 100%;
+  gap: 2.5rem;
+}
+
+.bar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 14px;
+  font-weight: 1000;
+  color: #2862c1;
+
+  .icon-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background-color: #3b82f6;
+    color: white;
+    border-radius: 50%;
+
+    i {
+      font-size: 14px;
+      opacity: 1;
+    }
+  }
+}
+
+.bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.bar-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: none;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-primary);
+  }
+
+  &:active {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  i {
+    font-size: 15px;
+  }
+}
+
+// ── Inline Data Grid ───────────────────────────────────────────────
+.inline-data-grid {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.75rem;
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.inline-grid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    opacity: 0.85;
+
+    i {
+      font-size: 14px;
+      opacity: 0.7;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: white;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+      &:hover:not(:disabled) {
+        background: #f8f9fa;
+        border-color: rgba(0, 0, 0, 0.15);
+        transform: translateY(-1px);
+      }
+
+      &:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      i {
+        font-size: 12px;
+      }
+    }
+  }
+}
+
+.inline-grid-body {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: white;
+  max-height: 400px;
+  
+  .data-grid-scroll {
+    max-height: 400px;
+  }
+}
+
+// ── Data Grid Modal ────────────────────────────────────────────────
+.data-grid-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.data-grid-modal {
+  background: var(--panel-bg, white);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 960px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--panel-border, rgba(0, 0, 0, 0.1));
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+}
+
+.modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+
+  i {
+    opacity: 0.7;
+    font-size: 15px;
+  }
+
+  .dim-badge {
+    margin-left: 0.5rem;
+    padding: 0.15rem 0.5rem;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.8;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    font-size: 13px;
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .download-btn {
+    padding: 0.4rem 0.75rem;
+    gap: 0.4rem;
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+    &:hover:not(:disabled) {
+      background: #f8f9fa;
+      border-color: rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary, rgba(0, 0, 0, 0.5));
+    font-size: 15px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--text-primary);
+    }
+  }
+}
+
+.modal-body {
+  flex: 1;
+  min-height: 200px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: white;
+}
+
+.loading-state,
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.data-grid-scroll {
+  flex: 1;
+  overflow: auto;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+  }
+}
+
+.data-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f8f9fa;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  }
+
+  th {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+  }
+
+  td {
+    padding: 0.45rem 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    color: var(--text-primary);
+  }
+
+  tbody tr {
+    transition: background 0.12s ease;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    &:nth-child(even) {
+      background: rgba(0, 0, 0, 0.01);
+      &:hover {
+        background: rgba(0, 0, 0, 0.03);
+      }
+    }
+  }
+
+  .row-num-col {
+    width: 40px;
+    min-width: 40px;
+    text-align: center;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    border-right: 1px solid rgba(0, 0, 0, 0.04);
+  }
+}
+
+.modal-footer {
+  padding: 0.75rem 1.25rem;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  background: white;
+}
+
 .message-bubble.streaming .markdown {
     & > *:last-child:after {
         content: '▊';

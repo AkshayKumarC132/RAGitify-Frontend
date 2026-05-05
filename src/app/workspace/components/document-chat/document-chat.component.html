@@ -27,7 +27,7 @@
         <span class="empty-state-hint">Start a conversation to get answers based on the document content</span>
       </div>
 
-      <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last" [showSources]="false" [isStreaming]="last && isResponseInProgress && message.role === 'assistant'">
+      <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last" [conversationId]="conversation?.id" [enableDataGrid]="conversation?.enable_data_grid || false" [showSources]="false" [isStreaming]="last && isResponseInProgress && message.role === 'assistant'">
       </app-message-bubble>
 
       <!-- Typing Indicator -->

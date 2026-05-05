@@ -18,6 +18,8 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
   @Input() currentRun: { status: string } | null = null;
   @Input() loading = false;
   @Input() typingStatuses: string[] = ['Retrieving', 'Searching', 'Thinking', 'Generating'];
+  @Input() conversationId?: string;
+  @Input() enableDataGrid: boolean = false;
 
   @ViewChild('messagesWrapper') private messagesWrapper?: ElementRef<HTMLDivElement>;
 

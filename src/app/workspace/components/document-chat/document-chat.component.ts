@@ -27,6 +27,7 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
   errorMessage = '';
   isExpanded = false;
   private streamSub?: Subscription;
+  private ephemeralMetadataMap = new Map<string, any>();
 
   constructor(
     private conversationService: ConversationService,
@@ -107,7 +108,7 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
   private createConversation(): Promise<void> {
     return new Promise((resolve, reject) => {
       const title = this.document?.title ? `Chat: ${this.document.title}` : undefined;
-      this.conversationService.create({ title, is_temporary: true }).subscribe({
+      this.conversationService.create({ title, is_temporary: true, enable_data_grid: true }).subscribe({
         next: (conversation) => {
           this.conversation = conversation;
           resolve();
@@ -168,6 +169,19 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
         } else if (event.type === 'completed') {
           this.currentResponse = null;
           this.loading = false;
+
+          const outMetadata = event.response?.output?.[0]?.metadata;
+          if (outMetadata && this.conversation) {
+            this.ephemeralMetadataMap.set(String(this.conversation.id), outMetadata);
+            assistantMessage.metadata = { ...(assistantMessage.metadata || {}), ...outMetadata };
+          }
+          if (event.response?.has_data_grid !== undefined) {
+            assistantMessage.has_data_grid = event.response.has_data_grid;
+          }
+          if (event.response?.data_grid_row_count !== undefined) {
+            (assistantMessage as any).data_grid_row_count = event.response.data_grid_row_count;
+          }
+
           if (event.response) {
             this.responseAttentionService.notifyResponseReady(
               'Document chat response ready',
@@ -213,6 +227,15 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.conversationService.getMessages(this.conversation.id).subscribe({
       next: (messages) => {
+        const ephemeral = this.ephemeralMetadataMap.get(String(this.conversation!.id));
+        if (ephemeral && messages && messages.length > 0) {
+          for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].role === 'assistant') {
+              messages[i].metadata = { ...(messages[i].metadata || {}), ...ephemeral };
+              break;
+            }
+          }
+        }
         this.messages = messages;
         this.scrollToBottom();
       },

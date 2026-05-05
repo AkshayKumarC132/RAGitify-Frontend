@@ -1,4 +1,5 @@
-<div *ngIf="!isHidden" class="message-bubble" [class.user]="isUser" [class.assistant]="!isUser" [class.empty-state]="showEmptyState" [class.streaming]="isStreaming">
+<div *ngIf="!isHidden" class="message-bubble" [class.user]="isUser" [class.assistant]="!isUser"
+    [class.empty-state]="showEmptyState" [class.streaming]="isStreaming">
     <div class="attached-documents" *ngIf="isUser && attachedDocuments.length">
         <span class="attached-document-chip" *ngFor="let document of attachedDocuments">
             <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
@@ -24,6 +25,68 @@
             <ng-template #assistantContent>
                 <div class="text-content markdown" [innerHTML]="renderedContent"></div>
             </ng-template>
+        </div>
+
+        <!-- Inline Data Grid -->
+        <div *ngIf="hasDataGrid && !showEmptyState && enableDataGrid" class="inline-data-grid">
+            <div class="inline-grid-header">
+                <div class="header-left">
+                    <i class="fa-solid fa-table-cells"></i>
+                    <span>Data<ng-container *ngIf="dataGridRecordCount !== ''"> &middot; {{ dataGridRecordCount }}
+                            records</ng-container></span>
+                </div>
+                <div class="header-actions">
+                    <button type="button" class="action-btn download-btn" (click)="exportCsv()"
+                        [disabled]="dataGridLoading || inlineDataGridRows.length === 0" title="Download CSV">
+                        <i class="fa-solid fa-download"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="inline-grid-body">
+                <div *ngIf="dataGridLoading" class="loading-state">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Loading data...
+                </div>
+
+                <div *ngIf="!dataGridLoading && inlineDataGridRows.length > 0" class="data-grid-scroll">
+                    <table class="data-grid-table">
+                        <thead>
+                            <tr>
+                                <th class="row-num-col">#</th>
+                                <th *ngFor="let col of inlineDataGridColumns">{{ formatColumnHeader(col) }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let row of inlineDataGridRows; let i = index">
+                                <td class="row-num-col">{{ i + 1 }}</td>
+                                <td *ngFor="let col of inlineDataGridColumns">{{ row[col] }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div *ngIf="!dataGridLoading && inlineDataGridRows.length === 0" class="empty-state">
+                    No records found.
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Grid Bar (fallback if not enabled) -->
+        <div *ngIf="hasDataGrid && !showEmptyState && !enableDataGrid" class="data-grid-bar">
+            <div class="bar-left">
+                <div class="icon-circle">
+                    <i class="fa-solid fa-table-cells"></i>
+                </div>
+                <span class="bar-title">Data<ng-container *ngIf="dataGridRecordCount !== ''"> &middot; {{
+                        dataGridRecordCount }} records</ng-container></span>
+            </div>
+            <div class="bar-actions">
+                <button type="button" class="bar-action-btn" (click)="previewDataGrid()" title="Preview Data">
+                    <i class="fa-regular fa-eye"></i>
+                </button>
+                <button type="button" class="bar-action-btn" (click)="previewDataGrid(true)" title="Download CSV">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+            </div>
         </div>
         <app-message-sources *ngIf="showSources && !showEmptyState && !isUser" [documentIds]="getDocumentIds(message)">
         </app-message-sources>
@@ -53,6 +116,62 @@
                 aria-label="Next assistant response">
                 <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- Data Grid Modal -->
+<div *ngIf="showDataGridModal" class="data-grid-overlay" (click)="closeDataGridModal()">
+    <div class="data-grid-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title-group">
+                <i class="fa-solid fa-table-cells"></i>
+                <span class="title-text">Data<ng-container *ngIf="dataGridRecordCount !== ''"> &middot; {{
+                        dataGridRecordCount }} records</ng-container></span>
+                <span class="dim-badge" *ngIf="modalDataGridRows.length > 0">
+                    {{ modalDataGridRows.length }} rows × {{ modalDataGridColumns.length }} cols
+                </span>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="action-btn download-btn" (click)="exportCsv()"
+                    [disabled]="dataGridLoading || modalDataGridRows.length === 0">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <button type="button" class="action-btn close-btn" (click)="closeDataGridModal()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="modal-body">
+            <div *ngIf="dataGridLoading" class="loading-state">
+                <i class="fa-solid fa-spinner fa-spin"></i> Loading data...
+            </div>
+
+            <div *ngIf="!dataGridLoading && modalDataGridRows.length > 0" class="data-grid-scroll">
+                <table class="data-grid-table">
+                    <thead>
+                        <tr>
+                            <th class="row-num-col">#</th>
+                            <th *ngFor="let col of modalDataGridColumns">{{ formatColumnHeader(col) }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let row of modalDataGridRows; let i = index">
+                            <td class="row-num-col">{{ i + 1 }}</td>
+                            <td *ngFor="let col of modalDataGridColumns">{{ row[col] }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div *ngIf="!dataGridLoading && modalDataGridRows.length === 0" class="empty-state">
+                No records found.
+            </div>
+        </div>
+
+        <div class="modal-footer" *ngIf="!dataGridLoading && modalDataGridRows.length > 0">
+            Showing all {{ modalDataGridRows.length }} records
         </div>
     </div>
 </div>

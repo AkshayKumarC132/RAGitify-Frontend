@@ -28,6 +28,8 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
   displayContent: string = '';
   renderedContent: SafeHtml | null = null;
   copied = false;
+  dataGridColumns: string[] = [];
+  dataGridRows: Record<string, any>[] = [];
   private copyResetTimeout?: ReturnType<typeof setTimeout>;
   private previousContent: string = '';
 
@@ -51,6 +53,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
     const safeContent = this.sanitizeContent(this.message.content);
     this.displayContent = safeContent;
     this.updateRenderedContent();
+    this.extractDataGrid();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -61,6 +64,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
       const safeContent = this.sanitizeContent(this.message?.content);
       this.displayContent = safeContent;
       this.updateRenderedContent();
+      this.extractDataGrid();
     }
   }
 
@@ -125,6 +129,38 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
     const html = marked.parse(raw) as string;
     const sanitized = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
     this.renderedContent = this.sanitizer.bypassSecurityTrustHtml(sanitized);
+  }
+
+  private extractDataGrid(): void {
+    this.dataGridColumns = [];
+    this.dataGridRows = [];
+
+    const grid = this.message?.metadata?.['data_grid'];
+    if (!grid || !Array.isArray(grid) || !grid.length) {
+      return;
+    }
+
+    // data_grid is an array of arrays; flatten all sub-arrays into one row list
+    const rows: Record<string, any>[] = [];
+    for (const subArray of grid) {
+      if (Array.isArray(subArray)) {
+        rows.push(...subArray);
+      }
+    }
+
+    if (!rows.length) {
+      return;
+    }
+
+    // Derive column headers from the keys of the first row
+    this.dataGridColumns = Object.keys(rows[0]);
+    this.dataGridRows = rows;
+  }
+
+  formatColumnHeader(key: string): string {
+    return key
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, char => char.toUpperCase());
   }
 
   async copyMessage(): Promise<void> {

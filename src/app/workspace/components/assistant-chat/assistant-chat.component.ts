@@ -27,7 +27,7 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
     errorMessage = '';
     private streamSub?: Subscription;
 
-  constructor(
+    constructor(
         private responseService: ResponseService,
         private conversationService: ConversationService,
         private responseAttentionService: ResponseAttentionService,
@@ -155,6 +155,22 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
                     this.currentResponse = null;
                     this.loading = false;
                     if (event.response) {
+                        // Update the assistant message with final details if needed
+                        const actualMessageId = event.response.output?.[0]?.message_id;
+                        assistantMessage.id = actualMessageId || event.response.id;
+                        assistantMessage.created_at = event.response.completed_at || event.response.created_at;
+
+                        const outMeta = event.response.output?.[0]?.metadata;
+                        if (outMeta) {
+                            assistantMessage.metadata = { ...(assistantMessage.metadata || {}), ...outMeta };
+                        }
+                        if (event.response.has_data_grid !== undefined) {
+                            assistantMessage.has_data_grid = event.response.has_data_grid;
+                        }
+                        if (event.response.data_grid_row_count !== undefined) {
+                            (assistantMessage as any).data_grid_row_count = event.response.data_grid_row_count;
+                        }
+
                         this.responseAttentionService.notifyResponseReady(
                             'Assistant test response ready',
                             assistantMessage.content

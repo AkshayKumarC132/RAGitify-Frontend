@@ -628,6 +628,23 @@ export class ThreadSidebarComponent implements OnChanges {
     });
   }
 
+  toggleDataGrid(thread: Conversation, event?: MouseEvent): void {
+    event?.stopPropagation();
+    
+    const previousState = !!thread.enable_data_grid;
+    thread.enable_data_grid = !previousState;
+
+    this.conversationService.patch(thread.id, { enable_data_grid: thread.enable_data_grid }).subscribe({
+      next: (updatedThread) => {
+        thread.enable_data_grid = updatedThread.enable_data_grid;
+      },
+      error: (err) => {
+        console.error('Failed to update data grid toggle status', err);
+        thread.enable_data_grid = previousState;
+      }
+    });
+  }
+
   private sortThreads(threads: Conversation[]): Conversation[] {
     return threads.sort((a, b) => {
       const aPinned = !!a.is_pinned;

@@ -24,6 +24,12 @@
       </div>
 
       <div class="input-actions">
+        <button type="button" class="web-search-button" [class.active]="isWebSearchEnabled" [disabled]="loading"
+          (click)="toggleWebSearch()" [title]="isWebSearchEnabled ? 'Web search enabled' : 'Web search disabled'"
+          aria-label="Toggle web search">
+          <i class="fa-solid fa-globe"></i>
+        </button>
+
         <button type="button" class="mic-button" [class.active]="isListening" [disabled]="loading || !speechSupported"
           (click)="toggleVoiceInput()" [title]="isListening ? 'Stop voice input' : 'Voice dictation'"
           aria-label="Toggle voice dictation">

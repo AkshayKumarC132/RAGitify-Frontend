@@ -95,7 +95,7 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
     private createConversation(): Promise<void> {
         return new Promise((resolve, reject) => {
             const title = this.vectorStore?.name ? `Library: ${this.vectorStore.name}` : 'Library Chat';
-            this.conversationService.create({ title, is_temporary: true }).subscribe({
+            this.conversationService.create({ title, is_temporary: true, enable_data_grid: true }).subscribe({
                 next: (conv) => {
                     this.conversation = conv;
                     resolve();
@@ -150,9 +150,20 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
                             assistantMessage.content
                         );
                         // Update the assistant message with final details if needed
-                        assistantMessage.id = event.response.id;
+                        const actualMessageId = event.response.output?.[0]?.message_id;
+                        assistantMessage.id = actualMessageId || event.response.id;
                         assistantMessage.created_at = event.response.completed_at || event.response.created_at;
-                        assistantMessage.metadata = event.response.output?.[0]?.metadata || {};
+
+                        const outMeta = event.response.output?.[0]?.metadata;
+                        if (outMeta) {
+                            assistantMessage.metadata = { ...(assistantMessage.metadata || {}), ...outMeta };
+                        }
+                        if (event.response.has_data_grid !== undefined) {
+                            assistantMessage.has_data_grid = event.response.has_data_grid;
+                        }
+                        if (event.response.data_grid_row_count !== undefined) {
+                            (assistantMessage as any).data_grid_row_count = event.response.data_grid_row_count;
+                        }
                     }
                     this.scrollToBottom();
                 } else if (event.type === 'failed') {

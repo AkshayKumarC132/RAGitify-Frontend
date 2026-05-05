@@ -19,6 +19,30 @@
         <div class="text-content markdown" [innerHTML]="renderedContent"></div>
       </ng-template>
     </div>
+
+    <!-- Data Grid Table -->
+    <div *ngIf="dataGridRows.length" class="data-grid-wrapper">
+      <div class="data-grid-header">
+        <i class="fa-solid fa-table" aria-hidden="true"></i>
+        <span>Data ({{ dataGridRows.length }} records)</span>
+      </div>
+      <div class="data-grid-scroll">
+        <table class="data-grid-table">
+          <thead>
+            <tr>
+              <th class="row-num-col">#</th>
+              <th *ngFor="let col of dataGridColumns">{{ formatColumnHeader(col) }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of dataGridRows; let i = index">
+              <td class="row-num-col">{{ i + 1 }}</td>
+              <td *ngFor="let col of dataGridColumns">{{ row[col] }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
     <div class="message-time" *ngIf="!showEmptyState">{{ formatTime(message.created_at) }}</div>
   </div>
   <div class="message-actions" *ngIf="!showEmptyState">

@@ -11,6 +11,8 @@ export interface ResponseRecord {
   created_at: string;
   completed_at: string | null;
   error_message?: string;
+  has_data_grid?: boolean;
+  data_grid_row_count?: number;
 }
 
 export interface ResponseCreateRequest {
@@ -21,6 +23,7 @@ export interface ResponseCreateRequest {
   tools?: DocumentTool[];
   stream?: boolean;
   metadata?: Record<string, any>;
+  web_search?: boolean;
 }
 
 export interface ResponseInput {

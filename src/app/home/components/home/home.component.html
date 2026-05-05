@@ -46,7 +46,8 @@
         <app-empty-state *ngIf="isConversationEmpty" [isTemporaryChat]="isTemporaryChat" [mode]="mode"
           [hasDocuments]="allDocuments.length > 0" (viewLibrary)="onWorkspaceNavigate()"></app-empty-state>
 
-        <app-chat-container *ngIf="!isConversationEmpty" [messages]="messages" [currentRun]="currentRun"
+        <app-chat-container *ngIf="!isConversationEmpty" [messages]="messages" [currentRun]="currentRun" [conversationId]="currentThread?.id"
+          [enableDataGrid]="currentThread?.enable_data_grid || false"
           [loading]="loading"
           [typingStatuses]="typingStatuses">
         </app-chat-container>

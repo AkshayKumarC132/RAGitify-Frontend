@@ -54,6 +54,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   errorMessage = '';
   warningMessages: string[] = [];
   isTemporaryChat = false;
+  private ephemeralMetadataMap = new Map<string, any>();
 
   private attachmentMessageTimeout?: ReturnType<typeof setTimeout>;
   private errorMessageTimeout?: ReturnType<typeof setTimeout>;
@@ -345,7 +346,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.mode = mode;
   }
 
-  async onMessageSent(content: string): Promise<void> {
+  async onMessageSent(payload: string | { content: string; webSearch: boolean }): Promise<void> {
+    const isObject = typeof payload === 'object' && payload !== null;
+    const content = isObject ? (payload as any).content : (payload as string);
+    const webSearch = isObject ? (payload as any).webSearch : false;
     const trimmed = content.trim();
     if (!trimmed || this.isTemporaryChat || this.loading) {
       return;
@@ -359,7 +363,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     try {
       const conversation = await this.ensureConversation(trimmed);
-      const request = await this.buildResponseRequest(trimmed, conversation.id);
+      const request = await this.buildResponseRequest(trimmed, conversation.id, webSearch);
 
       // Add a placeholder assistant message for streaming
       const assistantMessage = this.buildLocalMessage('assistant', '');
@@ -374,6 +378,11 @@ export class HomeComponent implements OnInit, OnDestroy {
             this.messages = [...this.messages];
           } else if (event.type === 'completed') {
             this.applyWarnings(event.warnings);
+            const outMetadata = event.response?.output?.[0]?.metadata;
+            if (outMetadata) {
+              this.ephemeralMetadataMap.set(String(conversation.id), outMetadata);
+            }
+            assistantMessage.metadata = { ...(assistantMessage.metadata || {}), ...(outMetadata || {}) };
             this.finalizeResponse(event.response!, conversation.id);
           } else if (event.type === 'failed') {
             this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
@@ -664,6 +673,16 @@ export class HomeComponent implements OnInit, OnDestroy {
         if (this.currentThread?.id !== threadId && this.pendingThreadId !== threadId) {
           return;
         }
+        const ephemeral = this.ephemeralMetadataMap.get(String(threadId));
+        if (ephemeral && messages && messages.length > 0) {
+          // Find the last assistant message
+          for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].role === 'assistant') {
+              messages[i].metadata = { ...(messages[i].metadata || {}), ...ephemeral };
+              break;
+            }
+          }
+        }
         this.messages = this.decorateMessagesWithAttachments(messages || []);
       },
       error: (error) => {
@@ -784,7 +803,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     return thread;
   }
 
-  private async buildResponseRequest(content: string, conversationId: string): Promise<ResponseCreateRequest> {
+  private async buildResponseRequest(content: string, conversationId: string, webSearch: boolean = false): Promise<ResponseCreateRequest> {
     await this.ensurePromptsLoaded();
 
     const prompt = this.prompts.find(item => item.id === this.selectedPromptId);
@@ -796,6 +815,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       conversation: conversationId,
       model,
       instructions,
+      web_search: webSearch,
       input: [{
         role: 'user',
         content: [{ type: 'input_text', text: content }]
@@ -863,6 +883,10 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.applyWarnings(response.warnings);
 
         if (response.status === 'completed') {
+          const outMetadata = response.output?.[0]?.metadata;
+          if (outMetadata) {
+            this.ephemeralMetadataMap.set(String(threadId), outMetadata);
+          }
           await this.finalizeResponse(response, threadId);
           this.stopResponsePolling();
           return;

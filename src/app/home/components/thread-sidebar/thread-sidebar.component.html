@@ -142,6 +142,13 @@
       <i class="fa-solid fa-pen"></i>
       <span>Rename Title</span>
     </button>
+    <button type="button" class="toggle-menu-item" (click)="toggleDataGrid(menuThread, $event)">
+      <i class="fa-solid fa-table-cells"></i>
+      <span class="flex-grow">Show Data</span>
+      <div class="toggle-switch" [class.active]="menuThread.enable_data_grid">
+        <div class="toggle-knob"></div>
+      </div>
+    </button>
     <button type="button" class="danger" (click)="deleteThread(menuThread, $event)">
       <i class="fa-solid fa-trash"></i>
       <span>Delete</span>
