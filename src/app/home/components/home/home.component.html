@@ -46,6 +46,37 @@
         <app-empty-state *ngIf="isConversationEmpty" [isTemporaryChat]="isTemporaryChat" [mode]="mode"
           [hasDocuments]="allDocuments.length > 0" (viewLibrary)="onWorkspaceNavigate()"></app-empty-state>
 
+        <div class="conversation-topbar" *ngIf="!isConversationEmpty && currentThread && !isTemporaryChat">
+          <div class="conversation-title-wrapper">
+            <div class="conversation-title" (click)="toggleConversationMenu($event)">
+              {{ currentThread.title || 'New Conversation' }}
+              <i class="fa-solid fa-chevron-down" [class.fa-chevron-up]="conversationMenuOpen"></i>
+            </div>
+
+            <div class="conversation-menu-panel" *ngIf="conversationMenuOpen" (click)="$event.stopPropagation()">
+            <button type="button" (click)="togglePin(currentThread, $event)">
+              <i class="fa-solid" [ngClass]="currentThread.is_pinned ? 'fa-thumbtack-slash' : 'fa-thumbtack'"></i>
+              <span>{{ currentThread.is_pinned ? 'Unpin' : 'Pin' }}</span>
+            </button>
+            <button type="button" (click)="editCurrentThread(currentThread, $event)">
+              <i class="fa-solid fa-pen"></i>
+              <span>Rename</span>
+            </button>
+            <button type="button" class="toggle-menu-item" (click)="toggleDataGrid(currentThread, $event)">
+              <i class="fa-solid fa-table-cells"></i>
+              <span class="flex-grow">Enable data grid</span>
+              <div class="toggle-switch" [class.active]="currentThread.enable_data_grid">
+                <div class="toggle-knob"></div>
+              </div>
+            </button>
+            <button type="button" class="danger" (click)="deleteCurrentThread(currentThread, $event)">
+              <i class="fa-solid fa-trash"></i>
+              <span>Delete</span>
+            </button>
+            </div>
+          </div>
+        </div>
+
         <app-chat-container *ngIf="!isConversationEmpty" [messages]="messages" [currentRun]="currentRun" [conversationId]="currentThread?.id"
           [enableDataGrid]="currentThread?.enable_data_grid || false"
           [loading]="loading"

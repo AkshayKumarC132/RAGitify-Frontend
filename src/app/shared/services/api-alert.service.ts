@@ -38,13 +38,22 @@ export class ApiAlertService {
       return null;
     }
 
-    const message = this.extractMessage(error);
+    let message = this.extractMessage(error);
+
+    // Clean up Django ErrorDetail string representation if present
+    const match = message.match(/ErrorDetail\(string=['"]([^'"]+)['"]/);
+    if (match && match[1]) {
+      message = match[1];
+    }
 
     switch (error.status) {
       case 0:
         return { icon: 'error', title: 'Network error', text: 'Unable to reach the server. Check your connection and try again.' };
-      case 400:
-        return { icon: 'warning', title: 'Request rejected', text: message || 'The request could not be processed. Review the input and try again.' };
+      case 400: {
+        const isAuthError = error.url?.includes('/login') || error.url?.includes('/token') || message.toLowerCase().includes('log in') || message.toLowerCase().includes('credentials');
+        const title = isAuthError ? 'Authentication failed!' : 'Request rejected';
+        return { icon: 'warning', title, text: message || 'The request could not be processed. Review the input and try again.' };
+      }
       case 401:
         return { icon: 'warning', title: 'Session expired', text: message || 'Your session is no longer valid. Please sign in again.' };
       case 403:

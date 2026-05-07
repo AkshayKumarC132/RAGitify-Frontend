@@ -40,7 +40,7 @@
   overflow: visible;
   transition: width 0.25s ease;
   position: relative;
-  z-index: 4;
+  z-index: 60;
 }
 
 .sidebar app-thread-sidebar {
@@ -71,8 +71,18 @@ app-playground {
 
 .chat-area {
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 0.85rem 1.2rem 0;
+}
+
+app-chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .chat-actions {
@@ -155,6 +165,143 @@ app-playground {
   i {
     font-size: 0.9rem;
     flex-shrink: 0;
+  }
+}
+
+.conversation-topbar {
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 1rem;
+  z-index: 50;
+}
+
+.conversation-title-wrapper {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.conversation-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+
+  i {
+    font-size: 12px;
+    color: var(--text-secondary);
+    transition: transform 0.2s ease;
+  }
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+}
+
+.conversation-menu-panel {
+  position: absolute;
+  top: 100%;
+  left: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  min-width: 270px;
+  padding: 0.25rem;
+  box-shadow: 0 15px 40px rgba(5, 11, 22, 0.25);
+  animation: dropdownFade 0.16s ease;
+  z-index: 40;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 11px;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background: var(--bg-tertiary);
+    }
+
+    &.danger {
+      color: var(--danger-color);
+
+      &:hover {
+        background: rgba(var(--danger-color-rgb), 0.1);
+      }
+    }
+
+    &.toggle-menu-item {
+      .flex-grow {
+        flex: 1;
+      }
+      
+      .toggle-switch {
+        width: 32px;
+        height: 18px;
+        background: var(--bg-tertiary);
+        border-radius: 10px;
+        position: relative;
+        transition: background 0.2s ease;
+        border: 1px solid var(--border-color);
+        
+        .toggle-knob {
+          width: 14px;
+          height: 14px;
+          background: var(--text-secondary);
+          border-radius: 50%;
+          position: absolute;
+          top: 1px;
+          left: 1px;
+          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease;
+        }
+        
+        &.active {
+          background: var(--accent-color);
+          border-color: var(--accent-color);
+          
+          .toggle-knob {
+            background: #fff;
+            transform: translateX(14px);
+          }
+        }
+      }
+    }
+
+    i {
+      width: 16px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+  }
+}
+
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

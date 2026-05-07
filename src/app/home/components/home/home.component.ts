@@ -1,5 +1,5 @@
 import { Location } from '@angular/common';
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, HostListener } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, lastValueFrom } from 'rxjs';
@@ -20,6 +20,8 @@ import { ResponseAttentionService } from '../../../shared/services/response-atte
 import { ThreadSearchPopupService } from '../../../shared/services/thread-search-popup.service';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentShareService } from '../../../shared/services/document-share.service';
+import { ChatStreamService } from '../../../shared/services/chat-stream.service';
+import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 
 @Component({
   selector: 'app-home',
@@ -54,6 +56,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   errorMessage = '';
   warningMessages: string[] = [];
   isTemporaryChat = false;
+  conversationMenuOpen = false;
   private ephemeralMetadataMap = new Map<string, any>();
 
   private attachmentMessageTimeout?: ReturnType<typeof setTimeout>;
@@ -110,6 +113,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     private documentService: DocumentService,
     private documentShareService: DocumentShareService,
     private threadSearchPopupService: ThreadSearchPopupService,
+    private chatStreamService: ChatStreamService,
+    private confirmDialogService: ConfirmDialogService,
     private fb: FormBuilder,
     private location: Location
   ) {
@@ -369,8 +374,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       const assistantMessage = this.buildLocalMessage('assistant', '');
       this.messages = [...this.messages, assistantMessage];
 
-      this.stopStream();
-      this.streamSub = this.responseService.createStream(request).subscribe({
+      // Instead of ResponseService.createStream, use ChatStreamService to start the stream
+      this.streamSub = this.chatStreamService.startStream(conversation.id, request, optimisticMessage, assistantMessage).subscribe({
         next: (event: StreamEvent) => {
           if (event.type === 'delta' && event.delta) {
             assistantMessage.content += event.delta;
@@ -496,16 +501,27 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     const responseId = this.currentRun.id;
     this.stopStream();
-    this.responseService.cancel(responseId).subscribe({
-      next: () => {
-        this.currentRun = null;
-        this.loading = false;
-        this.stopResponsePolling();
-      },
-      error: (error) => {
-        this.handleError('Failed to cancel response', error);
-      }
-    });
+
+    if (this.currentThread) {
+      this.chatStreamService.cancelStream(this.currentThread.id);
+    }
+
+    this.loading = false;
+    this.currentRun = null;
+
+    // Fallback: Also tell backend to cancel it if it was a real polling request
+    if (responseId !== 'pending') {
+      this.responseService.cancel(responseId).subscribe({
+        next: () => {
+          this.stopResponsePolling();
+        },
+        error: (error) => {
+          this.handleError('Failed to cancel response', error);
+        }
+      });
+    } else {
+      this.stopResponsePolling();
+    }
   }
 
   onThreadRename(event: { thread: Conversation; title: string }): void {
@@ -541,11 +557,102 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 
+  @HostListener('document:click', ['$event'])
+  closeMenus(event: MouseEvent): void {
+    const target = event?.target as HTMLElement;
+    if (target && target.closest('.conversation-menu-panel')) {
+      return;
+    }
+    this.closeConversationMenu();
+  }
+
+  toggleConversationMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.conversationMenuOpen = !this.conversationMenuOpen;
+  }
+
+  closeConversationMenu(): void {
+    this.conversationMenuOpen = false;
+  }
+
+  togglePin(thread: Conversation, event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.closeConversationMenu();
+
+    const previousPinnedState = !!thread.is_pinned;
+    thread.is_pinned = !previousPinnedState;
+
+    this.conversationService.patch(thread.id, { is_pinned: thread.is_pinned }).subscribe({
+      next: (updatedThread) => {
+        thread.is_pinned = updatedThread.is_pinned;
+        this.upsertThread(thread);
+      },
+      error: (err) => {
+        console.error('Failed to update pin status', err);
+        thread.is_pinned = previousPinnedState;
+      }
+    });
+  }
+
+  async editCurrentThread(thread: Conversation, event?: MouseEvent): Promise<void> {
+    event?.stopPropagation();
+    this.closeConversationMenu();
+
+    const currentTitle = thread.title || 'New Conversation';
+    const updatedTitle = await this.confirmDialogService.prompt({
+      title: 'Rename Chat',
+      message: 'Enter a new title for this conversation:',
+      promptValue: currentTitle,
+      promptPlaceholder: 'Chat title...',
+      confirmText: 'Rename',
+      cancelText: 'Cancel'
+    });
+
+    if (updatedTitle && updatedTitle.trim() && updatedTitle.trim() !== currentTitle) {
+      this.onThreadRename({ thread, title: updatedTitle.trim() });
+    }
+  }
+
+  toggleDataGrid(thread: Conversation, event?: MouseEvent): void {
+    event?.stopPropagation();
+
+    const previousState = !!thread.enable_data_grid;
+    thread.enable_data_grid = !previousState;
+
+    this.conversationService.patch(thread.id, { enable_data_grid: thread.enable_data_grid }).subscribe({
+      next: (updatedThread) => {
+        thread.enable_data_grid = updatedThread.enable_data_grid;
+        this.upsertThread(thread);
+      },
+      error: (err) => {
+        console.error('Failed to update data grid toggle status', err);
+        thread.enable_data_grid = previousState;
+      }
+    });
+  }
+
+  async deleteCurrentThread(thread: Conversation, event?: MouseEvent): Promise<void> {
+    event?.stopPropagation();
+    this.closeConversationMenu();
+
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete chat?',
+      message: 'This will delete',
+      itemName: thread.title || 'this conversation'
+    });
+
+    if (confirmed) {
+      this.chatStreamService.cancelStream(thread.id);
+      this.onThreadRemove(thread);
+    }
+  }
+
   onWorkspaceNavigate(): void {
     this.router.navigate(['/workspace']);
   }
 
   logout(): void {
+    this.chatStreamService.clearAllStreams();
     const token = this.authService.getToken();
     if (token) {
       this.authService.logout(token).subscribe({
@@ -645,6 +752,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   private loadThread(threadId: string): void {
     this.stopResponsePolling();
     this.currentRun = null;
+    this.loading = false;
+    this.selectedLibraryId = null;
+    this.selectedDocumentIds = [];
+    this.selectedPromptId = null;
+    this.attachmentMessage = '';
+    this.updateModeFromSelection(true);
+
     const existingThread = this.threads.find(thread => thread.id === threadId);
 
     if (existingThread) {
@@ -684,11 +798,71 @@ export class HomeComponent implements OnInit, OnDestroy {
           }
         }
         this.messages = this.decorateMessagesWithAttachments(messages || []);
+        this.reconnectToStream(threadId);
       },
       error: (error) => {
         console.error('Error loading conversation messages:', error);
       }
     });
+  }
+
+  private reconnectToStream(threadId: string): void {
+    const streamState = this.chatStreamService.getStreamState(threadId);
+    if (!streamState) {
+      return;
+    }
+
+    if (streamState.runStatus === 'in_progress') {
+      const userMsgExists = this.messages.some(m => m.id === streamState.userMessage.id || (m.role === 'user' && m.content === streamState.userMessage.content));
+      if (!userMsgExists) {
+        this.messages = [...this.messages, streamState.userMessage];
+      }
+
+      const assistantMsgExists = this.messages.some(m => m.id === streamState.assistantMessage.id);
+      if (!assistantMsgExists) {
+        this.messages = [...this.messages, streamState.assistantMessage];
+      }
+
+      this.loading = true;
+      this.currentRun = { id: 'pending', conversation: threadId, status: 'in_progress', model: this.selectedModel || this.responseService.getDefaultModel(), instructions: '', input_messages: [], output: [], metadata: {}, created_at: new Date().toISOString(), completed_at: null };
+
+      this.stopStream();
+      this.streamSub = streamState.eventSubject.subscribe({
+        next: (event: StreamEvent) => {
+          if (event.type === 'delta' && event.delta) {
+            this.messages = [...this.messages];
+          } else if (event.type === 'completed') {
+            this.applyWarnings(event.warnings);
+            const outMetadata = event.response?.output?.[0]?.metadata;
+            if (outMetadata) {
+              this.ephemeralMetadataMap.set(String(threadId), outMetadata);
+            }
+            this.finalizeResponse(event.response!, threadId);
+          } else if (event.type === 'failed') {
+            this.messages = this.messages.filter(m => m.id !== streamState.assistantMessage.id);
+            this.messages = this.messages.filter(m => m.id !== streamState.userMessage.id);
+            this.currentRun = null;
+            this.loading = false;
+            this.handleError(event.response?.error_message || 'Response failed', event.response);
+          }
+        },
+        error: (error) => {
+          this.messages = this.messages.filter(m => m.id !== streamState.assistantMessage.id);
+          this.messages = this.messages.filter(m => m.id !== streamState.userMessage.id);
+          this.currentRun = null;
+          this.loading = false;
+          this.handleError('Failed to send message', error);
+        },
+        complete: () => {
+          this.loading = false;
+        }
+      });
+    } else if (streamState.runStatus === 'completed') {
+      this.chatStreamService.clearStreamState(threadId);
+    } else if (streamState.runStatus === 'failed') {
+      this.handleError(streamState.error || 'Response failed');
+      this.chatStreamService.clearStreamState(threadId);
+    }
   }
 
   private ensureLibrariesLoaded(): void {
@@ -922,6 +1096,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private async finalizeResponse(response: ResponseRecord, threadId: string): Promise<void> {
+    this.chatStreamService.clearStreamState(threadId);
     this.loading = false;
     this.currentRun = null;
     this.applyWarnings(response.warnings);

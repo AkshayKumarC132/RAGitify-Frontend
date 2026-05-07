@@ -7,6 +7,7 @@ import { ThemeService } from '../../../shared/services/theme.service';
 import { ConversationService } from '../../../shared/services/conversation.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { ThreadSearchPopupService } from '../../../shared/services/thread-search-popup.service';
+import { ChatStreamService } from '../../../shared/services/chat-stream.service';
 
 @Component({
   selector: 'app-thread-sidebar',
@@ -53,7 +54,8 @@ export class ThreadSidebarComponent implements OnChanges {
     private conversationService: ConversationService,
     private sanitizer: DomSanitizer,
     private confirmDialogService: ConfirmDialogService,
-    private threadSearchPopupService: ThreadSearchPopupService
+    private threadSearchPopupService: ThreadSearchPopupService,
+    private chatStreamService: ChatStreamService
   ) {
     this.theme$ = this.themeService.theme$;
   }
@@ -426,6 +428,7 @@ export class ThreadSidebarComponent implements OnChanges {
       itemName: thread.title || 'this conversation'
     });
     if (confirmed) {
+      this.chatStreamService.cancelStream(thread.id);
       this.removeThread.emit(thread);
       this.closeThreadMenu();
     }
