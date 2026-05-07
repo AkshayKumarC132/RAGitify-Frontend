@@ -11,13 +11,14 @@ import { ThemeToggleComponent } from './components/theme-toggle/theme-toggle.com
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { ThreadSearchPopupComponent } from './components/thread-search-popup/thread-search-popup.component';
 import { MessageSourcesComponent } from './components/message-sources/message-sources.component';
+import { FormatTimePipe } from './pipes/format-time.pipe';
 
 import { TypingLabelComponent } from './components/typing-label/typing-label.component';
 import { TypingIndicatorComponent } from './components/typing-indicator/typing-indicator.component';
 import { MessageBubbleComponent } from './components/message-bubble/message-bubble.component';
 
 @NgModule({
-  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent],
+  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe],
   imports: [
     CommonModule,
     HttpClientModule,
@@ -53,7 +54,8 @@ import { MessageBubbleComponent } from './components/message-bubble/message-bubb
     ThreadSearchPopupComponent,
     MessageSourcesComponent,
     TypingIndicatorComponent,
-    MessageBubbleComponent
+    MessageBubbleComponent,
+    FormatTimePipe
   ]
 })
 export class SharedModule { }

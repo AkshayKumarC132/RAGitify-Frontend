@@ -28,6 +28,7 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
   isExpanded = false;
   private streamSub?: Subscription;
   private ephemeralMetadataMap = new Map<string, any>();
+  private scrollPending = false;
 
   constructor(
     private conversationService: ConversationService,
@@ -263,12 +264,17 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private scrollToBottom(): void {
-    setTimeout(() => {
+    if (this.scrollPending) {
+      return; // already queued — skip
+    }
+    this.scrollPending = true;
+    requestAnimationFrame(() => {
+      this.scrollPending = false;
       if (this.messagesContainer?.nativeElement) {
         const container = this.messagesContainer.nativeElement;
         container.scrollTop = container.scrollHeight;
       }
-    }, 0);
+    });
   }
 
   onKeyPress(event: KeyboardEvent): void {

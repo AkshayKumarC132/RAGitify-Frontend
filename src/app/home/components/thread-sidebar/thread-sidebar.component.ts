@@ -1,6 +1,8 @@
-import { Component, Input, Output, EventEmitter, HostListener, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, OnChanges, SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Observable } from 'rxjs';
+import { Observable, from, of } from 'rxjs';
+import { mergeMap, map, catchError } from 'rxjs/operators';
 import { Conversation, ConversationMessage } from '../../../shared/models/conversation.model';
 import { User } from '../../../shared/models/user.model';
 import { ThemeService } from '../../../shared/services/theme.service';
@@ -12,7 +14,8 @@ import { ChatStreamService } from '../../../shared/services/chat-stream.service'
 @Component({
   selector: 'app-thread-sidebar',
   templateUrl: './thread-sidebar.component.html',
-  styleUrls: ['./thread-sidebar.component.scss']
+  styleUrls: ['./thread-sidebar.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ThreadSidebarComponent implements OnChanges {
   @Input() threads: Conversation[] = [];
@@ -55,16 +58,16 @@ export class ThreadSidebarComponent implements OnChanges {
     private sanitizer: DomSanitizer,
     private confirmDialogService: ConfirmDialogService,
     private threadSearchPopupService: ThreadSearchPopupService,
-    private chatStreamService: ChatStreamService
+    private chatStreamService: ChatStreamService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     this.theme$ = this.themeService.theme$;
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if ('threads' in changes) {
-      // Whenever the input threads change, reset the filtered list
       this.filteredThreads = this.sortThreads([...this.threads]);
-      // Re-apply current search query if any
       if (this.searchQuery.trim()) {
         this.applyFilter();
       }
@@ -76,25 +79,9 @@ export class ThreadSidebarComponent implements OnChanges {
 
       if (!isCollapsed) {
         this.resetExpandControlState();
-        // Close profile menu when expanding (transitioning from collapsed to expanded)
         if (wasCollapsed && this.profileMenuOpen) {
           this.closeProfileMenu();
         }
-      }
-    }
-    if ('user' in changes) {
-      const nextUser = changes['user'].currentValue as User | null;
-      if (!nextUser) {
-        console.warn('[ThreadSidebar] profile region hidden - no user data available', {
-          hasToken: !!localStorage.getItem('auth_token'),
-          storedUser: localStorage.getItem('current_user') ? 'present' : 'missing'
-        });
-      } else {
-        console.log('[ThreadSidebar] profile region ready for user', {
-          email: nextUser.email,
-          hasFirstName: !!nextUser.first_name,
-          hasLastName: !!nextUser.last_name
-        });
       }
     }
   }
@@ -141,8 +128,7 @@ export class ThreadSidebarComponent implements OnChanges {
 
   goToPrompts(): void {
     this.closeProfileMenu();
-    // Navigate to workspace with prompts view via query param
-    window.location.href = '/workspace?view=prompts';
+    this.router.navigate(['/workspace'], { queryParams: { view: 'prompts' } });
   }
 
   getThreadTitle(thread: Conversation): string {
@@ -214,6 +200,7 @@ export class ThreadSidebarComponent implements OnChanges {
     }
     this.searchDebounceTimeout = setTimeout(() => {
       this.applyFilter();
+      this.cdr.markForCheck();
     }, 200);
   }
 
@@ -268,35 +255,38 @@ export class ThreadSidebarComponent implements OnChanges {
     const nextFiltered = [...titleMatches, ...messageMatches];
     this.filteredThreads = this.sortThreads(nextFiltered);
 
-    // Fetch messages for threads we haven't loaded yet
+    // Fetch messages for threads not yet cached — limit to 3 concurrent requests
     if (threadsNeedingFetch.length) {
       const currentQuery = query;
-      for (const thread of threadsNeedingFetch) {
-        this.conversationService.getMessages(thread.id).subscribe({
-          next: (messages) => {
-            this.messagesCache.set(thread.id, messages);
-            // Only apply results if the search query hasn't changed
-            if (this.searchQuery.trim().toLowerCase() !== currentQuery) {
-              return;
+      from(threadsNeedingFetch).pipe(
+        mergeMap(
+          thread => this.conversationService.getMessages(thread.id).pipe(
+            map(messages => ({ thread, messages })),
+            catchError(() => of(null))
+          ),
+          3 // max 3 concurrent
+        )
+      ).subscribe({
+        next: (result) => {
+          if (!result) return;
+          const { thread, messages } = result;
+          this.messagesCache.set(thread.id, messages);
+          if (this.searchQuery.trim().toLowerCase() !== currentQuery) return;
+          const hasMatch = messages.some(msg =>
+            (msg.content || '').toLowerCase().includes(currentQuery)
+          );
+          if (hasMatch && !this.filteredThreads.some(t => t.id === thread.id)) {
+            this.filteredThreads = this.sortThreads([...this.filteredThreads, thread]);
+            const existing = this.matchSourceByThreadId.get(thread.id);
+            if (existing === 'title') {
+              this.matchSourceByThreadId.set(thread.id, 'both');
+            } else {
+              this.matchSourceByThreadId.set(thread.id, 'message');
             }
-            const hasMatch = messages.some(msg =>
-              (msg.content || '').toLowerCase().includes(currentQuery)
-            );
-            if (hasMatch && !this.filteredThreads.some(t => t.id === thread.id)) {
-              this.filteredThreads = this.sortThreads([...this.filteredThreads, thread]);
-              const existing = this.matchSourceByThreadId.get(thread.id);
-              if (existing === 'title') {
-                this.matchSourceByThreadId.set(thread.id, 'both');
-              } else {
-                this.matchSourceByThreadId.set(thread.id, 'message');
-              }
-            }
-          },
-          error: () => {
-            // Fail silently for search; title-based filtering still works
+            this.cdr.markForCheck();
           }
-        });
-      }
+        }
+      });
     }
   }
 
@@ -614,36 +604,42 @@ export class ThreadSidebarComponent implements OnChanges {
   togglePin(thread: Conversation, event?: MouseEvent): void {
     event?.stopPropagation();
     this.closeThreadMenu();
-    
+
     const previousPinnedState = !!thread.is_pinned;
     thread.is_pinned = !previousPinnedState;
     this.filteredThreads = this.sortThreads([...this.filteredThreads]);
+    this.cdr.markForCheck();
 
     this.conversationService.patch(thread.id, { is_pinned: thread.is_pinned }).subscribe({
       next: (updatedThread) => {
         thread.is_pinned = updatedThread.is_pinned;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Failed to update pin status', err);
         thread.is_pinned = previousPinnedState;
         this.filteredThreads = this.sortThreads([...this.filteredThreads]);
+        this.cdr.markForCheck();
       }
     });
   }
 
   toggleDataGrid(thread: Conversation, event?: MouseEvent): void {
     event?.stopPropagation();
-    
+
     const previousState = !!thread.enable_data_grid;
     thread.enable_data_grid = !previousState;
+    this.cdr.markForCheck();
 
     this.conversationService.patch(thread.id, { enable_data_grid: thread.enable_data_grid }).subscribe({
       next: (updatedThread) => {
         thread.enable_data_grid = updatedThread.enable_data_grid;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Failed to update data grid toggle status', err);
         thread.enable_data_grid = previousState;
+        this.cdr.markForCheck();
       }
     });
   }

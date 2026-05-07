@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild } from '@angular/core';
 
 type ChatMessage = {
   id: string | number;
@@ -11,7 +11,8 @@ type ChatMessage = {
 @Component({
   selector: 'app-chat-container',
   templateUrl: './chat-container.component.html',
-  styleUrls: ['./chat-container.component.scss']
+  styleUrls: ['./chat-container.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() messages: ChatMessage[] = [];

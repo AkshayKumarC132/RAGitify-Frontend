@@ -94,6 +94,10 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   defaultQuestions: string[] = [];
 
+  // Memoized — updated in updateTypingStatuses() so OnPush ChatContainerComponent
+  // only re-renders when mode actually changes, not on every CD cycle.
+  private _typingStatuses: string[] = ['Thinking', 'Retrieving', 'Generating', 'Searching'];
+
   documentQuestions = [
     'Summarize the attached documents',
     'What are the key takeaways?',
@@ -238,13 +242,17 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   get typingStatuses(): string[] {
+    return this._typingStatuses;
+  }
+
+  private updateTypingStatuses(): void {
     if (this.mode === 'document') {
-      return ['Retrieving', 'Searching', 'Thinking', 'Generating'];
+      this._typingStatuses = ['Retrieving', 'Searching', 'Thinking', 'Generating'];
+    } else if (this.mode === 'web') {
+      this._typingStatuses = ['Searching', 'Retrieving', 'Thinking', 'Generating'];
+    } else {
+      this._typingStatuses = ['Thinking', 'Retrieving', 'Generating', 'Searching'];
     }
-    if (this.mode === 'web') {
-      return ['Searching', 'Retrieving', 'Thinking', 'Generating'];
-    }
-    return ['Thinking', 'Retrieving', 'Generating', 'Searching'];
   }
 
   onManageProfile(): void {
@@ -349,6 +357,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       return;
     }
     this.mode = mode;
+    this.updateTypingStatuses();
   }
 
   async onMessageSent(payload: string | { content: string; webSearch: boolean }): Promise<void> {
@@ -378,9 +387,14 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.streamSub = this.chatStreamService.startStream(conversation.id, request, optimisticMessage, assistantMessage).subscribe({
         next: (event: StreamEvent) => {
           if (event.type === 'delta' && event.delta) {
-            assistantMessage.content += event.delta;
-            // Trigger change detection by reassigning the array
-            this.messages = [...this.messages];
+            // assistantMessage.content is already updated by ChatStreamService.
+            // Create a new object reference for the last message so OnPush-enabled
+            // MessageBubbleComponent detects the change without ngDoCheck.
+            const lastIdx = this.messages.length - 1;
+            this.messages = [
+              ...this.messages.slice(0, lastIdx),
+              { ...assistantMessage }
+            ];
           } else if (event.type === 'completed') {
             this.applyWarnings(event.warnings);
             const outMetadata = event.response?.output?.[0]?.metadata;
@@ -830,7 +844,12 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.streamSub = streamState.eventSubject.subscribe({
         next: (event: StreamEvent) => {
           if (event.type === 'delta' && event.delta) {
-            this.messages = [...this.messages];
+            // Create new object reference for the streaming message so OnPush detects it.
+            const lastIdx = this.messages.length - 1;
+            this.messages = [
+              ...this.messages.slice(0, lastIdx),
+              { ...streamState.assistantMessage }
+            ];
           } else if (event.type === 'completed') {
             this.applyWarnings(event.warnings);
             const outMetadata = event.response?.output?.[0]?.metadata;
@@ -1101,8 +1120,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.currentRun = null;
     this.applyWarnings(response.warnings);
     this.responseAttentionService.notifyResponseReady('Home chat response ready', response.output?.[0]?.content?.[0]?.text);
-    await this.refreshThread(threadId);
+    // Fire both requests in parallel — thread metadata and messages are independent.
     this.loadMessages(threadId);
+    await this.refreshThread(threadId);
   }
 
   private async refreshThread(threadId: string): Promise<void> {

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, DoCheck } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -10,9 +10,10 @@ import * as XLSX from 'xlsx';
 @Component({
     selector: 'app-message-bubble',
     templateUrl: './message-bubble.component.html',
-    styleUrls: ['./message-bubble.component.scss']
+    styleUrls: ['./message-bubble.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoCheck {
+export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     // Relaxed type to accept Message (number id) or generic object with compatible fields (e.g. ConversationMessage with string id)
     @Input() message!: any;
     @Input() isLast: boolean = false;
@@ -54,7 +55,8 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
 
     constructor(
         private sanitizer: DomSanitizer,
-        private conversationService: ConversationService
+        private conversationService: ConversationService,
+        private cdr: ChangeDetectorRef
     ) { }
 
     get isFailedRun(): boolean {
@@ -81,8 +83,8 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
     }
 
     ngOnChanges(changes: SimpleChanges): void {
-        // When run status updates (e.g. in_progress -> failed), recompute displayed content
-        // so we show "Oops! Server error." in the bubble.
+        // Re-compute content when message object reference changes (streaming delta)
+        // or when run status changes (e.g. in_progress → failed).
         if (changes['run'] || changes['message']) {
             this.previousContent = this.message?.content || '';
             const safeContent = this.sanitizeContent(this.message?.content || '');
@@ -93,28 +95,6 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
         }
 
         if (changes['enableDataGrid']) {
-            this.checkInlineDataLoad();
-        }
-    }
-
-    ngDoCheck(): void {
-        const currentContent = this.message?.content || '';
-        // We also want to re-check if metadata was appended asynchronously
-        if (this.message && currentContent !== this.previousContent) {
-            this.previousContent = currentContent;
-            const safeContent = this.sanitizeContent(currentContent);
-            this.displayContent = safeContent;
-            this.updateRenderedContent();
-            this.extractDataGrid();
-            this.checkInlineDataLoad();
-        } else if (this.message?.metadata && this.dataGridRows.length === 0) {
-            // If content didn't change but metadata did (e.g. at the end of streaming)
-            this.extractDataGrid();
-            this.checkInlineDataLoad();
-        }
-
-        if (this.enableDataGrid !== this.previousEnableDataGrid) {
-            this.previousEnableDataGrid = this.enableDataGrid;
             this.checkInlineDataLoad();
         }
     }
@@ -147,15 +127,15 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
                 }
                 this.dataGridLoading = false;
                 this.inlineDataLoaded = true;
+                this.cdr.markForCheck();
             },
             error: (err) => {
                 console.error('[MessageBubble] Error loading inline data grid:', err);
                 this.dataGridLoading = false;
-                // Don't set inlineDataLoaded to true on 404 if streaming might finish later, 
-                // but we should avoid spamming the API.
                 if (err.status !== 404) {
                     this.inlineDataLoaded = true;
                 }
+                this.cdr.markForCheck();
             }
         });
     }
@@ -341,6 +321,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
                     }
                 }
                 this.dataGridLoading = false;
+                this.cdr.markForCheck();
 
                 if (downloadCsvAfter) {
                     setTimeout(() => this.exportCsv(), 100);
@@ -349,6 +330,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
             error: (err) => {
                 console.error('[MessageBubble] Error loading data grid:', err);
                 this.dataGridLoading = false;
+                this.cdr.markForCheck();
                 if (err.status === 404) {
                     alert('Data grid not found. It might be a temporary message or streaming is incomplete.');
                 }
@@ -405,6 +387,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
         }
         this.copyResetTimeout = setTimeout(() => {
             this.copied = false;
+            this.cdr.markForCheck();
         }, 2000);
     }
 

@@ -215,10 +215,6 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   openPanel(panel: AttachmentPanel): void {
     if (!panel) return;
 
-    console.log('Opening panel:', panel);
-    console.log('Libraries:', this.libraries.length);
-    console.log('Prompts:', this.prompts.length);
-
     this.attachmentMenuOpen = false;
     this.attachmentPanelOpened.emit(panel);
 
@@ -232,11 +228,9 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
         if (this.hasExistingThread) {
           this.enforceDocumentsOnlyMode();
         }
-        console.log('Library panel opened, pendingLibraryId:', this.pendingLibraryId);
       }
       if (panel === 'prompts') {
         this.pendingPromptId = this.selectedPromptId;
-        console.log('Prompts panel opened, pendingPromptId:', this.pendingPromptId);
       }
     }, 0);
   }
