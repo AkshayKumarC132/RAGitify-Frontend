@@ -1,11 +1,14 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { Subject, Subscription } from 'rxjs';
+import { Router } from '@angular/router';
+import { BehaviorSubject, Subject, Subscription } from 'rxjs';
 import { ConversationMessage } from '../models/conversation.model';
 import { StreamEvent, ResponseCreateRequest } from '../models/response.model';
 import { ResponseService } from './response.service';
+import { ToastService } from './toast.service';
 
 export interface ActiveStreamState {
   threadId: string;
+  threadTitle?: string;
   userMessage: ConversationMessage;
   assistantMessage: ConversationMessage;
   subscription: Subscription;
@@ -20,8 +23,15 @@ export interface ActiveStreamState {
 })
 export class ChatStreamService implements OnDestroy {
   private activeStreams = new Map<string, ActiveStreamState>();
+  private activeStreamIdsSubject = new BehaviorSubject<Set<string>>(new Set());
+  public activeStreams$ = this.activeStreamIdsSubject.asObservable();
+  private _activeThreadId: string | null = null;
 
-  constructor(private responseService: ResponseService) { }
+  public setActiveThreadId(id: string | null): void {
+    this._activeThreadId = id;
+  }
+
+  constructor(private responseService: ResponseService, private router: Router, private toastService: ToastService) { }
 
   ngOnDestroy(): void {
     this.clearAllStreams();
@@ -31,13 +41,15 @@ export class ChatStreamService implements OnDestroy {
     threadId: string,
     request: ResponseCreateRequest,
     userMessage: ConversationMessage,
-    assistantMessage: ConversationMessage
+    assistantMessage: ConversationMessage,
+    threadTitle?: string
   ): Subject<StreamEvent> {
     this.cancelStream(threadId); // Clear any existing stream for this thread
 
     const eventSubject = new Subject<StreamEvent>();
     const state: ActiveStreamState = {
       threadId,
+      threadTitle,
       userMessage,
       assistantMessage,
       eventSubject,
@@ -48,6 +60,7 @@ export class ChatStreamService implements OnDestroy {
     };
 
     this.activeStreams.set(threadId, state);
+    this.updateActiveStreamsSubject();
 
     state.subscription = this.responseService.createStream(request).subscribe({
       next: (event: StreamEvent) => {
@@ -62,16 +75,21 @@ export class ChatStreamService implements OnDestroy {
               ...event.response.output[0].metadata
             };
           }
+          this.updateActiveStreamsSubject();
+          this.showCompletionToast(state);
         } else if (event.type === 'failed') {
           state.runStatus = 'failed';
           state.error = event.response?.error_message || 'Response failed';
+          this.updateActiveStreamsSubject();
         }
         eventSubject.next(event);
       },
       error: (err) => {
         state.runStatus = 'failed';
-        state.error = err.message || 'Failed to send message';
-        eventSubject.error(err);
+        state.error = err.payload?.error || err.message || 'Failed to send message';
+        const updatedErr = Object.assign(err, { payload: err.payload });
+        this.updateActiveStreamsSubject();
+        eventSubject.error(updatedErr);
       },
       complete: () => {
         eventSubject.complete();
@@ -94,6 +112,7 @@ export class ChatStreamService implements OnDestroy {
       state.subscription.unsubscribe();
       state.eventSubject.complete();
       this.activeStreams.delete(threadId);
+      this.updateActiveStreamsSubject();
     }
   }
 
@@ -105,6 +124,7 @@ export class ChatStreamService implements OnDestroy {
       }
       state.eventSubject.complete();
       this.activeStreams.delete(threadId);
+      this.updateActiveStreamsSubject();
     }
   }
 
@@ -114,5 +134,33 @@ export class ChatStreamService implements OnDestroy {
       state.eventSubject.complete();
     }
     this.activeStreams.clear();
+    this.updateActiveStreamsSubject();
+  }
+
+  private updateActiveStreamsSubject(): void {
+    const activeIds = new Set<string>();
+    for (const [id, state] of this.activeStreams.entries()) {
+      if (state.runStatus === 'in_progress') {
+        activeIds.add(id);
+      }
+    }
+    this.activeStreamIdsSubject.next(activeIds);
+  }
+
+  private showCompletionToast(state: ActiveStreamState): void {
+    const currentUrl = this.router.url;
+    if (this._activeThreadId === state.threadId || currentUrl.includes(`/home/chat/${state.threadId}`)) {
+      return;
+    }
+
+    const title = state.threadTitle || 'Conversation completed';
+    const msg = state.assistantMessage.content || '';
+    const snippet = msg.substring(0, 80) + (msg.length > 80 ? '...' : '');
+
+    this.toastService.show({
+      title,
+      message: snippet,
+      threadId: state.threadId
+    });
   }
 }

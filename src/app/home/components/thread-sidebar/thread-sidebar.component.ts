@@ -1,7 +1,7 @@
-import { Component, Input, Output, EventEmitter, HostListener, OnChanges, SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, OnChanges, SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Observable, from, of } from 'rxjs';
+import { Observable, Subscription, from, of } from 'rxjs';
 import { mergeMap, map, catchError } from 'rxjs/operators';
 import { Conversation, ConversationMessage } from '../../../shared/models/conversation.model';
 import { User } from '../../../shared/models/user.model';
@@ -17,7 +17,7 @@ import { ChatStreamService } from '../../../shared/services/chat-stream.service'
   styleUrls: ['./thread-sidebar.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ThreadSidebarComponent implements OnChanges {
+export class ThreadSidebarComponent implements OnChanges, OnInit, OnDestroy {
   @Input() threads: Conversation[] = [];
   @Input() currentThread: Conversation | null = null;
   @Input() collapsed = false;
@@ -52,6 +52,9 @@ export class ThreadSidebarComponent implements OnChanges {
   private toggleExpandInteraction = false;
   theme$: Observable<'light' | 'dark'>;
 
+  activeThreads = new Set<string>();
+  private sub = new Subscription();
+
   constructor(
     private themeService: ThemeService,
     private conversationService: ConversationService,
@@ -84,6 +87,17 @@ export class ThreadSidebarComponent implements OnChanges {
         }
       }
     }
+  }
+
+  ngOnInit(): void {
+    this.sub.add(this.chatStreamService.activeStreams$.subscribe(ids => {
+      this.activeThreads = ids;
+      this.cdr.markForCheck();
+    }));
+  }
+
+  ngOnDestroy(): void {
+    this.sub.unsubscribe();
   }
 
   handleBrandExpandInteraction(active: boolean): void {
@@ -644,13 +658,17 @@ export class ThreadSidebarComponent implements OnChanges {
     });
   }
 
+  isProcessing(threadId: string): boolean {
+    return this.activeThreads.has(threadId);
+  }
+
   private sortThreads(threads: Conversation[]): Conversation[] {
     return threads.sort((a, b) => {
       const aPinned = !!a.is_pinned;
       const bPinned = !!b.is_pinned;
       if (aPinned && !bPinned) return -1;
       if (!aPinned && bPinned) return 1;
-      
+
       const timeA = new Date(this.getThreadDisplayTimestamp(a)).getTime() || 0;
       const timeB = new Date(this.getThreadDisplayTimestamp(b)).getTime() || 0;
       return timeB - timeA;

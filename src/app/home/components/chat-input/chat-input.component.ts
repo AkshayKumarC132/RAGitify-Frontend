@@ -52,7 +52,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Input() librariesLoading = false;
   @Input() documentsLoading = false;
   @Input() promptsLoading = false;
-  @Output() messageSent = new EventEmitter<{content: string, webSearch: boolean} | string>();
+  @Output() messageSent = new EventEmitter<{ content: string, webSearch: boolean } | string>();
   @Output() modeToggle = new EventEmitter<'normal' | 'web' | 'document'>();
   @Output() filesSelected = new EventEmitter<FileList>();
   @Output() webpageAttached = new EventEmitter<{ url: string; title?: string }>();
@@ -61,23 +61,24 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Output() promptSelected = new EventEmitter<string | null>();
   @Output() cancelRun = new EventEmitter<void>();
   @Output() attachmentPanelOpened = new EventEmitter<Exclude<AttachmentPanel, null>>();
-  @Output() attachmentMenuToggled = new EventEmitter<boolean>();
 
   message = '';
-  attachmentMenuOpen = false;
   activePanel: AttachmentPanel = null;
+  activeDocumentTab: 'my' | 'shared' = 'my';
   webForm = { url: '', title: '' };
   noteForm = { title: '', content: '' };
   pendingLibraryId: string | null = null;
   pendingPromptId: string | null = null;
   selectionMode: 'documents' = 'documents';
   pendingDocumentIds = new Set<string>();
+  expandedLibraries = new Set<string>();
   public documentSearchQuery = '';
   speechSupported = false;
   isListening = false;
   isOverflowing = false;
   isExpanded = false;
   isWebSearchEnabled = false;
+  showMoreDocsMenu = false;
   private recognition: SpeechRecognitionLike | null = null;
 
   constructor(private cdr: ChangeDetectorRef) { }
@@ -172,14 +173,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     this.isWebSearchEnabled = !this.isWebSearchEnabled;
   }
 
-  toggleAttachmentMenu(): void {
-    this.attachmentMenuOpen = !this.attachmentMenuOpen;
-    if (this.attachmentMenuOpen) {
-      this.activePanel = null;
-      // Emit event when menu is opened to trigger data loading
-      this.attachmentMenuToggled.emit(true);
-    }
-  }
+
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
@@ -187,12 +181,17 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     const clickedAttachmentControl = target.closest('.attachment-controls');
     const clickedPanel = target.closest('.attachment-panel');
     const clickedMenu = target.closest('.attachment-menu');
+    const clickedMoreDocsMenu = target.closest('.more-docs-wrapper');
+
+    if (!clickedMoreDocsMenu && this.showMoreDocsMenu) {
+      this.showMoreDocsMenu = false;
+    }
 
     if (clickedAttachmentControl || clickedPanel || clickedMenu) {
       return;
     }
 
-    if (!this.attachmentMenuOpen && !this.activePanel) {
+    if (!this.activePanel) {
       return;
     }
 
@@ -215,7 +214,11 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   openPanel(panel: AttachmentPanel): void {
     if (!panel) return;
 
-    this.attachmentMenuOpen = false;
+    if (this.activePanel === panel) {
+      this.closePanels();
+      return;
+    }
+
     this.attachmentPanelOpened.emit(panel);
 
     setTimeout(() => {
@@ -236,6 +239,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   }
 
   closePanels(): void {
+    this.autoApplyDocumentSelection();
     this.activePanel = null;
     this.documentSearchQuery = '';
   }
@@ -266,13 +270,15 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   confirmLibrarySelection(): void {
     this.librarySelected.emit({ type: 'documents', documentIds: Array.from(this.pendingDocumentIds) });
-    this.closePanels();
+    this.activePanel = null;
+    this.documentSearchQuery = '';
   }
 
   clearLibrarySelection(): void {
     this.pendingLibraryId = null;
     this.pendingDocumentIds.clear();
     this.selectionMode = 'documents';
+    this.showMoreDocsMenu = false;
     this.librarySelected.emit({ type: 'clear' });
     this.closePanels();
   }
@@ -305,11 +311,11 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   }
 
   private closeMenus(): void {
-    this.attachmentMenuOpen = false;
+    this.autoApplyDocumentSelection();
     this.activePanel = null;
   }
 
-  getDocumentsByLibrary(): { libraryId: string; name: string; documents: Document[] }[] {
+  getDocumentsByLibrary(): { libraryId: string; name: string; user?: string | null; documents: Document[] }[] {
     const grouping = new Map<string, Document[]>();
     this.availableDocuments.forEach(doc => {
       const list = grouping.get(doc.vector_store) || [];
@@ -321,6 +327,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
       .map(([libraryId, docs]) => ({
         libraryId,
         name: this.getLibraryName(libraryId),
+        user: docs.length > 0 && docs[0].user ? docs[0].user : null,
         documents: docs
       }))
       .filter(group => group.documents.length > 0);
@@ -328,7 +335,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   private getLibraryName(libraryId: string): string {
     const match = this.libraries.find(lib => lib.id === libraryId);
-    const name = match ? match.name : 'Unknown Library';
+    const name = match ? match.name : 'Shared';
     return name.length > 75 ? `${name.slice(0, 75)}...` : name;
   }
 
@@ -338,6 +345,18 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   isSelectionDisabled(documentId: string): boolean {
     return !this.isDocumentSelected(documentId) && this.pendingDocumentIds.size >= this.maxSelectedDocuments;
+  }
+
+  toggleLibraryGroup(libraryId: string): void {
+    if (this.expandedLibraries.has(libraryId)) {
+      this.expandedLibraries.delete(libraryId);
+    } else {
+      this.expandedLibraries.add(libraryId);
+    }
+  }
+
+  isLibraryExpanded(libraryId: string): boolean {
+    return this.documentSearchQuery.trim().length > 0 || this.expandedLibraries.has(libraryId);
   }
 
   get selectedDocumentsCount(): number {
@@ -358,6 +377,75 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   getDocumentDisplayName(document: Document): string {
     return document.title || document.original_filename || `Document ${document.id}`;
+  }
+
+  getDocumentsByLibraryForTab(): { libraryId: string; name: string; user?: string | null; documents: Document[] }[] {
+    const filtered = this.availableDocuments.filter(doc => {
+      if (this.activeDocumentTab === 'shared') {
+        return doc.access_type === 'shared';
+      }
+      return doc.access_type !== 'shared';
+    });
+
+    const grouping = new Map<string, Document[]>();
+    filtered.forEach(doc => {
+      const list = grouping.get(doc.vector_store) || [];
+      list.push(doc);
+      grouping.set(doc.vector_store, list);
+    });
+
+    return Array.from(grouping.entries())
+      .map(([libraryId, docs]) => ({
+        libraryId,
+        name: this.getLibraryName(libraryId),
+        user: docs.length > 0 && docs[0].user ? docs[0].user : null,
+        documents: docs
+      }))
+      .filter(group => group.documents.length > 0);
+  }
+
+  formatFileSize(bytes?: number): string {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  getFileTypeColor(doc: Document): string {
+    const type = (doc.file_type || doc.original_filename?.split('.').pop() || '').toLowerCase();
+    if (type === 'pdf') return 'red';
+    if (['doc', 'docx'].includes(type)) return 'blue';
+    if (['xls', 'xlsx', 'csv'].includes(type)) return 'green';
+    if (['ppt', 'pptx'].includes(type)) return 'orange';
+    if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(type)) return 'purple';
+    return 'gray';
+  }
+
+  getDocumentFileIcon(doc: Document): string {
+    const type = (doc.file_type || doc.original_filename?.split('.').pop() || '').toLowerCase();
+    const iconMap: Record<string, string> = {
+      'pdf': 'fa-file-pdf',
+      'doc': 'fa-file-word',
+      'docx': 'fa-file-word',
+      'xls': 'fa-file-excel',
+      'xlsx': 'fa-file-excel',
+      'csv': 'fa-file-csv',
+      'ppt': 'fa-file-powerpoint',
+      'pptx': 'fa-file-powerpoint',
+      'txt': 'fa-file-lines',
+      'md': 'fa-file-lines',
+    };
+    return iconMap[type] || 'fa-file';
+  }
+
+  private autoApplyDocumentSelection(): void {
+    if (this.activePanel !== 'library') return;
+    const pendingArray = Array.from(this.pendingDocumentIds);
+    if (pendingArray.length > 0) {
+      this.librarySelected.emit({ type: 'documents', documentIds: pendingArray });
+    } else if (this.selectedDocumentIds.length > 0) {
+      this.librarySelected.emit({ type: 'clear' });
+    }
   }
 
   toggleDocumentSelectionClick(documentId: string, event: MouseEvent): void {
@@ -559,5 +647,49 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   getDocumentDate(document: Document): string | undefined {
     return document.created_at || document.updated_at || document.uploaded_at;
+  }
+
+  get selectedDocuments(): Document[] {
+    return this.selectedDocumentIds.map(id => this.documents.find(d => String(d.id) === String(id))).filter(d => !!d) as Document[];
+  }
+
+  get visibleSelectedDocuments(): Document[] {
+    return this.selectedDocuments.slice(0, 5);
+  }
+
+  get hiddenSelectedDocuments(): Document[] {
+    return this.selectedDocuments.slice(5);
+  }
+
+  removeSelectedDocument(id: string, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.toggleDocumentSelectionById(id, false);
+
+    // Auto emit changes to update right away
+    const pendingArray = Array.from(this.pendingDocumentIds);
+    if (pendingArray.length > 0) {
+      this.librarySelected.emit({ type: 'documents', documentIds: pendingArray });
+    } else {
+      this.librarySelected.emit({ type: 'clear' });
+    }
+  }
+
+  removeSelectedLibrary(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.clearLibrarySelection();
+  }
+
+  removeSelectedPrompt(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.clearPromptSelection();
+  }
+
+  toggleMoreDocsMenu(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.showMoreDocsMenu = !this.showMoreDocsMenu;
   }
 }

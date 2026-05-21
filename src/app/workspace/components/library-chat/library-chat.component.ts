@@ -140,6 +140,10 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
             next: (event: StreamEvent) => {
                 if (event.type === 'delta' && event.delta) {
                     assistantMessage.content += event.delta;
+                    // Create new array + object reference so Angular's change detection
+                    // picks up the mutated content and re-renders the message bubble
+                    const lastIdx = this.messages.length - 1;
+                    this.messages = [...this.messages.slice(0, lastIdx), { ...assistantMessage }];
                     this.scrollToBottom();
                 } else if (event.type === 'completed') {
                     this.currentResponse = null;

@@ -1,0 +1,19 @@
+<div class="toast-container">
+    <div class="toast-wrapper" *ngFor="let toast of toasts" @toastAnimation>
+        <div class="toast-card" (click)="onClick(toast)">
+            <div class="toast-icon">
+                <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" class="toast-logo" />
+            </div>
+            <div class="toast-content">
+                <div class="toast-title">{{ toast.title }}</div>
+                <div class="toast-message">{{ toast.message }}</div>
+            </div>
+            <button class="toast-close" (click)="remove(toast.id!); $event.stopPropagation()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="toast-progress-container">
+                <div class="toast-progress-bar" [style.animation-duration]="toast.duration + 'ms'"></div>
+            </div>
+        </div>
+    </div>
+</div>

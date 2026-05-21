@@ -6,6 +6,7 @@ import { ResponseAttentionService } from '../../../shared/services/response-atte
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentService } from '../../../shared/services/document.service';
 import { DocumentShareService } from '../../../shared/services/document-share.service';
+import { SharedWithMeItem } from '../../../shared/models/document-share.model';
 import { ConversationMessage } from '../../../shared/models/conversation.model';
 import { ResponseRecord, ResponseCreateRequest, StreamEvent } from '../../../shared/models/response.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
@@ -35,10 +36,11 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
 
     libraries: VectorStore[] = [];
     allDocuments: Document[] = [];
-    attachmentMenuOpen = false;
     libraryPanelOpen = false;
+    activeDocumentTab: 'my' | 'shared' = 'my';
     selectedDocumentIds: string[] = [];
     pendingDocumentIds = new Set<string>();
+    expandedLibraries = new Set<string>();
     documentSearchQuery = '';
     librariesLoaded = false;
     private librariesLoading = false;
@@ -150,17 +152,14 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         this.inputMessage = question;
     }
 
-    toggleAttachmentMenu(): void {
-        this.attachmentMenuOpen = !this.attachmentMenuOpen;
-        if (this.attachmentMenuOpen) {
-            this.loadLibraries();
-            this.loadDocuments();
-            this.libraryPanelOpen = false;
-        }
-    }
+
 
     openLibraryPanel(): void {
-        this.attachmentMenuOpen = false;
+        if (this.libraryPanelOpen) {
+            this.closePanel();
+            return;
+        }
+
         this.loadLibraries();
         this.loadDocuments();
         this.libraryPanelOpen = true;
@@ -169,6 +168,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     closePanel(): void {
+        this.autoApplyDocumentSelection();
         this.libraryPanelOpen = false;
         this.documentSearchQuery = '';
     }
@@ -176,8 +176,8 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     @HostListener('document:click', ['$event'])
     onDocumentClick(event: MouseEvent): void {
         const target = event.target as HTMLElement;
-        if (!target.closest('.attachment-controls') && !target.closest('.attachment-panel') && !target.closest('.attachment-menu')) {
-            this.attachmentMenuOpen = false;
+        if (!target.closest('.attachment-controls') && !target.closest('.attachment-panel')) {
+            this.autoApplyDocumentSelection();
             this.libraryPanelOpen = false;
             this.documentSearchQuery = '';
         }
@@ -187,6 +187,77 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         this.selectedDocumentIds = Array.from(this.pendingDocumentIds);
         this.mode = this.selectedDocumentIds.length ? 'document' : 'normal';
         this.libraryPanelOpen = false;
+    }
+
+    getDocumentsByLibraryForTab(): { libraryId: string; name: string; user?: string | null; documents: Document[] }[] {
+        const filtered = this.availableDocuments.filter(doc => {
+            if (this.activeDocumentTab === 'shared') {
+                return doc.access_type === 'shared';
+            }
+            return doc.access_type !== 'shared';
+        });
+
+        const grouping = new Map<string, Document[]>();
+        filtered.forEach(doc => {
+            const list = grouping.get(doc.vector_store) || [];
+            list.push(doc);
+            grouping.set(doc.vector_store, list);
+        });
+
+        return Array.from(grouping.entries())
+            .map(([libraryId, docs]) => ({
+                libraryId,
+                name: this.getLibraryName(libraryId),
+                user: docs.length > 0 && docs[0].user ? docs[0].user : null,
+                documents: docs
+            }))
+            .filter(group => group.documents.length > 0);
+    }
+
+    formatFileSize(bytes?: number): string {
+        if (!bytes) return '';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    getFileTypeColor(doc: Document): string {
+        const type = (doc.file_type || doc.original_filename?.split('.').pop() || '').toLowerCase();
+        if (type === 'pdf') return 'red';
+        if (['doc', 'docx'].includes(type)) return 'blue';
+        if (['xls', 'xlsx', 'csv'].includes(type)) return 'green';
+        if (['ppt', 'pptx'].includes(type)) return 'orange';
+        if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(type)) return 'purple';
+        return 'gray';
+    }
+
+    getDocumentFileIcon(doc: Document): string {
+        const type = (doc.file_type || doc.original_filename?.split('.').pop() || '').toLowerCase();
+        const iconMap: Record<string, string> = {
+            'pdf': 'fa-file-pdf',
+            'doc': 'fa-file-word',
+            'docx': 'fa-file-word',
+            'xls': 'fa-file-excel',
+            'xlsx': 'fa-file-excel',
+            'csv': 'fa-file-csv',
+            'ppt': 'fa-file-powerpoint',
+            'pptx': 'fa-file-powerpoint',
+            'txt': 'fa-file-lines',
+            'md': 'fa-file-lines',
+        };
+        return iconMap[type] || 'fa-file';
+    }
+
+    private autoApplyDocumentSelection(): void {
+        if (!this.libraryPanelOpen) return;
+        const pendingArray = Array.from(this.pendingDocumentIds);
+        if (pendingArray.length > 0) {
+            this.selectedDocumentIds = pendingArray;
+            this.mode = 'document';
+        } else if (this.selectedDocumentIds.length > 0) {
+            this.selectedDocumentIds = [];
+            this.mode = 'normal';
+        }
     }
 
     clearSelection(): void {
@@ -210,7 +281,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         }
     }
 
-    getDocumentsByLibrary(): { libraryId: string; name: string; documents: Document[] }[] {
+    getDocumentsByLibrary(): { libraryId: string; name: string; user?: string | null; documents: Document[] }[] {
         const grouping = new Map<string, Document[]>();
         this.availableDocuments.forEach(document => {
             const list = grouping.get(document.vector_store) || [];
@@ -222,6 +293,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
             .map(([libraryId, documents]) => ({
                 libraryId,
                 name: this.getLibraryName(libraryId),
+                user: documents.length > 0 && documents[0].user ? documents[0].user : null,
                 documents
             }))
             .filter(group => group.documents.length > 0);
@@ -233,6 +305,18 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
 
     isSelectionDisabled(documentId: string): boolean {
         return !this.isDocumentSelected(documentId) && this.pendingDocumentIds.size >= this.maxSelectedDocuments;
+    }
+
+    toggleLibraryGroup(libraryId: string): void {
+        if (this.expandedLibraries.has(libraryId)) {
+            this.expandedLibraries.delete(libraryId);
+        } else {
+            this.expandedLibraries.add(libraryId);
+        }
+    }
+
+    isLibraryExpanded(libraryId: string): boolean {
+        return this.documentSearchQuery.trim().length > 0 || this.expandedLibraries.has(libraryId);
     }
 
     toggleDocumentSelectionClick(documentId: string, event: MouseEvent): void {
@@ -343,6 +427,11 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
             next: (event: StreamEvent) => {
                 if (event.type === 'delta' && event.delta) {
                     assistantMsg.content += event.delta;
+                    // Create new array + object reference so Angular's change detection
+                    // picks up the mutated content and re-renders the message bubble
+                    // (mirrors the approach used in home.component.ts via ChatStreamService)
+                    const lastIdx = this.messages.length - 1;
+                    this.messages = [...this.messages.slice(0, lastIdx), { ...assistantMsg }];
                     this.scrollToBottom();
                 } else if (event.type === 'completed') {
                     this.loading = false;
@@ -502,7 +591,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         return name.length > 75 ? `${name.slice(0, 75)}...` : name;
     }
 
-    private mapSharedDocuments(items: Array<{ document_id: string; document_title: string; shared_at: string; updated_at: string; expires_at: string | null }>): Document[] {
+    private mapSharedDocuments(items: SharedWithMeItem[]): Document[] {
         const sharedLibraryId = this.libraries.find(library => library.vs_type === 'SHARED')?.id || 'shared';
 
         return items.map(item => ({
@@ -510,6 +599,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
             title: item.document_title,
             original_filename: item.document_title,
             vector_store: sharedLibraryId,
+            user: item.owner_email,
             uploaded_at: item.shared_at,
             created_at: item.shared_at,
             updated_at: item.updated_at || item.shared_at,

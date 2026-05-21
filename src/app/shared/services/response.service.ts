@@ -73,7 +73,17 @@ export class ResponseService {
         signal: controller.signal
       }).then(async response => {
         if (!response.ok) {
-          this.ngZone.run(() => subscriber.error(new Error(`Stream request failed: ${response.status}`)));
+          let errorPayload: any = null;
+          try {
+            const errText = await response.text();
+            errorPayload = JSON.parse(errText);
+          } catch (e) { }
+
+          this.ngZone.run(() => {
+            const err = new Error(`Stream request failed: ${response.status}`);
+            (err as any).payload = errorPayload;
+            subscriber.error(err);
+          });
           return;
         }
 

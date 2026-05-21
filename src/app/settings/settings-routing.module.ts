@@ -4,6 +4,7 @@ import { SettingsLayoutComponent } from './components/settings-layout/settings-l
 import { GeneralSectionComponent } from './components/general-section/general-section.component';
 import { ModelsSectionComponent } from './components/models-section/models-section.component';
 import { AccountSectionComponent } from './components/account-section/account-section.component';
+import { SkillsSectionComponent } from './components/skills-section/skills-section.component';
 
 const routes: Routes = [
   {
@@ -13,6 +14,7 @@ const routes: Routes = [
       { path: '', redirectTo: 'general', pathMatch: 'full' },
       { path: 'general', component: GeneralSectionComponent },
       { path: 'models', component: ModelsSectionComponent },
+      { path: 'skills', component: SkillsSectionComponent },
       { path: 'account', component: AccountSectionComponent },
       { path: 'profile', component: AccountSectionComponent }
     ]

@@ -11,7 +11,9 @@ export interface ConfirmDialogOptions {
   isPrompt?: boolean;
   promptValue?: string;
   promptPlaceholder?: string;
+  hideCancel?: boolean;
 }
+
 
 @Component({
   selector: 'app-confirm-dialog',

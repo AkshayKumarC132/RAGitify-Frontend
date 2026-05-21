@@ -80,10 +80,21 @@
           </div>
         </div>
 
-        <button class="thread-menu" type="button" (click)="toggleThreadMenu(thread, $event)"
-          [attr.aria-expanded]="threadMenuOpen === thread.id">
-          <i class="fa-solid fa-ellipsis-vertical"></i>
-        </button>
+        <ng-container *ngIf="isProcessing(thread.id); else showMenu">
+          <div class="thread-action-slot processing">
+            <div class="processing-loader"></div>
+            <button class="thread-menu" type="button" (click)="toggleThreadMenu(thread, $event)"
+              [attr.aria-expanded]="threadMenuOpen === thread.id">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
+          </div>
+        </ng-container>
+        <ng-template #showMenu>
+          <button class="thread-menu" type="button" (click)="toggleThreadMenu(thread, $event)"
+            [attr.aria-expanded]="threadMenuOpen === thread.id">
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+          </button>
+        </ng-template>
       </div>
     </div>
   </div>

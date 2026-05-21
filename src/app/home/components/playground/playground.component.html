@@ -1,135 +1,178 @@
-<div class="playground-container" [class.has-messages]="messages.length > 0">
+<div class="incognito-frame">
     <div class="playground-topbar">
-        <button class="close-btn" type="button" (click)="closed.emit()" title="Exit Playground"
+        <div class="topbar-left">
+            <i class="fa-solid fa-user-secret"></i>
+            <span>Incognito chat</span>
+        </div>
+        <button class="close-btn" type="button" (click)="closed.emit()" title="Exit Incognito"
             aria-label="Exit Playground">
             <i class="fa-solid fa-xmark" aria-hidden="true"></i>
         </button>
     </div>
+    <div class="playground-container" [class.has-messages]="messages.length > 0">
 
-    <div class="playground-error" *ngIf="warningMessages.length">
-        {{ warningMessages.join(' ') }}
-    </div>
+        <div class="playground-error" *ngIf="warningMessages.length">
+            {{ warningMessages.join(' ') }}
+        </div>
 
-    <div class="playground-header" *ngIf="messages.length === 0">
-        <h1>Playground</h1>
-        <p>Feel free to try prompts - messages here are not saved.</p>
-    </div>
+        <div class="playground-header" *ngIf="messages.length === 0">
+            <h1>Let's chat incognito</h1>
+        </div>
 
-    <div class="chat-messages" #messagesContainer>
-        <app-message-bubble *ngFor="let msg of messages; let last = last" [message]="msg" [isLast]="last" [isStreaming]="last && loading && msg.role === 'assistant'">
-        </app-message-bubble>
+        <div class="chat-messages" #messagesContainer>
+            <app-message-bubble *ngFor="let msg of messages; let last = last" [message]="msg" [isLast]="last"
+                [isStreaming]="last && loading && msg.role === 'assistant'">
+            </app-message-bubble>
 
-        <app-typing-indicator *ngIf="showTypingIndicator" [cycle]="true"></app-typing-indicator>
-    </div>
+            <app-typing-indicator *ngIf="showTypingIndicator" [cycle]="true"></app-typing-indicator>
+        </div>
 
-    <div class="input-area-wrapper">
-        <div class="input-card" [class.document-mode-active]="mode === 'document'" [class.expanded]="isExpanded">
+        <div class="input-area-wrapper">
+            <div class="input-card" [class.document-mode-active]="mode === 'document'" [class.expanded]="isExpanded">
 
-            <div class="chat-input-shell">
-                <textarea #messageInput (input)="autoResizeInput()" [(ngModel)]="inputMessage" (keydown)="onKeyPress($event)" placeholder="How can I help you today?"
-                    [disabled]="loading || !conversationId" rows="1"></textarea>
-            </div>
+                <div class="chat-input-shell">
+                    <textarea #messageInput (input)="autoResizeInput()" [(ngModel)]="inputMessage"
+                        (keydown)="onKeyPress($event)" placeholder="How can I help you today?"
+                        [disabled]="loading || !conversationId" rows="1"></textarea>
+                </div>
 
-            <div class="input-bar">
-                <div class="attachment-controls">
-                    <button class="add-button" [class.active]="attachmentMenuOpen" title="Attach Documents"
-                        (click)="toggleAttachmentMenu()">
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
+                <div class="input-bar">
+                    <div class="attachment-controls">
+                        <button class="add-button" [class.active]="libraryPanelOpen" title="Attach Documents"
+                            (click)="openLibraryPanel()">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
 
-                    <div class="attachment-menu" *ngIf="attachmentMenuOpen" (click)="$event.stopPropagation()">
-                        <button type="button" (click)="openLibraryPanel()"
-                            [disabled]="documentsLoaded && !allDocuments.length">
-                            <i class="fa-solid fa-book"></i> Attach Documents
+                    <div class="right-actions">
+                        <button class="send-btn" (click)="sendMessage()" [disabled]="!inputMessage.trim() || loading">
+                            <i class="fa-solid fa-arrow-up"></i>
                         </button>
                     </div>
                 </div>
 
-                <div class="right-actions">
-                    <button class="send-btn" (click)="sendMessage()" [disabled]="!inputMessage.trim() || loading">
-                        <i class="fa-solid fa-arrow-up"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="attachment-panel" [class.open-upwards]="messages.length > 0" *ngIf="libraryPanelOpen" (click)="$event.stopPropagation()">
-                <div class="attachment-panel-header">
-                    <div class="attachment-panel-copy" [class.limit-reached]="selectionCount >= 10">
-                        <span>Attach Documents</span>
-                        <span class="selection-counter__value">{{ selectionCount }}/10</span>
+                <div class="attachment-panel document-picker-panel" [class.open-upwards]="messages.length > 0"
+                    *ngIf="libraryPanelOpen" (click)="$event.stopPropagation()">
+                    <!-- Tabs -->
+                    <div class="document-tabs">
+                        <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'my'"
+                            (click)="activeDocumentTab = 'my'">
+                            <i class="fa-solid fa-download"></i>
+                            My Documents
+                        </button>
+                        <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'shared'"
+                            (click)="activeDocumentTab = 'shared'">
+                            <i class="fa-solid fa-user-group"></i>
+                            Shared with Me
+                        </button>
                     </div>
-                </div>
 
-                <div class="documents-list">
-                    <ng-container *ngIf="documentsLoading; else documentsReady">
-                        <p class="empty-text">Loading documents...</p>
-                    </ng-container>
-                    <ng-template #documentsReady>
-                        <div class="document-search-box" *ngIf="allDocuments.length">
-                            <input type="text" [(ngModel)]="documentSearchQuery" placeholder="Search documents"
-                                aria-label="Search documents" />
-                            <button type="button" class="clear-search-btn" *ngIf="documentSearchQuery"
-                                (click)="documentSearchQuery = ''" title="Clear search">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
-                        </div>
-                        <ng-container *ngIf="availableDocuments.length; else emptyDocuments">
-                            <div class="library-group" *ngFor="let group of getDocumentsByLibrary()">
-                                <div class="group-header">
-                                    <div class="group-title">{{ group.name }}</div>
-                                    <div class="group-count">{{ group.documents.length }} docs</div>
-                                </div>
-                                <div class="group-documents">
-                                    <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)"
-                                        [class.disabled]="isSelectionDisabled(doc.id)" [class.selected]="isDocumentSelected(doc.id)">
-                                        <input type="checkbox" [checked]="isDocumentSelected(doc.id)"
-                                            [disabled]="isSelectionDisabled(doc.id)" />
-                                        <div class="document-card-meta">
-                                            <div class="document-card-topline">
-                                                <span class="title">{{ getDocumentDisplayName(doc) }}</span>
-                                                <div class="document-card-tags">
-                                                    <span class="document-chip">{{ getDocumentTypeLabel(doc) }}</span>
-                                                    <span class="document-chip subtle">{{ getDocumentSourceLabel(doc) }}</span>
-                                                </div>
+                    <!-- Document List -->
+                    <div class="documents-list">
+                        <ng-container *ngIf="documentsLoading; else documentsReady">
+                            <p class="empty-text">Loading documents...</p>
+                        </ng-container>
+                        <ng-template #documentsReady>
+                            <ng-container *ngIf="getDocumentsByLibraryForTab().length; else emptyDocuments">
+                                <div class="library-group" *ngFor="let group of getDocumentsByLibraryForTab()">
+                                    <div class="group-header" (click)="toggleLibraryGroup(group.libraryId)">
+                                        <div class="group-header-left">
+                                            <i class="fa-solid"
+                                                [ngClass]="isLibraryExpanded(group.libraryId) ? 'fa-folder-open folder-icon-expanded' : 'fa-folder folder-icon-collapsed'"></i>
+                                            <div class="group-info">
+                                                <span class="group-name">{{ group.name }}</span>
+                                                <span class="group-shared-by" *ngIf="activeDocumentTab === 'shared'">
+                                                    <i class="fa-solid fa-user"></i> {{ group.user || 'Shared' }}
+                                                </span>
                                             </div>
                                         </div>
-                                    </label>
+                                        <div class="group-header-right">
+                                            <span class="group-count">{{ group.documents.length }} docs</span>
+                                            <i class="fa-solid group-chevron"
+                                                [ngClass]="isLibraryExpanded(group.libraryId) ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                                        </div>
+                                    </div>
+
+                                    <div class="group-documents" *ngIf="isLibraryExpanded(group.libraryId)">
+                                        <label *ngFor="let doc of group.documents"
+                                            (click)="toggleDocumentSelectionClick(doc.id, $event)"
+                                            [class.disabled]="isSelectionDisabled(doc.id)"
+                                            [class.selected]="isDocumentSelected(doc.id)">
+                                            <input type="checkbox" [checked]="isDocumentSelected(doc.id)"
+                                                [disabled]="isSelectionDisabled(doc.id)" />
+                                            <i class="fa-solid doc-file-icon" [ngClass]="getDocumentFileIcon(doc)"
+                                                [class.file-red]="getFileTypeColor(doc) === 'red'"
+                                                [class.file-blue]="getFileTypeColor(doc) === 'blue'"
+                                                [class.file-green]="getFileTypeColor(doc) === 'green'"
+                                                [class.file-orange]="getFileTypeColor(doc) === 'orange'"
+                                                [class.file-purple]="getFileTypeColor(doc) === 'purple'"
+                                                [class.file-gray]="getFileTypeColor(doc) === 'gray'"></i>
+                                            <div class="doc-meta">
+                                                <span class="doc-name">{{ getDocumentDisplayName(doc) }}</span>
+                                                <span class="doc-info">{{ formatFileSize(doc.file_size) }}<ng-container
+                                                        *ngIf="formatFileSize(doc.file_size)"> · </ng-container>{{
+                                                    activeDocumentTab === 'shared' ?
+                                                    getDocumentSourceLabel(doc) : 'Me' }}</span>
+                                            </div>
+                                            <span class="file-type-badge"
+                                                [class.badge-red]="getFileTypeColor(doc) === 'red'"
+                                                [class.badge-blue]="getFileTypeColor(doc) === 'blue'"
+                                                [class.badge-green]="getFileTypeColor(doc) === 'green'"
+                                                [class.badge-orange]="getFileTypeColor(doc) === 'orange'"
+                                                [class.badge-purple]="getFileTypeColor(doc) === 'purple'"
+                                                [class.badge-gray]="getFileTypeColor(doc) === 'gray'">{{
+                                                getDocumentTypeLabel(doc) }}</span>
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
-                        </ng-container>
+                            </ng-container>
+                        </ng-template>
+                    </div>
+
+                    <ng-template #emptyDocuments>
+                        <p class="empty-text">{{ activeDocumentTab === 'shared' ? 'No shared documents yet.' : 'No
+                            documents
+                            available.
+                            Upload files to get started.' }}</p>
                     </ng-template>
-                </div>
 
-                <ng-template #emptyDocuments>
-                    <p class="empty-text">No documents available. Upload knowledge in Workspace.</p>
-                </ng-template>
-
-                <div class="panel-actions">
-                    <button type="button" (click)="confirmSelection()" [disabled]="!pendingDocumentIds.size">
-                        Apply
-                    </button>
-                    <button type="button" (click)="clearSelection()">Clear</button>
-                    <button type="button" (click)="closePanel()">Close</button>
+                    <!-- Bottom Bar: Search + Upload -->
+                    <div class="document-bottom-bar">
+                        <div class="document-search-bottom">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" [(ngModel)]="documentSearchQuery" placeholder="Search documents..."
+                                aria-label="Search documents" />
+                        </div>
+                        <div class="bottom-actions">
+                            <button type="button" class="clear-btn" (click)="clearSelection()">Clear</button>
+                            <button type="button" class="apply-btn" (click)="confirmSelection()"
+                                [disabled]="!pendingDocumentIds.size">Apply</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="suggested-questions" *ngIf="messages.length === 0">
-            <button type="button" class="question-pill" *ngFor="let question of suggestedQuestions"
-                (click)="onQuestionClick(question)">
-                {{ question }}
-            </button>
-        </div>
-
-        <div class="selection-pills" *ngIf="selectionCount > 0">
-            <div class="attachment-pill">
-                <span>{{ selectionLabel }}</span>
-                <button type="button" (click)="clearSelection()">x</button>
+            <div class="suggested-questions" *ngIf="messages.length === 0">
+                <button type="button" class="question-pill" *ngFor="let question of suggestedQuestions"
+                    (click)="onQuestionClick(question)">
+                    {{ question }}
+                </button>
             </div>
 
-        </div>
+            <div class="selection-pills" *ngIf="selectionCount > 0">
+                <div class="attachment-pill">
+                    <span>{{ selectionLabel }}</span>
+                    <button type="button" (click)="clearSelection()">x</button>
+                </div>
 
-        <div class="error-toast" *ngIf="errorMessage">{{ errorMessage }}</div>
+            </div>
+
+            <div class="error-toast" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+            <div class="incognito-footer-note" *ngIf="messages.length === 0">
+                Private session • Nothing is saved<br>
+
+            </div>
+        </div>
     </div>
 </div>
-

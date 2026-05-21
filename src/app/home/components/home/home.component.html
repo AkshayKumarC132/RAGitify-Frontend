@@ -10,7 +10,7 @@
 </div>
 
 <div class="home-container" *ngIf="!showSetupBlocker">
-  <div class="sidebar" [class.collapsed]="isSidebarCollapsed">
+  <div class="sidebar" [class.collapsed]="isSidebarCollapsed" *ngIf="!isTemporaryChat">
     <app-thread-sidebar [threads]="threads" [currentThread]="currentThread" [user]="currentUser"
       (threadSelected)="onThreadSelected($event)" (newThread)="onNewThread()"
       (workspaceNavigate)="onWorkspaceNavigate()" [collapsed]="isSidebarCollapsed"
@@ -23,11 +23,10 @@
       <div class="chat-area">
         <div class="chat-actions" *ngIf="isNewChatRoute && isConversationEmpty">
           <button class="playground-launch" type="button" (click)="toggleTemporaryChat()"
-            [class.active]="isTemporaryChat" title="Playground (temporary chat - not saved)"
-            aria-label="Open Playground (temporary chat not saved)">
-            <i class="fa-brands fa-rocketchat"></i>
+            [class.active]="isTemporaryChat" title="Incognito chat" aria-label="Open Incognito chat">
+            <i class="fa-solid fa-user-secret"></i>
             <span class="playground-launch__text">
-              <span class="playground-launch__title">Playground</span>
+              <span class="playground-launch__title">Incognito chat</span>
             </span>
           </button>
         </div>
@@ -54,49 +53,47 @@
             </div>
 
             <div class="conversation-menu-panel" *ngIf="conversationMenuOpen" (click)="$event.stopPropagation()">
-            <button type="button" (click)="togglePin(currentThread, $event)">
-              <i class="fa-solid" [ngClass]="currentThread.is_pinned ? 'fa-thumbtack-slash' : 'fa-thumbtack'"></i>
-              <span>{{ currentThread.is_pinned ? 'Unpin' : 'Pin' }}</span>
-            </button>
-            <button type="button" (click)="editCurrentThread(currentThread, $event)">
-              <i class="fa-solid fa-pen"></i>
-              <span>Rename</span>
-            </button>
-            <button type="button" class="toggle-menu-item" (click)="toggleDataGrid(currentThread, $event)">
-              <i class="fa-solid fa-table-cells"></i>
-              <span class="flex-grow">Enable data grid</span>
-              <div class="toggle-switch" [class.active]="currentThread.enable_data_grid">
-                <div class="toggle-knob"></div>
-              </div>
-            </button>
-            <button type="button" class="danger" (click)="deleteCurrentThread(currentThread, $event)">
-              <i class="fa-solid fa-trash"></i>
-              <span>Delete</span>
-            </button>
+              <button type="button" (click)="togglePin(currentThread, $event)">
+                <i class="fa-solid" [ngClass]="currentThread.is_pinned ? 'fa-thumbtack-slash' : 'fa-thumbtack'"></i>
+                <span>{{ currentThread.is_pinned ? 'Unpin' : 'Pin' }}</span>
+              </button>
+              <button type="button" (click)="editCurrentThread(currentThread, $event)">
+                <i class="fa-solid fa-pen"></i>
+                <span>Rename</span>
+              </button>
+              <button type="button" class="toggle-menu-item" (click)="toggleDataGrid(currentThread, $event)">
+                <i class="fa-solid fa-table-cells"></i>
+                <span class="flex-grow">Enable data grid</span>
+                <div class="toggle-switch" [class.active]="currentThread.enable_data_grid">
+                  <div class="toggle-knob"></div>
+                </div>
+              </button>
+              <button type="button" class="danger" (click)="deleteCurrentThread(currentThread, $event)">
+                <i class="fa-solid fa-trash"></i>
+                <span>Delete</span>
+              </button>
             </div>
           </div>
         </div>
 
-        <app-chat-container *ngIf="!isConversationEmpty" [messages]="messages" [currentRun]="currentRun" [conversationId]="currentThread?.id"
-          [enableDataGrid]="currentThread?.enable_data_grid || false"
-          [loading]="loading"
-          [typingStatuses]="typingStatuses">
+        <app-chat-container *ngIf="!isConversationEmpty" [messages]="messages" [currentRun]="currentRun"
+          [conversationId]="currentThread?.id" [enableDataGrid]="currentThread?.enable_data_grid || false"
+          [loading]="loading" [typingStatuses]="typingStatuses">
         </app-chat-container>
       </div>
 
       <div class="input-area" [class.centered]="isConversationEmpty">
         <app-chat-input [mode]="mode" [loading]="loading || attachmentsInProgress" [currentRun]="currentRun"
-          [allowCancelRun]="false"
-          [isTemporaryChat]="isTemporaryChat" [libraries]="libraries" [selectedLibraryId]="selectedLibraryId"
-          [documents]="allDocuments" [selectedDocumentIds]="selectedDocumentIds" [prompts]="prompts"
-          [selectedPromptId]="selectedPromptId" [hasExistingThread]="!!currentThread"
+          [allowCancelRun]="false" [isTemporaryChat]="isTemporaryChat" [libraries]="libraries"
+          [selectedLibraryId]="selectedLibraryId" [documents]="allDocuments" [selectedDocumentIds]="selectedDocumentIds"
+          [prompts]="prompts" [selectedPromptId]="selectedPromptId" [hasExistingThread]="!!currentThread"
           [threadVectorStoreId]="null" [librariesLoading]="librariesLoadingState"
           [documentsLoading]="documentsLoadingState" [promptsLoading]="promptsLoadingState"
           (messageSent)="onMessageSent($event)" (cancelRun)="onCancelRun()" (modeToggle)="onModeToggle($event)"
           (filesSelected)="onFilesSelected($event)" (webpageAttached)="onWebpageAttach($event)"
           (notesAttached)="onNotesAttach($event)" (librarySelected)="onLibrarySelected($event)"
-          (attachmentPanelOpened)="onAttachmentPanelOpened($event)" (promptSelected)="onPromptSelected($event)"
-          (attachmentMenuToggled)="onAttachmentMenuToggled($event)"></app-chat-input>
+          (attachmentPanelOpened)="onAttachmentPanelOpened($event)"
+          (promptSelected)="onPromptSelected($event)"></app-chat-input>
 
         <div class="suggested-questions-container" *ngIf="isConversationEmpty">
           <div class="suggested-questions">

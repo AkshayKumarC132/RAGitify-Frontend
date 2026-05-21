@@ -1,11 +1,12 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { SharedModule } from '../shared/shared.module';
 import { SettingsLayoutComponent } from './components/settings-layout/settings-layout.component';
 import { ModelsSectionComponent } from './components/models-section/models-section.component';
 import { GeneralSectionComponent } from './components/general-section/general-section.component';
 import { AccountSectionComponent } from './components/account-section/account-section.component';
+import { SkillsSectionComponent } from './components/skills-section/skills-section.component';
 import { SettingsRoutingModule } from './settings-routing.module';
 
 @NgModule({
@@ -13,11 +14,11 @@ import { SettingsRoutingModule } from './settings-routing.module';
     SettingsLayoutComponent,
     ModelsSectionComponent,
     GeneralSectionComponent,
-    AccountSectionComponent
+    AccountSectionComponent,
+    SkillsSectionComponent
   ],
   imports: [
     CommonModule,
-    FormsModule,
     ReactiveFormsModule,
     SharedModule,
     SettingsRoutingModule

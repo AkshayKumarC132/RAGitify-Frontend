@@ -20,6 +20,7 @@ import { ResponseAttentionService } from '../../../shared/services/response-atte
 import { ThreadSearchPopupService } from '../../../shared/services/thread-search-popup.service';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentShareService } from '../../../shared/services/document-share.service';
+import { SharedWithMeItem } from '../../../shared/models/document-share.model';
 import { ChatStreamService } from '../../../shared/services/chat-stream.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 
@@ -31,7 +32,16 @@ import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.se
 export class HomeComponent implements OnInit, OnDestroy {
   @ViewChild(ChatInputComponent) chatInput?: ChatInputComponent;
 
-  currentThread: Conversation | null = null;
+  private _currentThread: Conversation | null = null;
+  get currentThread(): Conversation | null {
+    return this._currentThread;
+  }
+  set currentThread(thread: Conversation | null) {
+    this._currentThread = thread;
+    if (this.chatStreamService) {
+      this.chatStreamService.setActiveThreadId(thread?.id || null);
+    }
+  }
   messages: ConversationMessage[] = [];
   threads: Conversation[] = [];
   currentRun: ResponseRecord | null = null;
@@ -208,6 +218,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (this.warningMessageTimeout) {
       clearTimeout(this.warningMessageTimeout);
     }
+    this.chatStreamService.setActiveThreadId(null);
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -301,10 +312,16 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   onNewThread(): void {
+    // Detach the local UI subscription so the response doesn't appear here,
+    // but keep the background HTTP stream alive so the backend can finish
+    // processing and persist both user query and assistant response.
+    this.stopStream();
+
     this.pendingThreadId = null;
     this.currentThread = null;
     this.messages = [];
     this.currentRun = null;
+    this.loading = false;
     this.selectedLibraryId = null;
     this.selectedDocumentIds = [];
     this.selectedPromptId = null;
@@ -333,14 +350,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.chatInput?.updateInput(question);
   }
 
-  onAttachmentMenuToggled(opened: boolean): void {
-    if (!opened) {
-      return;
-    }
-    this.ensureLibrariesLoaded();
-    this.ensureDocumentsLoaded();
-    this.ensurePromptsLoaded();
-  }
+
 
   onAttachmentPanelOpened(panel: 'library' | 'prompts' | 'web' | 'notes'): void {
     if (panel === 'library') {
@@ -384,7 +394,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.messages = [...this.messages, assistantMessage];
 
       // Instead of ResponseService.createStream, use ChatStreamService to start the stream
-      this.streamSub = this.chatStreamService.startStream(conversation.id, request, optimisticMessage, assistantMessage).subscribe({
+      this.streamSub = this.chatStreamService.startStream(conversation.id, request, optimisticMessage, assistantMessage, conversation.title || trimmed).subscribe({
         next: (event: StreamEvent) => {
           if (event.type === 'delta' && event.delta) {
             // assistantMessage.content is already updated by ChatStreamService.
@@ -416,7 +426,17 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.messages = this.messages.filter(m => m.id !== optimisticMessage.id);
           this.currentRun = null;
           this.loading = false;
-          this.handleError('Failed to send message', error);
+          if (error?.payload?.code === 'WEB_SEARCH_UNSUPPORTED_MODEL') {
+            this.confirmDialogService.confirm({
+              title: 'Web Search Unsupported',
+              message: error.payload.error || 'The selected model does not support native web search.',
+              type: 'warning',
+              confirmText: 'Got it',
+              hideCancel: true
+            });
+          } else {
+            this.handleError('Failed to send message', error);
+          }
         },
         complete: () => {
           this.loading = false;
@@ -719,6 +739,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.isTemporaryChat = url.includes('/temporary-chat');
 
     if (this.isTemporaryChat) {
+      this.chatStreamService.setActiveThreadId(null);
       return;
     }
 
@@ -765,6 +786,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private loadThread(threadId: string): void {
     this.stopResponsePolling();
+    this.stopStream();
     this.currentRun = null;
     this.loading = false;
     this.selectedLibraryId = null;
@@ -870,7 +892,17 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.messages = this.messages.filter(m => m.id !== streamState.userMessage.id);
           this.currentRun = null;
           this.loading = false;
-          this.handleError('Failed to send message', error);
+          if (error?.payload?.code === 'WEB_SEARCH_UNSUPPORTED_MODEL') {
+            this.confirmDialogService.confirm({
+              title: 'Web Search Unsupported',
+              message: error.payload.error || 'The selected model does not support native web search.',
+              type: 'warning',
+              confirmText: 'Got it',
+              hideCancel: true
+            });
+          } else {
+            this.handleError('Failed to send message', error);
+          }
         },
         complete: () => {
           this.loading = false;
@@ -1159,7 +1191,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     return firstWritableLibrary?.id || null;
   }
 
-  private mapSharedDocuments(items: Array<{ document_id: string; document_title: string; shared_at: string; updated_at: string; expires_at: string | null }>): Document[] {
+  private mapSharedDocuments(items: SharedWithMeItem[]): Document[] {
     const sharedLibraryId = this.libraries.find(library => library.vs_type === 'SHARED')?.id || 'shared';
 
     return items.map(item => ({
@@ -1167,6 +1199,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       title: item.document_title,
       original_filename: item.document_title,
       vector_store: sharedLibraryId,
+      user: item.owner_email,
       uploaded_at: item.shared_at,
       created_at: item.shared_at,
       updated_at: item.updated_at || item.shared_at,

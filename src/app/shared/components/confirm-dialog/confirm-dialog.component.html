@@ -24,7 +24,7 @@
     </div>
 
     <div class="dialog-actions">
-      <button class="btn-premium-secondary" (click)="onCancel()">
+      <button class="btn-premium-secondary" (click)="onCancel()" *ngIf="!data.hideCancel">
         {{ data.cancelText || 'Cancel' }}
       </button>
       <button class="confirm-btn btn-premium-primary" [class.danger-text]="data.type === 'danger'"
