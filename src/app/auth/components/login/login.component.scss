@@ -1,167 +1,236 @@
 @import '../../auth-shared.scss';
 
-// Use shared .auth-shell and .background-blobs from auth-shared.scss
-
 .auth-container {
   @extend .auth-container-standard;
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.08fr);
 }
 
-// Left Panel: Illustration
+// ─────────────────────────────────────────────
+// Left panel — brand & illustration
+// ─────────────────────────────────────────────
 .auth-illustration {
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); // Light grey/slate gradient
-  padding: 2.5rem;
+  position: relative;
+  padding: clamp(1.5rem, 3.5vh, 2.25rem);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  border-right: 1px solid #e2e8f0;
-  color: $text-main;
+  gap: clamp(1rem, 2.5vh, 1.6rem);
+  color: #ffffff;
+  background:
+    linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(168, 85, 247, 0.18)),
+    linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-right: 1px solid var(--panel-border);
+  min-height: 0;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 0%, rgba(59, 130, 246, 0.35), transparent 45%);
+    pointer-events: none;
+  }
+
+  .illustration-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.85rem, 2vh, 1.4rem);
+  }
+
+  .illustration-footer {
+    position: relative;
+    z-index: 1;
+    margin-top: auto;
+  }
 
   .brand-header {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 3rem;
+    gap: 0.75rem;
 
     .hero-logo {
       width: 42px;
       height: 42px;
+      border-radius: 50%;
+      background: #ffffff;
+      padding: 3px;
+      box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.15);
     }
 
     h1 {
-      font-size: 1.5rem;
+      margin: 0;
+      font-size: 1.3rem;
       font-weight: 700;
-      letter-spacing: -0.025em;
+      letter-spacing: -0.02em;
+      color: #ffffff;
     }
   }
 
   .illustration-text {
-    margin-top: auto;
-    margin-bottom: auto;
+    margin: 0;
 
     h2 {
-      font-size: 2.25rem;
+      margin: 0 0 0.6rem;
+      font-size: clamp(1.55rem, 2.2vw, 1.95rem);
       font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 1rem;
-      background: linear-gradient(to right, #0f172a, #3b82f6); // Dark to Blue text gradient
+      line-height: 1.12;
+      letter-spacing: -0.025em;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
-      letter-spacing: -0.03em;
     }
 
     p {
-      color: $text-muted;
+      margin: 0;
+      color: rgba(226, 232, 240, 0.78);
       line-height: 1.5;
-      font-size: 0.9rem;
-      max-width: 90%;
+      font-size: 0.85rem;
+      max-width: 95%;
     }
   }
 
-  .illustration-footer {
-    p {
-      color: rgba(148, 163, 184, 0.5);
-      font-size: 0.75rem;
+  .feature-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: 100%;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      color: rgba(226, 232, 240, 0.92);
+
+      i {
+        flex-shrink: 0;
+        width: 26px;
+        height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: rgba(59, 130, 246, 0.28);
+        color: #bfdbfe;
+        font-size: 0.78rem;
+        border: 1px solid rgba(147, 197, 253, 0.25);
+      }
     }
+  }
+
+  .illustration-footer p {
+    margin: 0;
+    color: rgba(148, 163, 184, 0.65);
+    font-size: 0.72rem;
   }
 }
 
-// Right Panel: Form Area
+// ─────────────────────────────────────────────
+// Right panel — form area
+// ─────────────────────────────────────────────
 .auth-card {
-  padding: 3.5rem;
+  padding: clamp(1.25rem, 3vh, 2rem) clamp(1.25rem, 3vw, 2.25rem);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  position: relative;
   background: transparent;
-  // Prefer fitting within the viewport; allow the page shell to scroll if needed.
-  overflow-y: visible;
-  max-height: none;
+  min-height: 0;
 }
 
 .auth-header {
-  margin-bottom: 2rem;
-  text-align: center;
+  margin-bottom: 1rem;
+  text-align: left;
 
-  h2 {
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: $text-main;
-    margin-bottom: 0.5rem;
+  h3 {
+    margin: 0 0 0.2rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
   }
 
   .auth-subtitle {
-    color: $text-muted;
-    font-size: 0.9rem;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.4;
   }
 }
 
 // Tabs
 .auth-tabs {
   display: flex;
-  background: #f1f5f9; // Light grey bg
+  background: var(--bg-secondary);
   padding: 0.25rem;
-  border-radius: 10px; // Matching radius
-  margin-bottom: 1.5rem;
-  width: 100%;
-  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
 
   button {
     flex: 1;
     border: none;
     background: transparent;
-    color: $text-muted;
+    color: var(--text-secondary);
     cursor: pointer;
-    padding: 0.45rem; // Compact
-    border-radius: 8px;
+    padding: 0.48rem 0.5rem;
+    border-radius: 7px;
     font-size: 0.8rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
+    font-weight: 600;
+    font-family: var(--app-font);
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 
     &.active {
-      background: white;
-      color: $text-main;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      font-weight: 600;
+      background: var(--panel-bg);
+      color: var(--text-primary);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
     }
 
     &:hover:not(.active) {
-      color: $text-main;
-      background: rgba(255, 255, 255, 0.5);
+      color: var(--text-primary);
     }
   }
 }
 
+// Error banner
 .error-message {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  margin-bottom: 1.5rem;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--error-color);
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  margin-bottom: 0.85rem;
 
   i {
-    font-size: 1rem;
+    font-size: 0.9rem;
+    flex-shrink: 0;
   }
 }
 
+// ─────────────────────────────────────────────
+// Form stage — inactive pane positioned absolutely
+// so the container only sizes to the active pane.
+// ─────────────────────────────────────────────
 .auth-form-stage {
-  display: grid;
+  position: relative;
   width: 100%;
-  align-items: start;
 }
 
 .auth-pane {
-  grid-area: 1 / 1;
   width: 100%;
   transition: opacity 0.22s ease, transform 0.22s ease;
 
   &.active {
+    position: relative;
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
@@ -169,6 +238,8 @@
   }
 
   &.inactive {
+    position: absolute;
+    inset: 0;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -176,56 +247,26 @@
   }
 }
 
-.auth-pane-login {
-  display: flex;
-  align-items: center;
-  min-height: 70%;
-}
-
 .auth-pane-login .auth-form {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  width: 100%;
-  min-height: 100%;
-}
-
-.auth-pane-login .form-actions {
-  margin-top: 0.25rem;
 }
 
 .auth-pane-login .btn-primary.btn-block {
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
 }
 
 .auth-component-wrapper {
   width: 100%;
 }
 
-// Fade Animations
-.fade-in {
-  animation: fadeUp 0.4s ease-out forwards;
-}
-
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
+// ─────────────────────────────────────────────
 // Responsive
-@media (max-width: 960px) {
+// ─────────────────────────────────────────────
+@media (max-width: 860px) {
   .auth-container {
     grid-template-columns: 1fr;
-    max-width: 500px;
-    height: auto;
-    min-height: auto;
+    max-width: 460px;
   }
 
   .auth-illustration {
@@ -233,31 +274,46 @@
   }
 
   .auth-card {
-    padding: 2rem;
+    padding: 1.5rem;
   }
 }
 
-// Height-based responsiveness (handles browser zoom / short viewports)
-@media (max-height: 820px) {
-  .auth-container {
-    min-height: auto;
-  }
-
+@media (max-height: 760px) {
   .auth-illustration {
-    padding: 2rem;
+    .feature-list { gap: 0.45rem; }
+    .feature-list li { font-size: 0.76rem; }
+    .feature-list li i { width: 22px; height: 22px; font-size: 0.7rem; }
   }
 
-  .auth-card {
-    padding: 2rem;
+  .auth-header {
+    margin-bottom: 0.65rem;
+
+    h3 { font-size: 1.2rem; }
+    .auth-subtitle { font-size: 0.78rem; }
+  }
+
+  .auth-tabs {
+    margin-bottom: 0.7rem;
   }
 }
 
-@media (max-height: 700px) {
-  .auth-illustration {
-    padding: 1.5rem;
+@media (max-height: 640px) {
+  .auth-illustration .illustration-text h2 {
+    font-size: 1.35rem;
   }
 
-  .auth-card {
-    padding: 1.5rem;
+  .auth-illustration .illustration-text p {
+    font-size: 0.78rem;
+  }
+
+  .auth-illustration .feature-list li {
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-height: 540px) {
+  // Only at extremely cramped heights: drop the third feature so the rest still fits
+  .auth-illustration .feature-list li:nth-child(3) {
+    display: none;
   }
 }
