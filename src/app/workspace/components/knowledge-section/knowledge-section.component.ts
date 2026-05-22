@@ -11,6 +11,7 @@ import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.se
 import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
 import { WorkspaceLibraryDeleteFlowService } from '../../services/workspace-library-delete-flow.service';
 import { AuthService } from '../../../shared/services/auth.service';
+import { ToastService } from '../../../shared/services/toast.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document, DocumentStatus } from '../../../shared/models/document.model';
 import { DocumentAccess } from '../../../shared/models/document-access.model';
@@ -42,6 +43,9 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   loadingStores = false;
   loadingDocuments = false;
   errorMessage = '';
+  isDragging = false;
+  pendingUploadFiles: File[] | null = null;
+  private dragCounter = 0;
   private statusPollSub?: Subscription;
   private statusCheckInFlight = new Set<string>();
   editingVectorStore: VectorStore | null = null;
@@ -93,6 +97,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private knowledgeContext: WorkspaceKnowledgeContextService,
     private libraryDeleteFlow: WorkspaceLibraryDeleteFlowService,
+    private toast: ToastService,
     private fb: FormBuilder,
     private router: Router,
     private route: ActivatedRoute
@@ -369,7 +374,62 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.showUploadForm = !this.showUploadForm;
     if (this.showUploadForm) {
       this.showCreateVectorStoreForm = false;
+    } else {
+      this.pendingUploadFiles = null;
     }
+  }
+
+  // ─── Drag-and-drop upload ───────────────────────────────────────
+  onDragEnter(event: DragEvent): void {
+    if (!this.hasFiles(event)) return;
+    event.preventDefault();
+    this.dragCounter++;
+    this.isDragging = true;
+  }
+
+  onDragOver(event: DragEvent): void {
+    if (!this.hasFiles(event)) return;
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+  }
+
+  onDragLeave(event: DragEvent): void {
+    if (!this.hasFiles(event)) return;
+    event.preventDefault();
+    this.dragCounter = Math.max(0, this.dragCounter - 1);
+    if (this.dragCounter === 0) {
+      this.isDragging = false;
+    }
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.dragCounter = 0;
+    this.isDragging = false;
+
+    const files = event.dataTransfer?.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    if (!this.vectorStores.length) {
+      this.toast.warning('No library available', 'Create a library before uploading documents.');
+      return;
+    }
+
+    this.pendingUploadFiles = Array.from(files);
+    this.showCreateVectorStoreForm = false;
+    this.showUploadForm = true;
+    const noun = files.length === 1 ? 'file' : 'files';
+    this.toast.info('Files ready to upload', `${files.length} ${noun} added. Review and confirm to upload.`);
+  }
+
+  private hasFiles(event: DragEvent): boolean {
+    const types = event.dataTransfer?.types;
+    if (!types) return false;
+    return Array.from(types).includes('Files');
   }
 
   startVectorStoreEdit(store: VectorStore): void {
@@ -1342,22 +1402,12 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     const ids = documentIds?.length ? documentIds : Array.from(this.selectedDocumentIds);
     const shareable = this.getEligibleDocuments(ids, 'share');
     if (!shareable.length) {
-      void Swal.fire({
-        title: 'Nothing to share',
-        text: 'Only your completed documents can be shared with another user.',
-        icon: 'info',
-        confirmButtonText: 'Close'
-      });
+      this.toast.info('Nothing to share', 'Only your completed documents can be shared with another user.');
       return;
     }
 
     if (shareable.length !== ids.length) {
-      void Swal.fire({
-        title: 'Some documents were excluded',
-        text: 'Only owned, completed documents can be shared. Deselect shared or processing files and try again.',
-        icon: 'warning',
-        confirmButtonText: 'Close'
-      });
+      this.toast.warning('Some documents were excluded', 'Only owned, completed documents can be shared. Deselect shared or processing files and try again.');
       return;
     }
 
@@ -1421,38 +1471,12 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         this.shareSubmitting = false;
         this.closeShareDialog();
         this.loadSharedByMe(true);
-        void Swal.fire({
-          icon: 'success',
-          iconHtml: '<i class="fa-solid fa-check"></i>',
-          title: 'Share updated',
-          html: `
-            <div class="ragitify-swal-success-body">
-              <p class="ragitify-swal-success-copy">
-                <strong>${response.shared_count}</strong> document${response.shared_count === 1 ? '' : 's'} shared successfully.
-              </p>
-              <div class="ragitify-swal-success-meta">
-                The selected recipient can now access the shared document${response.shared_count === 1 ? '' : 's'}.
-              </div>
-            </div>
-          `,
-          confirmButtonText: 'Done',
-          customClass: {
-            popup: 'ragitify-swal-success-popup',
-            title: 'ragitify-swal-success-title',
-            htmlContainer: 'ragitify-swal-success-html',
-            actions: 'ragitify-swal-success-actions',
-            confirmButton: 'ragitify-swal-success-confirm'
-          }
-        });
+        const noun = `document${response.shared_count === 1 ? '' : 's'}`;
+        this.toast.success('Share updated', `${response.shared_count} ${noun} shared successfully.`);
       },
       error: (err) => {
         this.shareSubmitting = false;
-        void Swal.fire({
-          title: 'Unable to share documents',
-          text: this.extractErrorMessage(err, 'The share request could not be completed.'),
-          icon: 'error',
-          confirmButtonText: 'Close'
-        });
+        this.toast.error('Unable to share documents', this.extractErrorMessage(err, 'The share request could not be completed.'));
       }
     });
   }
@@ -1461,33 +1485,18 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     const ids = documentIds?.length ? documentIds : Array.from(this.selectedDocumentIds);
     const movable = this.getEligibleDocuments(ids, 'move');
     if (!movable.length) {
-      void Swal.fire({
-        title: 'Nothing to move',
-        text: 'Only your completed documents can be moved to another DEFAULT or CUSTOM library.',
-        icon: 'info',
-        confirmButtonText: 'Close'
-      });
+      this.toast.info('Nothing to move', 'Only your completed documents can be moved to another library.');
       return;
     }
 
     if (movable.length !== ids.length) {
-      void Swal.fire({
-        title: 'Some documents were excluded',
-        text: 'Only owned, completed documents can be moved. Shared or processing files are not eligible.',
-        icon: 'warning',
-        confirmButtonText: 'Close'
-      });
+      this.toast.warning('Some documents were excluded', 'Only owned, completed documents can be moved. Shared or processing files are not eligible.');
       return;
     }
 
     const targets = this.getMoveTargetOptions(movable.map(doc => doc.id));
     if (!targets.length) {
-      void Swal.fire({
-        title: 'No valid destination',
-        text: 'Create or choose another DEFAULT or CUSTOM library before moving these documents.',
-        icon: 'info',
-        confirmButtonText: 'Close'
-      });
+      this.toast.info('No valid destination', 'Create or choose another DEFAULT or CUSTOM library before moving these documents.');
       return;
     }
 
@@ -1522,38 +1531,12 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         this.loadDocuments(false, true);
         this.loadVectorStores(true);
         this.loadSharedByMe(true);
-        void Swal.fire({
-          icon: 'success',
-          iconHtml: '<i class="fa-solid fa-check"></i>',
-          title: 'Documents moved',
-          html: `
-            <div class="ragitify-swal-success-body">
-              <p class="ragitify-swal-success-copy">
-                <strong>${movedCount}</strong> document${movedCount === 1 ? '' : 's'} moved successfully.
-              </p>
-              <div class="ragitify-swal-success-meta">
-                Your library view has been refreshed with the updated location.
-              </div>
-            </div>
-          `,
-          confirmButtonText: 'Done',
-          customClass: {
-            popup: 'ragitify-swal-success-popup',
-            title: 'ragitify-swal-success-title',
-            htmlContainer: 'ragitify-swal-success-html',
-            actions: 'ragitify-swal-success-actions',
-            confirmButton: 'ragitify-swal-success-confirm'
-          }
-        });
+        const noun = `document${movedCount === 1 ? '' : 's'}`;
+        this.toast.success('Documents moved', `${movedCount} ${noun} moved successfully.`);
       },
       error: (err) => {
         this.moveSubmitting = false;
-        void Swal.fire({
-          title: 'Unable to move documents',
-          text: this.extractErrorMessage(err, 'The selected documents could not be moved.'),
-          icon: 'error',
-          confirmButtonText: 'Close'
-        });
+        this.toast.error('Unable to move documents', this.extractErrorMessage(err, 'The selected documents could not be moved.'));
       }
     });
   }
@@ -1580,12 +1563,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         this.sharedByMe = this.sharedByMe.filter(share => !(share.document_id === item.document_id && share.recipient_id === item.recipient_id));
       },
       error: (err) => {
-        void Swal.fire({
-          title: 'Unable to revoke share',
-          text: this.extractErrorMessage(err, 'The share could not be revoked.'),
-          icon: 'error',
-          confirmButtonText: 'Close'
-        });
+        this.toast.error('Unable to revoke share', this.extractErrorMessage(err, 'The share could not be revoked.'));
       }
     });
   }
@@ -1609,12 +1587,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
         this.sharedWithMe = this.sharedWithMe.filter(share => share.document_id !== item.document_id);
       },
       error: (err) => {
-        void Swal.fire({
-          title: 'Unable to remove access',
-          text: this.extractErrorMessage(err, 'The shared document could not be removed from your view.'),
-          icon: 'error',
-          confirmButtonText: 'Close'
-        });
+        this.toast.error('Unable to remove access', this.extractErrorMessage(err, 'The shared document could not be removed from your view.'));
       }
     });
   }

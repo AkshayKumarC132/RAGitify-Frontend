@@ -19,6 +19,7 @@ interface FileUploadStatus {
 export class DocumentUploadComponent implements OnChanges {
   @Input() vectorStores: VectorStore[] = [];
   @Input() defaultVectorStoreId: string | null = null;
+  @Input() pendingFiles: File[] | null = null;
   @Output() uploaded = new EventEmitter<string>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -37,6 +38,15 @@ export class DocumentUploadComponent implements OnChanges {
 
     if (changes['vectorStores'] && this.vectorStores?.length === 1 && !this.selectedVectorStoreId) {
       this.selectedVectorStoreId = this.vectorStores[0].id;
+    }
+
+    if (changes['pendingFiles'] && this.pendingFiles && this.pendingFiles.length > 0) {
+      this.fileStatuses = this.pendingFiles.map(file => ({
+        file,
+        status: 'pending' as const,
+        progress: 0
+      }));
+      this.errorMessage = '';
     }
   }
 

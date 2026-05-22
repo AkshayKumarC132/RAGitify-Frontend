@@ -105,7 +105,7 @@
 
         <button class="send-button" (click)="runActive ? onCancelRun() : sendMessage()"
           [disabled]="(runActive && !allowCancelRun) || (!runActive && !canSendMessage)"
-          [title]="runActive ? (allowCancelRun ? 'Stop run' : 'Response in progress') : (canSendMessage ? 'Send message' : 'Enter a message to send')"
+          [title]="runActive ? (allowCancelRun ? 'Stop run' : 'Response in progress') : (canSendMessage ? 'Press Enter to send · Shift+Enter for newline' : 'Enter a message to send')"
           aria-label="Send message">
           <ng-container *ngIf="runActive; else sendState">
             <i class="fa-solid fa-stop"></i>
@@ -116,6 +116,12 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <div class="kbd-hint" aria-hidden="true">
+    <span class="kbd-pair"><kbd>Enter</kbd> to send</span>
+    <span class="kbd-divider">·</span>
+    <span class="kbd-pair"><kbd>Shift</kbd>+<kbd>Enter</kbd> for newline</span>
   </div>
 
   <div class="listening-indicator" *ngIf="isListening">

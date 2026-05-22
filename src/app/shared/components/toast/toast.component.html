@@ -1,14 +1,24 @@
 <div class="toast-container">
     <div class="toast-wrapper" *ngFor="let toast of toasts" @toastAnimation>
-        <div class="toast-card" (click)="onClick(toast)">
+        <div class="toast-card" [class.is-thread]="toast.variant === 'thread'"
+            [class.is-success]="toast.variant === 'success'" [class.is-info]="toast.variant === 'info'"
+            [class.is-warning]="toast.variant === 'warning'" [class.is-error]="toast.variant === 'error'"
+            [class.is-clickable]="toast.variant === 'thread'" (click)="onClick(toast)" role="status"
+            aria-live="polite">
             <div class="toast-icon">
-                <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" class="toast-logo" />
+                <img *ngIf="toast.variant === 'thread'" src="assets/images/ragitify-logo.svg" alt="RAGitify"
+                    class="toast-logo" />
+                <i *ngIf="toast.variant === 'success'" class="fa-solid fa-circle-check"></i>
+                <i *ngIf="toast.variant === 'info'" class="fa-solid fa-circle-info"></i>
+                <i *ngIf="toast.variant === 'warning'" class="fa-solid fa-triangle-exclamation"></i>
+                <i *ngIf="toast.variant === 'error'" class="fa-solid fa-circle-exclamation"></i>
             </div>
             <div class="toast-content">
                 <div class="toast-title">{{ toast.title }}</div>
-                <div class="toast-message">{{ toast.message }}</div>
+                <div class="toast-message" *ngIf="toast.message">{{ toast.message }}</div>
             </div>
-            <button class="toast-close" (click)="remove(toast.id!); $event.stopPropagation()">
+            <button type="button" class="toast-close" (click)="remove(toast.id!); $event.stopPropagation()"
+                aria-label="Dismiss notification">
                 <i class="fa-solid fa-xmark"></i>
             </button>
             <div class="toast-progress-container">

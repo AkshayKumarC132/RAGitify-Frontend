@@ -1,8 +1,8 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener, ChangeDetectorRef, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
-import Swal from 'sweetalert2/dist/sweetalert2.js';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
 import { Document } from '../../../shared/models/document.model';
+import { ToastService } from '../../../shared/services/toast.service';
 
 type AttachmentPanel = 'web' | 'notes' | 'library' | 'prompts' | null;
 
@@ -81,7 +81,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   showMoreDocsMenu = false;
   private recognition: SpeechRecognitionLike | null = null;
 
-  constructor(private cdr: ChangeDetectorRef) { }
+  constructor(private cdr: ChangeDetectorRef, private toast: ToastService) { }
 
   ngOnInit(): void {
     this.initializeSpeechRecognition();
@@ -614,13 +614,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   }
 
   private showSelectionLimitAlert(): void {
-    void Swal.fire({
-      icon: 'warning',
-      title: 'Document limit reached',
-      text: 'You can attach up to 10 documents in Home Chat.',
-      confirmButtonText: 'OK',
-      heightAuto: false
-    });
+    this.toast.warning('Document limit reached', 'You can attach up to 10 documents in Home Chat.');
   }
 
   get availableDocuments(): Document[] {

@@ -142,6 +142,65 @@
   align-items: center;
 }
 
+.kbd-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  padding: 0 0.5rem;
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.18s ease, max-height 0.22s ease, margin-top 0.22s ease;
+  pointer-events: none;
+
+  .kbd-pair {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 0.32rem;
+    border-radius: 4px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-family: var(--app-font);
+    font-size: 9.5px;
+    font-weight: 600;
+    line-height: 1;
+    box-shadow: 0 1px 0 var(--border-color);
+  }
+
+  .kbd-divider {
+    opacity: 0.4;
+  }
+}
+
+.chat-input-container:focus-within .kbd-hint {
+  opacity: 0.85;
+  max-height: 24px;
+}
+
+@media (max-width: 640px) {
+  .kbd-hint { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kbd-hint { transition: none; }
+}
+
 .attachment-controls {
   position: relative;
   display: flex;

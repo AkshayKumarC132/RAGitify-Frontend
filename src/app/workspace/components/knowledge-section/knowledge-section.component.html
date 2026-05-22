@@ -1,4 +1,14 @@
-<div class="knowledge-section">
+<div class="knowledge-section" [class.is-dragging]="isDragging" (dragenter)="onDragEnter($event)"
+  (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+
+  <div class="drop-overlay" *ngIf="isDragging" aria-hidden="true">
+    <div class="drop-overlay-card">
+      <i class="fa-solid fa-cloud-arrow-up"></i>
+      <h3>Drop files to upload</h3>
+      <p>We'll add them to your library and process them automatically.</p>
+    </div>
+  </div>
+
   <div class="section-header" *ngIf="!isInWorkspace">
     <div>
       <h1>
@@ -68,7 +78,8 @@
   <div class="library-rename-backdrop" *ngIf="showUploadForm" (click)="showUploadForm = false">
     <div class="upload-modal" (click)="$event.stopPropagation()">
       <app-document-upload [vectorStores]="vectorStores" [defaultVectorStoreId]="selectedVectorStore?.id || null"
-        (uploaded)="onDocumentUploaded()" (cancel)="showUploadForm = false"></app-document-upload>
+        [pendingFiles]="pendingUploadFiles" (uploaded)="onDocumentUploaded()"
+        (cancel)="showUploadForm = false; pendingUploadFiles = null"></app-document-upload>
     </div>
   </div>
 
@@ -79,7 +90,9 @@
           <h3>Library</h3>
           <span>{{ vectorStores.length }} total</span>
         </div>
-        <div *ngIf="loadingStores" class="loading-state">Loading library...</div>
+        <div *ngIf="loadingStores" aria-busy="true" aria-label="Loading libraries">
+          <app-skeleton variant="list-item" [count]="5"></app-skeleton>
+        </div>
         <app-vector-store-list *ngIf="!loadingStores" [vectorStores]="vectorStores" [documentCounts]="documentCounts"
           [selectedVectorStore]="selectedVectorStore" (vectorStoreSelected)="onVectorStoreSelected($event)"
           (editRequested)="startVectorStoreEdit($event)" (deleteRequested)="deleteVectorStore($event)"
@@ -230,9 +243,9 @@
           </div>
         </div>
 
-        <div *ngIf="activeWorkspaceTab === 'documents' && loadingDocuments" class="loading-state">
-          <div class="spinner-small"></div>
-          <span>Loading documents...</span>
+        <div *ngIf="activeWorkspaceTab === 'documents' && loadingDocuments" class="documents-grid"
+          aria-busy="true" aria-label="Loading documents">
+          <app-skeleton variant="doc-card" [count]="6"></app-skeleton>
         </div>
 
         <div *ngIf="activeWorkspaceTab === 'documents' && !loadingDocuments && filteredDocuments.length === 0"

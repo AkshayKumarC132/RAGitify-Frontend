@@ -3,6 +3,69 @@
 .knowledge-section {
   max-width: 1200px;
   margin: 0 auto;
+  position: relative;
+
+  &.is-dragging::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.18);
+    z-index: 49;
+    pointer-events: none;
+  }
+}
+
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  padding: 1.5rem;
+  animation: dropOverlayIn 0.18s ease-out;
+}
+
+.drop-overlay-card {
+  background: var(--panel-bg);
+  border: 2px dashed var(--accent-color);
+  border-radius: 18px;
+  padding: 2.5rem 3rem;
+  text-align: center;
+  box-shadow: 0 24px 60px -20px rgba(59, 130, 246, 0.45);
+  color: var(--text-primary);
+  max-width: 480px;
+
+  i {
+    font-size: 3rem;
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  h3 {
+    margin: 0 0 0.4rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+}
+
+@keyframes dropOverlayIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drop-overlay { animation: none; }
 }
 
 .section-header {

@@ -1,0 +1,182 @@
+:host {
+    display: contents;
+}
+
+.skel-block {
+    display: block;
+    background: linear-gradient(90deg,
+            var(--bg-secondary) 0%,
+            var(--bg-tertiary) 50%,
+            var(--bg-secondary) 100%);
+    background-size: 200% 100%;
+    animation: skel-shimmer 1.4s ease-in-out infinite;
+    border-radius: 6px;
+}
+
+body.theme-dark .skel-block {
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.09) 50%,
+            rgba(255, 255, 255, 0.04) 100%);
+    background-size: 200% 100%;
+}
+
+.skel-text {
+    height: 0.85rem;
+    border-radius: 4px;
+}
+
+.skel-rect {
+    width: 100%;
+    height: 80px;
+    border-radius: 10px;
+}
+
+.skel-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.skel-rounded {
+    border-radius: 999px;
+}
+
+.skel-list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+
+    .skel-list-text {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+
+    .skel-title {
+        height: 0.85rem;
+        width: 70%;
+    }
+
+    .skel-sub {
+        height: 0.7rem;
+        width: 40%;
+    }
+}
+
+.skel-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--panel-bg);
+
+    .skel-title {
+        height: 1rem;
+        width: 55%;
+    }
+
+    .skel-body {
+        height: 0.75rem;
+        width: 100%;
+    }
+
+    .skel-body.short {
+        width: 70%;
+    }
+}
+
+.skel-doc-card {
+    position: relative;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-height: 240px;
+
+    .skel-doc-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .skel-chip {
+        width: 80px;
+        height: 24px;
+        border-radius: 999px;
+    }
+
+    .skel-badge {
+        width: 40px;
+        height: 18px;
+        border-radius: 4px;
+    }
+
+    .skel-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+    }
+
+    .skel-title {
+        height: 0.95rem;
+        width: 70%;
+    }
+
+    .skel-body {
+        height: 0.7rem;
+        width: 100%;
+    }
+
+    .skel-body.short {
+        width: 55%;
+    }
+
+    .skel-doc-foot {
+        margin-top: auto;
+        display: flex;
+        gap: 0.5rem;
+        padding-top: 0.4rem;
+    }
+
+    .skel-meta {
+        height: 0.7rem;
+        flex: 1;
+    }
+
+    .skel-meta.short {
+        flex: 0.5;
+    }
+}
+
+@keyframes skel-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skel-block {
+        animation: none;
+        background: var(--bg-secondary);
+    }
+
+    body.theme-dark .skel-block {
+        background: rgba(255, 255, 255, 0.06);
+    }
+}

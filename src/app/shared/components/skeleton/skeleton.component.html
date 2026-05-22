@@ -1,0 +1,55 @@
+<ng-container [ngSwitch]="variant">
+    <!-- Simple text/rect/circle blocks -->
+    <ng-container *ngSwitchCase="'text'">
+        <span class="skel-block skel-text" *ngFor="let i of items" [style.width]="width" [style.height]="height || null"
+            [class.skel-rounded]="rounded"></span>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'rect'">
+        <span class="skel-block skel-rect" *ngFor="let i of items" [style.width]="width" [style.height]="height || null"
+            [class.skel-rounded]="rounded"></span>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'circle'">
+        <span class="skel-block skel-circle" *ngFor="let i of items" [style.width]="width || '40px'"
+            [style.height]="height || width || '40px'"></span>
+    </ng-container>
+
+    <!-- List item: avatar + 2 text lines -->
+    <ng-container *ngSwitchCase="'list-item'">
+        <div class="skel-list-item" *ngFor="let i of items">
+            <span class="skel-block skel-circle"></span>
+            <div class="skel-list-text">
+                <span class="skel-block skel-text skel-title"></span>
+                <span class="skel-block skel-text skel-sub"></span>
+            </div>
+        </div>
+    </ng-container>
+
+    <!-- Generic card: header + body lines -->
+    <ng-container *ngSwitchCase="'card'">
+        <div class="skel-card" *ngFor="let i of items">
+            <span class="skel-block skel-text skel-title"></span>
+            <span class="skel-block skel-text skel-body"></span>
+            <span class="skel-block skel-text skel-body short"></span>
+        </div>
+    </ng-container>
+
+    <!-- Document card: matches the knowledge-section card layout -->
+    <ng-container *ngSwitchCase="'doc-card'">
+        <div class="skel-doc-card" *ngFor="let i of items">
+            <div class="skel-doc-head">
+                <span class="skel-block skel-rect skel-chip"></span>
+                <span class="skel-block skel-rect skel-badge"></span>
+            </div>
+            <span class="skel-block skel-rect skel-icon"></span>
+            <span class="skel-block skel-text skel-title"></span>
+            <span class="skel-block skel-text skel-body"></span>
+            <span class="skel-block skel-text skel-body short"></span>
+            <div class="skel-doc-foot">
+                <span class="skel-block skel-text skel-meta"></span>
+                <span class="skel-block skel-text skel-meta short"></span>
+            </div>
+        </div>
+    </ng-container>
+</ng-container>
