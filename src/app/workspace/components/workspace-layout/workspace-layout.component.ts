@@ -6,6 +6,7 @@ import { AuthService } from '../../../shared/services/auth.service';
 import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
+import { CommandPaletteService } from '../../../shared/services/command-palette.service';
 
 @Component({
   selector: 'app-workspace-layout',
@@ -46,8 +47,13 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     private router: Router,
     private knowledgeContext: WorkspaceKnowledgeContextService,
     private route: ActivatedRoute,
-    private vectorStoreService: VectorStoreService
+    private vectorStoreService: VectorStoreService,
+    private commandPalette: CommandPaletteService
   ) {}
+
+  openCommandPalette(): void {
+    this.commandPalette.open();
+  }
 
   ngOnInit(): void {
     this.knowledgeContext.state$

@@ -133,8 +133,9 @@
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" [(ngModel)]="searchQuery"
               [placeholder]="isSharedVectorStoreSelected ? (activeWorkspaceTab === 'shared-with-me' ? 'Search shared documents or owners...' : 'Search documents or recipients...') : 'Search documents...'" />
-            <button class="clear-search" *ngIf="searchQuery" (click)="searchQuery = ''">
-              <i class="fa-solid fa-xmark"></i>
+            <button class="clear-search" *ngIf="searchQuery" (click)="searchQuery = ''" aria-label="Clear search"
+              title="Clear search">
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
           </div>
           <button type="button" class="btn-premium-primary toolbar-upload-btn"
@@ -659,8 +660,8 @@
           <i class="fa-solid fa-trash-can"></i>
           <span>Delete Documents</span>
         </button>
-        <button class="close-bar" (click)="clearSelection()" title="Clear selection">
-          <i class="fa-solid fa-xmark"></i>
+        <button class="close-bar" (click)="clearSelection()" title="Clear selection" aria-label="Clear selection">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
         </button>
       </div>
     </div>

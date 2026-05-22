@@ -16,13 +16,15 @@ import { FormatTimePipe } from './pipes/format-time.pipe';
 import { ToastComponent } from './components/toast/toast.component';
 import { SkeletonComponent } from './components/skeleton/skeleton.component';
 import { TopProgressComponent } from './components/top-progress/top-progress.component';
+import { CommandPaletteComponent } from './components/command-palette/command-palette.component';
+import { DocPreviewDirective } from './directives/doc-preview.directive';
 
 import { TypingLabelComponent } from './components/typing-label/typing-label.component';
 import { TypingIndicatorComponent } from './components/typing-indicator/typing-indicator.component';
 import { MessageBubbleComponent } from './components/message-bubble/message-bubble.component';
 
 @NgModule({
-  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe, ToastComponent, SkeletonComponent, TopProgressComponent],
+  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe, ToastComponent, SkeletonComponent, TopProgressComponent, CommandPaletteComponent, DocPreviewDirective],
   imports: [
     CommonModule,
     HttpClientModule,
@@ -67,7 +69,9 @@ import { MessageBubbleComponent } from './components/message-bubble/message-bubb
     FormatTimePipe,
     ToastComponent,
     SkeletonComponent,
-    TopProgressComponent
+    TopProgressComponent,
+    CommandPaletteComponent,
+    DocPreviewDirective
   ]
 })
 export class SharedModule { }

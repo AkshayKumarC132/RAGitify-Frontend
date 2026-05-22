@@ -18,6 +18,7 @@
 
       <ng-container *ngIf="selectedDocumentIds.length > 0">
         <div class="document-chip-inline" *ngFor="let doc of visibleSelectedDocuments"
+          [appDocPreview]="doc.id" [docPreviewTitle]="getDocumentDisplayName(doc)" tabindex="0"
           [class.badge-red]="getFileTypeColor(doc) === 'red'" [class.badge-blue]="getFileTypeColor(doc) === 'blue'"
           [class.badge-green]="getFileTypeColor(doc) === 'green'"
           [class.badge-orange]="getFileTypeColor(doc) === 'orange'"
@@ -25,8 +26,9 @@
           [class.badge-gray]="getFileTypeColor(doc) === 'gray'">
           <span class="file-type">{{ getDocumentTypeLabel(doc) }}</span>
           <span class="doc-title" [title]="getDocumentDisplayName(doc)">{{ getDocumentDisplayName(doc) }}</span>
-          <button type="button" class="remove-btn" (click)="removeSelectedDocument(doc.id, $event)">
-            <i class="fa-solid fa-xmark"></i>
+          <button type="button" class="remove-btn" (click)="removeSelectedDocument(doc.id, $event)"
+            aria-label="Remove document attachment">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
           </button>
         </div>
 

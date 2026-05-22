@@ -49,6 +49,21 @@ export class AuthService {
     return this.api.post<User>('/register/', data);
   }
 
+  /**
+   * Request a password-reset email. Backend always returns 200 (generic message)
+   * regardless of whether the email is registered, to avoid account enumeration.
+   */
+  requestPasswordReset(email: string): Observable<{ message: string }> {
+    return this.api.post<{ message: string }>('/password-reset/request/', { email });
+  }
+
+  /**
+   * Confirm a password reset with the token from the email and a new password.
+   */
+  confirmPasswordReset(token: string, password: string): Observable<{ message: string }> {
+    return this.api.post<{ message: string }>('/password-reset/confirm/', { token, password });
+  }
+
   getTenants(): Observable<{ id: number; name: string }[]> {
     return this.api.get<{ id: number; name: string }[]>('/tenant/list/');
   }

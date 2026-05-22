@@ -1,0 +1,49 @@
+<div class="cp-overlay" *ngIf="isOpen" (click)="onBackdrop($event)" role="dialog" aria-modal="true"
+    aria-label="Command palette">
+    <div class="cp-panel" (click)="$event.stopPropagation()">
+        <div class="cp-search-row">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input #searchInput type="text" class="cp-search-input"
+                placeholder="Search chats, documents, libraries, actions…" [value]="query"
+                (input)="onQueryChange($any($event.target).value)" autocomplete="off" spellcheck="false"
+                aria-label="Search palette" />
+            <kbd class="cp-esc">esc</kbd>
+        </div>
+
+        <div class="cp-results" role="listbox">
+            <div *ngIf="loadingItems" class="cp-empty">
+                <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+                <span>Loading…</span>
+            </div>
+
+            <ng-container *ngIf="!loadingItems">
+                <button type="button" *ngFor="let item of filteredItems; let i = index; trackBy: trackById"
+                    class="cp-item" [class.active]="i === activeIndex" role="option"
+                    [attr.aria-selected]="i === activeIndex" (click)="selectItem(item)"
+                    (mouseenter)="activeIndex = i">
+                    <span class="cp-item-icon" [class]="'kind-' + item.kind">
+                        <i class="fa-solid" [ngClass]="item.icon" aria-hidden="true"></i>
+                    </span>
+                    <span class="cp-item-body">
+                        <span class="cp-item-label">{{ item.label }}</span>
+                        <span class="cp-item-sublabel" *ngIf="item.sublabel">{{ item.sublabel }}</span>
+                    </span>
+                    <span class="cp-item-kind">{{ item.kind }}</span>
+                </button>
+
+                <div *ngIf="filteredItems.length === 0" class="cp-empty">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <span>No matches for "{{ query }}"</span>
+                </div>
+            </ng-container>
+        </div>
+
+        <div class="cp-footer">
+            <span class="cp-hint"><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+            <span class="cp-hint"><kbd>↵</kbd> Open</span>
+            <span class="cp-hint"><kbd>esc</kbd> Close</span>
+            <span class="cp-spacer"></span>
+            <span class="cp-hint cp-trigger"><kbd>⌘</kbd><kbd>K</kbd> Command palette</span>
+        </div>
+    </div>
+</div>

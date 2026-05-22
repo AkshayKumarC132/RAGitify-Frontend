@@ -454,6 +454,137 @@ main#main-content:focus {
   outline: none;
 }
 
+/* ────────────────────────────────────────────────────────────────
+   Document preview popover (used by appDocPreview directive)
+   Lives on document.body so it escapes overflow:hidden ancestors.
+   ──────────────────────────────────────────────────────────────── */
+.doc-preview-popover {
+  position: absolute;
+  z-index: 99999;
+  width: 320px;
+  max-width: calc(100vw - 1rem);
+  padding: 0.75rem 0.85rem;
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px -12px rgba(15, 23, 42, 0.28),
+    0 6px 16px -8px rgba(15, 23, 42, 0.12);
+  font-family: var(--app-font);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(2px);
+  animation: docPreviewIn 0.16s ease-out forwards;
+
+  .doc-preview-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+    word-break: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .doc-preview-meta {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
+    margin-bottom: 0.4rem;
+  }
+
+  .doc-preview-snippet {
+    color: var(--text-secondary);
+    line-height: 1.5;
+    max-height: 8.4em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
+  }
+
+  .doc-preview-empty {
+    color: var(--text-secondary);
+    font-style: italic;
+    opacity: 0.85;
+  }
+
+  .doc-preview-error {
+    color: var(--error-color, #ef4444);
+    font-size: 0.74rem;
+  }
+
+  .doc-preview-loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+  }
+
+  .doc-preview-spinner {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--accent-color);
+    animation: docPreviewSpin 0.8s linear infinite;
+    display: inline-block;
+  }
+
+  .doc-preview-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.55rem;
+  }
+
+  .doc-preview-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-color);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+}
+
+body.theme-dark .doc-preview-popover {
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.6),
+    0 6px 16px -8px rgba(0, 0, 0, 0.4);
+
+  .doc-preview-tag {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+  }
+}
+
+@keyframes docPreviewIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes docPreviewSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-preview-popover {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .doc-preview-spinner { animation: none; }
+}
+
 /* Skip-to-content link (a11y) */
 .skip-to-content {
   position: absolute;

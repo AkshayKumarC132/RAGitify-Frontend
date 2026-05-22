@@ -4,7 +4,7 @@ import { HttpEvent, HttpContext } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { UserStateService } from './user-state.service';
-import { Document, DocumentIngestRequest, DocumentStatus, IngestResponse, DocumentMoveRequest, DocumentMoveResponse } from '../models/document.model';
+import { Document, DocumentIngestRequest, DocumentStatus, DocumentPreview, IngestResponse, DocumentMoveRequest, DocumentMoveResponse } from '../models/document.model';
 import { HttpParams } from '@angular/common/http';
 import { shareReplay, tap } from 'rxjs/operators';
 import { SKIP_LOADING } from '../interceptors/loading.interceptor';
@@ -114,6 +114,20 @@ export class DocumentService {
       .set(SKIP_LOADING, true)
       .set(SKIP_API_ERROR_ALERT, true);
     return this.api.get<DocumentStatus>(`/document/${token}/${documentId}/status/`, token, undefined, context);
+  }
+
+  /**
+   * Fetches a lightweight preview (title, snippet, keywords) for a document.
+   * Used for hover previews in the chat composer. Suppresses the global loader and
+   * error toasts since these requests are speculative.
+   */
+  getPreview(documentId: string, chars: number = 600): Observable<DocumentPreview> {
+    const token = this.getToken();
+    const context = new HttpContext()
+      .set(SKIP_LOADING, true)
+      .set(SKIP_API_ERROR_ALERT, true);
+    const params = new HttpParams().set('chars', String(chars));
+    return this.api.get<DocumentPreview>(`/document/${token}/${documentId}/preview/`, token, params, context);
   }
 
   update(id: string, data: Partial<Document>): Observable<Document> {

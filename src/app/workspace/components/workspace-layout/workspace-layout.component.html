@@ -141,6 +141,12 @@
         </ng-container>
       </div>
       <div class="top-bar-right">
+        <button type="button" class="cmd-k-trigger" (click)="openCommandPalette()" title="Search (Ctrl/⌘ + K)"
+          aria-label="Open command palette">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          <span class="cmd-k-label">Search</span>
+          <span class="cmd-k-kbd"><kbd>⌘</kbd><kbd>K</kbd></span>
+        </button>
         <app-theme-toggle [compact]="true"></app-theme-toggle>
         <button type="button" class="upload-button" (click)="openUploadOrNewLibrary('upload')"
           *ngIf="activeSection === 'knowledge' && !activeDocumentId && !activeLibraryStatsId">

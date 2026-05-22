@@ -38,6 +38,19 @@ export interface DocumentStatus {
   qdrant_points?: number;
 }
 
+export interface DocumentPreview {
+  id: string;
+  title: string;
+  file_type: string;
+  file_size: number | null;
+  status: IngestionStatus;
+  uploaded_at: string | null;
+  summary_available: boolean;
+  snippet: string;
+  truncated: boolean;
+  keywords: string[];
+}
+
 export interface IngestResponse {
   message: string;
   file_name: string;
