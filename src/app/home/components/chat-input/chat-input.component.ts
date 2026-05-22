@@ -590,14 +590,18 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
       return;
     }
 
+    const maxHeight = 120;
+
     textarea.style.height = 'auto';
-    textarea.style.height = `${textarea.scrollHeight}px`;
+    const contentHeight = textarea.scrollHeight;
+    textarea.style.height = `${Math.min(contentHeight, maxHeight)}px`;
+    this.isOverflowing = contentHeight > maxHeight;
 
     // Expand when content grows tall enough.
     // Only collapse back when the message is truly empty — never based on scrollHeight alone,
     // because switching layouts changes the textarea width, which changes scrollHeight,
     // which would cause an oscillation loop (expand → wider → fewer lines → collapse → narrower → more lines → expand…)
-    if (textarea.scrollHeight > 52) {
+    if (contentHeight > 52) {
       this.isExpanded = true;
     } else if (!this.message) {
       this.isExpanded = false;

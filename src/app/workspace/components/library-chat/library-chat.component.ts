@@ -26,6 +26,7 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
     messageInputText = '';
     errorMessage = '';
     isExpanded = false;
+    isOverflowing = false;
     private streamSub?: Subscription;
 
     constructor(
@@ -242,10 +243,13 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
     autoResizeInput(): void {
         if (this.messageInput?.nativeElement) {
             const textarea = this.messageInput.nativeElement;
+            const maxHeight = 120;
             textarea.style.height = 'auto';
-            textarea.style.height = `${textarea.scrollHeight}px`;
+            const contentHeight = textarea.scrollHeight;
+            textarea.style.height = `${Math.min(contentHeight, maxHeight)}px`;
+            this.isOverflowing = contentHeight > maxHeight;
 
-            if (textarea.scrollHeight > 52) {
+            if (contentHeight > 52) {
                 this.isExpanded = true;
             } else if (!this.messageInputText) {
                 this.isExpanded = false;

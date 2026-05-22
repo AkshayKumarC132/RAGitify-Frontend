@@ -314,10 +314,14 @@
     outline: none;
     max-height: 150px;
     min-height: 24px;
-    overflow-y: auto;
+    overflow-y: hidden;
     font-family: inherit;
     color: #ffffff !important;
     caret-color: #ffffff;
+
+    &.is-scrolling {
+      overflow-y: auto;
+    }
 
     :host-context(.theme-dark) & {
       color: #000000 !important;

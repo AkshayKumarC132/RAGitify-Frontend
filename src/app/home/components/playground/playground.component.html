@@ -33,6 +33,7 @@
                 <div class="chat-input-shell">
                     <textarea #messageInput (input)="autoResizeInput()" [(ngModel)]="inputMessage"
                         (keydown)="onKeyPress($event)" placeholder="How can I help you today?"
+                        [class.is-scrolling]="isOverflowing"
                         [disabled]="loading || !conversationId" rows="1"></textarea>
                 </div>
 

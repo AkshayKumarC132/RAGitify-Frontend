@@ -271,7 +271,11 @@
   font-family: inherit;
   line-height: 1.5;
   padding: 0;
-  overflow-y: auto;
+  overflow-y: hidden;
+
+  &.is-scrolling {
+    overflow-y: auto;
+  }
 
   &:focus {
     outline: none;

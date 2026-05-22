@@ -213,7 +213,11 @@
     resize: none;
     max-height: 120px;
     min-height: 24px;
-    overflow-y: auto;
+    overflow-y: hidden;
+
+    &.is-scrolling {
+        overflow-y: auto;
+    }
 
     &:focus {
         outline: none;

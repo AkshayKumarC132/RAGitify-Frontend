@@ -47,6 +47,7 @@
             <div class="input-wrapper">
                 <textarea #messageInput [(ngModel)]="messageInputText" (keydown)="onKeyPress($event)"
                     (input)="autoResizeInput()" placeholder="Test your assistant..." class="chat-input"
+                    [class.is-scrolling]="isOverflowing"
                     [disabled]="loading || isResponseInProgress" rows="1"></textarea>
                 <div class="input-actions">
                     <button type="button" class="send-button" (click)="sendMessage()"

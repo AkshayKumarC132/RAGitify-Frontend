@@ -77,7 +77,8 @@
 
     <div class="chat-input-shell">
       <textarea #messageArea [(ngModel)]="message" (keydown)="onKeyPress($event)" (input)="onInputChange()"
-        placeholder="How can I help you today?" class="chat-input" [disabled]="loading" rows="1"></textarea>
+        placeholder="How can I help you today?" class="chat-input" [class.is-scrolling]="isOverflowing"
+        [disabled]="loading" rows="1"></textarea>
     </div>
 
     <div class="input-bar">

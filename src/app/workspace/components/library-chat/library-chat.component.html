@@ -45,7 +45,7 @@
             <div class="input-wrapper" [class.expanded]="isExpanded">
                 <div class="chat-input-shell">
                     <textarea #messageInput [(ngModel)]="messageInputText" (keydown)="onKeyPress($event)" (input)="autoResizeInput()"
-                        placeholder="Ask a question about this library..." class="chat-input"
+                        placeholder="Ask a question about this library..." class="chat-input" [class.is-scrolling]="isOverflowing"
                         [disabled]="loading || isResponseInProgress" rows="1"></textarea>
                 </div>
                 <div class="input-bar">

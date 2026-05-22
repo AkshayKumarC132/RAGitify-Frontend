@@ -114,7 +114,11 @@
   width: 100%;
   box-shadow: none;
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-  overflow-y: auto;
+  overflow-y: hidden;
+
+  &.is-scrolling {
+    overflow-y: auto;
+  }
 
   &:focus {
     outline: none;

@@ -25,6 +25,7 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
     loading = false;
     messageInputText = '';
     errorMessage = '';
+    isOverflowing = false;
     private streamSub?: Subscription;
 
     constructor(
@@ -245,8 +246,11 @@ export class AssistantChatComponent implements OnInit, AfterViewInit, OnDestroy 
     autoResizeInput(): void {
         if (this.messageInput?.nativeElement) {
             const textarea = this.messageInput.nativeElement;
+            const maxHeight = 120;
             textarea.style.height = 'auto';
-            textarea.style.height = `${textarea.scrollHeight}px`;
+            const contentHeight = textarea.scrollHeight;
+            textarea.style.height = `${Math.min(contentHeight, maxHeight)}px`;
+            this.isOverflowing = contentHeight > maxHeight;
         }
     }
 

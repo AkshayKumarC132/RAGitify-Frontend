@@ -32,6 +32,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     warningMessages: string[] = [];
     mode: 'normal' | 'document' = 'normal';
     isExpanded = false;
+    isOverflowing = false;
     private streamSub?: Subscription;
 
     libraries: VectorStore[] = [];
@@ -460,12 +461,15 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     autoResizeInput(): void {
         if (this.messageInput?.nativeElement) {
             const textarea = this.messageInput.nativeElement;
+            const maxHeight = 150;
             textarea.style.height = 'auto';
-            textarea.style.height = `${textarea.scrollHeight}px`;
+            const contentHeight = textarea.scrollHeight;
+            textarea.style.height = `${Math.min(contentHeight, maxHeight)}px`;
+            this.isOverflowing = contentHeight > maxHeight;
 
             // Same oscillation-safe logic as home chat-input:
             // Expand on scrollHeight threshold, only collapse when input is empty
-            if (textarea.scrollHeight > 52) {
+            if (contentHeight > 52) {
                 this.isExpanded = true;
             } else if (!this.inputMessage) {
                 this.isExpanded = false;

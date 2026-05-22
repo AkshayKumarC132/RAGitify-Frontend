@@ -26,6 +26,7 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
   messageInputText = '';
   errorMessage = '';
   isExpanded = false;
+  isOverflowing = false;
   private streamSub?: Subscription;
   private ephemeralMetadataMap = new Map<string, any>();
   private scrollPending = false;
@@ -291,12 +292,13 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
   autoResizeInput(): void {
     if (this.messageInput?.nativeElement) {
       const textarea = this.messageInput.nativeElement;
-      // Reset height to auto to get the correct scrollHeight based on the new content
+      const maxHeight = 120;
       textarea.style.height = 'auto';
-      // Set the height matching the scrollHeight. Max height is restricted by SCSS.
-      textarea.style.height = `${textarea.scrollHeight}px`;
+      const contentHeight = textarea.scrollHeight;
+      textarea.style.height = `${Math.min(contentHeight, maxHeight)}px`;
+      this.isOverflowing = contentHeight > maxHeight;
 
-      if (textarea.scrollHeight > 52) {
+      if (contentHeight > 52) {
         this.isExpanded = true;
       } else if (!this.messageInputText) {
         this.isExpanded = false;
