@@ -38,6 +38,34 @@ export interface DocumentStatus {
   qdrant_points?: number;
 }
 
+export interface DocumentVersionCreator {
+  id: number;
+  username: string;
+  email: string;
+  full_name: string;
+}
+
+export interface DocumentVersion {
+  id: number;
+  document: string;
+  version_number: number;
+  title: string;
+  original_filename: string;
+  file_type: string;
+  file_size: number | null;
+  checksum: string;
+  source: string;
+  s3_url: string;
+  s3_key: string;
+  summary: string;
+  keywords: string[] | null;
+  metadata: Record<string, unknown>;
+  status: string;
+  change_note: string;
+  created_at: string;
+  created_by: DocumentVersionCreator | null;
+}
+
 export interface DocumentPreview {
   id: string;
   title: string;

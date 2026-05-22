@@ -111,17 +111,88 @@
             <i class="fa-solid fa-share-nodes"></i>
           </button>
           <button *ngIf="document" type="button" class="details-secondary-btn" (click)="openDocumentChat()"
-            title="Chat">
-            <i class="fa-solid fa-comments"></i>
+            title="Chat" aria-label="Chat with document">
+            <i class="fa-solid fa-comments" aria-hidden="true"></i>
           </button>
-          <button *ngIf="document && document.access_type !== 'shared'" type="button" class="details-secondary-btn delete-btn" (click)="deleteDocument()" title="Delete">
-            <i class="fa-solid fa-trash"></i>
+          <button *ngIf="document" type="button" class="details-secondary-btn"
+            [class.active]="showVersionsPanel" (click)="toggleVersionsPanel()" title="Version history"
+            aria-label="Show version history" [attr.aria-expanded]="showVersionsPanel">
+            <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+          </button>
+          <button *ngIf="document && document.access_type !== 'shared'" type="button"
+            class="details-secondary-btn delete-btn" (click)="deleteDocument()" title="Delete"
+            aria-label="Delete document">
+            <i class="fa-solid fa-trash" aria-hidden="true"></i>
           </button>
           <a *ngIf="document?.signed_url" class="details-primary-btn" [href]="document?.signed_url" target="_blank"
             rel="noopener noreferrer" title="Open File">
             <i class="fa-solid fa-arrow-up-right-from-square"></i>
           </a>
         </div>
+      </section>
+
+      <section class="versions-panel" *ngIf="showVersionsPanel" aria-labelledby="versions-panel-title">
+        <header class="versions-panel-header">
+          <div>
+            <h2 id="versions-panel-title">Version history</h2>
+            <p class="versions-panel-subtitle">
+              Each re-upload and restore creates a snapshot. You can roll back to any of them.
+            </p>
+          </div>
+          <button type="button" class="versions-panel-close" (click)="toggleVersionsPanel()"
+            aria-label="Close version history">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div *ngIf="versionsLoading" class="versions-loading" aria-busy="true">
+          <app-skeleton variant="list-item" [count]="3"></app-skeleton>
+        </div>
+
+        <div *ngIf="!versionsLoading && versionsError" class="versions-empty">
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+          <span>{{ versionsError }}</span>
+        </div>
+
+        <div *ngIf="!versionsLoading && !versionsError && versions.length === 0" class="versions-empty">
+          <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+          <span>No previous versions yet. A snapshot is created the first time you re-upload this document.</span>
+        </div>
+
+        <ul *ngIf="!versionsLoading && !versionsError && versions.length > 0" class="versions-list">
+          <li *ngFor="let v of versions; trackBy: trackVersionById" class="version-row">
+            <div class="version-row-main">
+              <div class="version-row-head">
+                <span class="version-tag">v{{ v.version_number }}</span>
+                <span class="version-title" [title]="v.title">{{ v.title }}</span>
+              </div>
+              <div class="version-row-meta">
+                <span>{{ formatVersionDate(v.created_at) }}</span>
+                <span class="dot" aria-hidden="true">·</span>
+                <span>{{ formatVersionSize(v.file_size) }}</span>
+                <span class="dot" *ngIf="v.created_by" aria-hidden="true">·</span>
+                <span *ngIf="v.created_by">{{ v.created_by.full_name || v.created_by.username }}</span>
+              </div>
+              <div class="version-row-note" *ngIf="v.change_note">{{ v.change_note }}</div>
+            </div>
+            <div class="version-row-actions">
+              <a *ngIf="v.s3_url" [href]="v.s3_url" target="_blank" rel="noopener noreferrer"
+                class="version-action-btn version-action-view" title="Open this version's file">
+                <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                <span>Open</span>
+              </a>
+              <button type="button" class="version-action-btn version-action-restore"
+                *ngIf="document?.access_type !== 'shared'"
+                [disabled]="restoringVersionId === v.id || document?.status === 'in_progress' || document?.status === 'queued'"
+                (click)="restoreVersion(v)"
+                [title]="document?.status === 'in_progress' || document?.status === 'queued' ? 'Cannot restore while processing' : 'Restore this version'">
+                <i *ngIf="restoringVersionId !== v.id" class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                <i *ngIf="restoringVersionId === v.id" class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+                <span>{{ restoringVersionId === v.id ? 'Restoring…' : 'Restore' }}</span>
+              </button>
+            </div>
+          </li>
+        </ul>
       </section>
 
       <section class="details-highlights">

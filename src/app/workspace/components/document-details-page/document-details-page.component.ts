@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, forkJoin, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
-import { Document } from '../../../shared/models/document.model';
+import { Document, DocumentVersion } from '../../../shared/models/document.model';
 import { SharedByMeItem, SharedWithMeItem } from '../../../shared/models/document-share.model';
 import { User } from '../../../shared/models/user.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
@@ -54,6 +54,14 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
   private destroy$ = new Subject<void>();
   private statusPollTimer: ReturnType<typeof setTimeout> | null = null;
   summaryCopied = false;
+
+  // Version history
+  versions: DocumentVersion[] = [];
+  versionsLoading = false;
+  versionsLoaded = false;
+  versionsError = '';
+  restoringVersionId: number | null = null;
+  showVersionsPanel = false;
 
   constructor(
     private fb: FormBuilder,
@@ -181,6 +189,93 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
         this.toast.error('Copy failed', 'Could not access the clipboard.');
       });
     }
+  }
+
+  // ─── Version history ────────────────────────────────────────────────
+  toggleVersionsPanel(): void {
+    this.showVersionsPanel = !this.showVersionsPanel;
+    if (this.showVersionsPanel && !this.versionsLoaded && !this.versionsLoading) {
+      this.loadVersions();
+    }
+  }
+
+  loadVersions(): void {
+    if (!this.documentId) {
+      return;
+    }
+    this.versionsLoading = true;
+    this.versionsError = '';
+    this.documentService.listVersions(this.documentId).subscribe({
+      next: (rows) => {
+        this.versions = rows || [];
+        this.versionsLoading = false;
+        this.versionsLoaded = true;
+      },
+      error: (err) => {
+        this.versionsLoading = false;
+        this.versionsError = err?.error?.error || 'Could not load version history.';
+        this.toast.error('Version history unavailable', this.versionsError);
+      }
+    });
+  }
+
+  async restoreVersion(version: DocumentVersion): Promise<void> {
+    if (!this.documentId || this.restoringVersionId !== null) {
+      return;
+    }
+    const confirmed = await this.confirmDialogService.confirm({
+      title: `Restore version ${version.version_number}?`,
+      message: 'The current document will be snapshotted first so the restore is reversible. The document will be re-processed.',
+      itemName: this.document?.title || 'this document',
+      confirmText: 'Restore',
+      type: 'warning',
+    }).catch(() => false);
+    if (!confirmed) {
+      return;
+    }
+
+    this.restoringVersionId = version.id;
+    this.documentService.restoreVersion(this.documentId, version.id).subscribe({
+      next: (restored) => {
+        this.restoringVersionId = null;
+        this.document = restored;
+        this.toast.success('Version restored', `Document rolled back to v${version.version_number}.`);
+        // Refresh the version list so the pre-restore snapshot shows up at the top.
+        this.versionsLoaded = false;
+        this.loadVersions();
+      },
+      error: (err) => {
+        this.restoringVersionId = null;
+        const message = err?.error?.error || 'Could not restore this version.';
+        this.toast.error('Restore failed', message);
+      }
+    });
+  }
+
+  trackVersionById(_: number, version: DocumentVersion): number {
+    return version.id;
+  }
+
+  formatVersionDate(iso: string | null | undefined): string {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString();
+    } catch {
+      return iso;
+    }
+  }
+
+  formatVersionSize(bytes: number | null | undefined): string {
+    if (!bytes && bytes !== 0) return '—';
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let idx = 0;
+    while (value >= 1024 && idx < units.length - 1) {
+      value /= 1024;
+      idx++;
+    }
+    return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[idx]}`;
   }
 
   get documentKeywords(): string[] {

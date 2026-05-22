@@ -4,7 +4,7 @@ import { HttpEvent, HttpContext } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { UserStateService } from './user-state.service';
-import { Document, DocumentIngestRequest, DocumentStatus, DocumentPreview, IngestResponse, DocumentMoveRequest, DocumentMoveResponse } from '../models/document.model';
+import { Document, DocumentIngestRequest, DocumentStatus, DocumentPreview, DocumentVersion, IngestResponse, DocumentMoveRequest, DocumentMoveResponse } from '../models/document.model';
 import { HttpParams } from '@angular/common/http';
 import { shareReplay, tap } from 'rxjs/operators';
 import { SKIP_LOADING } from '../interceptors/loading.interceptor';
@@ -128,6 +128,31 @@ export class DocumentService {
       .set(SKIP_API_ERROR_ALERT, true);
     const params = new HttpParams().set('chars', String(chars));
     return this.api.get<DocumentPreview>(`/document/${token}/${documentId}/preview/`, token, params, context);
+  }
+
+  /**
+   * Lists all version snapshots for a document (newest first). Versions are created
+   * automatically on re-upload and on restore (so restore is itself reversible).
+   */
+  listVersions(documentId: string): Observable<DocumentVersion[]> {
+    const token = this.getToken();
+    return this.api.get<DocumentVersion[]>(`/document/${token}/${documentId}/versions/`, token);
+  }
+
+  /**
+   * Restores the document to the given version snapshot. The current state is
+   * automatically snapshotted first, and the document is requeued for re-ingest.
+   * Owner only — share recipients cannot restore.
+   */
+  restoreVersion(documentId: string, versionId: number): Observable<Document> {
+    const token = this.getToken();
+    return this.api.post<Document>(
+      `/document/${token}/${documentId}/versions/${versionId}/restore/`,
+      {},
+      token
+    ).pipe(
+      tap(() => this.invalidateListCache())
+    );
   }
 
   update(id: string, data: Partial<Document>): Observable<Document> {
