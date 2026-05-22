@@ -27,21 +27,25 @@
   gap: 0.55rem;
   padding: 0.55rem 0.75rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.85);
-  color: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.20);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+}
+
+body.theme-dark .loader-card {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .loader-ring {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 2px solid rgba(15, 23, 42, 0.18);
+  border: 2px solid var(--border-color);
   border-top-color: var(--accent-color);
-  border-right-color: rgba(87, 153, 255, 0.35);
+  border-right-color: rgba(59, 130, 246, 0.4);
   animation: ringSpin 0.9s linear infinite;
 }
 

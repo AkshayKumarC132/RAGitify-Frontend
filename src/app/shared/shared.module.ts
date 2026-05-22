@@ -5,6 +5,7 @@ import { NgModule } from '@angular/core';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { ApiErrorAlertInterceptor } from './interceptors/api-error-alert.interceptor';
 import { LoadingInterceptor } from './interceptors/loading.interceptor';
+import { RetryInterceptor } from './interceptors/retry.interceptor';
 import { ApiService } from './services/api.service';
 import { AuthService } from './services/auth.service';
 import { ThemeToggleComponent } from './components/theme-toggle/theme-toggle.component';
@@ -14,13 +15,14 @@ import { MessageSourcesComponent } from './components/message-sources/message-so
 import { FormatTimePipe } from './pipes/format-time.pipe';
 import { ToastComponent } from './components/toast/toast.component';
 import { SkeletonComponent } from './components/skeleton/skeleton.component';
+import { TopProgressComponent } from './components/top-progress/top-progress.component';
 
 import { TypingLabelComponent } from './components/typing-label/typing-label.component';
 import { TypingIndicatorComponent } from './components/typing-indicator/typing-indicator.component';
 import { MessageBubbleComponent } from './components/message-bubble/message-bubble.component';
 
 @NgModule({
-  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe, ToastComponent, SkeletonComponent],
+  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe, ToastComponent, SkeletonComponent, TopProgressComponent],
   imports: [
     CommonModule,
     HttpClientModule,
@@ -44,6 +46,11 @@ import { MessageBubbleComponent } from './components/message-bubble/message-bubb
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
       multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: RetryInterceptor,
+      multi: true
     }
   ],
   exports: [
@@ -59,7 +66,8 @@ import { MessageBubbleComponent } from './components/message-bubble/message-bubb
     MessageBubbleComponent,
     FormatTimePipe,
     ToastComponent,
-    SkeletonComponent
+    SkeletonComponent,
+    TopProgressComponent
   ]
 })
 export class SharedModule { }

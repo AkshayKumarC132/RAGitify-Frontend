@@ -1,6 +1,28 @@
-<button class="theme-toggle" (click)="toggleTheme()" [attr.aria-label]="'Toggle color theme'">
-  <ng-container *ngIf="(theme$ | async) as theme">
-    <i class="fa-solid" [ngClass]="theme === 'dark' ? 'fa-sun' : 'fa-moon'"></i>
-    <span>{{ theme === 'dark' ? 'Light mode' : 'Dark mode' }}</span>
-  </ng-container>
-</button>
+<div class="theme-toggle-wrapper" (click)="$event.stopPropagation()" *ngIf="(preference$ | async) as pref">
+  <button type="button" class="theme-toggle" [class.is-compact]="compact" (click)="toggleMenu($event)"
+    [attr.aria-label]="'Color theme: ' + pref" [attr.aria-expanded]="menuOpen" [attr.title]="'Theme — ' + pref">
+    <i class="fa-solid" [ngClass]="iconFor((theme$ | async) || 'light')" aria-hidden="true"></i>
+    <span *ngIf="!compact">{{ pref === 'system' ? 'System theme' : (pref === 'dark' ? 'Dark mode' : 'Light mode') }}</span>
+  </button>
+
+  <div class="theme-menu" *ngIf="menuOpen" role="menu">
+    <button type="button" class="theme-menu-item" [class.active]="pref === 'light'" (click)="select('light')"
+      role="menuitemradio" [attr.aria-checked]="pref === 'light'">
+      <i class="fa-solid fa-sun" aria-hidden="true"></i>
+      <span>Light</span>
+      <i class="fa-solid fa-check check" *ngIf="pref === 'light'" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="theme-menu-item" [class.active]="pref === 'dark'" (click)="select('dark')"
+      role="menuitemradio" [attr.aria-checked]="pref === 'dark'">
+      <i class="fa-solid fa-moon" aria-hidden="true"></i>
+      <span>Dark</span>
+      <i class="fa-solid fa-check check" *ngIf="pref === 'dark'" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="theme-menu-item" [class.active]="pref === 'system'" (click)="select('system')"
+      role="menuitemradio" [attr.aria-checked]="pref === 'system'">
+      <i class="fa-solid fa-desktop" aria-hidden="true"></i>
+      <span>System</span>
+      <i class="fa-solid fa-check check" *ngIf="pref === 'system'" aria-hidden="true"></i>
+    </button>
+  </div>
+</div>

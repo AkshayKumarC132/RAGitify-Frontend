@@ -11,6 +11,7 @@ export class ConfirmDialogService {
     options: null
   });
   private resultSubject: { resolve: (value: any) => void; reject: () => void } | null = null;
+  private previouslyFocused: HTMLElement | null = null;
 
   getDialogState(): Observable<{ show: boolean; options: ConfirmDialogOptions | null }> {
     return this.dialogState$.asObservable();
@@ -26,6 +27,11 @@ export class ConfirmDialogService {
         reject(new Error('Dialog already open'));
         return;
       }
+
+      // Remember the element that opened the dialog so we can return focus on close.
+      this.previouslyFocused = (document.activeElement instanceof HTMLElement)
+        ? document.activeElement
+        : null;
 
       this.resultSubject = { resolve, reject };
       this.dialogState$.next({ show: true, options });
@@ -66,6 +72,13 @@ export class ConfirmDialogService {
       this.resultSubject = null;
     }
     this.dialogState$.next({ show: false, options: null });
+
+    // Restore focus to the element that opened the dialog (a11y: avoids focus jumping to <body>).
+    const target = this.previouslyFocused;
+    this.previouslyFocused = null;
+    if (target && typeof target.focus === 'function' && document.body.contains(target)) {
+      setTimeout(() => target.focus({ preventScroll: true }), 0);
+    }
   }
 }
 

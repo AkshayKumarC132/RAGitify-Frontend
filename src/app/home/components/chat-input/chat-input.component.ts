@@ -4,7 +4,7 @@ import { Assistant } from '../../../shared/models/assistant.model';
 import { Document } from '../../../shared/models/document.model';
 import { ToastService } from '../../../shared/services/toast.service';
 
-type AttachmentPanel = 'web' | 'notes' | 'library' | 'prompts' | null;
+type AttachmentPanel = 'web' | 'notes' | 'library' | null;
 
 type SpeechRecognitionEventLike = {
   resultIndex: number;
@@ -67,8 +67,13 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   activeDocumentTab: 'my' | 'shared' = 'my';
   webForm = { url: '', title: '' };
   noteForm = { title: '', content: '' };
+
+  readonly slashCommands: { command: string; description: string; action: () => void }[] = [
+    { command: '/web', description: 'Toggle web search for this message', action: () => this.applySlashCommand('web') },
+    { command: '/lib', description: 'Attach documents from a library', action: () => this.applySlashCommand('lib') }
+  ];
+  showSlashMenu = false;
   pendingLibraryId: string | null = null;
-  pendingPromptId: string | null = null;
   selectionMode: 'documents' = 'documents';
   pendingDocumentIds = new Set<string>();
   expandedLibraries = new Set<string>();
@@ -103,9 +108,6 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selectedLibraryId']) {
       this.pendingLibraryId = this.selectedLibraryId;
-    }
-    if (changes['selectedPromptId']) {
-      this.pendingPromptId = this.selectedPromptId;
     }
     if (changes['selectedDocumentIds']) {
       this.pendingDocumentIds = new Set((this.selectedDocumentIds || []).map(id => String(id)));
@@ -145,6 +147,24 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   onInputChange(): void {
     this.adjustTextareaHeight();
+    this.showSlashMenu = this.message === '/' || /^\/\w*$/.test(this.message);
+  }
+
+  get filteredSlashCommands(): { command: string; description: string; action: () => void }[] {
+    if (!this.showSlashMenu) return [];
+    const query = this.message.toLowerCase();
+    return this.slashCommands.filter(cmd => cmd.command.startsWith(query));
+  }
+
+  applySlashCommand(kind: 'web' | 'lib'): void {
+    this.message = '';
+    this.showSlashMenu = false;
+    setTimeout(() => this.adjustTextareaHeight(), 0);
+    if (kind === 'web') {
+      this.isWebSearchEnabled = !this.isWebSearchEnabled;
+    } else if (kind === 'lib') {
+      this.openPanel('library');
+    }
   }
 
   get runActive(): boolean {
@@ -232,9 +252,6 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
           this.enforceDocumentsOnlyMode();
         }
       }
-      if (panel === 'prompts') {
-        this.pendingPromptId = this.selectedPromptId;
-      }
     }, 0);
   }
 
@@ -289,25 +306,6 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     }
     const match = this.libraries.find(lib => lib.id === this.selectedLibraryId);
     return match ? match.name : null;
-  }
-
-  confirmPromptSelection(): void {
-    this.promptSelected.emit(this.pendingPromptId || null);
-    this.closePanels();
-  }
-
-  clearPromptSelection(): void {
-    this.pendingPromptId = null;
-    this.promptSelected.emit(null);
-    this.closePanels();
-  }
-
-  getPromptLabel(): string | null {
-    if (!this.selectedPromptId) {
-      return null;
-    }
-    const match = this.prompts.find(p => p.id === this.selectedPromptId);
-    return match ? (match.name || 'Untitled Prompt') : null;
   }
 
   private closeMenus(): void {
@@ -677,12 +675,6 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     event.stopPropagation();
     event.preventDefault();
     this.clearLibrarySelection();
-  }
-
-  removeSelectedPrompt(event: Event): void {
-    event.stopPropagation();
-    event.preventDefault();
-    this.clearPromptSelection();
   }
 
   toggleMoreDocsMenu(event: Event): void {

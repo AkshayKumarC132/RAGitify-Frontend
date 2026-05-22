@@ -15,6 +15,7 @@ import { VectorStoreService } from '../../../shared/services/vector-store.servic
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
 import { WorkspaceLibraryDeleteFlowService } from '../../services/workspace-library-delete-flow.service';
+import { ToastService } from '../../../shared/services/toast.service';
 
 @Component({
   selector: 'app-document-details-page',
@@ -65,7 +66,8 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
     private cdr: ChangeDetectorRef,
     private knowledgeContext: WorkspaceKnowledgeContextService,
     private libraryDeleteFlow: WorkspaceLibraryDeleteFlowService,
-    private confirmDialogService: ConfirmDialogService
+    private confirmDialogService: ConfirmDialogService,
+    private toast: ToastService
   ) {
     this.editVectorStoreForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]]
@@ -171,9 +173,12 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
     if (this.documentSummary && this.documentSummary !== 'No summary is available for this document yet.') {
       navigator.clipboard.writeText(this.documentSummary).then(() => {
         this.summaryCopied = true;
+        this.toast.success('Copied to clipboard', 'Document summary copied.');
         setTimeout(() => {
           this.summaryCopied = false;
         }, 2000);
+      }).catch(() => {
+        this.toast.error('Copy failed', 'Could not access the clipboard.');
       });
     }
   }

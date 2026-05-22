@@ -254,6 +254,17 @@ export class RegisterComponent implements OnInit, OnChanges {
     }
   }
 
+  get passwordChecks(): { label: string; ok: boolean }[] {
+    const pwd = this.registerForm.get('password')?.value || '';
+    return [
+      { label: '8+ characters', ok: pwd.length >= 8 },
+      { label: 'Uppercase letter', ok: /[A-Z]/.test(pwd) },
+      { label: 'Lowercase letter', ok: /[a-z]/.test(pwd) },
+      { label: 'Number', ok: /[0-9]/.test(pwd) },
+      { label: 'Symbol', ok: /[^a-zA-Z0-9]/.test(pwd) }
+    ];
+  }
+
   private extractErrorMessage(error: any, fallback: string): string {
     if (error?.error) {
       const payload = error.error;

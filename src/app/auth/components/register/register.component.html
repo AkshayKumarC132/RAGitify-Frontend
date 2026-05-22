@@ -54,6 +54,12 @@
           <div class="strength-label">
             <span [class]="'strength-text strength-' + passwordStrength">{{ getStrengthLabel() }}</span>
           </div>
+          <ul class="password-checklist" aria-label="Password requirements">
+            <li *ngFor="let check of passwordChecks" [class.is-met]="check.ok">
+              <i class="fa-solid" [ngClass]="check.ok ? 'fa-circle-check' : 'fa-circle'" aria-hidden="true"></i>
+              <span>{{ check.label }}</span>
+            </li>
+          </ul>
         </div>
         <small *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">Minimum 6
           characters</small>

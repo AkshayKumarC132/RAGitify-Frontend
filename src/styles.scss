@@ -358,6 +358,124 @@ a:focus-visible,
   }
 }
 
+/* ────────────────────────────────────────────────────────────────
+   Tooltip system — opt-in via data-tooltip attribute
+   Suppresses native tooltip via title attr (set both for a11y)
+   ──────────────────────────────────────────────────────────────── */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 0.6rem);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  background: var(--text-primary);
+  color: var(--panel-bg);
+  font-family: var(--app-font);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 10000;
+  box-shadow: 0 6px 14px -4px rgba(15, 23, 42, 0.35);
+}
+
+[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  left: calc(100% + 0.25rem);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  border-style: solid;
+  border-width: 5px 6px 5px 0;
+  border-color: transparent var(--text-primary) transparent transparent;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 10000;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after,
+[data-tooltip]:hover::before,
+[data-tooltip]:focus-visible::before {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+  transition-delay: 0.25s;
+}
+
+[data-tooltip-pos="bottom"]::after {
+  left: 50%;
+  top: calc(100% + 0.55rem);
+  transform: translateX(-50%) translateY(-4px);
+}
+
+[data-tooltip-pos="bottom"]::before {
+  left: 50%;
+  top: calc(100% + 0.2rem);
+  transform: translateX(-50%) translateY(-4px);
+  border-width: 0 5px 6px 5px;
+  border-color: transparent transparent var(--text-primary) transparent;
+}
+
+[data-tooltip-pos="bottom"]:hover::after,
+[data-tooltip-pos="bottom"]:focus-visible::after {
+  transform: translateX(-50%) translateY(0);
+}
+
+[data-tooltip-pos="bottom"]:hover::before,
+[data-tooltip-pos="bottom"]:focus-visible::before {
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-tooltip]::after,
+  [data-tooltip]::before {
+    transition: opacity 0.05s ease;
+  }
+}
+
+/* Main content wrapper for skip link target */
+main#main-content {
+  display: block;
+  min-height: 100vh;
+  outline: none;
+}
+
+main#main-content:focus {
+  outline: none;
+}
+
+/* Skip-to-content link (a11y) */
+.skip-to-content {
+  position: absolute;
+  top: -100px;
+  left: 0.5rem;
+  z-index: 100000;
+  padding: 0.6rem 1rem;
+  background: var(--accent-color);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 0 0 8px 8px;
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+
+.skip-to-content:focus {
+  top: 0;
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
 /* Premium Component Foundations */
 .card-premium {
   background: var(--panel-bg);

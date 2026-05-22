@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../shared/services/auth.service';
 import { OpenAIKeyService } from '../../../shared/services/openai-key.service';
+import { ToastService } from '../../../shared/services/toast.service';
 import { LoginRequest } from '../../../shared/models/user.model';
 import { switchMap } from 'rxjs/operators';
 
@@ -22,7 +23,8 @@ export class LoginComponent implements OnInit {
     private fb: FormBuilder,
     private authService: AuthService,
     private openAIKeyService: OpenAIKeyService,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -82,6 +84,10 @@ export class LoginComponent implements OnInit {
   setAuthMode(showRegister: boolean): void {
     this.showRegister = showRegister;
     this.errorMessage = '';
+  }
+
+  ssoComingSoon(provider: 'Google' | 'Microsoft' | 'GitHub'): void {
+    this.toast.info(`${provider} sign-in coming soon`, 'Single sign-on is on the roadmap. For now, please use email and password.');
   }
 
 }

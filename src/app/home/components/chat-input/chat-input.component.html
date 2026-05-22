@@ -2,26 +2,16 @@
   <input type="file" #filePicker multiple hidden (change)="handleFilesChange($event)" />
 
   <div class="input-wrapper" [class.document-mode-active]="mode === 'document'" [class.expanded]="isExpanded"
-    [class.has-attachments]="selectedDocumentIds.length > 0 || selectedLibraryId || selectedPromptId">
+    [class.has-attachments]="selectedDocumentIds.length > 0 || selectedLibraryId">
 
     <!-- Selected Attachments View -->
-    <div class="selected-documents-grid"
-      *ngIf="selectedDocumentIds.length > 0 || selectedLibraryId || selectedPromptId">
+    <div class="selected-documents-grid" *ngIf="selectedDocumentIds.length > 0 || selectedLibraryId">
 
       <ng-container *ngIf="selectedLibraryId">
         <div class="document-chip-inline library-mode">
           <i class="fa-solid fa-folder"></i>
           <span class="doc-title">{{ getLibraryLabel() || selectedLibraryId }}</span>
           <button type="button" class="remove-btn" (click)="removeSelectedLibrary($event)"><i
-              class="fa-solid fa-xmark"></i></button>
-        </div>
-      </ng-container>
-
-      <ng-container *ngIf="selectedPromptId">
-        <div class="document-chip-inline prompt-mode">
-          <i class="fa-solid fa-terminal"></i>
-          <span class="doc-title">{{ getPromptLabel() || selectedPromptId }}</span>
-          <button type="button" class="remove-btn" (click)="removeSelectedPrompt($event)"><i
               class="fa-solid fa-xmark"></i></button>
         </div>
       </ng-container>
@@ -77,8 +67,17 @@
 
     <div class="chat-input-shell">
       <textarea #messageArea [(ngModel)]="message" (keydown)="onKeyPress($event)" (input)="onInputChange()"
-        placeholder="How can I help you today?" class="chat-input" [class.is-scrolling]="isOverflowing"
-        [disabled]="loading" rows="1"></textarea>
+        placeholder="How can I help you today?  (type / for commands)" class="chat-input"
+        [class.is-scrolling]="isOverflowing" [disabled]="loading" rows="1"></textarea>
+
+      <div class="slash-menu" *ngIf="filteredSlashCommands.length > 0" role="listbox"
+        aria-label="Slash commands">
+        <button type="button" class="slash-menu-item" *ngFor="let cmd of filteredSlashCommands"
+          (click)="cmd.action()" role="option">
+          <span class="slash-menu-cmd">{{ cmd.command }}</span>
+          <span class="slash-menu-desc">{{ cmd.description }}</span>
+        </button>
+      </div>
     </div>
 
     <div class="input-bar">
@@ -242,34 +241,6 @@
         <button type="button" class="apply-btn" (click)="confirmLibrarySelection()"
           [disabled]="!pendingDocumentIds.size">Apply</button>
       </div>
-    </div>
-  </div>
-
-  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'prompts'"
-    (click)="$event.stopPropagation()">
-    <h4>Use Prompts</h4>
-    <ng-container *ngIf="promptsLoading; else promptsReady">
-      <p class="empty-text">Loading prompts...</p>
-    </ng-container>
-    <ng-template #promptsReady>
-      <div class="prompt-list" *ngIf="prompts.length; else emptyPrompts">
-        <label *ngFor="let prompt of prompts">
-          <input type="radio" name="prompt" [value]="prompt.id" [(ngModel)]="pendingPromptId" />
-          <div class="prompt-meta">
-            <span class="title">{{ prompt.name || 'Untitled Prompt' }}</span>
-            <span class="meta" *ngIf="prompt.instructions">{{ prompt.instructions | slice:0:60 }}{{
-              prompt.instructions.length > 60 ? '...' : '' }}</span>
-          </div>
-        </label>
-      </div>
-    </ng-template>
-    <ng-template #emptyPrompts>
-      <p class="empty-text">Create prompts in Workspace -> Prompts to see them here.</p>
-    </ng-template>
-    <div class="panel-actions">
-      <button type="button" (click)="confirmPromptSelection()" [disabled]="!pendingPromptId">Apply</button>
-      <button type="button" (click)="clearPromptSelection()">Clear</button>
-      <button type="button" (click)="closePanels()">Close</button>
     </div>
   </div>
 

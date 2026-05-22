@@ -107,6 +107,48 @@
 // ─────────────────────────────────────────────
 // Password strength meter
 // ─────────────────────────────────────────────
+.password-checklist {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.18rem 0.6rem;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    line-height: 1.25;
+    transition: color 0.18s ease;
+
+    i {
+      font-size: 0.7rem;
+      color: var(--border-color);
+      transition: color 0.18s ease, transform 0.18s ease;
+    }
+
+    &.is-met {
+      color: var(--text-primary);
+
+      i {
+        color: #10b981;
+        transform: scale(1.08);
+      }
+    }
+  }
+}
+
+body.theme-dark .password-checklist li.is-met i {
+  color: #34d399;
+}
+
+@media (max-height: 640px) {
+  .password-checklist { display: none; }
+}
+
 .password-strength {
   margin-top: 0.3rem;
   display: flex;

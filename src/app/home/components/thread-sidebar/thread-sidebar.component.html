@@ -52,6 +52,9 @@
 
     <div class="threads-list" [class.has-search-results]="searchQuery && filteredThreads.length > 0"
       (scroll)="handleThreadsScroll()">
+      <ng-container *ngIf="loading && filteredThreads.length === 0" aria-busy="true" aria-label="Loading threads">
+        <app-skeleton variant="list-item" [count]="6"></app-skeleton>
+      </ng-container>
       <div *ngFor="let thread of filteredThreads; trackBy: trackByThreadId" class="thread-item"
         [class.active]="currentThread?.id === thread.id" [ngClass]="{
           'search-has-title-match': searchQuery && isTitleMatch(thread),

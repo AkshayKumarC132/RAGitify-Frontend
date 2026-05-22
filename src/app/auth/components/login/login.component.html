@@ -84,7 +84,7 @@
             </div>
 
             <div class="form-actions">
-              <a href="#" class="forgot-password">Forgot password?</a>
+              <a routerLink="/auth/forgot-password" class="forgot-password">Forgot password?</a>
             </div>
 
             <button type="submit" class="btn-primary btn-block" [disabled]="loading || loginForm.invalid">
@@ -92,6 +92,24 @@
               <span *ngIf="loading" class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Signing
                 in...</span>
             </button>
+
+            <div class="sso-divider" aria-hidden="true"><span>or continue with</span></div>
+
+            <div class="sso-buttons">
+              <button type="button" class="sso-btn" (click)="ssoComingSoon('Google')" aria-label="Sign in with Google">
+                <i class="fa-brands fa-google" aria-hidden="true"></i>
+                <span>Google</span>
+              </button>
+              <button type="button" class="sso-btn" (click)="ssoComingSoon('Microsoft')"
+                aria-label="Sign in with Microsoft">
+                <i class="fa-brands fa-microsoft" aria-hidden="true"></i>
+                <span>Microsoft</span>
+              </button>
+              <button type="button" class="sso-btn" (click)="ssoComingSoon('GitHub')" aria-label="Sign in with GitHub">
+                <i class="fa-brands fa-github" aria-hidden="true"></i>
+                <span>GitHub</span>
+              </button>
+            </div>
           </form>
         </div>
 

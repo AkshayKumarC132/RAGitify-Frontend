@@ -1,10 +1,11 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter } from '@angular/core';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 
 @Component({
   selector: 'app-vector-store-list',
   templateUrl: './vector-store-list.component.html',
-  styleUrls: ['./vector-store-list.component.scss']
+  styleUrls: ['./vector-store-list.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VectorStoreListComponent {
   @Input() vectorStores: VectorStore[] = [];

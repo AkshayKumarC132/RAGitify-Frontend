@@ -21,19 +21,24 @@
 
     <!-- New Chat / Workspace / Prompts: hidden when in Knowledge Library -->
     <nav class="sidebar-actions" *ngIf="showLibraryPicker || activeSection === 'prompts'">
-      <button type="button" class="new-thread-button" (click)="goToNewChat()"
+      <button type="button" class="new-thread-button" (click)="goToNewChat()" aria-label="Start a new chat"
+        [attr.data-tooltip]="sidebarCollapsed ? 'Start a new chat' : null"
         [attr.title]="sidebarCollapsed ? 'Start a new chat' : null">
-        <i class="fa-solid fa-plus"></i>
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
         <span class="button-text" *ngIf="!sidebarCollapsed">New Chat</span>
       </button>
       <button type="button" class="workspace-button" [class.active]="activeSection !== 'prompts'"
-        (click)="goToWorkspace()" [attr.title]="sidebarCollapsed ? 'Open workspace' : null">
-        <i class="fa-solid fa-briefcase"></i>
+        (click)="goToWorkspace()" aria-label="Open workspace"
+        [attr.data-tooltip]="sidebarCollapsed ? 'Workspace' : null"
+        [attr.title]="sidebarCollapsed ? 'Open workspace' : null">
+        <i class="fa-solid fa-briefcase" aria-hidden="true"></i>
         <span class="button-text" *ngIf="!sidebarCollapsed">Workspace</span>
       </button>
       <button type="button" class="workspace-button" [class.active]="activeSection === 'prompts'"
-        (click)="goToPrompts()" [attr.title]="sidebarCollapsed ? 'Open prompts' : null">
-        <i class="fa-solid fa-robot"></i>
+        (click)="goToPrompts()" aria-label="Open prompts"
+        [attr.data-tooltip]="sidebarCollapsed ? 'Prompts' : null"
+        [attr.title]="sidebarCollapsed ? 'Open prompts' : null">
+        <i class="fa-solid fa-robot" aria-hidden="true"></i>
         <span class="button-text" *ngIf="!sidebarCollapsed">Prompts</span>
       </button>
     </nav>
@@ -60,8 +65,10 @@
         </div>
         <button type="button" class="library-add-btn library-add-btn-collapsed" *ngIf="sidebarCollapsed"
           (click)="openUploadOrNewLibrary(activeDocumentId ? 'upload' : 'library')"
+          [attr.aria-label]="activeDocumentId ? 'Upload document' : 'New library'"
+          [attr.data-tooltip]="activeDocumentId ? 'Upload Document' : 'New Library'"
           [title]="activeDocumentId ? 'Upload Document' : 'New Library'">
-          <i class="fa-solid" [ngClass]="activeDocumentId ? 'fa-arrow-up' : 'fa-plus'"></i>
+          <i class="fa-solid" aria-hidden="true" [ngClass]="activeDocumentId ? 'fa-arrow-up' : 'fa-plus'"></i>
         </button>
         <div class="sidebar-library-list" *ngIf="!sidebarCollapsed && !activeDocumentId">
           <app-vector-store-list [vectorStores]="filteredVectorStores" [selectedVectorStore]="layoutSelectedStore"
@@ -79,11 +86,13 @@
 
     <!-- Bottom: Home and Logout (hidden inside Knowledge Library workspace view) -->
     <div class="sidebar-footer" *ngIf="showLibraryPicker || activeSection === 'prompts'">
-      <button type="button" class="sidebar-footer-btn" (click)="goToHome()" title="Home">
+      <button type="button" class="sidebar-footer-btn" (click)="goToHome()" aria-label="Go to home"
+        [attr.data-tooltip]="sidebarCollapsed ? 'Home' : null" title="Home">
         <span>Home</span>
       </button>
-      <button type="button" class="sidebar-footer-btn danger" (click)="logout()" title="Log out">
-        <i class="fa-solid fa-right-from-bracket"></i>
+      <button type="button" class="sidebar-footer-btn danger" (click)="logout()" aria-label="Log out"
+        [attr.data-tooltip]="sidebarCollapsed ? 'Log out' : null" title="Log out">
+        <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
         <span>Logout</span>
       </button>
     </div>
@@ -132,9 +141,10 @@
         </ng-container>
       </div>
       <div class="top-bar-right">
+        <app-theme-toggle [compact]="true"></app-theme-toggle>
         <button type="button" class="upload-button" (click)="openUploadOrNewLibrary('upload')"
           *ngIf="activeSection === 'knowledge' && !activeDocumentId && !activeLibraryStatsId">
-          <i class="fa-solid fa-arrow-up"></i>
+          <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
           <span>Upload</span>
         </button>
       </div>

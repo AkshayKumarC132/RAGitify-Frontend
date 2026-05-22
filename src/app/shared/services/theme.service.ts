@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
-type ThemeMode = 'light' | 'dark';
+export type ThemeMode = 'light' | 'dark';
+export type ThemePreference = 'light' | 'dark' | 'system';
 export type UIStyle = 'default' | 'glass' | 'neumorphic';
 
 const STORAGE_KEY = 'ragitify-theme';
+const PREFERENCE_KEY = 'ragitify-theme-preference';
 const STYLE_STORAGE_KEY = 'ragitify-ui-style';
 const DEFAULT_THEME: ThemeMode = 'light';
 const DEFAULT_STYLE: UIStyle = 'default';
@@ -14,18 +16,31 @@ const DEFAULT_STYLE: UIStyle = 'default';
 })
 export class ThemeService {
   private readonly themeSubject = new BehaviorSubject<ThemeMode>(this.getInitialTheme());
+  private readonly preferenceSubject = new BehaviorSubject<ThemePreference>(this.getInitialPreference());
   private readonly styleSubject = new BehaviorSubject<UIStyle>(this.getInitialStyle());
+  private mediaQuery: MediaQueryList | null = null;
+  private mediaQueryHandler: ((event: MediaQueryListEvent) => void) | null = null;
 
   readonly theme$ = this.themeSubject.asObservable();
+  readonly preference$ = this.preferenceSubject.asObservable();
   readonly style$ = this.styleSubject.asObservable();
 
   constructor() {
-    this.applyTheme(this.themeSubject.value);
     this.applyStyle(this.styleSubject.value);
+    // Recompute theme from preference + system on init so the right OS shade
+    // is applied if the user has chosen "system".
+    this.applyForPreference(this.preferenceSubject.value);
+    this.installSystemListener();
 
     // Listen for changes in other tabs
     window.addEventListener('storage', (event) => {
-      if (event.key === STORAGE_KEY) {
+      if (event.key === PREFERENCE_KEY) {
+        const next = event.newValue as ThemePreference;
+        if (next === 'light' || next === 'dark' || next === 'system') {
+          this.preferenceSubject.next(next);
+          this.applyForPreference(next);
+        }
+      } else if (event.key === STORAGE_KEY) {
         const newTheme = event.newValue as ThemeMode;
         if (newTheme && (newTheme === 'light' || newTheme === 'dark')) {
           this.themeSubject.next(newTheme);
@@ -47,6 +62,7 @@ export class ThemeService {
    */
   clearThemeCache(): void {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PREFERENCE_KEY);
   }
 
   /**
@@ -54,21 +70,45 @@ export class ThemeService {
    * Used to ensure a consistent default theme upon login.
    */
   forceLightTheme(): void {
-    this.setTheme('light');
+    this.setPreference('light');
   }
 
+  /**
+   * Quick light <-> dark toggle. Sets an explicit preference (drops "system").
+   */
   toggleTheme(): void {
     const nextTheme: ThemeMode = this.themeSubject.value === 'dark' ? 'light' : 'dark';
-    this.setTheme(nextTheme);
+    this.setPreference(nextTheme);
   }
 
+  /**
+   * Explicitly set a theme (light or dark). Persists the preference.
+   */
   setTheme(theme: ThemeMode): void {
-    if (this.themeSubject.value === theme) {
-      return;
+    this.setPreference(theme);
+  }
+
+  /**
+   * Set the theme preference. "system" follows the OS / browser setting and
+   * updates live when the user changes it.
+   */
+  setPreference(preference: ThemePreference): void {
+    this.preferenceSubject.next(preference);
+    localStorage.setItem(PREFERENCE_KEY, preference);
+    if (preference === 'light' || preference === 'dark') {
+      localStorage.setItem(STORAGE_KEY, preference);
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
     }
-    this.themeSubject.next(theme);
-    localStorage.setItem(STORAGE_KEY, theme);
-    this.applyTheme(theme);
+    this.applyForPreference(preference);
+  }
+
+  getCurrentPreference(): ThemePreference {
+    return this.preferenceSubject.value;
+  }
+
+  getCurrentTheme(): ThemeMode {
+    return this.themeSubject.value;
   }
 
   setStyle(style: UIStyle): void {
@@ -78,6 +118,19 @@ export class ThemeService {
     this.styleSubject.next(style);
     localStorage.setItem(STYLE_STORAGE_KEY, style);
     this.applyStyle(style);
+  }
+
+  private getInitialPreference(): ThemePreference {
+    const stored = localStorage.getItem(PREFERENCE_KEY) as ThemePreference | null;
+    if (stored === 'light' || stored === 'dark' || stored === 'system') {
+      return stored;
+    }
+    // Backwards-compat: if only the legacy STORAGE_KEY is present, mirror it.
+    const legacy = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
+    if (legacy === 'light' || legacy === 'dark') {
+      return legacy;
+    }
+    return DEFAULT_THEME;
   }
 
   private getInitialTheme(): ThemeMode {
@@ -94,6 +147,40 @@ export class ThemeService {
       return stored;
     }
     return DEFAULT_STYLE;
+  }
+
+  private applyForPreference(preference: ThemePreference): void {
+    const resolved: ThemeMode = preference === 'system'
+      ? (this.systemPrefersDark() ? 'dark' : 'light')
+      : preference;
+    if (this.themeSubject.value !== resolved) {
+      this.themeSubject.next(resolved);
+    }
+    this.applyTheme(resolved);
+  }
+
+  private systemPrefersDark(): boolean {
+    return typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  private installSystemListener(): void {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+    this.mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    this.mediaQueryHandler = () => {
+      if (this.preferenceSubject.value === 'system') {
+        this.applyForPreference('system');
+      }
+    };
+    // addEventListener is the modern API; Safari < 14 falls back to addListener.
+    if (typeof this.mediaQuery.addEventListener === 'function') {
+      this.mediaQuery.addEventListener('change', this.mediaQueryHandler);
+    } else if (typeof (this.mediaQuery as any).addListener === 'function') {
+      (this.mediaQuery as any).addListener(this.mediaQueryHandler);
+    }
   }
 
   private applyTheme(theme: ThemeMode): void {

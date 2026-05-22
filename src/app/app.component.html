@@ -1,4 +1,8 @@
-<router-outlet></router-outlet>
+<a href="#main-content" class="skip-to-content">Skip to main content</a>
+<app-top-progress></app-top-progress>
+<main id="main-content" tabindex="-1">
+  <router-outlet></router-outlet>
+</main>
 <app-toast></app-toast>
 
 <div class="global-loader" *ngIf="loading$ | async">

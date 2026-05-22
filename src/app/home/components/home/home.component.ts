@@ -23,6 +23,8 @@ import { DocumentShareService } from '../../../shared/services/document-share.se
 import { SharedWithMeItem } from '../../../shared/models/document-share.model';
 import { ChatStreamService } from '../../../shared/services/chat-stream.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
+import { ConversationExportService, ExportFormat } from '../../../shared/services/conversation-export.service';
+import { ToastService } from '../../../shared/services/toast.service';
 
 @Component({
   selector: 'app-home',
@@ -84,8 +86,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   private promptsLoadingPromise?: Promise<void>;
   private documentsLoaded = false;
   private documentsLoading = false;
-  private threadsLoaded = false;
-  private threadsLoading = false;
+  threadsLoaded = false;
+  threadsLoading = false;
 
   libraries: VectorStore[] = [];
 
@@ -129,6 +131,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     private threadSearchPopupService: ThreadSearchPopupService,
     private chatStreamService: ChatStreamService,
     private confirmDialogService: ConfirmDialogService,
+    private exportService: ConversationExportService,
+    private toast: ToastService,
     private fb: FormBuilder,
     private location: Location
   ) {
@@ -663,6 +667,25 @@ export class HomeComponent implements OnInit, OnDestroy {
         thread.enable_data_grid = previousState;
       }
     });
+  }
+
+  exportConversation(format: ExportFormat, event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.closeConversationMenu();
+    if (!this.currentThread) {
+      return;
+    }
+    if (!this.messages || this.messages.length === 0) {
+      this.toast.info('Nothing to export', 'This conversation has no messages yet.');
+      return;
+    }
+    try {
+      this.exportService.export(this.currentThread, this.messages, format);
+      this.toast.success('Export ready', `Conversation downloaded as ${format.toUpperCase()}.`);
+    } catch (err) {
+      console.error('Failed to export conversation', err);
+      this.toast.error('Export failed', 'Could not generate the download. Please try again.');
+    }
   }
 
   async deleteCurrentThread(thread: Conversation, event?: MouseEvent): Promise<void> {

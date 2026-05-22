@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnChanges, SimpleChanges, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -9,7 +9,8 @@ import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowl
 @Component({
   selector: 'app-document-sidebar-list',
   templateUrl: './document-sidebar-list.component.html',
-  styleUrls: ['./document-sidebar-list.component.scss']
+  styleUrls: ['./document-sidebar-list.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DocumentSidebarListComponent implements OnInit, OnChanges, OnDestroy {
   @Input() libraryId: string | undefined | null = null;
@@ -26,7 +27,8 @@ export class DocumentSidebarListComponent implements OnInit, OnChanges, OnDestro
     private documentService: DocumentService,
     private router: Router,
     private route: ActivatedRoute,
-    private knowledgeContext: WorkspaceKnowledgeContextService
+    private knowledgeContext: WorkspaceKnowledgeContextService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -36,6 +38,7 @@ export class DocumentSidebarListComponent implements OnInit, OnChanges, OnDestro
     this.knowledgeContext.sidebarSearch$.pipe(takeUntil(this.destroy$)).subscribe(query => {
       this.searchQuery = (query || '').toLowerCase();
       this.applyFilter();
+      this.cdr.markForCheck();
     });
   }
 
@@ -64,16 +67,19 @@ export class DocumentSidebarListComponent implements OnInit, OnChanges, OnDestro
   loadDocuments(): void {
     if (!this.libraryId) return;
     this.loading = true;
+    this.cdr.markForCheck();
     this.documentService.list(this.libraryId, false).subscribe({
       next: (docs: Document[]) => {
         this.documents = docs;
         this.applyFilter();
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.documents = [];
         this.filteredDocuments = [];
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }

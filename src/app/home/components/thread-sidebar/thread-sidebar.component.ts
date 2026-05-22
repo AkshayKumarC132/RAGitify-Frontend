@@ -22,6 +22,8 @@ export class ThreadSidebarComponent implements OnChanges, OnInit, OnDestroy {
   @Input() currentThread: Conversation | null = null;
   @Input() collapsed = false;
   @Input() user: User | null = null;
+  @Input() loading = false;
+  skeletonRows = [0, 1, 2, 3, 4, 5];
   @Output() threadSelected = new EventEmitter<Conversation>();
   @Output() newThread = new EventEmitter<void>();
   @Output() workspaceNavigate = new EventEmitter<void>();
