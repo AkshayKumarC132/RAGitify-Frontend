@@ -61,9 +61,13 @@ export class ResponseService {
 
     return new Observable<StreamEvent>(subscriber => {
       let aborted = false;
+      let receivedAnyData = false;
+      let retryAttempted = false;
       const controller = new AbortController();
 
-      fetch(url, {
+      const attempt = () => {
+        if (aborted) return;
+        fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,6 +129,7 @@ export class ResponseService {
               const eventType: string = currentEventType || eventPayload.type || '';
 
               if (eventType === 'response.output_text.delta') {
+                receivedAnyData = true;
                 this.ngZone.run(() => subscriber.next({ type: 'delta', delta: eventPayload.delta || '' }));
               } else if (eventType === 'response.completed') {
                 this.ngZone.run(() => {
@@ -154,10 +159,29 @@ export class ResponseService {
 
         this.ngZone.run(() => subscriber.complete());
       }).catch(err => {
-        if (!aborted) {
-          this.ngZone.run(() => subscriber.error(err));
+        if (aborted) return;
+
+        // Retry exactly once for transient network errors that happen BEFORE we
+        // received any data. Once tokens start arriving we can't safely re-issue
+        // the request (the LLM has consumed inputs / will charge again / will
+        // produce a different answer), so we just surface the failure.
+        const isNetworkError = err instanceof TypeError
+          || err?.name === 'AbortError'
+          || /network|failed to fetch|load failed/i.test(err?.message || '');
+
+        if (isNetworkError && !receivedAnyData && !retryAttempted) {
+          retryAttempted = true;
+          // Emit a reconnecting signal so the UI can show "Reconnecting…".
+          this.ngZone.run(() => subscriber.next({ type: 'reconnecting' } as any));
+          setTimeout(() => attempt(), 1500);
+          return;
         }
+
+        this.ngZone.run(() => subscriber.error(err));
       });
+      };
+
+      attempt();
 
       return () => {
         aborted = true;

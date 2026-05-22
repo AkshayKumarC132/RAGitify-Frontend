@@ -4,12 +4,13 @@ import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
+import { UnauthenticatedOnlyGuard } from './guards/unauthenticated-only.guard';
 
 const routes: Routes = [
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
-  { path: 'forgot-password', component: ForgotPasswordComponent },
-  { path: 'reset-password', component: ResetPasswordComponent },
+  { path: 'login', component: LoginComponent, canActivate: [UnauthenticatedOnlyGuard] },
+  { path: 'register', component: RegisterComponent, canActivate: [UnauthenticatedOnlyGuard] },
+  { path: 'forgot-password', component: ForgotPasswordComponent, canActivate: [UnauthenticatedOnlyGuard] },
+  { path: 'reset-password', component: ResetPasswordComponent, canActivate: [UnauthenticatedOnlyGuard] },
   { path: '', redirectTo: 'login', pathMatch: 'full' }
 ];
 
