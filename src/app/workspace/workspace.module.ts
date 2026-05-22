@@ -30,8 +30,6 @@ import { WorkspaceRoutingModule } from './workspace-routing.module';
     AssistantFormComponent,
     DocumentChatComponent,
     AssistantChatComponent,
-    LibraryChatComponent,
-    LibraryStatsPageComponent,
     DocumentDetailsPageComponent,
     DocumentSidebarListComponent
   ],
@@ -40,7 +38,14 @@ import { WorkspaceRoutingModule } from './workspace-routing.module';
     FormsModule,
     ReactiveFormsModule,
     SharedModule,
-    WorkspaceRoutingModule
+    WorkspaceRoutingModule,
+    // Standalone components used by NgModule-declared templates.
+    // LibraryChat is referenced from knowledge-section, document-details-page,
+    // and (standalone) library-stats-page.
+    LibraryChatComponent,
+    // LibraryStatsPage is referenced only inside an @defer block in
+    // workspace-layout — Angular's compiler emits it as a separate lazy chunk.
+    LibraryStatsPageComponent
   ]
 })
 export class WorkspaceModule { }

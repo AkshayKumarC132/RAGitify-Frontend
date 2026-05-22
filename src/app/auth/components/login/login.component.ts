@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../shared/services/auth.service';
 import { OpenAIKeyService } from '../../../shared/services/openai-key.service';
 import { ToastService } from '../../../shared/services/toast.service';
+import { OAuthService, OAuthProvider } from '../../../shared/services/oauth.service';
 import { LoginRequest } from '../../../shared/models/user.model';
 import { switchMap } from 'rxjs/operators';
 
@@ -19,12 +20,15 @@ export class LoginComponent implements OnInit {
   loading = false;
   showPassword = false;
 
+  oauthSubmitting: OAuthProvider | null = null;
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private openAIKeyService: OpenAIKeyService,
     private router: Router,
-    private toast: ToastService
+    private toast: ToastService,
+    private oauthService: OAuthService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -86,8 +90,56 @@ export class LoginComponent implements OnInit {
     this.errorMessage = '';
   }
 
-  ssoComingSoon(provider: 'Google' | 'Microsoft' | 'GitHub'): void {
-    this.toast.info(`${provider} sign-in coming soon`, 'Single sign-on is on the roadmap. For now, please use email and password.');
+  /**
+   * Kick off OAuth sign-in. Asks the backend to mint an authorize_url, stores
+   * the state for the callback to verify, and redirects the browser to the
+   * provider. If the provider isn't configured server-side we surface a clear
+   * "not configured" message instead of a generic error.
+   *
+   * We pass `redirect_uri` derived from the current browser origin so that
+   * local dev and production both work without having to coordinate the
+   * backend's FRONTEND_BASE_URL with the browser's actual URL. The exact
+   * value sent here is the one Google / Microsoft / GitHub validate against
+   * their allow-list, so it must match an entry in the provider's console.
+   */
+  signInWithOAuth(provider: OAuthProvider): void {
+    if (this.oauthSubmitting) {
+      return;
+    }
+    this.oauthSubmitting = provider;
+    this.errorMessage = '';
+
+    const redirectUri = `${window.location.origin}/auth/oauth-callback`;
+    this.oauthService.start(provider, redirectUri).subscribe({
+      next: (res) => {
+        this.oauthService.rememberPending(provider, res.state);
+        // Full-page navigation — the provider hosts the actual sign-in screen.
+        window.location.href = res.authorize_url;
+      },
+      error: (err) => {
+        this.oauthSubmitting = null;
+        const status = err?.status;
+        const detail = err?.error?.detail || err?.error?.error;
+        const code = err?.error?.code;
+
+        if (status === 503 || code === 'OAUTH_NOT_CONFIGURED' || code === 'OAUTH_PROVIDER_UNKNOWN') {
+          const label = this.providerLabel(provider);
+          this.errorMessage = `${label} sign-in isn't configured on this server yet.`;
+          this.toast.info(
+            `${label} sign-in unavailable`,
+            'The administrator needs to add OAuth credentials for this provider.'
+          );
+          return;
+        }
+
+        this.errorMessage = detail || 'Could not start the sign-in. Please try again.';
+        this.toast.error('Sign-in failed', code ? `${this.errorMessage} (${code})` : this.errorMessage);
+      }
+    });
+  }
+
+  private providerLabel(p: OAuthProvider): string {
+    return p === 'microsoft' ? 'Microsoft' : p.charAt(0).toUpperCase() + p.slice(1);
   }
 
 }

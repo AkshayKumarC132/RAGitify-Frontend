@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgModule } from '@angular/core';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { ApiErrorAlertInterceptor } from './interceptors/api-error-alert.interceptor';
 import { LoadingInterceptor } from './interceptors/loading.interceptor';
@@ -29,7 +30,8 @@ import { MessageBubbleComponent } from './components/message-bubble/message-bubb
     CommonModule,
     HttpClientModule,
     FormsModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    ScrollingModule
   ],
   providers: [
     ApiService,
@@ -59,6 +61,7 @@ import { MessageBubbleComponent } from './components/message-bubble/message-bubb
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    ScrollingModule,
     ThemeToggleComponent,
     TypingLabelComponent,
     ConfirmDialogComponent,

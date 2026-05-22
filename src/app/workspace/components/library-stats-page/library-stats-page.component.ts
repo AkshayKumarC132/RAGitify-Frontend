@@ -1,4 +1,6 @@
 import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { forkJoin, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { Router } from '@angular/router';
@@ -8,11 +10,15 @@ import { DocumentService } from '../../../shared/services/document.service';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
 import { WorkspaceLibraryDeleteFlowService } from '../../services/workspace-library-delete-flow.service';
+import { SharedModule } from '../../../shared/shared.module';
+import { LibraryChatComponent } from '../library-chat/library-chat.component';
 
 @Component({
   selector: 'app-library-stats-page',
   templateUrl: './library-stats-page.component.html',
-  styleUrls: ['./library-stats-page.component.scss']
+  styleUrls: ['./library-stats-page.component.scss'],
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SharedModule, LibraryChatComponent]
 })
 export class LibraryStatsPageComponent implements OnInit, OnChanges, OnDestroy {
   @Input() libraryId: string | null = null;

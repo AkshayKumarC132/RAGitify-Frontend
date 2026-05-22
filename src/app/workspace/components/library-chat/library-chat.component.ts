@@ -1,16 +1,21 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Conversation, ConversationMessage } from '../../../shared/models/conversation.model';
 import { ResponseRecord, ResponseCreateRequest, StreamEvent } from '../../../shared/models/response.model';
 import { ResponseService } from '../../../shared/services/response.service';
 import { ConversationService } from '../../../shared/services/conversation.service';
 import { ResponseAttentionService } from '../../../shared/services/response-attention.service';
+import { SharedModule } from '../../../shared/shared.module';
 import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-library-chat',
     templateUrl: './library-chat.component.html',
-    styleUrls: ['./library-chat.component.scss']
+    styleUrls: ['./library-chat.component.scss'],
+    standalone: true,
+    imports: [CommonModule, FormsModule, SharedModule]
 })
 export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
     @Input() vectorStore: VectorStore | null = null;

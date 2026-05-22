@@ -24,6 +24,21 @@ export class ThreadSidebarComponent implements OnChanges, OnInit, OnDestroy {
   @Input() user: User | null = null;
   @Input() loading = false;
   skeletonRows = [0, 1, 2, 3, 4, 5];
+
+  /**
+   * Threshold above which the list switches to CDK virtual scroll. Plain
+   * *ngFor is fine for short lists and avoids the fixed-height contract that
+   * virtual scroll imposes — search snippets can make rows taller than the
+   * itemSize estimate. Above this threshold the DOM savings outweigh the
+   * occasional rendering jitter.
+   */
+  private static readonly VIRTUAL_THRESHOLD = 50;
+
+  get useVirtualScroll(): boolean {
+    return !this.collapsed
+      && !this.searchQuery
+      && this.filteredThreads.length > ThreadSidebarComponent.VIRTUAL_THRESHOLD;
+  }
   @Output() threadSelected = new EventEmitter<Conversation>();
   @Output() newThread = new EventEmitter<void>();
   @Output() workspaceNavigate = new EventEmitter<void>();

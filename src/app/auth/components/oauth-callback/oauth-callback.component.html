@@ -1,0 +1,29 @@
+<div class="auth-shell">
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="auth-container-standard centered-single oauth-callback-card">
+        <ng-container *ngIf="status === 'working'">
+            <div class="oauth-spinner" aria-hidden="true">
+                <i class="fa-solid fa-circle-notch fa-spin"></i>
+            </div>
+            <h1>Signing you in…</h1>
+            <p class="oauth-subtitle">Hang tight — we're finalising your session.</p>
+        </ng-container>
+
+        <ng-container *ngIf="status === 'error'">
+            <div class="oauth-error-icon" aria-hidden="true">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h1>Sign-in didn't complete</h1>
+            <p class="oauth-subtitle">{{ errorMessage }}</p>
+            <p class="oauth-code" *ngIf="errorCode">Code: {{ errorCode }}</p>
+            <button type="button" class="btn-primary btn-block" (click)="backToLogin()">
+                Back to sign in
+            </button>
+        </ng-container>
+    </div>
+</div>

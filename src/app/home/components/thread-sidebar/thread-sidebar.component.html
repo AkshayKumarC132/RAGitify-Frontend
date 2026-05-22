@@ -50,16 +50,11 @@
       <span>Chats</span>
     </div>
 
-    <div class="threads-list" [class.has-search-results]="searchQuery && filteredThreads.length > 0"
-      (scroll)="handleThreadsScroll()">
-      <ng-container *ngIf="loading && filteredThreads.length === 0" aria-busy="true" aria-label="Loading threads">
-        <app-skeleton variant="list-item" [count]="6"></app-skeleton>
-      </ng-container>
-      <div *ngFor="let thread of filteredThreads; trackBy: trackByThreadId" class="thread-item"
-        [class.active]="currentThread?.id === thread.id" [ngClass]="{
-          'search-has-title-match': searchQuery && isTitleMatch(thread),
-          'search-has-message-match': searchQuery && isMessageMatch(thread)
-        }" (click)="selectThread(thread)" [attr.title]="collapsed ? getThreadTitle(thread) : null">
+    <ng-template #threadItemTpl let-thread>
+      <div class="thread-item" [class.active]="currentThread?.id === thread.id" [ngClass]="{
+            'search-has-title-match': searchQuery && isTitleMatch(thread),
+            'search-has-message-match': searchQuery && isMessageMatch(thread)
+          }" (click)="selectThread(thread)" [attr.title]="collapsed ? getThreadTitle(thread) : null">
         <div class="thread-icon" *ngIf="collapsed">
           <div class="title-slice">{{ getTitleSlice(thread) }}</div>
         </div>
@@ -87,18 +82,42 @@
           <div class="thread-action-slot processing">
             <div class="processing-loader"></div>
             <button class="thread-menu" type="button" (click)="toggleThreadMenu(thread, $event)"
-              [attr.aria-expanded]="threadMenuOpen === thread.id">
-              <i class="fa-solid fa-ellipsis-vertical"></i>
+              [attr.aria-expanded]="threadMenuOpen === thread.id" aria-label="Thread options">
+              <i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
             </button>
           </div>
         </ng-container>
         <ng-template #showMenu>
           <button class="thread-menu" type="button" (click)="toggleThreadMenu(thread, $event)"
-            [attr.aria-expanded]="threadMenuOpen === thread.id">
-            <i class="fa-solid fa-ellipsis-vertical"></i>
+            [attr.aria-expanded]="threadMenuOpen === thread.id" aria-label="Thread options">
+            <i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
           </button>
         </ng-template>
       </div>
+    </ng-template>
+
+    <div class="threads-list" [class.has-search-results]="searchQuery && filteredThreads.length > 0"
+      [class.is-virtual]="useVirtualScroll" (scroll)="handleThreadsScroll()">
+      <ng-container *ngIf="loading && filteredThreads.length === 0" aria-busy="true" aria-label="Loading threads">
+        <app-skeleton variant="list-item" [count]="6"></app-skeleton>
+      </ng-container>
+
+      <!-- Virtual scroll path: kicks in once the list grows beyond VIRTUAL_THRESHOLD,
+           keeping the DOM lean for users with hundreds of threads. -->
+      <cdk-virtual-scroll-viewport *ngIf="useVirtualScroll" itemSize="64" minBufferPx="240" maxBufferPx="480"
+        class="threads-virtual-viewport">
+        <ng-container *cdkVirtualFor="let thread of filteredThreads; trackBy: trackByThreadId">
+          <ng-container *ngTemplateOutlet="threadItemTpl; context: { $implicit: thread }"></ng-container>
+        </ng-container>
+      </cdk-virtual-scroll-viewport>
+
+      <!-- Plain list for short lists: avoids the virtual-scroll wrapper height contract
+           and keeps natural sizing for items with variable height (e.g., search snippets). -->
+      <ng-container *ngIf="!useVirtualScroll">
+        <ng-container *ngFor="let thread of filteredThreads; trackBy: trackByThreadId">
+          <ng-container *ngTemplateOutlet="threadItemTpl; context: { $implicit: thread }"></ng-container>
+        </ng-container>
+      </ng-container>
     </div>
   </div>
 

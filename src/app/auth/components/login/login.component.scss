@@ -322,13 +322,27 @@
 }
 
 @media (max-height: 720px) {
-  .sso-divider { margin: 0.45rem 0 0.3rem; font-size: 0.65rem; }
-  .sso-btn { padding: 0.45rem; font-size: 0.74rem; }
+  .sso-divider { margin: 0.4rem 0 0.28rem; font-size: 0.65rem; }
+  .sso-btn { padding: 0.4rem 0.4rem; font-size: 0.72rem; gap: 0.3rem; }
+  .sso-buttons { gap: 0.35rem; }
 }
 
 @media (max-height: 600px) {
-  .sso-divider,
-  .sso-buttons { display: none; }
+  // SSO is a primary entry point — never hide it. Just go ultra-compact:
+  // icon-only buttons + thinner divider so the row still fits.
+  .sso-divider {
+    margin: 0.3rem 0 0.22rem;
+    font-size: 0.6rem;
+
+    &::before,
+    &::after { display: none; }
+  }
+  .sso-btn {
+    padding: 0.35rem 0.3rem;
+    font-size: 0;       // hides the text label
+    gap: 0;
+    i { font-size: 1rem; }
+  }
 }
 
 // ─────────────────────────────────────────────

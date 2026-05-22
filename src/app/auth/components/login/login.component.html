@@ -96,17 +96,23 @@
             <div class="sso-divider" aria-hidden="true"><span>or continue with</span></div>
 
             <div class="sso-buttons">
-              <button type="button" class="sso-btn" (click)="ssoComingSoon('Google')" aria-label="Sign in with Google">
-                <i class="fa-brands fa-google" aria-hidden="true"></i>
+              <button type="button" class="sso-btn" (click)="signInWithOAuth('google')"
+                [disabled]="!!oauthSubmitting" aria-label="Sign in with Google">
+                <i *ngIf="oauthSubmitting !== 'google'" class="fa-brands fa-google" aria-hidden="true"></i>
+                <i *ngIf="oauthSubmitting === 'google'" class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
                 <span>Google</span>
               </button>
-              <button type="button" class="sso-btn" (click)="ssoComingSoon('Microsoft')"
-                aria-label="Sign in with Microsoft">
-                <i class="fa-brands fa-microsoft" aria-hidden="true"></i>
+              <button type="button" class="sso-btn" (click)="signInWithOAuth('microsoft')"
+                [disabled]="!!oauthSubmitting" aria-label="Sign in with Microsoft">
+                <i *ngIf="oauthSubmitting !== 'microsoft'" class="fa-brands fa-microsoft" aria-hidden="true"></i>
+                <i *ngIf="oauthSubmitting === 'microsoft'" class="fa-solid fa-circle-notch fa-spin"
+                  aria-hidden="true"></i>
                 <span>Microsoft</span>
               </button>
-              <button type="button" class="sso-btn" (click)="ssoComingSoon('GitHub')" aria-label="Sign in with GitHub">
-                <i class="fa-brands fa-github" aria-hidden="true"></i>
+              <button type="button" class="sso-btn" (click)="signInWithOAuth('github')"
+                [disabled]="!!oauthSubmitting" aria-label="Sign in with GitHub">
+                <i *ngIf="oauthSubmitting !== 'github'" class="fa-brands fa-github" aria-hidden="true"></i>
+                <i *ngIf="oauthSubmitting === 'github'" class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
                 <span>GitHub</span>
               </button>
             </div>

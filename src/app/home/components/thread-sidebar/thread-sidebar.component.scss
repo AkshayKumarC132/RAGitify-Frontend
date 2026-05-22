@@ -268,11 +268,36 @@ button.thread-menu {
   overflow-y: auto;
   overflow-x: visible;
   padding: 0.25rem 0.35rem 0 0.5rem; // align with search input and add a bit of breathing room
+  min-height: 0; // critical so the flex child can actually shrink and let the viewport scroll
 
   // More spacing between items when searching for better separation
   &.has-search-results {
     gap: 0.4rem;
     padding: 0.2rem 0.35rem 0 0.5rem;
+  }
+
+  // When the virtual viewport is mounted it owns scrolling, so disable the
+  // wrapper's own overflow to avoid double scrollbars.
+  &.is-virtual {
+    overflow: hidden;
+    padding: 0;
+  }
+}
+
+.threads-virtual-viewport {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0.25rem 0.35rem 0 0.5rem;
+
+  // The inner content wrapper that cdk-virtual-scroll injects.
+  ::ng-deep .cdk-virtual-scroll-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    width: 100%;
+    will-change: transform;
   }
 }
 
