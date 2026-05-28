@@ -1,0 +1,76 @@
+<div class="modal-overlay" (click)="onCancel()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+        <!-- Header -->
+        <div class="modal-header">
+            <div class="icon-box">
+                <i class="fa-solid fa-database"></i>
+            </div>
+            <div class="header-text">
+                <h3 class="modal-title">PostgreSQL Connection</h3>
+                <p class="modal-subtitle">Configure your database connection</p>
+            </div>
+        </div>
+
+        <!-- Form Body -->
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Name</label>
+                <div class="input-wrapper">
+                    <input type="text" [(ngModel)]="connection.name" placeholder="Connection Name" />
+                </div>
+            </div>
+            <div class="form-row-2">
+                <div class="form-group flex-2">
+                    <label>Host</label>
+                    <div class="input-wrapper with-icon">
+                        <i class="fa-solid fa-server input-icon"></i>
+                        <input type="text" [(ngModel)]="connection.host" placeholder="db.example.com" />
+                    </div>
+                </div>
+                <div class="form-group flex-1">
+                    <label>Port</label>
+                    <div class="input-wrapper">
+                        <input type="number" [(ngModel)]="connection.port" placeholder="5432" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Database Name</label>
+                <div class="input-wrapper">
+                    <input type="text" [(ngModel)]="connection.databaseName" placeholder="my_database" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Username</label>
+                <div class="input-wrapper">
+                    <input type="text" [(ngModel)]="connection.username" placeholder="postgres" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-wrapper password-wrapper">
+                    <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="connection.password"
+                        placeholder="••••••••" />
+                    <button type="button" class="toggle-password" (click)="togglePasswordVisibility()">
+                        <i class="fa-solid" [class]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer">
+            <div class="footer-left">
+                <button type="button" class="btn-test" (click)="onTest()">Test Connection</button>
+            </div>
+            <div class="footer-right">
+                <button type="button" class="btn-cancel" (click)="onCancel()">Cancel</button>
+                <button type="button" class="btn-save" (click)="onSave()" [disabled]="!isValid()">Save
+                    Connection</button>
+            </div>
+        </div>
+    </div>
+</div>

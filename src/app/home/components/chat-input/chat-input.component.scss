@@ -132,7 +132,8 @@
   text-align: left;
   transition: background 0.15s ease;
 
-  &:hover, &:focus-visible {
+  &:hover,
+  &:focus-visible {
     background: var(--bg-secondary);
   }
 
@@ -157,12 +158,21 @@
 }
 
 @keyframes slashMenuIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .slash-menu { animation: none; }
+  .slash-menu {
+    animation: none;
+  }
 }
 
 .chat-input {
@@ -261,11 +271,15 @@
 }
 
 @media (max-width: 640px) {
-  .kbd-hint { display: none; }
+  .kbd-hint {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kbd-hint { transition: none; }
+  .kbd-hint {
+    transition: none;
+  }
 }
 
 .attachment-controls {
@@ -1134,7 +1148,7 @@
 
 .document-picker-panel .library-group label {
   display: grid;
-  grid-template-columns: 18px 20px minmax(0, 1fr) auto;
+  grid-template-columns: 90px 20px minmax(0, 1fr) auto;
   gap: 0.6rem;
   align-items: center;
   padding: 0.6rem 0.65rem;
@@ -1872,6 +1886,105 @@
 
     &:hover .remove-btn {
       opacity: 1;
+    }
+  }
+}
+
+.database-list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 250px;
+
+  .database-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 24px;
+
+    .db-icon-wrapper {
+      width: 56px;
+      height: 56px;
+      background: #f1f5f9;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+
+      .db-main-icon {
+        font-size: 24px;
+        color: #0f172a;
+      }
+    }
+
+    h4 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #0f172a;
+      margin: 0 0 8px 0;
+    }
+
+    p {
+      font-size: 14px;
+      color: #64748b;
+      margin: 0 0 24px 0;
+    }
+
+    .configure-db-btn {
+      background-color: #0f172a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #1e293b;
+      }
+    }
+  }
+}
+
+.db-limit-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  padding: 4px 12px;
+  border-radius: 99px;
+  margin-left: 8px;
+
+  .limit-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 48px;
+    user-select: none;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 60px;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 2px;
+    outline: none;
+
+    &::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent-color);
+      cursor: pointer;
     }
   }
 }

@@ -36,6 +36,9 @@
                             records</ng-container></span>
                 </div>
                 <div class="header-actions">
+                    <button type="button" class="action-btn download-btn" (click)="viewSql()" title="View SQL">
+                        <i class="fa-solid fa-code"></i>
+                    </button>
                     <button type="button" class="action-btn download-btn" (click)="exportCsv()"
                         [disabled]="dataGridLoading || inlineDataGridRows.length === 0" title="Download CSV">
                         <i class="fa-solid fa-download"></i>
@@ -80,6 +83,9 @@
                         dataGridRecordCount }} records</ng-container></span>
             </div>
             <div class="bar-actions">
+                <button type="button" class="bar-action-btn" (click)="viewSql()" title="View SQL">
+                    <i class="fa-solid fa-code"></i>
+                </button>
                 <button type="button" class="bar-action-btn" (click)="previewDataGrid()" title="Preview Data">
                     <i class="fa-regular fa-eye"></i>
                 </button>
@@ -172,6 +178,35 @@
 
         <div class="modal-footer" *ngIf="!dataGridLoading && modalDataGridRows.length > 0">
             Showing all {{ modalDataGridRows.length }} records
+        </div>
+    </div>
+</div>
+
+<!-- SQL Query Modal -->
+<div *ngIf="showSqlModal" class="data-grid-overlay" (click)="closeSqlModal()">
+    <div class="data-grid-modal sql-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title-group">
+                <i class="fa-solid fa-code"></i>
+                <span class="title-text">SQL Query</span>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="action-btn download-btn" (click)="copySql()"
+                    [attr.aria-label]="sqlCopied ? 'SQL Copied' : 'Copy SQL'"
+                    [title]="sqlCopied ? 'Copied!' : 'Copy SQL'">
+                    <i *ngIf="!sqlCopied" class="fa-regular fa-copy"></i>
+                    <i *ngIf="sqlCopied" class="fa-solid fa-check"></i>
+                </button>
+                <button type="button" class="action-btn close-btn" (click)="closeSqlModal()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+        <div class="modal-body sql-modal-body">
+            <pre *ngIf="dataGridSqlQuery"><code>{{ dataGridSqlQuery }}</code></pre>
+            <div *ngIf="!dataGridSqlQuery" class="empty-state">
+                No SQL query available.
+            </div>
         </div>
     </div>
 </div>

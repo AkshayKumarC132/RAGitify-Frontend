@@ -11,6 +11,8 @@ import { ConversationMessage } from '../../../shared/models/conversation.model';
 import { ResponseRecord, ResponseCreateRequest, StreamEvent } from '../../../shared/models/response.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document } from '../../../shared/models/document.model';
+import { DatabaseConnectionService } from '../../../shared/services/database-connection.service';
+import { DatabaseConnection } from '../../../shared/models/database-connection.model';
 
 @Component({
     selector: 'app-playground',
@@ -38,15 +40,24 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     libraries: VectorStore[] = [];
     allDocuments: Document[] = [];
     libraryPanelOpen = false;
-    activeDocumentTab: 'my' | 'shared' = 'my';
+    activeDocumentTab: 'my' | 'shared' | 'database' = 'my';
     selectedDocumentIds: string[] = [];
+    selectedDatabaseConnectionIds: string[] = [];
     pendingDocumentIds = new Set<string>();
+    pendingDatabaseConnectionIds = new Set<string>();
     expandedLibraries = new Set<string>();
     documentSearchQuery = '';
     librariesLoaded = false;
     private librariesLoading = false;
     documentsLoaded = false;
     documentsLoading = false;
+    databaseConnections: DatabaseConnection[] = [];
+    databaseConnectionsLoaded = false;
+    databaseConnectionsLoading = false;
+
+    get connectedDatabaseConnections(): DatabaseConnection[] {
+        return (this.databaseConnections || []).filter(db => db.status === 'connected');
+    }
 
     private allDefaultQuestions = [
         'How can I improve my productivity?',
@@ -88,14 +99,14 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     get selectionCount(): number {
-        return this.selectedDocumentIds.length;
+        return this.selectedDocumentIds.length + this.selectedDatabaseConnectionIds.length;
     }
 
     get selectionLabel(): string {
-        if (!this.selectedDocumentIds.length) {
+        if (!this.selectionCount) {
             return '';
         }
-        return `${this.selectedDocumentIds.length}/${this.maxSelectedDocuments} documents selected`;
+        return `${this.selectionCount} item(s) selected`;
     }
 
     get selectedDocuments(): Document[] {
@@ -132,6 +143,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         private vectorStoreService: VectorStoreService,
         private documentService: DocumentService,
         private documentShareService: DocumentShareService,
+        private dbConnectionService: DatabaseConnectionService,
         private cdr: ChangeDetectorRef
     ) { }
 
@@ -163,8 +175,10 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.loadLibraries();
         this.loadDocuments();
+        this.loadDatabaseConnections();
         this.libraryPanelOpen = true;
         this.pendingDocumentIds = new Set(this.selectedDocumentIds.map(String));
+        this.pendingDatabaseConnectionIds = new Set(this.selectedDatabaseConnectionIds.map(String));
         this.documentSearchQuery = '';
     }
 
@@ -186,7 +200,8 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
 
     confirmSelection(): void {
         this.selectedDocumentIds = Array.from(this.pendingDocumentIds);
-        this.mode = this.selectedDocumentIds.length ? 'document' : 'normal';
+        this.selectedDatabaseConnectionIds = Array.from(this.pendingDatabaseConnectionIds);
+        this.mode = (this.selectedDocumentIds.length || this.selectedDatabaseConnectionIds.length) ? 'document' : 'normal';
         this.libraryPanelOpen = false;
     }
 
@@ -252,18 +267,24 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     private autoApplyDocumentSelection(): void {
         if (!this.libraryPanelOpen) return;
         const pendingArray = Array.from(this.pendingDocumentIds);
-        if (pendingArray.length > 0) {
+        const pendingDbArray = Array.from(this.pendingDatabaseConnectionIds);
+
+        if (pendingArray.length > 0 || pendingDbArray.length > 0) {
             this.selectedDocumentIds = pendingArray;
+            this.selectedDatabaseConnectionIds = pendingDbArray;
             this.mode = 'document';
-        } else if (this.selectedDocumentIds.length > 0) {
+        } else if (this.selectedDocumentIds.length > 0 || this.selectedDatabaseConnectionIds.length > 0) {
             this.selectedDocumentIds = [];
+            this.selectedDatabaseConnectionIds = [];
             this.mode = 'normal';
         }
     }
 
     clearSelection(): void {
         this.selectedDocumentIds = [];
+        this.selectedDatabaseConnectionIds = [];
         this.pendingDocumentIds.clear();
+        this.pendingDatabaseConnectionIds.clear();
         this.mode = 'normal';
         this.libraryPanelOpen = false;
         this.documentSearchQuery = '';
@@ -277,7 +298,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         const next = new Set(this.selectedDocumentIds.map(String));
         next.delete(String(id));
         this.selectedDocumentIds = Array.from(next);
-        if (!this.selectedDocumentIds.length) {
+        if (!this.selectedDocumentIds.length && !this.selectedDatabaseConnectionIds.length) {
             this.mode = 'normal';
         }
     }
@@ -302,6 +323,26 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
 
     isDocumentSelected(documentId: string): boolean {
         return this.pendingDocumentIds.has(String(documentId));
+    }
+
+    isDatabaseSelected(dbId: string | undefined): boolean {
+        if (!dbId) return false;
+        return this.pendingDatabaseConnectionIds.has(String(dbId));
+    }
+
+    toggleDatabaseSelectionClick(dbId: string | undefined, event: MouseEvent): void {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!dbId) return;
+        const isCurrentlySelected = this.pendingDatabaseConnectionIds.has(String(dbId));
+
+        if (isCurrentlySelected) {
+            this.pendingDatabaseConnectionIds.delete(String(dbId));
+        } else {
+            this.pendingDatabaseConnectionIds.add(String(dbId));
+        }
+
+        this.cdr.detectChanges();
     }
 
     isSelectionDisabled(documentId: string): boolean {
@@ -393,10 +434,11 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
             input: [{
                 role: 'user',
                 content: [{ type: 'input_text', text: content }]
-            }]
+            }],
+            db_connection_ids: this.selectedDatabaseConnectionIds.length ? [...this.selectedDatabaseConnectionIds] : undefined
         };
 
-        if (this.mode === 'document' && this.selectedDocumentIds.length > 0) {
+        if (this.mode === 'document' && (this.selectedDocumentIds.length > 0 || this.selectedDatabaseConnectionIds.length > 0)) {
             const vectorStoreIds = Array.from(new Set(
                 this.allDocuments
                     .filter(document => this.selectedDocumentIds.includes(document.id))
@@ -534,6 +576,25 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         }).catch(err => {
             console.error('Failed to load documents', err);
             this.documentsLoading = false;
+        });
+    }
+
+    private loadDatabaseConnections(): void {
+        if (this.databaseConnectionsLoading || this.databaseConnectionsLoaded) {
+            return;
+        }
+
+        this.databaseConnectionsLoading = true;
+        this.dbConnectionService.list().subscribe({
+            next: (connections) => {
+                this.databaseConnections = connections || [];
+                this.databaseConnectionsLoaded = true;
+                this.databaseConnectionsLoading = false;
+            },
+            error: (error) => {
+                this.databaseConnectionsLoading = false;
+                console.error('Error loading database connections:', error);
+            }
         });
     }
 

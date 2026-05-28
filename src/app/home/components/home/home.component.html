@@ -12,9 +12,8 @@
 <div class="home-container" *ngIf="!showSetupBlocker">
   <div class="sidebar" [class.collapsed]="isSidebarCollapsed" *ngIf="!isTemporaryChat">
     <app-thread-sidebar [threads]="threads" [currentThread]="currentThread" [user]="currentUser"
-      [loading]="threadsLoading && !threadsLoaded"
-      (threadSelected)="onThreadSelected($event)" (newThread)="onNewThread()"
-      (workspaceNavigate)="onWorkspaceNavigate()" [collapsed]="isSidebarCollapsed"
+      [loading]="threadsLoading && !threadsLoaded" (threadSelected)="onThreadSelected($event)"
+      (newThread)="onNewThread()" (workspaceNavigate)="onWorkspaceNavigate()" [collapsed]="isSidebarCollapsed"
       (sidebarToggled)="onSidebarToggled($event)" (manageProfile)="onManageProfile()" (logoutRequested)="logout()"
       (renameThread)="onThreadRename($event)" (removeThread)="onThreadRemove($event)"></app-thread-sidebar>
   </div>
@@ -99,13 +98,14 @@
         <app-chat-input [mode]="mode" [loading]="loading || attachmentsInProgress" [currentRun]="currentRun"
           [allowCancelRun]="false" [isTemporaryChat]="isTemporaryChat" [libraries]="libraries"
           [selectedLibraryId]="selectedLibraryId" [documents]="allDocuments" [selectedDocumentIds]="selectedDocumentIds"
-          [prompts]="prompts" [selectedPromptId]="selectedPromptId" [hasExistingThread]="!!currentThread"
-          [threadVectorStoreId]="null" [librariesLoading]="librariesLoadingState"
-          [documentsLoading]="documentsLoadingState" [promptsLoading]="promptsLoadingState"
-          (messageSent)="onMessageSent($event)" (cancelRun)="onCancelRun()" (modeToggle)="onModeToggle($event)"
-          (filesSelected)="onFilesSelected($event)" (webpageAttached)="onWebpageAttach($event)"
-          (notesAttached)="onNotesAttach($event)" (librarySelected)="onLibrarySelected($event)"
-          (attachmentPanelOpened)="onAttachmentPanelOpened($event)"
+          [databaseConnections]="databaseConnections" [databaseConnectionsLoading]="databaseConnectionsLoading"
+          [selectedDatabaseConnectionIds]="selectedDatabaseConnectionIds" [prompts]="prompts"
+          [selectedPromptId]="selectedPromptId" [hasExistingThread]="!!currentThread" [threadVectorStoreId]="null"
+          [librariesLoading]="librariesLoadingState" [documentsLoading]="documentsLoadingState"
+          [promptsLoading]="promptsLoadingState" (messageSent)="onMessageSent($event)" (cancelRun)="onCancelRun()"
+          (modeToggle)="onModeToggle($event)" (filesSelected)="onFilesSelected($event)"
+          (webpageAttached)="onWebpageAttach($event)" (notesAttached)="onNotesAttach($event)"
+          (librarySelected)="onLibrarySelected($event)" (attachmentPanelOpened)="onAttachmentPanelOpened($event)"
           (promptSelected)="onPromptSelected($event)"></app-chat-input>
 
         <div class="suggested-questions-container" *ngIf="isConversationEmpty">

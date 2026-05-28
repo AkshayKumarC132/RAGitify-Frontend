@@ -3,6 +3,8 @@ import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
 import { Document } from '../../../shared/models/document.model';
 import { ToastService } from '../../../shared/services/toast.service';
+import { DatabaseConnectionService } from '../../../shared/services/database-connection.service';
+import { DatabaseConnection } from '../../../shared/models/database-connection.model';
 
 type AttachmentPanel = 'web' | 'notes' | 'library' | null;
 
@@ -24,7 +26,7 @@ type SpeechRecognitionLike = {
 
 export type LibrarySelectionEvent =
   | { type: 'library'; libraryId: string | null }
-  | { type: 'documents'; documentIds: string[] }
+  | { type: 'documents'; documentIds: string[]; databaseConnectionIds?: string[] }
   | { type: 'clear' };
 
 @Component({
@@ -42,6 +44,9 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Input() selectedLibraryId: string | null = null;
   @Input() documents: Document[] = [];
   @Input() selectedDocumentIds: string[] = [];
+  @Input() databaseConnections: DatabaseConnection[] = [];
+  @Input() databaseConnectionsLoading = false;
+  @Input() selectedDatabaseConnectionIds: string[] = [];
   @Input() prompts: Assistant[] = [];
   @Input() selectedPromptId: string | null = null;
   @Input() hasExistingThread = false;
@@ -52,6 +57,11 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Input() librariesLoading = false;
   @Input() documentsLoading = false;
   @Input() promptsLoading = false;
+
+  get connectedDatabaseConnections(): DatabaseConnection[] {
+    return (this.databaseConnections || []).filter(db => db.status === 'connected');
+  }
+
   @Output() messageSent = new EventEmitter<{ content: string, webSearch: boolean } | string>();
   @Output() modeToggle = new EventEmitter<'normal' | 'web' | 'document'>();
   @Output() filesSelected = new EventEmitter<FileList>();
@@ -64,7 +74,9 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   message = '';
   activePanel: AttachmentPanel = null;
-  activeDocumentTab: 'my' | 'shared' = 'my';
+  activeDocumentTab: 'my' | 'shared' | 'database' = 'my';
+  pendingDatabaseConnectionIds = new Set<string>();
+
   webForm = { url: '', title: '' };
   noteForm = { title: '', content: '' };
 
@@ -85,11 +97,27 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   isWebSearchEnabled = false;
   showMoreDocsMenu = false;
   private recognition: SpeechRecognitionLike | null = null;
+  private postgresTypeId: number | null = null;
 
-  constructor(private cdr: ChangeDetectorRef, private toast: ToastService) { }
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService,
+    private dbService: DatabaseConnectionService
+  ) { }
 
   ngOnInit(): void {
     this.initializeSpeechRecognition();
+
+    // Fetch postgres connection type id
+    this.dbService.getConnectionTypes().subscribe({
+      next: (types) => {
+        const pgType = types.find(t => t.driver_name?.toLowerCase().includes('postgres') || t.name?.toLowerCase().includes('postgres'));
+        if (pgType) {
+          this.postgresTypeId = pgType.id;
+        }
+      },
+      error: (err) => console.error('Failed to load connection types:', err)
+    });
   }
 
   ngAfterViewInit(): void {
@@ -113,18 +141,28 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
       this.pendingDocumentIds = new Set((this.selectedDocumentIds || []).map(id => String(id)));
       this.selectionMode = 'documents';
     }
+    if (changes['selectedDatabaseConnectionIds']) {
+      this.pendingDatabaseConnectionIds = new Set((this.selectedDatabaseConnectionIds || []).map(id => String(id)));
+      this.selectionMode = 'documents';
+    }
     if (changes['hasExistingThread']) {
       this.enforceDocumentsOnlyMode();
     }
   }
 
   sendMessage(): void {
-    if (this.canSendMessage) {
-      this.messageSent.emit({ content: this.message, webSearch: this.isWebSearchEnabled });
-      this.message = '';
-      this.isExpanded = false;
-      setTimeout(() => this.adjustTextareaHeight(), 0);
+    if (!this.canSendMessage) {
+      return;
     }
+
+    this.emitMessage();
+  }
+
+  private emitMessage(): void {
+    this.messageSent.emit({ content: this.message, webSearch: this.isWebSearchEnabled });
+    this.message = '';
+    this.isExpanded = false;
+    setTimeout(() => this.adjustTextareaHeight(), 0);
   }
 
   updateInput(text: string): void {
@@ -247,6 +285,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
       if (panel === 'library') {
         this.pendingLibraryId = this.selectedLibraryId;
         this.pendingDocumentIds = new Set((this.selectedDocumentIds || []).map(id => String(id)));
+        this.pendingDatabaseConnectionIds = new Set((this.selectedDatabaseConnectionIds || []).map(id => String(id)));
         this.documentSearchQuery = '';
         if (this.hasExistingThread) {
           this.enforceDocumentsOnlyMode();
@@ -286,7 +325,11 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   }
 
   confirmLibrarySelection(): void {
-    this.librarySelected.emit({ type: 'documents', documentIds: Array.from(this.pendingDocumentIds) });
+    this.librarySelected.emit({
+      type: 'documents',
+      documentIds: Array.from(this.pendingDocumentIds),
+      databaseConnectionIds: Array.from(this.pendingDatabaseConnectionIds)
+    });
     this.activePanel = null;
     this.documentSearchQuery = '';
   }
@@ -294,6 +337,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   clearLibrarySelection(): void {
     this.pendingLibraryId = null;
     this.pendingDocumentIds.clear();
+    this.pendingDatabaseConnectionIds.clear();
     this.selectionMode = 'documents';
     this.showMoreDocsMenu = false;
     this.librarySelected.emit({ type: 'clear' });
@@ -339,6 +383,11 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   isDocumentSelected(documentId: string): boolean {
     return this.pendingDocumentIds.has(String(documentId));
+  }
+
+  isDatabaseSelected(dbId: string | undefined): boolean {
+    if (!dbId) return false;
+    return this.pendingDatabaseConnectionIds.has(String(dbId));
   }
 
   isSelectionDisabled(documentId: string): boolean {
@@ -438,10 +487,18 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   private autoApplyDocumentSelection(): void {
     if (this.activePanel !== 'library') return;
+
     const pendingArray = Array.from(this.pendingDocumentIds);
-    if (pendingArray.length > 0) {
-      this.librarySelected.emit({ type: 'documents', documentIds: pendingArray });
-    } else if (this.selectedDocumentIds.length > 0) {
+    const pendingDbArray = Array.from(this.pendingDatabaseConnectionIds);
+
+    if (pendingArray.length > 0 || pendingDbArray.length > 0) {
+      this.librarySelected.emit({
+        type: 'documents',
+        documentIds: pendingArray,
+        databaseConnectionIds: pendingDbArray
+      });
+      this.selectionMode = 'documents';
+    } else if (this.selectedDocumentIds.length > 0 || this.selectedDatabaseConnectionIds.length > 0) {
       this.librarySelected.emit({ type: 'clear' });
     }
   }
@@ -451,7 +508,6 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     event.stopPropagation();
     const isCurrentlySelected = this.pendingDocumentIds.has(String(documentId));
     const newState = !isCurrentlySelected;
-
     const updated = this.toggleDocumentSelectionById(documentId, newState);
     if (!updated) {
       this.showSelectionLimitAlert();
@@ -459,10 +515,25 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     }
 
     const label = event.currentTarget as HTMLElement;
-    const checkbox = label.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    const checkbox = label.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
     if (checkbox) {
       checkbox.checked = newState;
     }
+  }
+
+  toggleDatabaseSelectionClick(dbId: string | undefined, event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!dbId) return;
+    const isCurrentlySelected = this.pendingDatabaseConnectionIds.has(String(dbId));
+
+    if (isCurrentlySelected) {
+      this.pendingDatabaseConnectionIds.delete(String(dbId));
+    } else {
+      this.pendingDatabaseConnectionIds.add(String(dbId));
+    }
+
+    this.cdr.detectChanges();
   }
 
   toggleDocumentSelectionById(documentId: string, selected: boolean): boolean {
@@ -664,8 +735,36 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
     // Auto emit changes to update right away
     const pendingArray = Array.from(this.pendingDocumentIds);
-    if (pendingArray.length > 0) {
-      this.librarySelected.emit({ type: 'documents', documentIds: pendingArray });
+    const pendingDbArray = Array.from(this.pendingDatabaseConnectionIds);
+    if (pendingArray.length > 0 || pendingDbArray.length > 0) {
+      this.librarySelected.emit({
+        type: 'documents',
+        documentIds: pendingArray,
+        databaseConnectionIds: pendingDbArray
+      });
+    } else {
+      this.librarySelected.emit({ type: 'clear' });
+    }
+  }
+
+  getDatabaseDisplayName(dbId: string): string {
+    const match = this.databaseConnections.find(db => String(db.id) === String(dbId));
+    return match ? (match.name || match.database_name || 'Database') : 'Database';
+  }
+
+  removeSelectedDatabase(id: string, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.pendingDatabaseConnectionIds.delete(String(id));
+
+    const pendingArray = Array.from(this.pendingDocumentIds);
+    const pendingDbArray = Array.from(this.pendingDatabaseConnectionIds);
+    if (pendingArray.length > 0 || pendingDbArray.length > 0) {
+      this.librarySelected.emit({
+        type: 'documents',
+        documentIds: pendingArray,
+        databaseConnectionIds: pendingDbArray
+      });
     } else {
       this.librarySelected.emit({ type: 'clear' });
     }

@@ -2,10 +2,11 @@
   <input type="file" #filePicker multiple hidden (change)="handleFilesChange($event)" />
 
   <div class="input-wrapper" [class.document-mode-active]="mode === 'document'" [class.expanded]="isExpanded"
-    [class.has-attachments]="selectedDocumentIds.length > 0 || selectedLibraryId">
+    [class.has-attachments]="selectedDocumentIds.length > 0 || selectedLibraryId || selectedDatabaseConnectionIds.length > 0">
 
     <!-- Selected Attachments View -->
-    <div class="selected-documents-grid" *ngIf="selectedDocumentIds.length > 0 || selectedLibraryId">
+    <div class="selected-documents-grid"
+      *ngIf="selectedDocumentIds.length > 0 || selectedLibraryId || selectedDatabaseConnectionIds.length > 0">
 
       <ng-container *ngIf="selectedLibraryId">
         <div class="document-chip-inline library-mode">
@@ -17,8 +18,8 @@
       </ng-container>
 
       <ng-container *ngIf="selectedDocumentIds.length > 0">
-        <div class="document-chip-inline" *ngFor="let doc of visibleSelectedDocuments"
-          [appDocPreview]="doc.id" [docPreviewTitle]="getDocumentDisplayName(doc)" tabindex="0"
+        <div class="document-chip-inline" *ngFor="let doc of visibleSelectedDocuments" [appDocPreview]="doc.id"
+          [docPreviewTitle]="getDocumentDisplayName(doc)" tabindex="0"
           [class.badge-red]="getFileTypeColor(doc) === 'red'" [class.badge-blue]="getFileTypeColor(doc) === 'blue'"
           [class.badge-green]="getFileTypeColor(doc) === 'green'"
           [class.badge-orange]="getFileTypeColor(doc) === 'orange'"
@@ -65,6 +66,17 @@
         </div>
       </ng-container>
 
+      <ng-container *ngIf="selectedDatabaseConnectionIds.length > 0">
+        <div class="document-chip-inline badge-blue" *ngFor="let dbId of selectedDatabaseConnectionIds" tabindex="0">
+          <span class="file-type">DB</span>
+          <span class="doc-title" [title]="getDatabaseDisplayName(dbId)">{{ getDatabaseDisplayName(dbId) }}</span>
+          <button type="button" class="remove-btn" (click)="removeSelectedDatabase(dbId, $event)"
+            aria-label="Remove database attachment">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+      </ng-container>
+
     </div>
 
     <div class="chat-input-shell">
@@ -72,10 +84,9 @@
         placeholder="How can I help you today?  (type / for commands)" class="chat-input"
         [class.is-scrolling]="isOverflowing" [disabled]="loading" rows="1"></textarea>
 
-      <div class="slash-menu" *ngIf="filteredSlashCommands.length > 0" role="listbox"
-        aria-label="Slash commands">
-        <button type="button" class="slash-menu-item" *ngFor="let cmd of filteredSlashCommands"
-          (click)="cmd.action()" role="option">
+      <div class="slash-menu" *ngIf="filteredSlashCommands.length > 0" role="listbox" aria-label="Slash commands">
+        <button type="button" class="slash-menu-item" *ngFor="let cmd of filteredSlashCommands" (click)="cmd.action()"
+          role="option">
           <span class="slash-menu-cmd">{{ cmd.command }}</span>
           <span class="slash-menu-desc">{{ cmd.description }}</span>
         </button>
@@ -167,10 +178,15 @@
         <i class="fa-solid fa-user-group"></i>
         Shared with Me
       </button>
+      <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'database'"
+        (click)="activeDocumentTab = 'database'">
+        <i class="fa-solid fa-database"></i>
+        Database
+      </button>
     </div>
 
     <!-- Document List -->
-    <div class="documents-list">
+    <div class="documents-list" *ngIf="activeDocumentTab !== 'database'">
       <ng-container *ngIf="documentsLoading; else documentsReady">
         <p class="empty-text">Loading documents...</p>
       </ng-container>
@@ -231,6 +247,45 @@
         Upload files to get started.' }}</p>
     </ng-template>
 
+    <!-- Database Section -->
+    <div class="documents-list database-list" *ngIf="activeDocumentTab === 'database'">
+      <ng-container *ngIf="databaseConnectionsLoading; else dbReady">
+        <p class="empty-text">Loading connections...</p>
+      </ng-container>
+
+      <ng-template #dbReady>
+        <ng-container *ngIf="connectedDatabaseConnections.length > 0; else emptyDbs">
+          <div class="library-group">
+            <div class="group-documents" style="display: block;">
+              <label *ngFor="let db of connectedDatabaseConnections"
+                (click)="toggleDatabaseSelectionClick(db.id!, $event)" [class.selected]="isDatabaseSelected(db.id!)">
+                <input type="checkbox" [checked]="isDatabaseSelected(db.id!)" />
+                <img src="assets/postgres.svg" class="doc-file-icon" alt="PostgreSQL" style="object-fit: contain;" />
+                <div class="doc-meta" [title]="db.host + ':' + db.port">
+                  <span class="doc-name">{{ db.name }}</span>
+                  <span class="doc-info">{{ db.database_name }}</span>
+                </div>
+                <span class="file-type-badge badge-blue"
+                  style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2);">DB</span>
+              </label>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-template #emptyDbs>
+          <div class="database-empty-state">
+            <div class="db-icon-wrapper">
+              <i class="fa-solid fa-database db-main-icon"></i>
+            </div>
+            <h4>Connect PostgreSQL</h4>
+            <p>Query your database directly in the chat</p>
+            <p class="empty-text" style="margin-top: 12px;">Add database connections from the Workspace tab to get
+              started.</p>
+          </div>
+        </ng-template>
+      </ng-template>
+    </div>
+
     <!-- Bottom Bar: Search + Upload -->
     <div class="document-bottom-bar">
       <div class="document-search-bottom">
@@ -241,7 +296,7 @@
       <div class="bottom-actions">
         <button type="button" class="clear-btn" (click)="clearLibrarySelection()">Clear</button>
         <button type="button" class="apply-btn" (click)="confirmLibrarySelection()"
-          [disabled]="!pendingDocumentIds.size">Apply</button>
+          [disabled]="!pendingDocumentIds.size && !pendingDatabaseConnectionIds.size">Apply</button>
       </div>
     </div>
   </div>

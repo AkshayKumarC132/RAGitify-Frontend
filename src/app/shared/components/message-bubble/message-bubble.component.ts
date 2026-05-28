@@ -35,6 +35,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     displayContent: string = '';
     renderedContent: SafeHtml | null = null;
     copied = false;
+    sqlCopied = false;
     dataGridColumns: string[] = [];
     dataGridRows: Record<string, any>[] = [];
 
@@ -44,12 +45,17 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     modalDataGridColumns: string[] = [];
     modalDataGridRows: Record<string, any>[] = [];
 
+    // SQL Modal State
+    dataGridSqlQuery: string | null = null;
+    showSqlModal = false;
+
     // Inline Data Grid State
     inlineDataGridColumns: string[] = [];
     inlineDataGridRows: Record<string, any>[] = [];
     private inlineDataLoaded = false;
 
     private copyResetTimeout?: ReturnType<typeof setTimeout>;
+    private sqlCopyResetTimeout?: ReturnType<typeof setTimeout>;
     private previousContent: string = '';
     private previousEnableDataGrid: boolean = false;
 
@@ -118,6 +124,9 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         this.dataGridLoading = true;
         this.conversationService.getDataGrid(this.conversationId, this.message.id).subscribe({
             next: (res) => {
+                if (res.sql_query) {
+                    this.dataGridSqlQuery = res.sql_query;
+                }
                 if (res.data) {
                     const flatRows = this.flattenDataGrid(res.data);
                     if (flatRows.length > 0) {
@@ -157,6 +166,9 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     ngOnDestroy(): void {
         if (this.copyResetTimeout) {
             clearTimeout(this.copyResetTimeout);
+        }
+        if (this.sqlCopyResetTimeout) {
+            clearTimeout(this.sqlCopyResetTimeout);
         }
     }
 
@@ -247,6 +259,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         this.dataGridRows = [];
 
         const grid = this.message?.metadata?.['data_grid'];
+        this.dataGridSqlQuery = this.message?.data_grid_sql_query || this.message?.metadata?.['data_grid_sql_query'] || null;
         const rows = this.flattenDataGrid(grid);
 
         if (!rows.length) {
@@ -313,6 +326,9 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
 
         this.conversationService.getDataGrid(this.conversationId, this.message.id).subscribe({
             next: (res) => {
+                if (res.sql_query) {
+                    this.dataGridSqlQuery = res.sql_query;
+                }
                 if (res.data) {
                     const flatRows = this.flattenDataGrid(res.data);
                     if (flatRows.length > 0) {
@@ -340,6 +356,24 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
 
     closeDataGridModal(): void {
         this.showDataGridModal = false;
+    }
+
+    viewSql(): void {
+        if (!this.dataGridSqlQuery && this.conversationId && this.message?.id) {
+            this.conversationService.getDataGrid(this.conversationId, this.message.id).subscribe({
+                next: (res) => {
+                    this.dataGridSqlQuery = res.sql_query || null;
+                    this.showSqlModal = true;
+                    this.cdr.markForCheck();
+                }
+            });
+        } else {
+            this.showSqlModal = true;
+        }
+    }
+
+    closeSqlModal(): void {
+        this.showSqlModal = false;
     }
 
     formatColumnHeader(key: string): string {
@@ -387,6 +421,35 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         }
         this.copyResetTimeout = setTimeout(() => {
             this.copied = false;
+            this.cdr.markForCheck();
+        }, 2000);
+    }
+
+    async copySql(): Promise<void> {
+        const textToCopy = this.dataGridSqlQuery || '';
+        if (!textToCopy) return;
+
+        try {
+            if (navigator?.clipboard?.writeText) {
+                await navigator.clipboard.writeText(textToCopy);
+            } else {
+                this.fallbackCopy(textToCopy);
+            }
+            this.showSqlCopiedFeedback();
+        } catch (error) {
+            console.error('Failed to copy SQL', error);
+            this.fallbackCopy(textToCopy);
+            this.showSqlCopiedFeedback();
+        }
+    }
+
+    private showSqlCopiedFeedback(): void {
+        this.sqlCopied = true;
+        if (this.sqlCopyResetTimeout) {
+            clearTimeout(this.sqlCopyResetTimeout);
+        }
+        this.sqlCopyResetTimeout = setTimeout(() => {
+            this.sqlCopied = false;
             this.cdr.markForCheck();
         }, 2000);
     }

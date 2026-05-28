@@ -11,7 +11,7 @@ export class ConversationService {
   constructor(
     private api: ApiService,
     private auth: AuthService
-  ) {}
+  ) { }
 
   private getToken(): string {
     const token = this.auth.getToken();
@@ -56,8 +56,8 @@ export class ConversationService {
     return this.api.get<ConversationMessage[]>(`/conversation/${conversationId}/items/${token}/`, token);
   }
 
-  getDataGrid(conversationId: string, messageId: string | number): Observable<{ id: number, message: number, data: Record<string, any>[], row_count: number, created_at: string }> {
+  getDataGrid(conversationId: string, messageId: string | number): Observable<{ id: number, message: number, data: Record<string, any>[], row_count: number, sql_query?: string, created_at: string }> {
     const token = this.getToken();
-    return this.api.get<{ id: number, message: number, data: Record<string, any>[], row_count: number, created_at: string }>(`/conversation/${conversationId}/messages/${messageId}/data-grid/${token}/`, token);
+    return this.api.get<{ id: number, message: number, data: Record<string, any>[], row_count: number, sql_query?: string, created_at: string }>(`/conversation/${conversationId}/messages/${messageId}/data-grid/${token}/`, token);
   }
 }

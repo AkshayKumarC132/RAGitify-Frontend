@@ -1,29 +1,13 @@
 <div class="library-picker">
   <header class="picker-header">
-    <div class="picker-heading">
-      <div class="picker-title-row">
-        <div class="picker-title">
-          <div class="picker-icon" aria-hidden="true">
-            <i class="fa-solid fa-layer-group"></i>
-          </div>
-          <div>
-            <h1>Your Libraries</h1>
-            <p class="picker-subtitle">Manage knowledge stores, review ingestion health, and jump into the right retrieval surface faster.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+
     <div class="picker-toolbar">
       <div class="picker-search">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input
-          type="text"
-          [(ngModel)]="searchQuery"
-          placeholder="Search libraries or documents..."
-          aria-label="Search libraries or documents"
-          class="picker-search-input"
-        />
-        <button type="button" class="picker-search-clear" *ngIf="searchQuery" (click)="searchQuery = ''" title="Clear search">
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search libraries or documents..."
+          aria-label="Search libraries or documents" class="picker-search-input" />
+        <button type="button" class="picker-search-clear" *ngIf="searchQuery" (click)="searchQuery = ''"
+          title="Clear search">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -31,7 +15,8 @@
         <button type="button" class="view-btn" [class.active]="gridView" (click)="setGridView(true)" title="Grid view">
           <i class="fa-solid fa-grip"></i>
         </button>
-        <button type="button" class="view-btn" [class.active]="!gridView" (click)="setGridView(false)" title="List view">
+        <button type="button" class="view-btn" [class.active]="!gridView" (click)="setGridView(false)"
+          title="List view">
           <i class="fa-solid fa-list"></i>
         </button>
       </div>
@@ -59,25 +44,20 @@
   </div>
 
   <section *ngIf="!loading && vectorStores.length > 0" class="workspace-kpis">
-    <article class="kpi-card kpi-card-primary clickable" 
-             [class.active]="!showFailedView && !showProcessingView"
-             (click)="showAllLibraries()">
+    <article class="kpi-card kpi-card-primary clickable" [class.active]="!showFailedView && !showProcessingView"
+      (click)="showAllLibraries()">
       <span class="kpi-label">Total Documents</span>
       <span class="kpi-value">{{ totalDocuments }}</span>
       <span class="kpi-meta">Across {{ vectorStores.length }} libraries</span>
     </article>
-    <article class="kpi-card" 
-             [class.clickable]="totalFailedDocuments > 0" 
-             [class.active]="showFailedView" 
-             (click)="toggleFailedView()">
+    <article class="kpi-card" [class.clickable]="totalFailedDocuments > 0" [class.active]="showFailedView"
+      (click)="toggleFailedView()">
       <span class="kpi-label">Failed</span>
       <span class="kpi-value">{{ totalFailedDocuments }}</span>
       <span class="kpi-meta">Need review or re-ingestion</span>
     </article>
-    <article class="kpi-card" 
-             [class.clickable]="totalProcessingDocuments > 0" 
-             [class.active]="showProcessingView" 
-             (click)="toggleProcessingView()">
+    <article class="kpi-card" [class.clickable]="totalProcessingDocuments > 0" [class.active]="showProcessingView"
+      (click)="toggleProcessingView()">
       <span class="kpi-label">Processing</span>
       <span class="kpi-value">{{ totalProcessingDocuments }}</span>
       <span class="kpi-meta">Queued, processing, or in progress</span>
@@ -85,7 +65,8 @@
     <article class="kpi-card clickable" (click)="openSharedWithMe()">
       <span class="kpi-label">Accessed</span>
       <span class="kpi-value">{{ totalAccessedDocuments }}</span>
-      <span class="kpi-meta">↓ {{ incomingAccessedDocuments }} incoming &nbsp;·&nbsp; ↑ {{ outgoingAccessedDocuments }} outgoing</span>
+      <span class="kpi-meta">↓ {{ incomingAccessedDocuments }} incoming &nbsp;·&nbsp; ↑ {{ outgoingAccessedDocuments }}
+        outgoing</span>
     </article>
   </section>
 
@@ -93,7 +74,7 @@
     <div *ngIf="failedDocumentGroups.length === 0" class="empty-state">
       <p>No failed documents.</p>
     </div>
-    
+
     <div class="library-group" *ngFor="let group of failedDocumentGroups">
       <div class="group-header">
         <div class="group-title"><i class="fa-regular fa-folder"></i> {{ group.libraryName }}</div>
@@ -107,28 +88,37 @@
                 <span class="title">{{ doc.title || doc.original_filename || 'Unknown Document' }}</span>
                 <div class="document-card-tags">
                   <span class="document-chip error" *ngIf="getResolvedStatus(doc) === 'failed'">Failed</span>
-                  <span class="document-chip processing" *ngIf="['queued', 'processing', 'in_progress'].includes(getResolvedStatus(doc))">Processing</span>
+                  <span class="document-chip processing"
+                    *ngIf="['queued', 'processing', 'in_progress'].includes(getResolvedStatus(doc))">Processing</span>
                   <span class="document-chip success" *ngIf="getResolvedStatus(doc) === 'completed'">Ingested</span>
                 </div>
               </div>
               <div class="document-card-subline">
                 <span class="meta error-text" *ngIf="getResolvedStatus(doc) === 'failed'">Ingestion failed</span>
-                <span class="meta processing-text" *ngIf="['queued', 'processing', 'in_progress'].includes(getResolvedStatus(doc))">Ingestion in progress</span>
-                <span class="meta success-text" *ngIf="getResolvedStatus(doc) === 'completed'">Ingestion successful</span>
+                <span class="meta processing-text"
+                  *ngIf="['queued', 'processing', 'in_progress'].includes(getResolvedStatus(doc))">Ingestion in
+                  progress</span>
+                <span class="meta success-text" *ngIf="getResolvedStatus(doc) === 'completed'">Ingestion
+                  successful</span>
               </div>
             </div>
           </div>
         </ng-container>
-        
+
         <ng-container *ngIf="gridView">
           <div class="failed-document-card" *ngFor="let doc of group.documents" (click)="selectDocument(doc)">
             <div class="card-top">
               <i class="fa-regular fa-file-lines doc-icon"></i>
-              <span class="document-chip error" *ngIf="getResolvedStatus(doc) === 'failed'"><i class="fa-solid fa-circle-exclamation"></i> Failed</span>
-              <span class="document-chip processing" *ngIf="['queued', 'processing', 'in_progress'].includes(getResolvedStatus(doc))"><i class="fa-regular fa-clock"></i> Processing</span>
-              <span class="document-chip success" *ngIf="getResolvedStatus(doc) === 'completed'"><i class="fa-regular fa-circle-check"></i> Ingested</span>
+              <span class="document-chip error" *ngIf="getResolvedStatus(doc) === 'failed'"><i
+                  class="fa-solid fa-circle-exclamation"></i> Failed</span>
+              <span class="document-chip processing"
+                *ngIf="['queued', 'processing', 'in_progress'].includes(getResolvedStatus(doc))"><i
+                  class="fa-regular fa-clock"></i> Processing</span>
+              <span class="document-chip success" *ngIf="getResolvedStatus(doc) === 'completed'"><i
+                  class="fa-regular fa-circle-check"></i> Ingested</span>
             </div>
-            <div class="card-title" [style.color]="getFileExt(doc).toLowerCase() === 'docx' ? '#1a73e8' : '#4b5563'">{{ doc.title || doc.original_filename || 'Unknown Document' }}</div>
+            <div class="card-title" [style.color]="getFileExt(doc).toLowerCase() === 'docx' ? '#1a73e8' : '#4b5563'">{{
+              doc.title || doc.original_filename || 'Unknown Document' }}</div>
             <div class="card-bottom">
               <span class="type-badge" [ngClass]="'badge-' + getFileExt(doc).toLowerCase()">{{ getFileExt(doc) }}</span>
               <span class="size-text">{{ formatSize(doc.file_size) }}</span>
@@ -139,11 +129,12 @@
     </div>
   </div>
 
-  <div *ngIf="!loading && vectorStores.length > 0 && showProcessingView" class="failed-documents-view processing-documents-view documents-list">
+  <div *ngIf="!loading && vectorStores.length > 0 && showProcessingView"
+    class="failed-documents-view processing-documents-view documents-list">
     <div *ngIf="processingDocumentGroups.length === 0" class="empty-state">
       <p>No processing documents.</p>
     </div>
-    
+
     <div class="library-group" *ngFor="let group of processingDocumentGroups">
       <div class="group-header">
         <div class="group-title"><i class="fa-regular fa-folder"></i> {{ group.libraryName }}</div>
@@ -151,7 +142,8 @@
       </div>
       <div class="group-documents" [class.grid-layout]="gridView">
         <ng-container *ngIf="!gridView">
-          <div class="failed-document-row processing-document-row" *ngFor="let doc of group.documents" (click)="selectDocument(doc)">
+          <div class="failed-document-row processing-document-row" *ngFor="let doc of group.documents"
+            (click)="selectDocument(doc)">
             <div class="document-card-meta">
               <div class="document-card-topline">
                 <span class="title">{{ doc.title || doc.original_filename || 'Unknown Document' }}</span>
@@ -172,10 +164,13 @@
           <div class="failed-document-card" *ngFor="let doc of group.documents" (click)="selectDocument(doc)">
             <div class="card-top">
               <i class="fa-regular fa-file-lines doc-icon"></i>
-              <span class="document-chip success" *ngIf="doc.status === 'completed'"><i class="fa-regular fa-circle-check"></i> Ingested</span>
-              <span class="document-chip processing" *ngIf="doc.status !== 'completed'"><i class="fa-regular fa-clock"></i> Processing</span>
+              <span class="document-chip success" *ngIf="doc.status === 'completed'"><i
+                  class="fa-regular fa-circle-check"></i> Ingested</span>
+              <span class="document-chip processing" *ngIf="doc.status !== 'completed'"><i
+                  class="fa-regular fa-clock"></i> Processing</span>
             </div>
-            <div class="card-title" [style.color]="getFileExt(doc).toLowerCase() === 'docx' ? '#1a73e8' : '#4b5563'">{{ doc.title || doc.original_filename || 'Unknown Document' }}</div>
+            <div class="card-title" [style.color]="getFileExt(doc).toLowerCase() === 'docx' ? '#1a73e8' : '#4b5563'">{{
+              doc.title || doc.original_filename || 'Unknown Document' }}</div>
             <div class="card-bottom">
               <span class="type-badge" [ngClass]="'badge-' + getFileExt(doc).toLowerCase()">{{ getFileExt(doc) }}</span>
               <span class="size-text">{{ formatSize(doc.file_size) }}</span>
@@ -186,9 +181,12 @@
     </div>
   </div>
 
-  <div *ngIf="!loading && vectorStores.length > 0 && gridView && !showFailedView && !showProcessingView && filteredVectorStores.length > 0" class="library-grid">
+  <div
+    *ngIf="!loading && vectorStores.length > 0 && gridView && !showFailedView && !showProcessingView && filteredVectorStores.length > 0"
+    class="library-grid">
     <div *ngFor="let store of filteredVectorStores" class="library-card">
-      <div class="library-card-main" (click)="selectLibrary(store)" tabindex="0" role="button" (keydown.enter)="selectLibrary(store)" (keydown.space)="selectLibrary(store); $event.preventDefault()">
+      <div class="library-card-main" (click)="selectLibrary(store)" tabindex="0" role="button"
+        (keydown.enter)="selectLibrary(store)" (keydown.space)="selectLibrary(store); $event.preventDefault()">
         <div class="library-card-head">
           <div class="library-card-icon">
             <i class="fa-solid fa-folder"></i>
@@ -204,48 +202,32 @@
         </div>
         <div class="library-card-footer">
           <div class="footer-meta">
-            <div class="meta-row"><span class="meta-label">Created</span><span class="meta-value">{{ formatDate(store.created_at) }}</span></div>
-            <div class="meta-row"><span class="meta-label">Updated</span><span class="meta-value">{{ getRelativeTime(store.created_at) }}</span></div>
+            <div class="meta-row"><span class="meta-label">Created</span><span class="meta-value">{{
+                formatDate(store.created_at) }}</span></div>
+            <div class="meta-row"><span class="meta-label">Updated</span><span class="meta-value">{{
+                getRelativeTime(store.created_at) }}</span></div>
           </div>
         </div>
       </div>
       <div class="library-card-actions">
-        <button
-          type="button"
-          class="card-action-button card-action-chat"
-          (click)="openLibraryChat(store); $event.stopPropagation()"
-          title="Chat with library"
-        >
+        <button type="button" class="card-action-button card-action-chat"
+          (click)="openLibraryChat(store); $event.stopPropagation()" title="Chat with library">
           <i class="fa-solid fa-comments"></i>
           <span>Chat</span>
         </button>
-        <button
-          type="button"
-          class="card-action-button card-action-stats"
-          *ngIf="canViewStats(store)"
-          (click)="openLibraryStats(store); $event.stopPropagation()"
-          title="View library analytics"
-        >
+        <button type="button" class="card-action-button card-action-stats" *ngIf="canViewStats(store)"
+          (click)="openLibraryStats(store); $event.stopPropagation()" title="View library analytics">
           <i class="fa-solid fa-chart-column"></i>
           <span>Stats</span>
         </button>
-        <button
-          type="button"
-          class="card-action-button card-action-edit"
-          (click)="editLibrary(store); $event.stopPropagation()"
-          [disabled]="!canEdit(store)"
-          title="Rename library"
-        >
+        <button type="button" class="card-action-button card-action-edit"
+          (click)="editLibrary(store); $event.stopPropagation()" [disabled]="!canEdit(store)" title="Rename library">
           <i class="fa-solid fa-pen"></i>
           <span>{{ canEdit(store) ? 'Edit' : 'Locked' }}</span>
         </button>
-        <button
-          type="button"
-          class="card-action-button card-action-delete"
-          (click)="deleteLibrary(store); $event.stopPropagation()"
-          [disabled]="!canDelete(store)"
-          title="Delete library"
-        >
+        <button type="button" class="card-action-button card-action-delete"
+          (click)="deleteLibrary(store); $event.stopPropagation()" [disabled]="!canDelete(store)"
+          title="Delete library">
           <i class="fa-solid fa-trash"></i>
           <span>{{ canDelete(store) ? 'Delete' : 'Protected' }}</span>
         </button>
@@ -254,7 +236,9 @@
   </div>
 
   <!-- List view -->
-  <div *ngIf="!loading && vectorStores.length > 0 && !gridView && !showFailedView && !showProcessingView && filteredVectorStores.length > 0" class="library-table-wrap">
+  <div
+    *ngIf="!loading && vectorStores.length > 0 && !gridView && !showFailedView && !showProcessingView && filteredVectorStores.length > 0"
+    class="library-table-wrap">
     <table class="library-table">
       <thead>
         <tr>
@@ -266,7 +250,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let store of filteredVectorStores" class="library-table-row" [class.protected-store]="isProtectedStore(store)">
+        <tr *ngFor="let store of filteredVectorStores" class="library-table-row"
+          [class.protected-store]="isProtectedStore(store)">
           <td class="col-name">
             <button type="button" class="library-table-name" (click)="selectLibrary(store)">
               <span class="library-list-icon">
@@ -289,42 +274,25 @@
           <td class="col-updated">{{ getRelativeTime(store.updated_at) }}</td>
           <td class="col-actions">
             <div class="library-table-actions">
-              <button
-                type="button"
-                class="card-action-button card-action-chat"
-                (click)="openLibraryChat(store); $event.stopPropagation()"
-                title="Chat with library"
-              >
+              <button type="button" class="card-action-button card-action-chat"
+                (click)="openLibraryChat(store); $event.stopPropagation()" title="Chat with library">
                 <i class="fa-solid fa-comments"></i>
                 <span>Chat</span>
               </button>
-              <button
-                type="button"
-                class="card-action-button card-action-stats"
-                *ngIf="canViewStats(store)"
-                (click)="openLibraryStats(store); $event.stopPropagation()"
-                title="View library analytics"
-              >
+              <button type="button" class="card-action-button card-action-stats" *ngIf="canViewStats(store)"
+                (click)="openLibraryStats(store); $event.stopPropagation()" title="View library analytics">
                 <i class="fa-solid fa-chart-column"></i>
                 <span>Stats</span>
               </button>
-              <button
-                type="button"
-                class="card-action-button card-action-edit"
-                (click)="editLibrary(store); $event.stopPropagation()"
-                [disabled]="!canEdit(store)"
-                title="Rename library"
-              >
+              <button type="button" class="card-action-button card-action-edit"
+                (click)="editLibrary(store); $event.stopPropagation()" [disabled]="!canEdit(store)"
+                title="Rename library">
                 <i class="fa-solid fa-pen"></i>
                 <span>{{ canEdit(store) ? 'Edit' : 'Locked' }}</span>
               </button>
-              <button
-                type="button"
-                class="card-action-button card-action-delete"
-                (click)="deleteLibrary(store); $event.stopPropagation()"
-                [disabled]="!canDelete(store)"
-                title="Delete library"
-              >
+              <button type="button" class="card-action-button card-action-delete"
+                (click)="deleteLibrary(store); $event.stopPropagation()" [disabled]="!canDelete(store)"
+                title="Delete library">
                 <i class="fa-solid fa-trash"></i>
                 <span>{{ canDelete(store) ? 'Delete' : 'Protected' }}</span>
               </button>
@@ -342,25 +310,15 @@
       <p class="rename-subtitle">Choose a name for your new library.</p>
       <div class="rename-field">
         <label for="createLibraryInput">Name</label>
-        <input
-          #createLibraryInput
-          id="createLibraryInput"
-          type="text"
-          [(ngModel)]="createName"
-          (keydown.enter)="confirmCreateLibrary()"
-          placeholder="e.g., Product manuals"
-        />
+        <input #createLibraryInput id="createLibraryInput" type="text" [(ngModel)]="createName"
+          (keydown.enter)="confirmCreateLibrary()" placeholder="e.g., Product manuals" />
       </div>
       <div class="rename-actions">
         <button type="button" class="rename-btn rename-btn-secondary" (click)="cancelCreateLibrary()">
           Cancel
         </button>
-        <button
-          type="button"
-          class="rename-btn rename-btn-primary"
-          (click)="confirmCreateLibrary()"
-          [disabled]="!createName || !createName.trim()"
-        >
+        <button type="button" class="rename-btn rename-btn-primary" (click)="confirmCreateLibrary()"
+          [disabled]="!createName || !createName.trim()">
           Create
         </button>
       </div>
@@ -371,28 +329,18 @@
   <div class="library-rename-backdrop" *ngIf="renameTarget" (click)="cancelRename()">
     <div class="library-rename-modal" (click)="$event.stopPropagation()">
       <h3 class="rename-title">Rename library</h3>
-      
+
       <div class="rename-field">
         <label for="renameInput">New name</label>
-        <input
-          #renameLibraryInput
-          id="renameInput"
-          type="text"
-          [(ngModel)]="renameName"
-          (keydown.enter)="confirmRename()"
-          placeholder="Enter library name"
-        />
+        <input #renameLibraryInput id="renameInput" type="text" [(ngModel)]="renameName"
+          (keydown.enter)="confirmRename()" placeholder="Enter library name" />
       </div>
       <div class="rename-actions">
         <button type="button" class="rename-btn rename-btn-secondary" (click)="cancelRename()">
           Cancel
         </button>
-        <button
-          type="button"
-          class="rename-btn rename-btn-primary"
-          (click)="confirmRename()"
-          [disabled]="!renameName || !renameName.trim()"
-        >
+        <button type="button" class="rename-btn rename-btn-primary" (click)="confirmRename()"
+          [disabled]="!renameName || !renameName.trim()">
           Save
         </button>
       </div>

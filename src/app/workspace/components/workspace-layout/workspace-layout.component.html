@@ -35,8 +35,7 @@
         <span class="button-text" *ngIf="!sidebarCollapsed">Workspace</span>
       </button>
       <button type="button" class="workspace-button" [class.active]="activeSection === 'prompts'"
-        (click)="goToPrompts()" aria-label="Open prompts"
-        [attr.data-tooltip]="sidebarCollapsed ? 'Prompts' : null"
+        (click)="goToPrompts()" aria-label="Open prompts" [attr.data-tooltip]="sidebarCollapsed ? 'Prompts' : null"
         [attr.title]="sidebarCollapsed ? 'Open prompts' : null">
         <i class="fa-solid fa-robot" aria-hidden="true"></i>
         <span class="button-text" *ngIf="!sidebarCollapsed">Prompts</span>
@@ -50,7 +49,8 @@
           <div class="library-search">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input class="library-search-input" type="text" [(ngModel)]="librarySearchQuery"
-              (ngModelChange)="onSidebarSearchChange($event)" [placeholder]="activeDocumentId ? 'Search documents' : 'Search libraries...'"
+              (ngModelChange)="onSidebarSearchChange($event)"
+              [placeholder]="activeDocumentId ? 'Search documents' : 'Search libraries...'"
               [attr.aria-label]="activeDocumentId ? 'Search documents' : 'Search libraries'" />
             <button type="button" class="library-search-clear" *ngIf="librarySearchQuery"
               (click)="librarySearchQuery = ''" title="Clear search">
@@ -101,7 +101,33 @@
   <!-- Main: picker when no library selected, otherwise workspace content -->
   <ng-container *ngIf="showLibraryPicker">
     <div class="workspace-picker-full">
-      <app-workspace-library-picker></app-workspace-library-picker>
+      <header class="workspace-main-header">
+        <div class="header-icon-box">
+          <i class="fa-solid fa-briefcase"></i>
+        </div>
+        <div class="header-text-block">
+          <h1 class="header-title">Workspace</h1>
+          <p class="header-subtitle">Your knowledge libraries and the data sources powering them.</p>
+        </div>
+      </header>
+
+      <div class="workspace-tabs-bar">
+        <div class="workspace-tabs-container">
+          <button type="button" class="workspace-tab-btn" [class.active]="workspaceTab === 'libraries'"
+            (click)="goToLibrariesTab()">
+            <i class="fa-solid fa-layer-group"></i> Libraries
+          </button>
+          <button type="button" class="workspace-tab-btn" [class.active]="workspaceTab === 'connections'"
+            (click)="goToConnectionsTab()">
+            <i class="fa-solid fa-plug"></i> Connections
+          </button>
+        </div>
+      </div>
+
+      <div class="workspace-tab-content">
+        <app-workspace-library-picker *ngIf="workspaceTab === 'libraries'"></app-workspace-library-picker>
+        <app-workspace-connections *ngIf="workspaceTab === 'connections'"></app-workspace-connections>
+      </div>
     </div>
   </ng-container>
 
@@ -161,21 +187,22 @@
       <app-document-details-page *ngIf="activeSection === 'knowledge' && activeDocumentId"
         [documentId]="activeDocumentId"></app-document-details-page>
       @if (activeSection === 'knowledge' && activeLibraryStatsId && !activeDocumentId) {
-        @defer (when activeSection === 'knowledge' && !!activeLibraryStatsId && !activeDocumentId) {
-          <app-library-stats-page [libraryId]="activeLibraryStatsId"></app-library-stats-page>
-        } @placeholder {
-          <div class="defer-placeholder" aria-busy="true" aria-label="Loading library stats">
-            <app-skeleton variant="card" [count]="3"></app-skeleton>
-          </div>
-        } @loading (minimum 250ms) {
-          <div class="defer-placeholder" aria-busy="true" aria-label="Loading library stats">
-            <app-skeleton variant="card" [count]="3"></app-skeleton>
-          </div>
-        } @error {
-          <div class="defer-error">Could not load the analytics page. Please refresh.</div>
-        }
+      @defer (when activeSection === 'knowledge' && !!activeLibraryStatsId && !activeDocumentId) {
+      <app-library-stats-page [libraryId]="activeLibraryStatsId"></app-library-stats-page>
+      } @placeholder {
+      <div class="defer-placeholder" aria-busy="true" aria-label="Loading library stats">
+        <app-skeleton variant="card" [count]="3"></app-skeleton>
+      </div>
+      } @loading (minimum 250ms) {
+      <div class="defer-placeholder" aria-busy="true" aria-label="Loading library stats">
+        <app-skeleton variant="card" [count]="3"></app-skeleton>
+      </div>
+      } @error {
+      <div class="defer-error">Could not load the analytics page. Please refresh.</div>
       }
-      <app-knowledge-section *ngIf="activeSection === 'knowledge' && !activeDocumentId && !activeLibraryStatsId"></app-knowledge-section>
+      }
+      <app-knowledge-section
+        *ngIf="activeSection === 'knowledge' && !activeDocumentId && !activeLibraryStatsId"></app-knowledge-section>
     </div>
   </div>
 </div>

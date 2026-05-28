@@ -33,8 +33,8 @@
                 <div class="chat-input-shell">
                     <textarea #messageInput (input)="autoResizeInput()" [(ngModel)]="inputMessage"
                         (keydown)="onKeyPress($event)" placeholder="How can I help you today?"
-                        [class.is-scrolling]="isOverflowing"
-                        [disabled]="loading || !conversationId" rows="1"></textarea>
+                        [class.is-scrolling]="isOverflowing" [disabled]="loading || !conversationId"
+                        rows="1"></textarea>
                 </div>
 
                 <div class="input-bar">
@@ -66,10 +66,15 @@
                             <i class="fa-solid fa-user-group"></i>
                             Shared with Me
                         </button>
+                        <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'database'"
+                            (click)="activeDocumentTab = 'database'">
+                            <i class="fa-solid fa-database"></i>
+                            Database
+                        </button>
                     </div>
 
                     <!-- Document List -->
-                    <div class="documents-list">
+                    <div class="documents-list" *ngIf="activeDocumentTab !== 'database'">
                         <ng-container *ngIf="documentsLoading; else documentsReady">
                             <p class="empty-text">Loading documents...</p>
                         </ng-container>
@@ -137,6 +142,45 @@
                             Upload files to get started.' }}</p>
                     </ng-template>
 
+                    <!-- Database Section -->
+                    <div class="documents-list database-list" *ngIf="activeDocumentTab === 'database'">
+                        <ng-container *ngIf="databaseConnectionsLoading; else dbReady">
+                            <p class="empty-text">Loading connections...</p>
+                        </ng-container>
+
+                        <ng-template #dbReady>
+                            <ng-container *ngIf="connectedDatabaseConnections.length > 0; else emptyDbs">
+                                <div class="library-group">
+                                    <div class="group-documents" style="display: block;">
+                                        <label *ngFor="let db of connectedDatabaseConnections"
+                                            (click)="toggleDatabaseSelectionClick(db.id, $event)"
+                                            [class.selected]="isDatabaseSelected(db.id)">
+                                            <input type="checkbox" [checked]="isDatabaseSelected(db.id)" />
+                                            <i class="fa-solid fa-server doc-file-icon" class="file-blue"
+                                                style="margin-top: 10px;"></i>
+                                            <div class="doc-meta"
+                                                style="margin-left: 12px; display: inline-flex; flex-direction: column;">
+                                                <span class="doc-name">{{ db.name }}</span>
+                                                <span class="doc-info" style="font-size: 11px;">{{ db.database_name }} ·
+                                                    {{ db.host }}:{{ db.port }}</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </ng-container>
+
+                            <ng-template #emptyDbs>
+                                <div class="database-empty-state">
+                                    <div class="db-icon-wrapper">
+                                        <i class="fa-solid fa-database db-main-icon"></i>
+                                    </div>
+                                    <p class="empty-text">No database connections found. Configure them in normal chat
+                                        first.</p>
+                                </div>
+                            </ng-template>
+                        </ng-template>
+                    </div>
+
                     <!-- Bottom Bar: Search + Upload -->
                     <div class="document-bottom-bar">
                         <div class="document-search-bottom">
@@ -147,7 +191,7 @@
                         <div class="bottom-actions">
                             <button type="button" class="clear-btn" (click)="clearSelection()">Clear</button>
                             <button type="button" class="apply-btn" (click)="confirmSelection()"
-                                [disabled]="!pendingDocumentIds.size">Apply</button>
+                                [disabled]="!pendingDocumentIds.size && !pendingDatabaseConnectionIds.size">Apply</button>
                         </div>
                     </div>
                 </div>

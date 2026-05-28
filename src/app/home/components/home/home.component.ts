@@ -20,6 +20,8 @@ import { ResponseAttentionService } from '../../../shared/services/response-atte
 import { ThreadSearchPopupService } from '../../../shared/services/thread-search-popup.service';
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentShareService } from '../../../shared/services/document-share.service';
+import { DatabaseConnectionService } from '../../../shared/services/database-connection.service';
+import { DatabaseConnection } from '../../../shared/models/database-connection.model';
 import { SharedWithMeItem } from '../../../shared/models/document-share.model';
 import { ChatStreamService } from '../../../shared/services/chat-stream.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
@@ -53,6 +55,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   allDocuments: Document[] = [];
   selectedLibraryId: string | null = null;
   selectedDocumentIds: string[] = [];
+  databaseConnections: DatabaseConnection[] = [];
+  selectedDatabaseConnectionIds: string[] = [];
   prompts: Assistant[] = [];
   selectedPromptId: string | null = null;
   attachmentsInProgress = false;
@@ -86,6 +90,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   private promptsLoadingPromise?: Promise<void>;
   private documentsLoaded = false;
   private documentsLoading = false;
+  private databaseConnectionsLoaded = false;
+  public databaseConnectionsLoading = false;
   threadsLoaded = false;
   threadsLoading = false;
 
@@ -128,6 +134,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private documentService: DocumentService,
     private documentShareService: DocumentShareService,
+    private dbConnectionService: DatabaseConnectionService,
     private threadSearchPopupService: ThreadSearchPopupService,
     private chatStreamService: ChatStreamService,
     private confirmDialogService: ConfirmDialogService,
@@ -360,6 +367,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (panel === 'library') {
       this.ensureLibrariesLoaded();
       this.ensureDocumentsLoaded();
+      this.ensureDatabaseConnectionsLoaded();
     }
     if (panel === 'prompts') {
       this.ensurePromptsLoaded();
@@ -501,6 +509,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (!selection || selection.type === 'clear' || (selection.type === 'library' && !selection.libraryId)) {
       this.selectedLibraryId = null;
       this.selectedDocumentIds = [];
+      this.selectedDatabaseConnectionIds = [];
       // this.setAttachmentMessage('Library selection cleared.');
       this.updateModeFromSelection(true);
       return;
@@ -509,15 +518,17 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (selection.type === 'library') {
       this.selectedLibraryId = selection.libraryId;
       this.selectedDocumentIds = [];
+      this.selectedDatabaseConnectionIds = [];
       this.setAttachmentMessage('Library selected for the next reply.');
       this.updateModeFromSelection();
       return;
     }
 
     this.selectedDocumentIds = (selection.documentIds || []).map(id => String(id));
+    this.selectedDatabaseConnectionIds = (selection.databaseConnectionIds || []).map(id => String(id));
     this.selectedLibraryId = null;
 
-    if (!this.selectedDocumentIds.length) {
+    if (!this.selectedDocumentIds.length && !this.selectedDatabaseConnectionIds.length) {
       // this.setAttachmentMessage('Document selection cleared.');
       this.updateModeFromSelection(true);
       return;
@@ -748,6 +759,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.documentsLoading = false;
     this.librariesLoaded = false;
     this.librariesLoading = false;
+    this.databaseConnectionsLoaded = false;
+    this.databaseConnectionsLoading = false;
     this.promptsLoaded = false;
     this.promptsLoading = false;
     this.threads = [];
@@ -953,6 +966,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.loadDocuments();
   }
 
+  private ensureDatabaseConnectionsLoaded(): void {
+    if (this.databaseConnectionsLoaded || this.databaseConnectionsLoading) {
+      return;
+    }
+    this.loadDatabaseConnections();
+  }
+
   private async ensurePromptsLoaded(): Promise<void> {
     if (this.promptsLoaded) {
       return;
@@ -1001,6 +1021,25 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     this.promptsLoadingPromise = request;
     return request;
+  }
+
+  private loadDatabaseConnections(): void {
+    if (this.databaseConnectionsLoading) {
+      return;
+    }
+
+    this.databaseConnectionsLoading = true;
+    this.dbConnectionService.list().subscribe({
+      next: (connections) => {
+        this.databaseConnections = connections || [];
+        this.databaseConnectionsLoaded = true;
+        this.databaseConnectionsLoading = false;
+      },
+      error: (error) => {
+        this.databaseConnectionsLoading = false;
+        console.error('Error loading database connections:', error);
+      }
+    });
   }
 
   loadDocuments(): void {
@@ -1069,6 +1108,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         content: [{ type: 'input_text', text: content }]
       }],
       tools,
+      db_connection_ids: this.selectedDatabaseConnectionIds.length ? [...this.selectedDatabaseConnectionIds] : undefined,
       metadata: {
         mode: this.mode
       }

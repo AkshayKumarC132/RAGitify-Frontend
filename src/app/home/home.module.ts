@@ -9,6 +9,7 @@ import { ModelSelectorComponent } from './components/model-selector/model-select
 import { ThreadSidebarComponent } from './components/thread-sidebar/thread-sidebar.component';
 import { EmptyStateComponent } from './components/empty-state/empty-state.component';
 import { PlaygroundComponent } from './components/playground/playground.component';
+import { PostgresConnectionModalComponent } from './components/postgres-connection-modal/postgres-connection-modal.component';
 import { HomeRoutingModule } from './home-routing.module';
 
 @NgModule({
@@ -19,7 +20,8 @@ import { HomeRoutingModule } from './home-routing.module';
     ModelSelectorComponent,
     ThreadSidebarComponent,
     EmptyStateComponent,
-    PlaygroundComponent
+    PlaygroundComponent,
+    PostgresConnectionModalComponent
   ],
   imports: [
     CommonModule,

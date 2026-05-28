@@ -21,6 +21,7 @@ export interface ResponseCreateRequest {
   instructions?: string;
   input: ResponseInput[];
   tools?: DocumentTool[];
+  db_connection_ids?: string[];
   stream?: boolean;
   metadata?: Record<string, any>;
   web_search?: boolean;
