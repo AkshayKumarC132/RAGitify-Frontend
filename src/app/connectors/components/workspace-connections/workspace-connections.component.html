@@ -1,0 +1,184 @@
+<div class="connections-page">
+    <!-- Page Header -->
+    <header class="connections-header">
+        <div class="connections-title-block">
+            <div class="connections-icon">
+                <i class="fa-solid fa-plug"></i>
+            </div>
+            <div>
+                <h1 class="connections-title">Connections</h1>
+                <p class="connections-subtitle">Link operational databases and warehouses so retrieval pipelines can
+                    pull from live data.</p>
+            </div>
+        </div>
+        <button type="button" class="new-connection-btn" (click)="openNewConnection()">
+            <i class="fa-solid fa-plus"></i>
+            <span>New Connection</span>
+        </button>
+    </header>
+
+    <!-- Add a Connection Grid -->
+    <section class="add-connection-section">
+        <div class="section-label">ADD A CONNECTION</div>
+        <div class="connector-grid">
+            <div *ngFor="let connector of connectorTypes" class="connector-card" [class.available]="connector.available"
+                [class.coming-soon]="!connector.available" (click)="onConnectorClick(connector)"
+                [attr.tabindex]="connector.available ? '0' : null" [attr.role]="connector.available ? 'button' : null"
+                (keydown.enter)="connector.available && onConnectorClick(connector)">
+                <div class="connector-icon-wrap" [style.background]="connector.iconBgColor">
+                    <img *ngIf="connector.iconImg" [src]="connector.iconImg" [alt]="connector.name"
+                        class="connector-svg-icon" />
+                    <i *ngIf="!connector.iconImg && connector.icon" [class]="connector.icon"
+                        [style.color]="connector.iconColor"></i>
+                </div>
+                <div class="connector-info">
+                    <div class="connector-name">{{ connector.name }}</div>
+                    <div class="connector-desc">{{ connector.description }}</div>
+                </div>
+                <div class="connector-soon-badge" *ngIf="!connector.available">Soon</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Your Connections List -->
+    <section class="your-connections-section">
+        <div class="your-connections-header">
+            <div class="section-label">YOUR CONNECTIONS ({{ connections.length }})</div>
+            <div class="header-controls">
+                <div class="connections-search">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" class="connections-search-input" placeholder="Search connections..."
+                        [(ngModel)]="connectionSearchQuery" (ngModelChange)="onSearchChange()"
+                        aria-label="Search connections" />
+                    <button type="button" class="search-clear" *ngIf="connectionSearchQuery"
+                        (click)="connectionSearchQuery = ''; onSearchChange()">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div class="view-toggle">
+                    <button type="button" class="toggle-btn" [class.active]="viewMode === 'list'"
+                        (click)="viewMode = 'list'" title="List view">
+                        <i class="fa-solid fa-list"></i>
+                    </button>
+                    <button type="button" class="toggle-btn" [class.active]="viewMode === 'grid'"
+                        (click)="viewMode = 'grid'" title="Grid view">
+                        <i class="fa-solid fa-grip"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="loading" class="connections-loading">
+            <div class="spinner"></div>
+            <span>Loading connections...</span>
+        </div>
+
+        <div *ngIf="!loading && connections.length === 0" class="connections-empty">
+            <div class="empty-icon">
+                <i class="fa-solid fa-plug"></i>
+            </div>
+            <p class="empty-title">No connections yet</p>
+            <p class="empty-hint">Add a connection above to link a live database to your workspace.</p>
+        </div>
+
+        <div *ngIf="!loading && connections.length > 0 && filteredConnections.length === 0" class="connections-empty">
+            <p class="empty-title">No connections match "{{ connectionSearchQuery }}"</p>
+        </div>
+
+        <div *ngIf="!loading && filteredConnections.length > 0 && viewMode === 'grid'" class="connections-grid-view">
+            <div *ngFor="let conn of filteredConnections" class="conn-grid-card"
+                (click)="viewConnectionDetails(conn.id)">
+                <div class="card-header">
+                    <div class="card-identity">
+                        <div class="conn-type-icon" [style.background]="getDatabaseBgColor(conn)">
+                            <img [src]="getDatabaseIcon(conn)" alt="Database" style="width: 20px; height: 20px; object-fit: contain;" />
+                        </div>
+                        <div class="card-title">
+                            <div class="conn-name">{{ conn.name || 'Unnamed' }}</div>
+                            <div class="conn-host">{{ conn.host }}:{{ conn.port }}</div>
+                        </div>
+                    </div>
+                    <div class="card-actions" (click)="$event.stopPropagation()">
+                        <button type="button" class="conn-action-btn danger" (click)="deleteConnection(conn, $event)"
+                            [disabled]="deletingId === conn.id" title="Delete connection">
+                            <i class="fa-solid"
+                                [ngClass]="deletingId === conn.id ? 'fa-spinner fa-spin' : 'fa-trash-can'"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="stat-row">
+                        <span class="stat-label">Database</span>
+                        <span class="stat-val">{{ conn.database_name }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Schema</span>
+                        <span class="stat-val">{{ conn.schema_name || 'public' }}</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span class="status-pill" [ngClass]="getStatusClass(conn)">
+                        <span class="status-dot"></span>
+                        {{ getStatusLabel(conn) }}
+                    </span>
+                    <span class="created-date">{{ formatDate(conn.created_at) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="!loading && filteredConnections.length > 0 && viewMode === 'list'" class="connections-table-wrap">
+            <table class="connections-table">
+                <thead>
+                    <tr>
+                        <th class="col-name">Name</th>
+                        <th class="col-host">Host</th>
+                        <th class="col-db">Database</th>
+                        <th class="col-schema">Schema</th>
+                        <th class="col-status">Status</th>
+                        <th class="col-created">Created</th>
+                        <th class="col-actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let conn of filteredConnections" class="connections-table-row"
+                        (click)="viewConnectionDetails(conn.id)" style="cursor: pointer;">
+                        <td class="col-name">
+                            <div class="conn-name-cell">
+                                <div class="conn-type-icon" [style.background]="getDatabaseBgColor(conn)">
+                                    <img [src]="getDatabaseIcon(conn)" alt="Database" style="width: 18px; height: 18px; object-fit: contain;" />
+                                </div>
+                                <span class="conn-name">{{ conn.name || 'Unnamed' }}</span>
+                            </div>
+                        </td>
+                        <td class="col-host">
+                            <span class="conn-host">{{ conn.host }}:{{ conn.port }}</span>
+                        </td>
+                        <td class="col-db">
+                            <span class="conn-db">{{ conn.database_name }}</span>
+                        </td>
+                        <td class="col-schema">
+                            <span class="conn-schema">{{ conn.schema_name || 'public' }}</span>
+                        </td>
+                        <td class="col-status">
+                            <span class="status-pill" [ngClass]="getStatusClass(conn)">
+                                <span class="status-dot"></span>
+                                {{ getStatusLabel(conn) }}
+                            </span>
+                        </td>
+                        <td class="col-created">{{ formatDate(conn.created_at) }}</td>
+                        <td class="col-actions">
+                            <div class="conn-actions">
+                                <button type="button" class="conn-action-btn danger"
+                                    (click)="deleteConnection(conn, $event)" [disabled]="deletingId === conn.id"
+                                    title="Delete connection">
+                                    <i class="fa-solid"
+                                        [ngClass]="deletingId === conn.id ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>

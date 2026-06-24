@@ -15,7 +15,6 @@ import { CommandPaletteService } from '../../../shared/services/command-palette.
 })
 export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
   activeSection: 'knowledge' | 'prompts' = 'knowledge';
-  workspaceTab: 'libraries' | 'connections' = 'libraries';
   activeDocumentId: string | null = null;
   activeLibraryStatsId: string | null = null;
   sidebarCollapsed = false;
@@ -76,12 +75,6 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.subscribe(params => {
       this.currentLibraryId = params.get('libraryId');
       this.currentView = params.get('view');
-      const tab = params.get('tab');
-      if (tab === 'connections') {
-        this.workspaceTab = 'connections';
-      } else {
-        this.workspaceTab = 'libraries';
-      }
       this.applyLayoutRouteState();
       this.ensureSidebarLibraries();
     });
@@ -179,8 +172,8 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
     this.router.navigate(['/workspace'], { queryParams: {} });
   }
 
-  goToConnectionsTab(): void {
-    this.router.navigate(['/workspace'], { queryParams: { tab: 'connections' } });
+  goToConnectors(): void {
+    this.router.navigate(['/connectors']);
   }
 
   goToLibrariesTab(): void {

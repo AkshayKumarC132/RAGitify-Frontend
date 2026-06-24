@@ -162,6 +162,11 @@ export class ThreadSidebarComponent implements OnChanges, OnInit, OnDestroy {
     this.router.navigate(['/workspace'], { queryParams: { view: 'prompts' } });
   }
 
+  goToConnections(): void {
+    this.closeProfileMenu();
+    this.router.navigate(['/connectors']);
+  }
+
   getThreadTitle(thread: Conversation): string {
     return thread.title || 'New Conversation';
   }

@@ -1,18 +1,20 @@
 <div class="account-section">
-  <div class="profile-header">
+  <div class="profile-header-card">
     <div class="profile-avatar">
       {{ initialsDisplay }}
     </div>
     <div class="profile-info">
-      <h4>{{ fullNameDisplay }}</h4>
-      <p class="profile-email">{{ currentUser?.email }}</p>
+      <div class="profile-main">
+        <h4>{{ currentUser?.email }}</h4>
+        <p class="profile-email-sub">{{ currentUser?.email }}</p>
+      </div>
       <div class="profile-badges" *ngIf="status">
         <span class="badge" [class.ready]="status.ready">
-          <i class="fa-solid" [ngClass]="status.ready ? 'fa-check-circle' : 'fa-circle-exclamation'"></i>
+          <span class="dot"></span>
           {{ status.ready ? 'System Ready' : 'Setup Required' }}
         </span>
         <span class="badge tenant">
-          <i class="fa-solid fa-building"></i>
+          <i class="fa-solid fa-database"></i>
           {{ tenantDisplay }}
         </span>
       </div>
@@ -22,7 +24,10 @@
   <div class="settings-grid">
     <div class="settings-card">
       <div class="section-head">
-        <h3><i class="fa-solid fa-user"></i> Personal Information</h3>
+        <div class="section-title">
+          <i class="fa-solid fa-user"></i>
+          <h3>Personal Information</h3>
+        </div>
         <button type="button" class="section-action-btn" *ngIf="!editingProfile" (click)="startProfileEdit()">
           <i class="fa-solid fa-pen"></i>
         </button>
@@ -31,16 +36,16 @@
       <ng-container *ngIf="!editingProfile; else profileEditView">
         <div class="personal-summary-grid">
           <div class="summary-item">
-            <span>First Name</span>
-            <strong>{{ currentUser?.first_name || '-' }}</strong>
+            <span class="item-label">FIRST NAME</span>
+            <strong class="item-value">{{ currentUser?.first_name || '—' }}</strong>
           </div>
           <div class="summary-item">
-            <span>Last Name</span>
-            <strong>{{ currentUser?.last_name || '-' }}</strong>
+            <span class="item-label">LAST NAME</span>
+            <strong class="item-value">{{ currentUser?.last_name || '—' }}</strong>
           </div>
           <div class="summary-item full-row">
-            <span>Email Address</span>
-            <strong>{{ currentUser?.email || '-' }}</strong>
+            <span class="item-label">EMAIL ADDRESS</span>
+            <strong class="item-value">{{ currentUser?.email || '-' }}</strong>
           </div>
         </div>
       </ng-container>
@@ -66,7 +71,8 @@
 
           <div *ngIf="profileMessage" class="message-alert" [class.success]="profileMessageType === 'success'"
             [class.error]="profileMessageType === 'error'">
-            <i class="fa-solid" [ngClass]="profileMessageType === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+            <i class="fa-solid"
+              [ngClass]="profileMessageType === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
             {{ profileMessage }}
           </div>
 
@@ -83,14 +89,26 @@
 
     <div class="settings-card password-card">
       <div class="section-head">
-        <h3><i class="fa-solid fa-lock"></i> Password</h3>
+        <div class="section-title">
+          <i class="fa-solid fa-lock"></i>
+          <h3>Password</h3>
+        </div>
         <button type="button" class="section-action-btn" *ngIf="!editingPassword" (click)="startPasswordEdit()">
           <i class="fa-solid fa-pen"></i>
         </button>
       </div>
 
       <ng-container *ngIf="!editingPassword; else passwordEditView">
-        <p class="password-summary-copy">Your password is set.</p>
+        <div class="password-summary-container">
+          <div class="password-text-group">
+            <p class="password-summary-copy">Your password is set.</p>
+            <!-- <span class="password-meta">Last updated 3 months ago</span> -->
+          </div>
+          <div class="password-strength-badge">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Strong</span>
+          </div>
+        </div>
       </ng-container>
 
       <ng-template #passwordEditView>
@@ -99,14 +117,17 @@
             <div class="form-group">
               <label>New Password</label>
               <input type="password" formControlName="password" class="form-input" placeholder="Enter new password" />
-              <small class="input-hint" *ngIf="passwordForm.get('password')?.invalid && passwordForm.get('password')?.touched">
+              <small class="input-hint"
+                *ngIf="passwordForm.get('password')?.invalid && passwordForm.get('password')?.touched">
                 Minimum 6 characters required.
               </small>
             </div>
             <div class="form-group">
               <label>Confirm Password</label>
-              <input type="password" formControlName="confirmPassword" class="form-input" placeholder="Re-enter new password" />
-              <small class="input-hint" *ngIf="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched">
+              <input type="password" formControlName="confirmPassword" class="form-input"
+                placeholder="Re-enter new password" />
+              <small class="input-hint"
+                *ngIf="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched">
                 Passwords must match.
               </small>
             </div>
@@ -114,7 +135,8 @@
 
           <div *ngIf="passwordMessage" class="message-alert" [class.success]="passwordMessageType === 'success'"
             [class.error]="passwordMessageType === 'error'">
-            <i class="fa-solid" [ngClass]="passwordMessageType === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+            <i class="fa-solid"
+              [ngClass]="passwordMessageType === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
             {{ passwordMessage }}
           </div>
 
@@ -129,57 +151,62 @@
       </ng-template>
     </div>
 
-    <div class="account-meta-grid" *ngIf="status">
+    <div class="account-meta-layout" *ngIf="status">
       <div class="settings-card status-card">
-        <h3><i class="fa-solid fa-server"></i> System Status</h3>
+        <div class="section-title">
+          <i class="fa-solid fa-bolt-lightning"></i>
+          <h3>System Status</h3>
+        </div>
         <div class="status-details">
           <div class="status-item">
-            <div class="status-label">LLM Provider</div>
+            <div class="status-label">LLM PROVIDER</div>
             <div class="status-value">
               <span class="provider-pill" [class.configured]="status.selected_llm_provider">
-                <i class="fa-solid"
-                  [ngClass]="status.selected_llm_provider === 'OpenAI' ? 'fa-cloud' : 'fa-microchip'"></i>
+                <i class="fa-solid fa-cloud"></i>
                 {{ providerDisplay }}
               </span>
             </div>
           </div>
 
           <div class="status-item">
-            <div class="status-label">Active Library</div>
+            <div class="status-label">ACTIVE LIBRARY</div>
             <div class="status-value highlight">
-              <i class="fa-solid fa-box-archive"></i>
+              <i class="fa-solid fa-floppy-disk"></i>
               {{ collectionDisplay }}
             </div>
           </div>
 
           <div class="status-item">
-            <div class="status-label">Ready for Queries</div>
+            <div class="status-label">READY FOR QUERIES</div>
             <div class="status-value">
-              <span class="status-indicator" [class.is-ready]="status.ready"></span>
+              <span class="status-indicator-dot" [class.is-ready]="status.ready"></span>
               {{ readyDisplay }}
             </div>
           </div>
         </div>
-
-        <div class="status-footer">
-          <p>Your system configuration is monitored automatically.</p>
-        </div>
       </div>
 
       <div class="settings-card metadata-card">
-        <h3><i class="fa-solid fa-database"></i> Workspace Metadata</h3>
-        <div class="metadata-grid">
-          <div class="metadata-item">
-            <span class="metadata-label">Tenant</span>
-            <span class="metadata-value">{{ tenantDisplay }}</span>
+        <div class="section-title">
+          <i class="fa-solid fa-database"></i>
+          <h3>Workspace Metadata</h3>
+        </div>
+        <div class="metadata-grid-wrapper">
+          <div class="metadata-box">
+            <span class="box-label">TENANT</span>
+            <span class="box-value">{{ tenantDisplay }}</span>
           </div>
-          <div class="metadata-item">
-            <span class="metadata-label">Collection Name</span>
-            <span class="metadata-value">{{ collectionDisplay }}</span>
+          <div class="metadata-box">
+            <span class="box-label">COLLECTION NAME</span>
+            <span class="box-value">{{ collectionDisplay }}</span>
           </div>
-          <div class="metadata-item">
-            <span class="metadata-label">LLM State</span>
-            <span class="metadata-value">{{ llmConfiguredDisplay }}</span>
+          <div class="metadata-box">
+            <span class="box-label">LLM STATE</span>
+            <span class="box-value">{{ llmConfiguredDisplay }}</span>
+          </div>
+          <div class="metadata-box">
+            <span class="box-label">REGION</span>
+            <span class="box-value">us-east-1</span>
           </div>
         </div>
       </div>

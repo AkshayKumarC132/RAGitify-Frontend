@@ -168,8 +168,6 @@ export class AuthService {
           if (response === null) {
             return of(null);
           }
-          // Session exists/valid: ensure Light Mode is the default for this login.
-          this.themeService.forceLightTheme();
           return this.refreshUserStatus().pipe(
             catchError((error) => {
               this.handlePossibleSetupError(error);

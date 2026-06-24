@@ -22,4 +22,34 @@ export interface ConversationMessage {
   created_at: string;
   metadata?: Record<string, any>;
   has_data_grid?: boolean;
+  /** Token counts from the linked ResponseRecord — only present on assistant messages */
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  } | null;
+}
+
+/** A single parsed source grid ready for display */
+export interface DataGridSource {
+  grid_id: string;
+  source_key: string;    // e.g. "spreadsheet:doc_xxx" or "database:xxx"
+  source_name: string;   // human-readable label e.g. "2019-2023 PLACEMENT REPORT.xlsx"
+  rows: Record<string, any>[];
+  columns: string[];     // derived from Object.keys(rows[0])
+}
+
+/** Shape of the /data-grid/ API response */
+export interface DataGridResponse {
+  id: number;
+  message: number;
+  row_count: number;
+  created_at: string;
+  data: Array<{
+    grid_id: string;
+    source_key: string;
+    source_name: string;
+    rows: Record<string, any>[];
+  }>;
+  sql_query: Record<string, string> | null;
 }

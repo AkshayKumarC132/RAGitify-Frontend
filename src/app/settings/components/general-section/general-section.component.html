@@ -1,26 +1,38 @@
 <div class="general-section">
-  <h5 class="section-title">General</h5>
+  <div class="section-header">
+    <h5 class="section-title">General</h5>
+    <p class="section-desc">Changes apply instantly across every surface you
+      use.</p>
+  </div>
 
   <div class="settings-group">
-    <div class="setting-item">
-      <label class="setting-label">Appearance</label>
+
+    <div class="setting-card">
+      <div class="setting-info">
+        <label class="setting-label">Appearance</label>
+        <span class="setting-desc">Switch between light and dark mode.</span>
+      </div>
       <div class="setting-control">
-        <div class="theme-toggle-container">
+        <div class="theme-segment-control">
           <ng-container *ngIf="theme$ | async as theme">
-            <button type="button" class="theme-toggle" [class.active]="theme === 'dark'" (click)="toggleTheme()"
-              [attr.aria-label]="'Toggle theme'">
-              <span class="toggle-track">
-                <span class="toggle-thumb" [class.dark]="theme === 'dark'"></span>
-              </span>
-              <span class="toggle-label">{{ theme === 'dark' ? 'Dark' : 'Light' }}</span>
+            <button type="button" class="segment-btn" [class.active]="theme === 'light'" (click)="setTheme('light')">
+              <i class="fa-regular fa-sun"></i>
+              <span>Light</span>
+            </button>
+            <button type="button" class="segment-btn" [class.active]="theme === 'dark'" (click)="setTheme('dark')">
+              <i class="fa-regular fa-moon"></i>
+              <span>Dark</span>
             </button>
           </ng-container>
         </div>
       </div>
     </div>
 
-    <div class="setting-item">
-      <label class="setting-label">UI Style</label>
+    <div class="setting-card">
+      <div class="setting-info">
+        <label class="setting-label">UI Style</label>
+        <span class="setting-desc">Visual treatment for cards, panels, and surfaces.</span>
+      </div>
       <div class="setting-control">
         <div class="style-options" *ngIf="style$ | async as currentStyle">
           <button type="button" class="style-card" [class.active]="currentStyle === 'default'"
@@ -44,5 +56,6 @@
         </div>
       </div>
     </div>
+
   </div>
 </div>

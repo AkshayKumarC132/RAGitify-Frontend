@@ -5,6 +5,7 @@ import { GeneralSectionComponent } from './components/general-section/general-se
 import { ModelsSectionComponent } from './components/models-section/models-section.component';
 import { AccountSectionComponent } from './components/account-section/account-section.component';
 import { SkillsSectionComponent } from './components/skills-section/skills-section.component';
+import { UsageSectionComponent } from './components/usage-section/usage-section.component';
 
 const routes: Routes = [
   {
@@ -15,6 +16,7 @@ const routes: Routes = [
       { path: 'general', component: GeneralSectionComponent },
       { path: 'models', component: ModelsSectionComponent },
       { path: 'skills', component: SkillsSectionComponent },
+      { path: 'usage', component: UsageSectionComponent },
       { path: 'account', component: AccountSectionComponent },
       { path: 'profile', component: AccountSectionComponent }
     ]

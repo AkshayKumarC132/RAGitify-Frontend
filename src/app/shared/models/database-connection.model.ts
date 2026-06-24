@@ -2,6 +2,12 @@ export interface DatabaseConnection {
     id?: string;
     name?: string;
     connection_type_id?: number;
+    connection_type?: {
+        id: number;
+        name: string;
+        driver_name: string;
+        default_port: number;
+    };
     host: string;
     port: number;
     database_name: string;
@@ -18,4 +24,24 @@ export interface DatabaseConnection {
     schema_synced_at?: string;
     created_at?: string;
     updated_at?: string;
+}
+
+export interface DatabaseSyncLog {
+    id: string;
+    connection: string;
+    status: 'success' | 'failed';
+    error_message?: string;
+    started_at: string;
+    completed_at?: string;
+    duration_ms: number;
+    schema_changed: boolean;
+    previous_checksum?: string;
+    new_checksum?: string;
+    tables_added: string[];
+    tables_removed: string[];
+    schemas_added: string[];
+    schemas_removed: string[];
+    total_tables: number;
+    total_schemas: number;
+    created_at: string;
 }

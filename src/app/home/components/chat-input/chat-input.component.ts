@@ -57,6 +57,52 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   @Input() librariesLoading = false;
   @Input() documentsLoading = false;
   @Input() promptsLoading = false;
+  /** Token usage from the last assistant response in this conversation */
+  @Input() tokenUsage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | null = null;
+  /** Context window size for the selected model — used as the ring limit */
+  @Input() tokenLimit = 8_000;
+
+  /** Show the ring only when we have real usage data */
+  get showTokenRing(): boolean {
+    return !!this.tokenUsage && this.tokenUsage.total_tokens > 0;
+  }
+
+  /** Fill percentage 0–100 */
+  get tokenFillPercent(): number {
+    if (!this.tokenUsage || this.tokenLimit <= 0) return 0;
+    return Math.min(100, (this.tokenUsage.total_tokens / this.tokenLimit) * 100);
+  }
+
+  /** Arc color that transitions green → amber → red */
+  get tokenFillColor(): string {
+    const pct = this.tokenFillPercent;
+    if (pct >= 85) return '#ef4444';   // red
+    if (pct >= 60) return '#f59e0b';   // amber
+    return '#22c55e';                  // green
+  }
+
+  /**
+   * SVG stroke-dasharray for the progress arc.
+   * Circle circumference = 2π × r = 2π × 12 ≈ 75.398
+   */
+  get tokenRingDashArray(): string {
+    const circ = 2 * Math.PI * 12;
+    const fill = (this.tokenFillPercent / 100) * circ;
+    return `${fill} ${circ - fill}`;
+  }
+
+  showTokenTooltip = false;
+
+  get shouldOpenUpwards(): boolean {
+    if (this.hasExistingThread) {
+      return true;
+    }
+    return (
+      (this.selectedDocumentIds && this.selectedDocumentIds.length > 0) ||
+      !!this.selectedLibraryId ||
+      (this.selectedDatabaseConnectionIds && this.selectedDatabaseConnectionIds.length > 0)
+    );
+  }
 
   get connectedDatabaseConnections(): DatabaseConnection[] {
     return (this.databaseConnections || []).filter(db => db.status === 'connected');
@@ -75,6 +121,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   message = '';
   activePanel: AttachmentPanel = null;
   activeDocumentTab: 'my' | 'shared' | 'database' = 'my';
+  attachmentMenuState: 'main' | 'document' | 'connectors' = 'main';
   pendingDatabaseConnectionIds = new Set<string>();
 
   webForm = { url: '', title: '' };
@@ -97,7 +144,6 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   isWebSearchEnabled = false;
   showMoreDocsMenu = false;
   private recognition: SpeechRecognitionLike | null = null;
-  private postgresTypeId: number | null = null;
 
   constructor(
     private cdr: ChangeDetectorRef,
@@ -107,17 +153,24 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   ngOnInit(): void {
     this.initializeSpeechRecognition();
+  }
 
-    // Fetch postgres connection type id
-    this.dbService.getConnectionTypes().subscribe({
-      next: (types) => {
-        const pgType = types.find(t => t.driver_name?.toLowerCase().includes('postgres') || t.name?.toLowerCase().includes('postgres'));
-        if (pgType) {
-          this.postgresTypeId = pgType.id;
-        }
-      },
-      error: (err) => console.error('Failed to load connection types:', err)
-    });
+  getDatabaseIcon(db: DatabaseConnection): string {
+    const typeName = (db.connection_type?.driver_name || db.connection_type?.name || '').toLowerCase();
+    
+    if (typeName.includes('postgres')) return 'assets/postgres.svg';
+    if (typeName.includes('clickhouse')) return 'assets/clickhouse.svg';
+    if (typeName.includes('mysql')) return 'assets/mysql.svg';
+    if (typeName.includes('mongodb')) return 'assets/mongodb.svg';
+    if (typeName.includes('redis')) return 'assets/redis.svg';
+    if (typeName.includes('snowflake')) return 'assets/snowflake.svg';
+    if (typeName.includes('bigquery')) return 'assets/bigquery.svg';
+    
+    return 'assets/postgres.svg'; // fallback
+  }
+
+  getDatabaseConnection(dbId: string): DatabaseConnection | undefined {
+    return this.databaseConnections?.find(db => db.id === dbId);
   }
 
   ngAfterViewInit(): void {
@@ -283,6 +336,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
       this.activePanel = panel;
 
       if (panel === 'library') {
+        this.attachmentMenuState = 'main';
         this.pendingLibraryId = this.selectedLibraryId;
         this.pendingDocumentIds = new Set((this.selectedDocumentIds || []).map(id => String(id)));
         this.pendingDatabaseConnectionIds = new Set((this.selectedDatabaseConnectionIds || []).map(id => String(id)));

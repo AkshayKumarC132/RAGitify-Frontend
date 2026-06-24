@@ -34,6 +34,12 @@
         <i class="fa-solid fa-briefcase" aria-hidden="true"></i>
         <span class="button-text" *ngIf="!sidebarCollapsed">Workspace</span>
       </button>
+      <button type="button" class="workspace-button" (click)="goToConnectors()" aria-label="Open connectors"
+        [attr.data-tooltip]="sidebarCollapsed ? 'Connectors' : null"
+        [attr.title]="sidebarCollapsed ? 'Open connectors' : null">
+        <i class="fa-solid fa-plug" aria-hidden="true"></i>
+        <span class="button-text" *ngIf="!sidebarCollapsed">Connectors</span>
+      </button>
       <button type="button" class="workspace-button" [class.active]="activeSection === 'prompts'"
         (click)="goToPrompts()" aria-label="Open prompts" [attr.data-tooltip]="sidebarCollapsed ? 'Prompts' : null"
         [attr.title]="sidebarCollapsed ? 'Open prompts' : null">
@@ -101,6 +107,18 @@
   <!-- Main: picker when no library selected, otherwise workspace content -->
   <ng-container *ngIf="showLibraryPicker">
     <div class="workspace-picker-full">
+      <div class="workspace-top-bar">
+        <div class="top-bar-brand">
+          <button type="button" class="crumb-link" (click)="goToHome()">
+            <span>Home</span>
+          </button>
+          <span class="crumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
+          <span class="crumb-current">Workspace</span>
+        </div>
+        <div class="top-bar-right">
+          <app-theme-toggle [compact]="true"></app-theme-toggle>
+        </div>
+      </div>
       <header class="workspace-main-header">
         <div class="header-icon-box">
           <i class="fa-solid fa-briefcase"></i>
@@ -111,22 +129,9 @@
         </div>
       </header>
 
-      <div class="workspace-tabs-bar">
-        <div class="workspace-tabs-container">
-          <button type="button" class="workspace-tab-btn" [class.active]="workspaceTab === 'libraries'"
-            (click)="goToLibrariesTab()">
-            <i class="fa-solid fa-layer-group"></i> Libraries
-          </button>
-          <button type="button" class="workspace-tab-btn" [class.active]="workspaceTab === 'connections'"
-            (click)="goToConnectionsTab()">
-            <i class="fa-solid fa-plug"></i> Connections
-          </button>
-        </div>
-      </div>
 
       <div class="workspace-tab-content">
-        <app-workspace-library-picker *ngIf="workspaceTab === 'libraries'"></app-workspace-library-picker>
-        <app-workspace-connections *ngIf="workspaceTab === 'connections'"></app-workspace-connections>
+        <app-workspace-library-picker></app-workspace-library-picker>
       </div>
     </div>
   </ng-container>

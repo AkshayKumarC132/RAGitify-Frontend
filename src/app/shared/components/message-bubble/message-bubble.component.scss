@@ -72,14 +72,12 @@
 }
 
 .message-content {
-  // max-width: 70%;
   padding: 0.75rem 1rem 0.75rem 1rem;
   word-wrap: break-word;
   position: relative;
 }
 
 .message-content.has-run-error {
-  // Reserve space for the top-right info badge so it doesn't overlap the text.
   padding-right: 2.25rem;
 }
 
@@ -91,7 +89,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none; // non-clickable
+  pointer-events: none;
 }
 
 .run-error-icon {
@@ -167,7 +165,6 @@
 
   code {
     font-family: var(--app-mono);
-    // font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     font-size: 0.85em;
     background: rgba(15, 23, 42, 0.08);
     padding: 0.1rem 0.35rem;
@@ -357,7 +354,7 @@
   }
 }
 
-// ── Data Grid Bar ──────────────────────────────────────────────────
+// ── Data Grid Bar (fallback pill) ───────────────────────────────────────
 .data-grid-bar {
   display: inline-flex;
   align-items: center;
@@ -430,95 +427,398 @@
   }
 }
 
-// ── Inline Data Grid ───────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// ── Inline Data Grid v2 (multi-source) ────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+
 .inline-data-grid {
   display: flex;
   flex-direction: column;
   margin-top: 0.75rem;
-  background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
-  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
-  border-radius: 8px;
+  background: var(--panel-bg, #ffffff);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.09));
+  border-radius: 12px;
   max-width: 100%;
   overflow: hidden;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
-.inline-grid-header {
+// ── Header ────────────────────────────────────────────────────────────
+.idg-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0.75rem;
-  background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
-  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.07));
+  background: var(--panel-bg, #ffffff);
+}
 
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-primary);
-    opacity: 0.85;
+.idg-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
 
-    i {
-      font-size: 14px;
-      opacity: 0.7;
-    }
+.idg-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.35);
+
+  i {
+    font-size: 15px;
+  }
+}
+
+.idg-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.idg-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.idg-subtitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.75;
+  line-height: 1;
+}
+
+.idg-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+// Generic IDG button base
+.idg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.18s ease;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  background: var(--panel-bg, #fff);
+  color: var(--text-primary);
+
+  &:hover:not(:disabled) {
+    background: var(--bg-secondary);
+    border-color: #3b82f6;
+    color: #2563eb;
   }
 
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
 
-    .action-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 26px;
-      height: 26px;
-      border-radius: 6px;
-      background: var(--panel-bg);
-      border: 1px solid var(--border-color);
-      color: var(--text-primary);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 
-      &:hover:not(:disabled) {
-        background: var(--bg-secondary);
-        border-color: var(--accent-color);
-        transform: translateY(-1px);
-      }
+  i {
+    font-size: 12px;
+  }
+}
 
-      &:active:not(:disabled) {
-        transform: translateY(0);
-      }
+// "View SQL" — text + icon pill
+.idg-btn-sql {
+  padding: 0.35rem 0.7rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07);
+}
 
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
+// Download icon-only
+.idg-btn-icon {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07);
+}
 
-      i {
-        font-size: 12px;
-      }
+// ── Tabs ──────────────────────────────────────────────────────────────
+.idg-tabs {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.07));
+  background: var(--bg-secondary, #f8fafc);
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// Inside the fallback modal — remove extra rounding
+.modal-tabs {
+  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.07));
+  background: var(--bg-secondary, #f8fafc);
+}
+
+.idg-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.9rem;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
+
+  i {
+    font-size: 11px;
+    opacity: 0.7;
+  }
+
+  &:hover {
+    color: var(--text-primary);
+    background: rgba(59, 130, 246, 0.04);
+  }
+
+  &.active {
+    color: #2563eb;
+    border-bottom-color: #3b82f6;
+    font-weight: 600;
+
+    i {
+      opacity: 1;
+      color: #3b82f6;
     }
   }
 }
 
-.inline-grid-body {
+.idg-tab-name {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.idg-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+
+  .idg-tab.active & {
+    background: rgba(59, 130, 246, 0.12);
+    color: #2563eb;
+  }
+}
+
+// ── Source Info Bar ───────────────────────────────────────────────────
+.idg-source-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1rem;
+  background: var(--bg-secondary, #f8fafc);
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  font-size: 11.5px;
+  overflow: hidden;
+}
+
+.idg-source-bar-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.idg-source-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.idg-source-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  max-width: 220px;
+}
+
+.idg-source-key {
+  font-family: var(--app-mono, monospace);
+  font-size: 10.5px;
+  color: #2563eb;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+// ── Body ──────────────────────────────────────────────────────────────
+.idg-body {
   display: flex;
   flex-direction: column;
   position: relative;
-  background: var(--panel-bg);
-  max-height: 400px;
+  background: var(--panel-bg, #ffffff);
+  max-height: 380px;
+  overflow: hidden;
+}
 
-  .data-grid-scroll {
-    max-height: 400px;
+.idg-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2.5rem;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.idg-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.idg-scroll {
+  flex: 1;
+  overflow: auto;
+  max-height: 380px;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.14);
+    border-radius: 4px;
   }
 }
 
-// ── Data Grid Modal ────────────────────────────────────────────────
+// ── IDG Table ─────────────────────────────────────────────────────────
+.idg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  white-space: nowrap;
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg-secondary, #f8fafc);
+    box-shadow: 0 1px 0 var(--border-color, rgba(0, 0, 0, 0.08));
+  }
+
+  th {
+    padding: 0.5rem 0.85rem;
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    user-select: none;
+  }
+
+  td {
+    padding: 0.45rem 0.85rem;
+    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
+    color: var(--text-primary);
+    font-size: 12.5px;
+  }
+
+  tbody tr {
+    transition: background 0.1s ease;
+
+    &:hover {
+      background: rgba(59, 130, 246, 0.04);
+    }
+
+    &:last-child td {
+      border-bottom: none;
+    }
+
+    &:nth-child(even) {
+      background: rgba(0, 0, 0, 0.018);
+
+      &:hover {
+        background: rgba(59, 130, 246, 0.05);
+      }
+    }
+  }
+
+  // Row number column
+  .idg-col-num {
+    width: 42px;
+    min-width: 42px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 11px;
+    opacity: 0.55;
+    border-right: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+  }
+
+  // First data column — blue accent (ID / key column)
+  .idg-cell-primary {
+    color: #2563eb;
+    font-weight: 500;
+  }
+
+  // Accent orange cell (alternate rows, non-primary columns)
+  .idg-cell-accent {
+    color: #b45309;
+  }
+}
+
+// ── Footer ────────────────────────────────────────────────────────────
+.idg-footer {
+  padding: 0.45rem 1rem;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #2563eb;
+  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  background: var(--panel-bg, #ffffff);
+}
+
+// ── Data Grid Modal ───────────────────────────────────────────────────
 .data-grid-overlay {
   position: fixed;
   top: 0;
@@ -537,8 +837,8 @@
 
 .data-grid-modal {
   background: var(--panel-bg, white);
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
   width: 100%;
   max-width: 960px;
   max-height: 85vh;
@@ -571,7 +871,7 @@
   }
 
   .dim-badge {
-    margin-left: 0.5rem;
+    margin-left: 0.25rem;
     padding: 0.15rem 0.5rem;
     background: rgba(0, 0, 0, 0.05);
     border-radius: 999px;
@@ -579,6 +879,17 @@
     font-weight: 500;
     opacity: 0.8;
   }
+}
+
+// SQL modal title extras
+.sql-title-sep {
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.sql-title-source {
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .modal-actions {
@@ -590,9 +901,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
+    border-radius: 7px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.18s ease;
     font-weight: 500;
     font-size: 13px;
 
@@ -612,7 +923,16 @@
 
     &:hover:not(:disabled) {
       background: var(--bg-secondary);
-      border-color: var(--accent-color);
+      border-color: #3b82f6;
+      color: #2563eb;
+    }
+  }
+
+  // SQL copy button with text
+  .sql-copy-btn {
+    gap: 0.4rem;
+    span {
+      font-size: 12px;
     }
   }
 
@@ -627,8 +947,24 @@
     &:hover {
       background: var(--bg-tertiary);
       color: var(--text-primary);
+      border-color: var(--border-color);
     }
   }
+}
+
+// "Generated against" subtitle bar in SQL modal
+.sql-source-bar {
+  padding: 0.5rem 1.25rem;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.07));
+}
+
+.sql-source-highlight {
+  font-weight: 600;
+  color: #b45309;
+  margin-left: 0.35rem;
 }
 
 .modal-body {
@@ -688,10 +1024,10 @@
   th {
     padding: 0.5rem 0.75rem;
     text-align: left;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
     color: var(--text-secondary);
   }
 
@@ -727,16 +1063,60 @@
     font-variant-numeric: tabular-nums;
     border-right: 1px solid var(--border-color);
   }
+
+  .idg-cell-primary {
+    color: #2563eb;
+    font-weight: 500;
+  }
 }
 
 .modal-footer {
-  padding: 0.75rem 1.25rem;
+  padding: 0.6rem 1.25rem;
   font-size: 12px;
-  color: var(--text-secondary);
+  font-weight: 500;
+  color: #2563eb;
   border-top: 1px solid var(--border-color);
   background: var(--bg-secondary);
 }
 
+// ── SQL Modal Body ────────────────────────────────────────────────────
+.sql-modal-body {
+  padding: 1.25rem 1.5rem;
+  background: var(--panel-bg);
+  overflow: auto;
+
+  pre {
+    margin: 0;
+    padding: 1.1rem 1.25rem;
+    background: rgba(15, 23, 42, 0.03);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    font-family: var(--app-mono, 'SFMono-Regular', Consolas, monospace);
+    font-size: 13px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-all;
+
+    code {
+      background: transparent;
+      padding: 0;
+      color: var(--text-primary);
+
+      // SQL keyword highlighting
+      ::ng-deep .sql-keyword {
+        color: #dc2626;
+        font-weight: 600;
+      }
+
+      // SQL string literal highlighting
+      ::ng-deep .sql-string {
+        color: #16a34a;
+      }
+    }
+  }
+}
+
+// ── Streaming cursor ──────────────────────────────────────────────────
 .message-bubble.streaming .markdown {
   &>*:last-child:after {
     content: '▊';
@@ -759,30 +1139,5 @@
 
   50% {
     opacity: 0;
-  }
-}
-
-.sql-modal-body {
-  padding: 1.5rem;
-  background: var(--panel-bg);
-  overflow: auto;
-
-  pre {
-    margin: 0;
-    padding: 1rem;
-    background: rgba(15, 23, 42, 0.04);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    font-family: var(--app-mono, monospace);
-    font-size: 13px;
-    line-height: 1.5;
-    white-space: pre-wrap;
-    word-break: break-all;
-
-    code {
-      background: transparent;
-      padding: 0;
-      color: var(--text-primary);
-    }
   }
 }

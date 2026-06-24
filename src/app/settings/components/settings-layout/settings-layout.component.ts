@@ -13,6 +13,7 @@ export class SettingsLayoutComponent implements OnInit, OnDestroy {
     { label: 'General', route: 'general', icon: 'fa-gear', description: 'Appearance, theme, and app experience' },
     { label: 'Models', route: 'models', icon: 'fa-robot', description: 'Providers, models, and LLM configuration' },
     { label: 'Skills', route: 'skills', icon: 'fa-wand-magic-sparkles', description: 'Custom assistant behaviors and instructions' },
+    { label: 'Usage', route: 'usage', icon: 'fa-chart-simple', description: 'Token usage, costs, and activity tracking' },
     { label: 'Account', route: 'account', icon: 'fa-user', description: 'Profile details and account information' }
   ];
 

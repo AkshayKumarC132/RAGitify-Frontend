@@ -106,7 +106,8 @@
           (modeToggle)="onModeToggle($event)" (filesSelected)="onFilesSelected($event)"
           (webpageAttached)="onWebpageAttach($event)" (notesAttached)="onNotesAttach($event)"
           (librarySelected)="onLibrarySelected($event)" (attachmentPanelOpened)="onAttachmentPanelOpened($event)"
-          (promptSelected)="onPromptSelected($event)"></app-chat-input>
+          (promptSelected)="onPromptSelected($event)"
+          [tokenUsage]="currentTokenUsage" [tokenLimit]="currentTokenLimit"></app-chat-input>
 
         <div class="suggested-questions-container" *ngIf="isConversationEmpty">
           <div class="suggested-questions">

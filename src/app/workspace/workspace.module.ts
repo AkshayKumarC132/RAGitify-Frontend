@@ -17,8 +17,6 @@ import { DocumentDetailsPageComponent } from './components/document-details-page
 import { DocumentSidebarListComponent } from './components/document-sidebar-list/document-sidebar-list.component';
 import { LibraryStatsPageComponent } from './components/library-stats-page/library-stats-page.component';
 import { WorkspaceRoutingModule } from './workspace-routing.module';
-import { WorkspaceConnectionsComponent } from './components/workspace-connections/workspace-connections.component';
-import { PostgresWizardComponent } from './components/postgres-wizard/postgres-wizard.component';
 
 @NgModule({
   declarations: [
@@ -32,9 +30,7 @@ import { PostgresWizardComponent } from './components/postgres-wizard/postgres-w
     DocumentChatComponent,
     AssistantChatComponent,
     DocumentDetailsPageComponent,
-    DocumentSidebarListComponent,
-    WorkspaceConnectionsComponent,
-    PostgresWizardComponent
+    DocumentSidebarListComponent
   ],
   imports: [
     CommonModule,

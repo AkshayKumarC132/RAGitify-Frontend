@@ -1,0 +1,132 @@
+<div class="workspace-container">
+    <nav class="workspace-sidebar" [class.collapsed]="sidebarCollapsed">
+        <!-- Brand Header -->
+        <div class="sidebar-header" [class.show-expand-control]="sidebarCollapsed && hoveringExpandControl">
+            <button type="button" class="brand-toggle" (click)="onBrandClick()"
+                [attr.title]="sidebarCollapsed ? 'Expand sidebar' : 'Go to home'"
+                (mouseenter)="handleBrandExpandInteraction(true)" (mouseleave)="handleBrandExpandInteraction(false)"
+                (focus)="handleBrandExpandInteraction(true)" (blur)="handleBrandExpandInteraction(false)">
+                <img src="assets/images/ragitify-logo.svg" alt="RAGitify logo" class="brand-logo" />
+                <div class="brand-text" *ngIf="!sidebarCollapsed">
+                    <div class="brand-title">RAGitify</div>
+                </div>
+            </button>
+            <button class="sidebar-toggle-control" type="button" (click)="toggleSidebar(undefined, $event)"
+                [attr.aria-label]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+                (mouseenter)="handleToggleExpandInteraction(true)" (mouseleave)="handleToggleExpandInteraction(false)"
+                (focus)="handleToggleExpandInteraction(true)" (blur)="handleToggleExpandInteraction(false)">
+                <i class="fa-solid" [ngClass]="sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+            </button>
+        </div>
+
+        <!-- Connections List Sidebar (on detail route) -->
+        <ng-container *ngIf="isDetailRoute && !sidebarCollapsed">
+            <div class="conn-sidebar">
+                <div class="conn-sidebar-header">
+                    <button type="button" class="conn-back-btn" (click)="goToConnectorsList()">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>All Connections</span>
+                    </button>
+                </div>
+                <div class="conn-sidebar-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" [(ngModel)]="connectionSearch" (input)="applySearch()"
+                        placeholder="Search connections..." />
+                </div>
+                <div class="conn-sidebar-list">
+                    <div *ngIf="loadingConnections" class="conn-sidebar-loading">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                    </div>
+                    <button type="button" class="conn-sidebar-item" *ngFor="let conn of filteredConnections"
+                        [class.active]="conn.id === activeConnectionId" (click)="navigateToConnection(conn.id)">
+                        <img src="assets/postgres.svg" class="conn-sidebar-icon" alt="PostgreSQL" />
+                        <div class="conn-sidebar-info">
+                            <span class="conn-sidebar-name">{{ conn.name || conn.database_name }}</span>
+                            <span class="conn-sidebar-sub">{{ conn.database_name }}</span>
+                        </div>
+                        <span [class]="getStatusClass(conn)"></span>
+                    </button>
+                    <div *ngIf="!loadingConnections && filteredConnections.length === 0" class="conn-sidebar-empty">
+                        No connections found
+                    </div>
+                </div>
+            </div>
+        </ng-container>
+
+        <!-- Standard Navigation (on list route) -->
+        <ng-container *ngIf="!isDetailRoute">
+            <nav class="sidebar-actions">
+                <button type="button" class="new-thread-button" (click)="goToNewChat()" aria-label="Start a new chat"
+                    [attr.data-tooltip]="sidebarCollapsed ? 'Start a new chat' : null"
+                    [attr.title]="sidebarCollapsed ? 'Start a new chat' : null">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                    <span class="button-text" *ngIf="!sidebarCollapsed">New Chat</span>
+                </button>
+                <button type="button" class="workspace-button" (click)="goToWorkspace()" aria-label="Open workspace"
+                    [attr.data-tooltip]="sidebarCollapsed ? 'Workspace' : null"
+                    [attr.title]="sidebarCollapsed ? 'Open workspace' : null">
+                    <i class="fa-solid fa-briefcase" aria-hidden="true"></i>
+                    <span class="button-text" *ngIf="!sidebarCollapsed">Workspace</span>
+                </button>
+                <button type="button" class="workspace-button active" (click)="goToConnectorsList()" aria-label="Open connectors"
+                    [attr.data-tooltip]="sidebarCollapsed ? 'Connectors' : null"
+                    [attr.title]="sidebarCollapsed ? 'Open connectors' : null">
+                    <i class="fa-solid fa-plug" aria-hidden="true"></i>
+                    <span class="button-text" *ngIf="!sidebarCollapsed">Connectors</span>
+                </button>
+                <button type="button" class="workspace-button" (click)="goToPrompts()" aria-label="Open prompts"
+                    [attr.data-tooltip]="sidebarCollapsed ? 'Prompts' : null"
+                    [attr.title]="sidebarCollapsed ? 'Open prompts' : null">
+                    <i class="fa-solid fa-robot" aria-hidden="true"></i>
+                    <span class="button-text" *ngIf="!sidebarCollapsed">Prompts</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <button type="button" class="sidebar-footer-btn" (click)="goToHome()" aria-label="Go to home"
+                    [attr.data-tooltip]="sidebarCollapsed ? 'Home' : null" title="Home">
+                    <span>Home</span>
+                </button>
+                <button type="button" class="sidebar-footer-btn danger" (click)="logout()" aria-label="Log out"
+                    [attr.data-tooltip]="sidebarCollapsed ? 'Log out' : null" title="Log out">
+                    <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </ng-container>
+    </nav>
+
+    <div class="workspace-content">
+        <div class="workspace-top-bar">
+            <div class="top-bar-brand">
+                <button type="button" class="crumb-link" (click)="goToHome()">
+                    <span>Home</span>
+                </button>
+                <span class="crumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
+                
+                <ng-container *ngIf="!isDetailRoute && !isNewRoute">
+                    <span class="crumb-current">Connectors</span>
+                </ng-container>
+                
+                <ng-container *ngIf="isNewRoute">
+                    <button type="button" class="crumb-link" (click)="goToConnectorsList()">
+                        <span>Connectors</span>
+                    </button>
+                    <span class="crumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
+                    <span class="crumb-current">New Connection</span>
+                </ng-container>
+                
+                <ng-container *ngIf="isDetailRoute">
+                    <button type="button" class="crumb-link" (click)="goToConnectorsList()">
+                        <span>Connectors</span>
+                    </button>
+                    <span class="crumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
+                    <span class="crumb-current">Connection Details</span>
+                </ng-container>
+            </div>
+            <div class="top-bar-right">
+                <app-theme-toggle [compact]="true"></app-theme-toggle>
+            </div>
+        </div>
+        <router-outlet></router-outlet>
+    </div>
+</div>

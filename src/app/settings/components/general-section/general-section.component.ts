@@ -16,8 +16,8 @@ export class GeneralSectionComponent {
     this.style$ = this.themeService.style$;
   }
 
-  toggleTheme(): void {
-    this.themeService.toggleTheme();
+  setTheme(theme: 'light' | 'dark'): void {
+    this.themeService.setTheme(theme);
   }
 
   setStyle(style: UIStyle): void {

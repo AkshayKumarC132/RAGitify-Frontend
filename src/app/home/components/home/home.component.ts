@@ -73,6 +73,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   warningMessages: string[] = [];
   isTemporaryChat = false;
   conversationMenuOpen = false;
+  /** Token usage from the most recent assistant response in this thread */
+  currentTokenUsage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | null = null;
   private ephemeralMetadataMap = new Map<string, any>();
 
   private attachmentMessageTimeout?: ReturnType<typeof setTimeout>;
@@ -267,6 +269,35 @@ export class HomeComponent implements OnInit, OnDestroy {
     return this._typingStatuses;
   }
 
+  /**
+   * Context-window size for the currently selected model.
+   * Used to set the token ring's "limit" denominator in the chatbar.
+   */
+  get currentTokenLimit(): number {
+    const model = (this.selectedModel || '').toLowerCase();
+    const limits: [string, number][] = [
+      ['gpt-4o',            128_000],
+      ['gpt-4-turbo',       128_000],
+      ['gpt-4-32k',          32_768],
+      ['gpt-4',               8_192],
+      ['gpt-3.5-turbo-16k',  16_385],
+      ['gpt-3.5-turbo',      16_385],
+      ['claude-3',          200_000],
+      ['claude-2',          100_000],
+      ['gemini-1.5-pro',  1_048_576],
+      ['gemini-1.5-flash', 1_048_576],
+      ['gemini-pro',         32_768],
+      ['mistral-large',      32_768],
+      ['mixtral',            32_768],
+      ['llama-3',             8_192],
+      ['llama-2',             4_096],
+    ];
+    for (const [key, limit] of limits) {
+      if (model.includes(key)) return limit;
+    }
+    return 8_000;
+  }
+
   private updateTypingStatuses(): void {
     if (this.mode === 'document') {
       this._typingStatuses = ['Retrieving', 'Searching', 'Thinking', 'Generating'];
@@ -337,6 +368,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.selectedDocumentIds = [];
     this.selectedPromptId = null;
     this.attachmentMessage = '';
+    this.currentTokenUsage = null;
     this.updateModeFromSelection(true);
     this.warningMessages = [];
     this.errorMessage = '';
@@ -870,6 +902,7 @@ export class HomeComponent implements OnInit, OnDestroy {
           }
         }
         this.messages = this.decorateMessagesWithAttachments(messages || []);
+        this.updateTokenUsage();
         this.reconnectToStream(threadId);
       },
       error: (error) => {
@@ -1230,6 +1263,21 @@ export class HomeComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Unable to refresh conversation metadata', error);
     }
+  }
+
+  /**
+   * Finds the most recent assistant message that carries a `usage` payload
+   * and stores it in currentTokenUsage (drives the chatbar token ring).
+   */
+  private updateTokenUsage(): void {
+    for (let i = this.messages.length - 1; i >= 0; i--) {
+      const msg = this.messages[i];
+      if (msg.role === 'assistant' && msg.usage) {
+        this.currentTokenUsage = msg.usage;
+        return;
+      }
+    }
+    this.currentTokenUsage = null;
   }
 
   private async resolveUploadVectorStoreId(): Promise<string | null> {

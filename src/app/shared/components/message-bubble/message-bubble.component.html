@@ -27,57 +27,108 @@
             </ng-template>
         </div>
 
-        <!-- Inline Data Grid -->
+        <!-- ═══════════════════════════════════════════════════════════
+             Inline Data Grid (v2 — multi-source)
+             ═══════════════════════════════════════════════════════════ -->
         <div *ngIf="hasDataGrid && !showEmptyState && enableDataGrid" class="inline-data-grid">
-            <div class="inline-grid-header">
-                <div class="header-left">
-                    <i class="fa-solid fa-table-cells"></i>
-                    <span>Data<ng-container *ngIf="dataGridRecordCount !== ''"> &middot; {{ dataGridRecordCount }}
-                            records</ng-container></span>
+
+            <!-- ── Header ──────────────────────────────────────────── -->
+            <div class="idg-header">
+                <div class="idg-header-left">
+                    <div class="idg-icon-wrap">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="idg-title-group">
+                        <span class="idg-title">
+                            Data<ng-container *ngIf="dataGridRecordCount !== ''"> &middot; {{ dataGridRecordCount }} records</ng-container>
+                        </span>
+                        <span class="idg-subtitle" *ngIf="activeSource">
+                            {{ activeSource.rows.length }} rows &times; {{ activeSource.columns.length }} cols
+                        </span>
+                    </div>
                 </div>
-                <div class="header-actions">
-                    <button type="button" class="action-btn download-btn" (click)="viewSql()" title="View SQL">
+                <div class="idg-header-actions">
+                    <button type="button" class="idg-btn idg-btn-sql" (click)="viewSql()" title="View SQL">
                         <i class="fa-solid fa-code"></i>
+                        <span>View SQL</span>
                     </button>
-                    <button type="button" class="action-btn download-btn" (click)="exportCsv()"
-                        [disabled]="dataGridLoading || inlineDataGridRows.length === 0" title="Download CSV">
+                    <button type="button" class="idg-btn idg-btn-icon"
+                            (click)="exportCsv()"
+                            [disabled]="dataGridLoading || !activeSource?.rows?.length"
+                            title="Download CSV">
                         <i class="fa-solid fa-download"></i>
                     </button>
                 </div>
             </div>
-            <div class="inline-grid-body">
-                <div *ngIf="dataGridLoading" class="loading-state">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Loading data...
+
+            <!-- ── Source Tabs (only when > 1 source) ───────────────── -->
+            <div class="idg-tabs" *ngIf="dataSources.length > 1">
+                <button type="button"
+                        *ngFor="let src of dataSources; let i = index"
+                        class="idg-tab"
+                        [class.active]="i === activeSourceIndex"
+                        (click)="setActiveSource(i)">
+                    <i [ngClass]="getSourceIconInfo(src).classes" [style.color]="getSourceIconInfo(src).color"></i>
+                    <span class="idg-tab-name">{{ getSourceTabLabel(src) }}</span>
+                    <span class="idg-tab-count">{{ src.rows.length }}</span>
+                </button>
+            </div>
+
+            <!-- ── Source Info Bar ─────────────────────────────── -->
+            <div class="idg-source-bar" *ngIf="activeSource && activeSource.source_name">
+                <i [ngClass]="getSourceIconInfo(activeSource).classes"
+                   [style.color]="getSourceIconInfo(activeSource).color"
+                   class="idg-source-bar-icon"></i>
+                <span class="idg-source-label">Source:</span>
+                <span class="idg-source-name">{{ activeSource.source_name }}</span>
+            </div>
+
+            <!-- ── Body ────────────────────────────────────────────── -->
+            <div class="idg-body">
+                <div *ngIf="dataGridLoading" class="idg-loading">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>Loading data...</span>
                 </div>
 
-                <div *ngIf="!dataGridLoading && inlineDataGridRows.length > 0" class="data-grid-scroll">
-                    <table class="data-grid-table">
+                <div *ngIf="!dataGridLoading && activeSource && activeSource.rows.length > 0" class="idg-scroll">
+                    <table class="idg-table">
                         <thead>
                             <tr>
-                                <th class="row-num-col">#</th>
-                                <th *ngFor="let col of inlineDataGridColumns">{{ formatColumnHeader(col) }}</th>
+                                <th class="idg-col-num">#</th>
+                                <th *ngFor="let col of activeSource.columns">{{ formatColumnHeader(col) }}</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let row of inlineDataGridRows; let i = index">
-                                <td class="row-num-col">{{ i + 1 }}</td>
-                                <td *ngFor="let col of inlineDataGridColumns">{{ row[col] }}</td>
+                            <tr *ngFor="let row of activeSource.rows; let i = index">
+                                <td class="idg-col-num">{{ i + 1 }}</td>
+                                <td *ngFor="let col of activeSource.columns; let ci = index"
+                                    [class.idg-cell-primary]="ci === 0"
+                                    [class.idg-cell-accent]="ci > 0 && i % 3 === 1">
+                                    {{ row[col] }}
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <div *ngIf="!dataGridLoading && inlineDataGridRows.length === 0" class="empty-state">
+                <div *ngIf="!dataGridLoading && (!activeSource || activeSource.rows.length === 0)"
+                     class="idg-empty">
                     No records found.
                 </div>
             </div>
+
+            <!-- ── Footer ──────────────────────────────────────────── -->
+            <div class="idg-footer" *ngIf="!dataGridLoading && activeSource?.rows?.length">
+                Showing all {{ activeSource!.rows.length }} records
+            </div>
+
         </div>
 
-        <!-- Data Grid Bar (fallback if not enabled) -->
+        <!-- Data Grid Bar (fallback when enableDataGrid is false) -->
         <div *ngIf="hasDataGrid && !showEmptyState && !enableDataGrid" class="data-grid-bar">
             <div class="bar-left">
                 <div class="icon-circle">
-                    <i class="fa-solid fa-table-cells"></i>
+                    <i class="fa-solid fa-database"></i>
                 </div>
                 <span class="bar-title">Data<ng-container *ngIf="dataGridRecordCount !== ''"> &middot; {{
                         dataGridRecordCount }} records</ng-container></span>
@@ -94,6 +145,7 @@
                 </button>
             </div>
         </div>
+
         <app-message-sources *ngIf="showSources && !showEmptyState && !isUser" [documentIds]="getDocumentIds(message)">
         </app-message-sources>
         <div class="message-time" *ngIf="!showEmptyState">{{ formatTime(message.created_at) }}</div>
@@ -126,21 +178,28 @@
     </div>
 </div>
 
-<!-- Data Grid Modal -->
+<!-- ═══════════════════════════════════════════════════════════════════
+     Data Grid Modal (non-inline fallback) — multi-source with tabs
+     ═══════════════════════════════════════════════════════════════════ -->
 <div *ngIf="showDataGridModal" class="data-grid-overlay" (click)="closeDataGridModal()">
     <div class="data-grid-modal" (click)="$event.stopPropagation()">
+
+        <!-- ── Header ── -->
         <div class="modal-header">
             <div class="modal-title-group">
-                <i class="fa-solid fa-table-cells"></i>
-                <span class="title-text">Data<ng-container *ngIf="dataGridRecordCount !== ''"> &middot; {{
-                        dataGridRecordCount }} records</ng-container></span>
-                <span class="dim-badge" *ngIf="modalDataGridRows.length > 0">
-                    {{ modalDataGridRows.length }} rows × {{ modalDataGridColumns.length }} cols
+                <i class="fa-solid fa-database"></i>
+                <span class="title-text">Data<ng-container *ngIf="dataGridRecordCount !== ''"> &middot; {{ dataGridRecordCount }} records</ng-container></span>
+                <span class="dim-badge" *ngIf="activeSource">
+                    {{ activeSource.rows.length }} rows &times; {{ activeSource.columns.length }} cols
                 </span>
             </div>
             <div class="modal-actions">
+                <button type="button" class="action-btn download-btn" (click)="viewSql()" title="View SQL">
+                    <i class="fa-solid fa-code"></i>
+                    <span>View SQL</span>
+                </button>
                 <button type="button" class="action-btn download-btn" (click)="exportCsv()"
-                    [disabled]="dataGridLoading || modalDataGridRows.length === 0">
+                    [disabled]="dataGridLoading || !activeSource?.rows?.length" title="Download CSV">
                     <i class="fa-solid fa-download"></i>
                 </button>
                 <button type="button" class="action-btn close-btn" (click)="closeDataGridModal()">
@@ -149,62 +208,104 @@
             </div>
         </div>
 
+        <!-- ── Source Tabs (only when > 1 source) ── -->
+        <div class="idg-tabs modal-tabs" *ngIf="dataSources.length > 1">
+            <button type="button"
+                    *ngFor="let src of dataSources; let i = index"
+                    class="idg-tab"
+                    [class.active]="i === activeSourceIndex"
+                    (click)="setActiveSource(i)">
+                <i [ngClass]="getSourceIconInfo(src).classes" [style.color]="getSourceIconInfo(src).color"></i>
+                <span class="idg-tab-name">{{ getSourceTabLabel(src) }}</span>
+                <span class="idg-tab-count">{{ src.rows.length }}</span>
+            </button>
+        </div>
+
+        <!-- ── Source Info Bar ── -->
+        <div class="idg-source-bar" *ngIf="activeSource && activeSource.source_name">
+            <i [ngClass]="getSourceIconInfo(activeSource).classes"
+               [style.color]="getSourceIconInfo(activeSource).color"
+               class="idg-source-bar-icon"></i>
+            <span class="idg-source-label">Source:</span>
+            <span class="idg-source-name">{{ activeSource.source_name }}</span>
+        </div>
+
+        <!-- ── Body ── -->
         <div class="modal-body">
             <div *ngIf="dataGridLoading" class="loading-state">
                 <i class="fa-solid fa-spinner fa-spin"></i> Loading data...
             </div>
 
-            <div *ngIf="!dataGridLoading && modalDataGridRows.length > 0" class="data-grid-scroll">
+            <div *ngIf="!dataGridLoading && activeSource && activeSource.rows.length > 0" class="data-grid-scroll">
                 <table class="data-grid-table">
                     <thead>
                         <tr>
                             <th class="row-num-col">#</th>
-                            <th *ngFor="let col of modalDataGridColumns">{{ formatColumnHeader(col) }}</th>
+                            <th *ngFor="let col of activeSource.columns">{{ formatColumnHeader(col) }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let row of modalDataGridRows; let i = index">
+                        <tr *ngFor="let row of activeSource.rows; let i = index">
                             <td class="row-num-col">{{ i + 1 }}</td>
-                            <td *ngFor="let col of modalDataGridColumns">{{ row[col] }}</td>
+                            <td *ngFor="let col of activeSource.columns; let ci = index"
+                                [class.idg-cell-primary]="ci === 0"
+                                [class.idg-cell-accent]="ci > 0 && i % 3 === 1">
+                                {{ row[col] }}
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <div *ngIf="!dataGridLoading && modalDataGridRows.length === 0" class="empty-state">
+            <div *ngIf="!dataGridLoading && (!activeSource || activeSource.rows.length === 0)" class="empty-state">
                 No records found.
             </div>
         </div>
 
-        <div class="modal-footer" *ngIf="!dataGridLoading && modalDataGridRows.length > 0">
-            Showing all {{ modalDataGridRows.length }} records
+        <div class="modal-footer" *ngIf="!dataGridLoading && activeSource?.rows?.length">
+            Showing all {{ activeSource!.rows.length }} records
         </div>
     </div>
 </div>
 
-<!-- SQL Query Modal -->
+<!-- ═══════════════════════════════════════════════════════════════════
+     SQL Query Modal (v2 — per-source context)
+     ═══════════════════════════════════════════════════════════════════ -->
 <div *ngIf="showSqlModal" class="data-grid-overlay" (click)="closeSqlModal()">
     <div class="data-grid-modal sql-modal" (click)="$event.stopPropagation()">
         <div class="modal-header">
             <div class="modal-title-group">
                 <i class="fa-solid fa-code"></i>
-                <span class="title-text">SQL Query</span>
+                <span class="title-text">SQL query</span>
+                <ng-container *ngIf="activeSqlSourceName">
+                    <span class="sql-title-sep">&middot;</span>
+                    <span class="sql-title-source">{{ getSourceTabLabel(activeSource!) }}</span>
+                </ng-container>
             </div>
             <div class="modal-actions">
-                <button type="button" class="action-btn download-btn" (click)="copySql()"
-                    [attr.aria-label]="sqlCopied ? 'SQL Copied' : 'Copy SQL'"
-                    [title]="sqlCopied ? 'Copied!' : 'Copy SQL'">
+                <button type="button" class="action-btn download-btn sql-copy-btn"
+                        (click)="copySql()"
+                        [attr.aria-label]="sqlCopied ? 'SQL Copied' : 'Copy SQL'"
+                        [title]="sqlCopied ? 'Copied!' : 'Copy SQL'">
                     <i *ngIf="!sqlCopied" class="fa-regular fa-copy"></i>
                     <i *ngIf="sqlCopied" class="fa-solid fa-check"></i>
+                    <span>{{ sqlCopied ? 'Copied' : 'Copy' }}</span>
                 </button>
                 <button type="button" class="action-btn close-btn" (click)="closeSqlModal()">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
         </div>
+
+        <!-- "Generated against" subtitle bar -->
+        <div class="sql-source-bar" *ngIf="activeSqlSourceName">
+            Generated against
+            <span class="sql-source-highlight">{{ activeSqlSourceName }}</span>
+        </div>
+
         <div class="modal-body sql-modal-body">
-            <pre *ngIf="dataGridSqlQuery"><code>{{ dataGridSqlQuery }}</code></pre>
-            <div *ngIf="!dataGridSqlQuery" class="empty-state">
+            <pre *ngIf="activeSqlQuery"><code [innerHTML]="highlightSql(activeSqlQuery!)"></code></pre>
+            <div *ngIf="!activeSqlQuery" class="empty-state">
                 No SQL query available.
             </div>
         </div>

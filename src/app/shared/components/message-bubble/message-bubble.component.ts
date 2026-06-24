@@ -4,6 +4,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { Message } from '../../models/message.model';
 import { Run } from '../../models/run.model';
+import { DataGridResponse, DataGridSource } from '../../models/conversation.model';
 import { ConversationService } from '../../services/conversation.service';
 import * as XLSX from 'xlsx';
 
@@ -36,22 +37,29 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     renderedContent: SafeHtml | null = null;
     copied = false;
     sqlCopied = false;
+
+    // ── Multi-source data grid state ──────────────────────────────────
+    /** All sources parsed from the API response */
+    dataSources: DataGridSource[] = [];
+    /** Index of the currently selected tab */
+    activeSourceIndex: number = 0;
+    /** grid_id → SQL string map from the API */
+    sqlQueryMap: Record<string, string> = {};
+
+    // Legacy flat state — kept for backwards compat with ephemeral metadata path
     dataGridColumns: string[] = [];
     dataGridRows: Record<string, any>[] = [];
 
-    // Data Grid Modal State
+    // Data Grid Modal State (used by non-inline bar fallback)
     showDataGridModal = false;
     dataGridLoading = false;
     modalDataGridColumns: string[] = [];
     modalDataGridRows: Record<string, any>[] = [];
 
     // SQL Modal State
-    dataGridSqlQuery: string | null = null;
     showSqlModal = false;
 
     // Inline Data Grid State
-    inlineDataGridColumns: string[] = [];
-    inlineDataGridRows: Record<string, any>[] = [];
     private inlineDataLoaded = false;
 
     private copyResetTimeout?: ReturnType<typeof setTimeout>;
@@ -64,6 +72,23 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         private conversationService: ConversationService,
         private cdr: ChangeDetectorRef
     ) { }
+
+    // ── Computed getters ──────────────────────────────────────────────
+
+    get activeSource(): DataGridSource | null {
+        return this.dataSources[this.activeSourceIndex] ?? null;
+    }
+
+    /** SQL for the currently active tab's grid_id */
+    get activeSqlQuery(): string | null {
+        if (!this.activeSource) return null;
+        return this.sqlQueryMap[this.activeSource.grid_id] ?? null;
+    }
+
+    /** Human-readable source name for the currently active tab */
+    get activeSqlSourceName(): string {
+        return this.activeSource?.source_name ?? '';
+    }
 
     get isFailedRun(): boolean {
         return !this.isUser && this.run?.status === 'failed';
@@ -84,19 +109,17 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         const safeContent = this.sanitizeContent(this.message.content);
         this.displayContent = safeContent;
         this.updateRenderedContent();
-        this.extractDataGrid();
+        this.extractLegacyDataGrid();
         this.checkInlineDataLoad();
     }
 
     ngOnChanges(changes: SimpleChanges): void {
-        // Re-compute content when message object reference changes (streaming delta)
-        // or when run status changes (e.g. in_progress → failed).
         if (changes['run'] || changes['message']) {
             this.previousContent = this.message?.content || '';
             const safeContent = this.sanitizeContent(this.message?.content || '');
             this.displayContent = safeContent;
             this.updateRenderedContent();
-            this.extractDataGrid();
+            this.extractLegacyDataGrid();
             this.checkInlineDataLoad();
         }
 
@@ -110,9 +133,15 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
             return;
         }
 
+        // Try ephemeral metadata first (streaming path — legacy flat structure)
         if (this.dataGridRows.length > 0) {
-            this.inlineDataGridColumns = [...this.dataGridColumns];
-            this.inlineDataGridRows = [...this.dataGridRows];
+            this.dataSources = [{
+                grid_id: 'ephemeral',
+                source_key: '',
+                source_name: '',
+                rows: this.dataGridRows,
+                columns: this.dataGridColumns,
+            }];
             this.inlineDataLoaded = true;
             return;
         }
@@ -124,16 +153,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         this.dataGridLoading = true;
         this.conversationService.getDataGrid(this.conversationId, this.message.id).subscribe({
             next: (res) => {
-                if (res.sql_query) {
-                    this.dataGridSqlQuery = res.sql_query;
-                }
-                if (res.data) {
-                    const flatRows = this.flattenDataGrid(res.data);
-                    if (flatRows.length > 0) {
-                        this.inlineDataGridColumns = Object.keys(flatRows[0]);
-                        this.inlineDataGridRows = flatRows;
-                    }
-                }
+                this.parseDataGridResponse(res);
                 this.dataGridLoading = false;
                 this.inlineDataLoaded = true;
                 this.cdr.markForCheck();
@@ -149,17 +169,46 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         });
     }
 
+    /**
+     * Parse the multi-source DataGridResponse from the API into DataGridSource[].
+     * Also populates sqlQueryMap.
+     */
+    private parseDataGridResponse(res: DataGridResponse): void {
+        // Populate SQL query map (grid_id → sql string)
+        if (res.sql_query && typeof res.sql_query === 'object') {
+            this.sqlQueryMap = res.sql_query;
+        } else {
+            this.sqlQueryMap = {};
+        }
+
+        if (!res.data || !Array.isArray(res.data)) {
+            this.dataSources = [];
+            return;
+        }
+
+        this.dataSources = res.data
+            .filter(g => Array.isArray(g.rows) && g.rows.length > 0)
+            .map(g => {
+                const sanitizedRows = g.rows.map(row => this.sanitizeRow(row));
+                return {
+                    grid_id: g.grid_id,
+                    source_key: g.source_key ?? '',
+                    source_name: g.source_name ?? '',
+                    rows: sanitizedRows,
+                    columns: sanitizedRows.length > 0 ? Object.keys(sanitizedRows[0]) : [],
+                };
+            });
+
+        this.activeSourceIndex = 0;
+    }
+
     private sanitizeContent(content?: string): string {
         if (!content) {
             return content || '';
         }
-
-        // Prefer run status over brittle text matching.
-        // If the backend marks the run as failed, show a consistent error response.
         if (this.message?.role === 'assistant' && this.run?.status === 'failed') {
             return 'Oops!';
         }
-
         return content;
     }
 
@@ -224,7 +273,6 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
 
         const raw = this.displayContent || '';
 
-        // Configure marked options
         marked.setOptions({
             breaks: true,
             gfm: true
@@ -234,41 +282,39 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         this.renderedContent = this.sanitizer.bypassSecurityTrustHtml(sanitized);
     }
 
-    private flattenDataGrid(grid: any): Record<string, any>[] {
-        if (!grid || !Array.isArray(grid) || !grid.length) {
-            return [];
-        }
-
-        const rows: Record<string, any>[] = [];
-        // Check if it's already a flat array of objects
-        if (grid.length > 0 && !Array.isArray(grid[0])) {
-            rows.push(...grid);
-        } else {
-            // It's an array of chunks (arrays)
-            for (const subArray of grid) {
-                if (Array.isArray(subArray)) {
-                    rows.push(...subArray);
-                }
+    private sanitizeRow(row: any): Record<string, any> {
+        const sanitized: Record<string, any> = { ...row };
+        for (const key in sanitized) {
+            if (sanitized[key] !== null && typeof sanitized[key] === 'object') {
+                sanitized[key] = JSON.stringify(sanitized[key]);
             }
         }
-        return rows;
+        return sanitized;
     }
 
-    private extractDataGrid(): void {
+    /** Legacy: read flat data_grid from message metadata (ephemeral streaming path) */
+    private extractLegacyDataGrid(): void {
         this.dataGridColumns = [];
         this.dataGridRows = [];
 
         const grid = this.message?.metadata?.['data_grid'];
-        this.dataGridSqlQuery = this.message?.data_grid_sql_query || this.message?.metadata?.['data_grid_sql_query'] || null;
-        const rows = this.flattenDataGrid(grid);
+        if (!grid || !Array.isArray(grid) || !grid.length) return;
 
-        if (!rows.length) {
-            return;
+        const rows: Record<string, any>[] = [];
+        if (grid.length > 0 && !Array.isArray(grid[0])) {
+            rows.push(...grid.map((r: any) => this.sanitizeRow(r)));
+        } else {
+            for (const subArray of grid) {
+                if (Array.isArray(subArray)) {
+                    rows.push(...subArray.map((r: any) => this.sanitizeRow(r)));
+                }
+            }
         }
 
-        // Derive column headers from the keys of the first row
-        this.dataGridColumns = Object.keys(rows[0]);
-        this.dataGridRows = rows;
+        if (rows.length) {
+            this.dataGridColumns = Object.keys(rows[0]);
+            this.dataGridRows = rows;
+        }
     }
 
     get hasDataGrid(): boolean {
@@ -294,14 +340,134 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         return '';
     }
 
+    // ── Tab switching ─────────────────────────────────────────────────
+
+    setActiveSource(index: number): void {
+        if (index >= 0 && index < this.dataSources.length) {
+            this.activeSourceIndex = index;
+            this.cdr.markForCheck();
+        }
+    }
+
+    // ── Source display helpers ────────────────────────────────────────
+
+    getSourceTabLabel(source: DataGridSource): string {
+        const name = source.source_name
+            .replace(/\.(xlsx|csv|xls|json|pdf)/gi, '')
+            .replace(/[-_]/g, ' ')
+            .replace(/\b\w/g, c => c.toUpperCase())
+            .trim();
+        return name.length > 22 ? name.slice(0, 20) + '…' : name;
+    }
+
+    /**
+     * Returns FontAwesome classes and a brand colour for a given source.
+     * Detection priority:
+     *  1. spreadsheet: prefix + file extension → Excel / CSV / generic sheet
+     *  2. database: prefix + source_name keyword → PostgreSQL / ClickHouse / MySQL / etc.
+     *  3. Fallback → table icon
+     */
+    getSourceIconInfo(source: DataGridSource): { classes: string[]; color: string } {
+        const key   = (source.source_key  ?? '').toLowerCase();
+        const name  = (source.source_name ?? '').toLowerCase();
+
+        // ── Spreadsheet / file sources ────────────────────────────────
+        if (key.startsWith('spreadsheet:') || name.endsWith('.xlsx') || name.endsWith('.xls')) {
+            return { classes: ['fa-regular', 'fa-file-excel'], color: '#217346' };
+        }
+        if (name.endsWith('.csv')) {
+            return { classes: ['fa-solid', 'fa-file-csv'], color: '#0891b2' };
+        }
+        if (name.endsWith('.json')) {
+            return { classes: ['fa-solid', 'fa-file-code'], color: '#f59e0b' };
+        }
+        if (name.endsWith('.pdf')) {
+            return { classes: ['fa-regular', 'fa-file-pdf'], color: '#dc2626' };
+        }
+
+        // ── Database sources ─────────────────────────────────────────
+        if (key.startsWith('database:')) {
+            if (name.includes('postgres') || name.includes('pg_') || name.includes('supabase')) {
+                return { classes: ['fa-solid', 'fa-database'], color: '#336791' };
+            }
+            if (name.includes('clickhouse') || name.includes('click_house') || name.includes('clk')) {
+                return { classes: ['fa-solid', 'fa-database'], color: '#f5a623' };
+            }
+            if (name.includes('mysql') || name.includes('mariadb')) {
+                return { classes: ['fa-solid', 'fa-database'], color: '#f29111' };
+            }
+            if (name.includes('mongo')) {
+                return { classes: ['fa-solid', 'fa-database'], color: '#4db33d' };
+            }
+            if (name.includes('sqlite')) {
+                return { classes: ['fa-solid', 'fa-database'], color: '#44a8e2' };
+            }
+            if (name.includes('mssql') || name.includes('sql server') || name.includes('sqlserver')) {
+                return { classes: ['fa-solid', 'fa-database'], color: '#cc2927' };
+            }
+            if (name.includes('oracle')) {
+                return { classes: ['fa-solid', 'fa-database'], color: '#f80000' };
+            }
+            // Generic DB connection
+            return { classes: ['fa-solid', 'fa-database'], color: '#6366f1' };
+        }
+
+        // ── Fallback ─────────────────────────────────────────────────
+        return { classes: ['fa-solid', 'fa-table-cells'], color: '#3b82f6' };
+    }
+
+    formatSourceKey(key: string): string {
+        // Truncate very long source keys for display
+        return key && key.length > 60 ? key.slice(0, 58) + '…' : (key ?? '');
+    }
+
+    formatColumnHeader(key: string): string {
+        // Replace underscores with spaces; CSS text-transform: uppercase handles casing
+        return key.replace(/_/g, ' ');
+    }
+
+    // ── SQL highlighting ──────────────────────────────────────────────
+
+    highlightSql(sql: string): SafeHtml {
+        if (!sql) return this.sanitizer.bypassSecurityTrustHtml('');
+
+        const keywords = [
+            'SELECT', 'FROM', 'WHERE', 'ORDER BY', 'GROUP BY', 'HAVING',
+            'LIMIT', 'OFFSET', 'JOIN', 'LEFT JOIN', 'RIGHT JOIN', 'INNER JOIN',
+            'ON', 'AND', 'OR', 'NOT', 'IN', 'BETWEEN', 'LIKE', 'IS NULL',
+            'IS NOT NULL', 'AS', 'DISTINCT', 'COUNT', 'SUM', 'AVG', 'MAX', 'MIN',
+            'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'UNION',
+            'WITH', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'INTERVAL', 'CURRENT_DATE',
+        ];
+
+        // Escape HTML
+        let escaped = sql
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+        // Highlight string literals first
+        escaped = escaped.replace(/'([^']*)'/g, '<span class="sql-string">\'$1\'</span>');
+
+        // Highlight keywords (word boundaries, case-insensitive)
+        const kwPattern = new RegExp(
+            `\\b(${keywords.map(k => k.replace(/ /g, '\\s+')).join('|')})\\b`,
+            'gi'
+        );
+        escaped = escaped.replace(kwPattern, '<span class="sql-keyword">$1</span>');
+
+        const sanitized = DOMPurify.sanitize(escaped, {
+            ALLOWED_TAGS: ['span'],
+            ALLOWED_ATTR: ['class'],
+        });
+        return this.sanitizer.bypassSecurityTrustHtml(sanitized);
+    }
+
+    // ── Modal actions ─────────────────────────────────────────────────
+
     previewDataGrid(downloadCsvAfter: boolean = false): void {
-        console.log('[MessageBubble] previewDataGrid called. Has dataGridRows?', this.dataGridRows.length > 0);
-
-        if (this.dataGridRows.length > 0) {
-            // Already extracted from ephemeral metadata
-            this.modalDataGridColumns = this.dataGridColumns;
-            this.modalDataGridRows = this.dataGridRows;
-
+        // If we already have parsed sources, open modal directly
+        if (this.dataSources.length > 0) {
             if (downloadCsvAfter) {
                 this.exportCsv();
             } else {
@@ -321,22 +487,11 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
             this.dataGridLoading = true;
         }
 
-        this.modalDataGridColumns = [];
-        this.modalDataGridRows = [];
-
         this.conversationService.getDataGrid(this.conversationId, this.message.id).subscribe({
             next: (res) => {
-                if (res.sql_query) {
-                    this.dataGridSqlQuery = res.sql_query;
-                }
-                if (res.data) {
-                    const flatRows = this.flattenDataGrid(res.data);
-                    if (flatRows.length > 0) {
-                        this.modalDataGridColumns = Object.keys(flatRows[0]);
-                        this.modalDataGridRows = flatRows;
-                    }
-                }
+                this.parseDataGridResponse(res);
                 this.dataGridLoading = false;
+                this.inlineDataLoaded = true;
                 this.cdr.markForCheck();
 
                 if (downloadCsvAfter) {
@@ -359,10 +514,16 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     viewSql(): void {
-        if (!this.dataGridSqlQuery && this.conversationId && this.message?.id) {
+        // If we already have data, just open the modal
+        if (this.dataSources.length > 0) {
+            this.showSqlModal = true;
+            return;
+        }
+        // Otherwise fetch first
+        if (this.conversationId && this.message?.id) {
             this.conversationService.getDataGrid(this.conversationId, this.message.id).subscribe({
                 next: (res) => {
-                    this.dataGridSqlQuery = res.sql_query || null;
+                    this.parseDataGridResponse(res);
                     this.showSqlModal = true;
                     this.cdr.markForCheck();
                 }
@@ -376,19 +537,9 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         this.showSqlModal = false;
     }
 
-    formatColumnHeader(key: string): string {
-        return key
-            .replace(/_/g, ' ')
-            .replace(/\b\w/g, char => char.toUpperCase());
-    }
-
     async copyMessage(): Promise<void> {
         const textToCopy = this.displayContent || this.message.content || '';
-
-        if (!textToCopy) {
-            return;
-        }
-
+        if (!textToCopy) return;
         try {
             if (navigator?.clipboard?.writeText) {
                 await navigator.clipboard.writeText(textToCopy);
@@ -426,9 +577,8 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     async copySql(): Promise<void> {
-        const textToCopy = this.dataGridSqlQuery || '';
+        const textToCopy = this.activeSqlQuery || '';
         if (!textToCopy) return;
-
         try {
             if (navigator?.clipboard?.writeText) {
                 await navigator.clipboard.writeText(textToCopy);
@@ -455,48 +605,38 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     exportCsv(): void {
-        const rowsToExport = this.modalDataGridRows.length > 0
-            ? this.modalDataGridRows
-            : this.inlineDataGridRows.length > 0
-                ? this.inlineDataGridRows
-                : this.dataGridRows;
+        const src = this.activeSource;
+        const rowsToExport = src?.rows ?? this.modalDataGridRows ?? this.dataGridRows;
         if (!rowsToExport || rowsToExport.length === 0) return;
 
         const worksheet = XLSX.utils.json_to_sheet(rowsToExport);
         const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
-
         const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `data_export_${new Date().getTime()}.csv`;
+        const sourceName = src?.source_name
+            ? src.source_name.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+            : 'data_export';
+        link.download = `${sourceName}_${new Date().getTime()}.csv`;
         link.click();
-
         URL.revokeObjectURL(link.href);
     }
 
     onRerunClick(): void {
-        if (this.rerunLoading) {
-            return;
-        }
+        if (this.rerunLoading) return;
         this.rerun.emit();
     }
 
     onPagerPrev(): void {
-        if (this.pagerHasPrev) {
-            this.pagerPrev.emit();
-        }
+        if (this.pagerHasPrev) this.pagerPrev.emit();
     }
 
     onPagerNext(): void {
-        if (this.pagerHasNext) {
-            this.pagerNext.emit();
-        }
+        if (this.pagerHasNext) this.pagerNext.emit();
     }
 
     getDocumentIds(message: any): string[] {
-        if (!message.metadata || !message.metadata['used_document_ids']) {
-            return [];
-        }
+        if (!message.metadata || !message.metadata['used_document_ids']) return [];
         return Array.isArray(message.metadata['used_document_ids'])
             ? message.metadata['used_document_ids']
             : [];

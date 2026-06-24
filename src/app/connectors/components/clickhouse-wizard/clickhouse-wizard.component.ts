@@ -1,14 +1,13 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { DatabaseConnectionService } from '../../../shared/services/database-connection.service';
 
 @Component({
-    selector: 'app-postgres-wizard',
-    templateUrl: './postgres-wizard.component.html',
-    styleUrls: ['./postgres-wizard.component.scss']
+    selector: 'app-clickhouse-wizard',
+    templateUrl: './clickhouse-wizard.component.html',
+    styleUrls: ['./clickhouse-wizard.component.scss']
 })
-export class PostgresWizardComponent implements OnInit {
-    @Output() wizardClose = new EventEmitter<void>();
-    @Output() wizardSaved = new EventEmitter<any>();
+export class ClickhouseWizardComponent implements OnInit {
 
     // -----------------------------------------------------------------------
     // UI state
@@ -17,7 +16,7 @@ export class PostgresWizardComponent implements OnInit {
     loading = false;
     showPassword = false;
 
-    /** Error shown on Step 1 (fetch-schemas failure) */
+    /** Error shown on Step 1 (fetch-databases failure) */
     testError: string | null = null;
     /** Error shown on Step 2 (create connection failure) */
     saveError: string | null = null;
@@ -28,7 +27,7 @@ export class PostgresWizardComponent implements OnInit {
     connectionDetails = {
         name: '',
         host: '',
-        port: 5432,
+        port: 8443,
         database_name: '',
         username: '',
         password: '',
@@ -38,25 +37,25 @@ export class PostgresWizardComponent implements OnInit {
     fetchLimits: (number | null)[] = [500, 1000, 5000, 10000, null];
 
     // -----------------------------------------------------------------------
-    // Schema picker (populated on Step 2 from /fetch-schemas response)
+    // Database picker (populated on Step 2 from /fetch-schemas response)
     // -----------------------------------------------------------------------
     availableSchemas: string[] = [];
-    selectedSchema = 'public';
+    selectedSchema = 'default';
 
-    private postgresTypeId: number | null = null;
+    private clickhouseTypeId: number | null = null;
 
-    constructor(private dbConnectionService: DatabaseConnectionService) { }
+    constructor(private dbConnectionService: DatabaseConnectionService, private router: Router) { }
 
     ngOnInit(): void {
         this.dbConnectionService.getConnectionTypes().subscribe({
             next: (types) => {
-                const pgType = types.find(
+                const chType = types.find(
                     (t: any) =>
-                        t.driver_name?.toLowerCase().includes('postgres') ||
-                        t.name?.toLowerCase().includes('postgres')
+                        t.driver_name?.toLowerCase().includes('clickhouse') ||
+                        t.name?.toLowerCase().includes('clickhouse')
                 );
-                if (pgType) {
-                    this.postgresTypeId = pgType.id;
+                if (chType) {
+                    this.clickhouseTypeId = chType.id;
                 }
             },
             error: (err) => console.error('Failed to load connection types:', err)
@@ -71,55 +70,53 @@ export class PostgresWizardComponent implements OnInit {
             this.connectionDetails.name &&
             this.connectionDetails.host &&
             this.connectionDetails.port &&
-            this.connectionDetails.database_name &&
             this.connectionDetails.username &&
             this.connectionDetails.password
         );
     }
 
     // -----------------------------------------------------------------------
-    // Step 1 action: Test connectivity and fetch available schemas
+    // Step 1 action: Test connectivity and fetch available databases
     // -----------------------------------------------------------------------
     onFetchSchemas(): void {
         if (!this.isStep1Valid() || this.loading) return;
 
-        if (!this.postgresTypeId) {
+        if (!this.clickhouseTypeId) {
             this.testError =
-                'PostgreSQL connection type not loaded yet. Please try again in a moment or refresh the page.';
+                'ClickHouse connection type not loaded yet. Please try again in a moment or refresh the page.';
             return;
         }
 
         this.loading = true;
         this.testError = null;
         this.availableSchemas = [];
-        this.selectedSchema = 'public';
+        this.selectedSchema = 'default';
 
         this.dbConnectionService
             .fetchSchemas({
                 host: this.connectionDetails.host,
                 port: Number(this.connectionDetails.port),
-                database_name: this.connectionDetails.database_name,
                 username: this.connectionDetails.username,
                 password: this.connectionDetails.password,
-                connection_type_id: this.postgresTypeId
+                connection_type_id: this.clickhouseTypeId
             })
             .subscribe({
                 next: (res) => {
                     this.loading = false;
                     if (res.success && res.schemas?.length) {
                         this.availableSchemas = res.schemas;
-                        // Pre-select "public" if present, otherwise first schema
+                        // Pre-select "default" if present, otherwise first schema
                         this.selectedSchema =
-                            res.schemas.includes('public') ? 'public' : res.schemas[0];
+                            res.schemas.includes('default') ? 'default' : res.schemas[0];
                         this.step = 2;
                     } else if (res.success && !res.schemas?.length) {
                         // Connected but no schemas — still advance with a default
-                        this.availableSchemas = ['public'];
-                        this.selectedSchema = 'public';
+                        this.availableSchemas = ['default'];
+                        this.selectedSchema = 'default';
                         this.step = 2;
                     } else {
                         this.testError =
-                            res.message || 'Could not fetch schemas. Check your credentials.';
+                            res.message || 'Could not fetch databases. Check your credentials.';
                     }
                 },
                 error: (err) => {
@@ -141,19 +138,19 @@ export class PostgresWizardComponent implements OnInit {
     }
 
     onSaveConnection(): void {
-        if (!this.isSaveValid() || this.loading || !this.postgresTypeId) return;
+        if (!this.isSaveValid() || this.loading || !this.clickhouseTypeId) return;
 
         this.loading = true;
         this.saveError = null;
 
         const payload = {
             name: this.connectionDetails.name,
-            connection_type_id: this.postgresTypeId,
+            connection_type_id: this.clickhouseTypeId,
             host: this.connectionDetails.host,
             port: Number(this.connectionDetails.port),
-            database_name: this.connectionDetails.database_name,
             username: this.connectionDetails.username,
             password: this.connectionDetails.password,
+            database_name: this.selectedSchema,
             schema_name: this.selectedSchema,
             result_limit: this.connectionDetails.result_limit
         };
@@ -161,7 +158,7 @@ export class PostgresWizardComponent implements OnInit {
         this.dbConnectionService.create(payload).subscribe({
             next: (created) => {
                 this.loading = false;
-                this.wizardSaved.emit({ id: created.id, schema_name: this.selectedSchema });
+                this.router.navigate(['/connectors']);
             },
             error: (err) => {
                 this.loading = false;
@@ -183,7 +180,7 @@ export class PostgresWizardComponent implements OnInit {
 
     onCancel(): void {
         if (!this.loading) {
-            this.wizardClose.emit();
+            this.router.navigate(['/connectors']);
         }
     }
 

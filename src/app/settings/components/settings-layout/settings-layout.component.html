@@ -13,13 +13,8 @@
 
 
       <nav class="settings-nav">
-        <a
-          *ngFor="let section of sections"
-          class="nav-item"
-          [routerLink]="section.route"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-        >
+        <a *ngFor="let section of sections" class="nav-item" [routerLink]="section.route" routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }">
           <span class="nav-item__icon">
             <i class="fa-solid" [ngClass]="section.icon"></i>
           </span>
@@ -33,14 +28,16 @@
 
     <main class="settings-main">
       <header class="settings-topbar">
-        <div class="breadcrumb-bar" aria-label="Breadcrumb">
-          <button class="breadcrumb-home" type="button" (click)="goToHome()">
-            <span>Home</span>
-          </button>
-          <span class="breadcrumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
-          <span class="breadcrumb-link">Settings</span>
-          <span class="breadcrumb-separator"><i class="fa-solid fa-chevron-right" style="font-size: 0.8em;"></i></span>
-          <span class="breadcrumb-current">{{ currentSectionLabel }}</span>
+        <div class="topbar-context">
+          <div class="breadcrumb-bar" aria-label="Breadcrumb">
+            <button class="breadcrumb-home" type="button" (click)="goToHome()">
+              <span>Home</span>
+            </button>
+            <span class="breadcrumb-separator"><i class="fa-solid fa-chevron-right"></i></span>
+            <span class="breadcrumb-link">Settings</span>
+            <span class="breadcrumb-separator"><i class="fa-solid fa-chevron-right"></i></span>
+            <span class="breadcrumb-current">{{ currentSectionLabel }}</span>
+          </div>
         </div>
       </header>
 
@@ -50,4 +47,3 @@
     </main>
   </div>
 </div>
-

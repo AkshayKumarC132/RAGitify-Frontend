@@ -1,14 +1,17 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DatabaseConnectionService } from '../../../shared/services/database-connection.service';
 import { DatabaseConnection } from '../../../shared/models/database-connection.model';
+import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 
 export interface ConnectorType {
     id: string;
     name: string;
     description: string;
     icon: string;
+    iconImg?: string;
     iconColor: string;
     iconBgColor: string;
     available: boolean;
@@ -25,7 +28,8 @@ export class WorkspaceConnectionsComponent implements OnInit, OnDestroy {
             id: 'postgresql',
             name: 'PostgreSQL',
             description: 'Relational database for transactional and analytical workloads.',
-            icon: 'fa-solid fa-database',
+            icon: '',
+            iconImg: 'assets/postgres.svg',
             iconColor: '#3b82f6',
             iconBgColor: '#e0e9ff',
             available: true
@@ -34,25 +38,28 @@ export class WorkspaceConnectionsComponent implements OnInit, OnDestroy {
             id: 'clickhouse',
             name: 'ClickHouse',
             description: 'Column-oriented OLAP database for real-time analytics.',
-            icon: 'fa-solid fa-layer-group',
+            icon: '',
+            iconImg: 'assets/clickhouse.svg',
             iconColor: '#f59e0b',
             iconBgColor: '#fef3c7',
-            available: false
+            available: true
         },
         {
             id: 'mysql',
             name: 'MySQL',
             description: 'Popular open-source relational database.',
-            icon: 'fa-solid fa-server',
-            iconColor: '#ef4444',
-            iconBgColor: '#fee2e2',
+            icon: '',
+            iconImg: 'assets/mysql.svg',
+            iconColor: '#00758F',
+            iconBgColor: '#e8f4f8',
             available: false
         },
         {
             id: 'mongodb',
             name: 'MongoDB',
             description: 'Document-oriented NoSQL database.',
-            icon: 'fa-solid fa-leaf',
+            icon: '',
+            iconImg: 'assets/mongodb.svg',
             iconColor: '#10b981',
             iconBgColor: '#d1fae5',
             available: false
@@ -61,7 +68,8 @@ export class WorkspaceConnectionsComponent implements OnInit, OnDestroy {
             id: 'redis',
             name: 'Redis',
             description: 'In-memory key-value store, ideal for cache and vectors.',
-            icon: 'fa-solid fa-circle-dot',
+            icon: '',
+            iconImg: 'assets/redis.svg',
             iconColor: '#ef4444',
             iconBgColor: '#fee2e2',
             available: false
@@ -70,18 +78,20 @@ export class WorkspaceConnectionsComponent implements OnInit, OnDestroy {
             id: 'snowflake',
             name: 'Snowflake',
             description: 'Cloud data warehouse for large-scale analytics.',
-            icon: 'fa-solid fa-snowflake',
-            iconColor: '#3b82f6',
-            iconBgColor: '#dbeafe',
+            icon: '',
+            iconImg: 'assets/snowflake.svg',
+            iconColor: '#29B5E8',
+            iconBgColor: '#e0f6fd',
             available: false
         },
         {
             id: 'bigquery',
             name: 'BigQuery',
             description: 'Google Cloud serverless data warehouse.',
-            icon: 'fa-solid fa-cloud',
-            iconColor: '#3b82f6',
-            iconBgColor: '#e0f2fe',
+            icon: '',
+            iconImg: 'assets/bigquery.svg',
+            iconColor: '#4285F4',
+            iconBgColor: '#e8f0fe',
             available: false
         },
         {
@@ -98,14 +108,18 @@ export class WorkspaceConnectionsComponent implements OnInit, OnDestroy {
     connections: DatabaseConnection[] = [];
     filteredConnections: DatabaseConnection[] = [];
     connectionSearchQuery = '';
+    viewMode: 'list' | 'grid' = 'list';
     loading = false;
-    showWizard = false;
     testingId: string | null = null;
     deletingId: string | null = null;
 
     private destroy$ = new Subject<void>();
 
-    constructor(private dbConnectionService: DatabaseConnectionService) { }
+    constructor(
+        private dbConnectionService: DatabaseConnectionService, 
+        private router: Router,
+        private confirmDialogService: ConfirmDialogService
+    ) { }
 
     ngOnInit(): void {
         this.loadConnections();
@@ -150,26 +164,42 @@ export class WorkspaceConnectionsComponent implements OnInit, OnDestroy {
 
     onConnectorClick(connector: ConnectorType): void {
         if (connector.available) {
-            this.showWizard = true;
+            if (connector.id === 'postgresql') {
+                this.router.navigate(['/connectors/new/postgres']);
+            } else if (connector.id === 'clickhouse') {
+                this.router.navigate(['/connectors/new/clickhouse']);
+            }
         }
     }
 
     openNewConnection(): void {
-        this.showWizard = true;
+        const postgresConnector = this.connectorTypes.find(c => c.id === 'postgresql');
+        if (postgresConnector && postgresConnector.available) {
+            this.router.navigate(['/connectors/new/postgres']);
+        }
     }
 
-    onWizardClose(): void {
-        this.showWizard = false;
+    viewConnectionDetails(id: string | undefined): void {
+        if (id) {
+            this.router.navigate(['/connectors', id]);
+        }
     }
 
-    onWizardSaved(): void {
-        this.showWizard = false;
-        this.loadConnections();
-    }
-
-    deleteConnection(connection: DatabaseConnection, event: MouseEvent): void {
+    async deleteConnection(connection: DatabaseConnection, event: MouseEvent): Promise<void> {
         event.stopPropagation();
         if (!connection.id) return;
+
+        const confirmed = await this.confirmDialogService.confirm({
+            title: 'Delete Connection',
+            message: `Are you sure you want to delete this connection?`,
+            itemName: connection.name || connection.database_name || 'Connection',
+            type: 'danger',
+            confirmText: 'Delete',
+            cancelText: 'Cancel'
+        });
+
+        if (!confirmed) return;
+
         this.deletingId = connection.id;
         this.dbConnectionService.delete(connection.id).pipe(takeUntil(this.destroy$)).subscribe({
             next: () => {
@@ -200,5 +230,33 @@ export class WorkspaceConnectionsComponent implements OnInit, OnDestroy {
     formatDate(dateStr: string | undefined): string {
         if (!dateStr) return '—';
         return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    getDatabaseIcon(conn: DatabaseConnection): string {
+        const typeName = (conn.connection_type?.driver_name || conn.connection_type?.name || '').toLowerCase();
+        
+        if (typeName.includes('postgres')) return 'assets/postgres.svg';
+        if (typeName.includes('clickhouse')) return 'assets/clickhouse.svg';
+        if (typeName.includes('mysql')) return 'assets/mysql.svg';
+        if (typeName.includes('mongodb')) return 'assets/mongodb.svg';
+        if (typeName.includes('redis')) return 'assets/redis.svg';
+        if (typeName.includes('snowflake')) return 'assets/snowflake.svg';
+        if (typeName.includes('bigquery')) return 'assets/bigquery.svg';
+        
+        return 'assets/postgres.svg'; // fallback
+    }
+
+    getDatabaseBgColor(conn: DatabaseConnection): string {
+        const typeName = (conn.connection_type?.driver_name || conn.connection_type?.name || '').toLowerCase();
+        
+        if (typeName.includes('postgres')) return '#e0e9ff';
+        if (typeName.includes('clickhouse')) return '#fef3c7';
+        if (typeName.includes('mysql')) return '#e8f4f8';
+        if (typeName.includes('mongodb')) return '#d1fae5';
+        if (typeName.includes('redis')) return '#fee2e2';
+        if (typeName.includes('snowflake')) return '#e0f6fd';
+        if (typeName.includes('bigquery')) return '#e8f0fe';
+        
+        return '#e0e9ff'; // fallback
     }
 }

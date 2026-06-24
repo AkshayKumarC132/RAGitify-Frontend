@@ -12,12 +12,17 @@
         </button>
       </div>
       <div class="picker-view-toggle">
-        <button type="button" class="view-btn" [class.active]="gridView" (click)="setGridView(true)" title="Grid view">
+        <button type="button" class="view-btn" [class.active]="gridView && !folderView" (click)="setGridView(true)"
+          title="Grid view">
           <i class="fa-solid fa-grip"></i>
         </button>
-        <button type="button" class="view-btn" [class.active]="!gridView" (click)="setGridView(false)"
+        <button type="button" class="view-btn" [class.active]="!gridView && !folderView" (click)="setGridView(false)"
           title="List view">
           <i class="fa-solid fa-list"></i>
+        </button>
+        <button type="button" class="view-btn" [class.active]="folderView" (click)="setFolderView(true)"
+          title="Folder view">
+          <i class="fa-regular fa-folder"></i>
         </button>
       </div>
       <button type="button" class="picker-create-btn" (click)="createLibrary()">
@@ -182,7 +187,7 @@
   </div>
 
   <div
-    *ngIf="!loading && vectorStores.length > 0 && gridView && !showFailedView && !showProcessingView && filteredVectorStores.length > 0"
+    *ngIf="!loading && vectorStores.length > 0 && gridView && !folderView && !showFailedView && !showProcessingView && filteredVectorStores.length > 0"
     class="library-grid">
     <div *ngFor="let store of filteredVectorStores" class="library-card">
       <div class="library-card-main" (click)="selectLibrary(store)" tabindex="0" role="button"
@@ -237,7 +242,7 @@
 
   <!-- List view -->
   <div
-    *ngIf="!loading && vectorStores.length > 0 && !gridView && !showFailedView && !showProcessingView && filteredVectorStores.length > 0"
+    *ngIf="!loading && vectorStores.length > 0 && !gridView && !folderView && !showFailedView && !showProcessingView && filteredVectorStores.length > 0"
     class="library-table-wrap">
     <table class="library-table">
       <thead>
@@ -301,6 +306,22 @@
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Folder view -->
+  <div
+    *ngIf="!loading && vectorStores.length > 0 && folderView && !showFailedView && !showProcessingView && filteredVectorStores.length > 0"
+    class="library-folder-wrap">
+    <div class="library-folder-grid">
+      <div *ngFor="let store of filteredVectorStores" class="library-folder-item" (click)="selectLibrary(store)">
+        <div class="library-folder-icon-wrapper">
+          <i class="fa-solid fa-folder library-folder-icon"></i>
+          <span class="library-folder-badge" *ngIf="getDocCount(store) > 0">{{ getDocCount(store) }}</span>
+        </div>
+        <div class="library-folder-title" [title]="store.name">{{ getDisplayLibraryName(store.name, 15) }}</div>
+        <div class="library-folder-type">{{ getStoreTypeLabel(store) }}</div>
+      </div>
+    </div>
   </div>
 
   <!-- Create library modal -->

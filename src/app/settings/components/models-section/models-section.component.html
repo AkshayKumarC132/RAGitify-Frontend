@@ -1,15 +1,4 @@
 <div class="models-section">
-  <!-- Sticky section header -->
-  <div class="section-header">
-    <h5 class="section-title">
-      <i class="fa-solid fa-robot"></i>
-      Models
-    </h5>
-    <button class="btn-primary" (click)="toggleCreateForm()">
-      <i class="fa-solid" [ngClass]="showCreateForm ? 'fa-xmark' : 'fa-plus'"></i>
-      <span>{{ showCreateForm ? 'Cancel' : 'New Model' }}</span>
-    </button>
-  </div>
 
   <div *ngIf="errorMessage" class="error-message">
     <i class="fa-solid fa-circle-exclamation"></i>
@@ -20,7 +9,7 @@
   <div *ngIf="showCreateForm" [@expandCollapse] class="create-form">
     <h5>
       <i class="fa-solid fa-square-pen"></i>
-      <span>Create New Model</span>
+      <span>Add Model Configuration</span>
     </h5>
     <form [formGroup]="createForm" (ngSubmit)="onCreateSubmit()">
       <div class="form-group">
@@ -30,18 +19,11 @@
 
       <div class="form-group">
         <label>Provider <span class="required">*</span></label>
-        <ng-container *ngIf="!selectedProvider; else lockedProvider">
-          <select formControlName="provider" class="form-control">
-            <option value="OpenAI">OpenAI</option>
-            <option value="Ollama">Ollama</option>
-          </select>
-        </ng-container>
-        <ng-template #lockedProvider>
-          <div class="locked-provider">
-            <i class="fa-solid fa-lock"></i>
-            <span>{{ selectedProvider }}</span>
-          </div>
-        </ng-template>
+        <select formControlName="provider" class="form-control">
+          <option value="OpenAI">OpenAI</option>
+          <option value="Ollama">Ollama</option>
+          <option value="Claude">Claude</option>
+        </select>
       </div>
 
       <div class="form-group">
@@ -55,7 +37,7 @@
         <input type="text" formControlName="model" class="form-control" placeholder="Enter model name" />
       </div>
 
-      <div class="form-group" *ngIf="createForm.get('provider')?.value === 'OpenAI'">
+      <div class="form-group" *ngIf="createForm.get('provider')?.value !== 'Ollama'">
         <label>API Key <span class="required">*</span></label>
         <input type="password" formControlName="api_key" class="form-control" placeholder="sk-..." />
       </div>
@@ -72,43 +54,61 @@
           <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
           <span>{{ loading ? 'Creating...' : 'Create Model' }}</span>
         </button>
+        <button type="button" class="btn-secondary ml-2" (click)="toggleCreateForm()">Cancel</button>
       </div>
     </form>
   </div>
 
-  <!-- Provider showcase -->
-  <div class="provider-showcase" *ngIf="displayedProviders.length">
-    <p class="showcase-label">
-      <i class="fa-solid fa-cloud"></i>
-      {{ selectedProvider ? 'Configured Provider' : 'Available Providers' }}
-    </p>
+  <!-- Provider showcase tiles -->
+  <div class="provider-showcase" *ngIf="availableProviders.length">
     <div class="provider-grid">
-      <div class="provider-card" *ngFor="let provider of displayedProviders"
-        [class.disabled]="selectedProvider && provider.name !== selectedProvider">
-        <div class="provider-card__header">
-          <div class="provider-identity">
-            <i class="fa-solid" [ngClass]="provider.icon"></i>
-            <span class="provider-name">{{ provider.name }}</span>
+      <div class="provider-card" *ngFor="let provider of availableProviders"
+        [class.connected]="isProviderConnected(provider.name)">
+        <div class="provider-info-wrap">
+          <div class="provider-header-row">
+            <div class="provider-identity">
+              <div class="provider-logo" [style.-webkit-mask-image]="'url(' + getProviderLogoPath(provider.name) + ')'"
+                [style.mask-image]="'url(' + getProviderLogoPath(provider.name) + ')'"></div>
+              <span class="provider-name">{{ provider.name }}</span>
+            </div>
+            <span *ngIf="isProviderConnected(provider.name)" class="badge-configured">Active Config</span>
           </div>
-          <span class="provider-badge" [class.local]="provider.badge === 'Local'">{{ provider.badge }}</span>
+          <p class="provider-description">{{ provider.description }}</p>
         </div>
-        <p class="provider-description">{{ provider.description }}</p>
-        <div class="provider-meta">
-          <span class="meta-tag">
-            <i class="fa-solid" [ngClass]="provider.requiresApiKey ? 'fa-key' : 'fa-house-signal'"></i>
-            {{ provider.requiresApiKey ? 'Requires API Key' : 'Runs Locally' }}
-          </span>
-          <span *ngIf="selectedProvider === provider.name" class="active-provider">
-            <i class="fa-solid fa-check"></i> Configured
-          </span>
+        <div class="provider-actions">
+          <button *ngIf="!isProviderConnected(provider.name)" class="btn-connect" (click)="connectProvider(provider)">
+            Connect
+          </button>
+          <button *ngIf="isProviderConnected(provider.name)" class="btn-manage" (click)="connectProvider(provider)">
+            Manage
+          </button>
         </div>
-        <button class="btn-secondary" (click)="connectProvider(provider)"
-          [disabled]="selectedProvider && provider.name !== selectedProvider">
-          <i class="fa-solid fa-plug"></i>
-          <span>{{ selectedProvider && provider.name !== selectedProvider ? 'View only' : 'Configure ' + provider.name
-            }}</span>
-        </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Search & View Toggle Row -->
+  <div class="control-row">
+    <div class="search-box">
+      <i class="fa-solid fa-search"></i>
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Search models, providers, or capabilities..." />
+    </div>
+
+    <div class="view-toggle">
+      <button class="toggle-btn" [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'" title="Grid view">
+        <i class="fa-solid fa-grip"></i>
+      </button>
+      <button class="toggle-btn" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'" title="List view">
+        <i class="fa-solid fa-list"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Provider Summary Label -->
+  <div class="models-header-label" *ngIf="filteredModels.length">
+    <div>
+      <span class="provider-label">PROVIDER</span><br />
+      <span class="provider-title">All Providers · {{ filteredModels.length }} models</span>
     </div>
   </div>
 
@@ -120,47 +120,122 @@
     </div>
   </div>
 
-  <!-- Models list -->
-  <div class="models-panel" *ngIf="!loadingModels && models.length">
-    <div class="list-heading">
-      <div>
-        <p class="label">Provider</p>
-        <p class="value">{{ selectedProvider || 'All Providers' }}</p>
-      </div>
-    </div>
+  <!-- Models Content (Grid or List View) -->
+  <div *ngIf="!loadingModels && filteredModels.length" class="models-container">
 
-    <div class="models-list" [class.scrollable]="shouldUseModelListScroll" [@listStagger]="models.length">
-      <div *ngFor="let model of models" class="model-item" [class.active]="model.is_active">
-        <div class="model-icon">
-          <i class="fa-solid" [ngClass]="model.provider === 'OpenAI' ? 'fa-cloud' : 'fa-microchip'"></i>
-        </div>
-        <div class="model-info">
-          <div class="model-name">{{ model.name || (model.provider + ' - ' + model.model) }}</div>
-          <div class="model-details">
-            <span class="detail-tag">{{ model.provider }}</span>
-            <span class="detail-sep">-</span>
-            <span>{{ model.model }}</span>
-            <span *ngIf="model.is_active" class="active-badge">
-              <i class="fa-solid fa-circle-dot"></i> Active
-            </span>
+    <!-- ==== GRID VIEW ==== -->
+    <div *ngIf="viewMode === 'grid'" class="view-grid">
+      <div *ngFor="let model of filteredModels" class="model-item-wrap" [class.active]="model.is_active">
+        <div class="active-ribbon" *ngIf="model.is_active">ACTIVE</div>
+
+        <div class="model-header">
+          <div class="model-identity">
+            <div class="bot-icon">
+              <div class="model-logo" [style.-webkit-mask-image]="'url(' + getProviderLogoPath(model.provider) + ')'"
+                [style.mask-image]="'url(' + getProviderLogoPath(model.provider) + ')'"></div>
+            </div>
+            <div class="name-col">
+              <div class="model-title">
+                {{ getDisplayName(model) }}
+                <ng-container *ngIf="model.is_active"><i class="fa-solid fa-star"
+                    style="color: #fbbf24;"></i></ng-container>
+              </div>
+              <div class="model-id">{{ model.model }}</div>
+            </div>
           </div>
         </div>
-        <div class="model-actions">
-          <button *ngIf="!model.is_active" class="btn-small" (click)="setActive(model)" title="Set as active">
-            <i class="fa-solid fa-check"></i>
-            <span>Set Active</span>
-          </button>
-          <button class="btn-small btn-danger" (click)="deleteModel(model.id)" title="Delete model">
-            <i class="fa-solid fa-trash"></i>
-          </button>
+
+        <div class="capabilities-row">
+          <span class="cap-badge" *ngFor="let cap of getMetadata(model.model).capabilities">{{ cap }}</span>
+          <span class="cap-badge" *ngIf="!getMetadata(model.model).capabilities.length">Base</span>
+        </div>
+
+        <div class="stats-container">
+          <div class="stat-col">
+            <label>CONTEXT</label>
+            <div class="val">{{ getMetadata(model.model).context }}</div>
+          </div>
+          <div class="stat-col text-center">
+            <label>IN / OUT</label>
+            <div class="val">{{ getMetadata(model.model).inOutPrice }}</div>
+          </div>
+          <div class="stat-col text-right">
+            <label>SPEED</label>
+            <div class="val speed-val">
+              <i class="fa-solid" [ngClass]="getMetadata(model.model).speedIcon"></i>
+              <span>{{ getMetadata(model.model).speed }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-footer">
+          <div class="action-buttons-grid">
+            <button class="btn-icon-danger" (click)="deleteModel(model.id)"><i
+                class="fa-regular fa-trash-can"></i></button>
+            <button class="btn-set-active" *ngIf="!model.is_active" (click)="setActive(model)">Set Active</button>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- ==== LIST VIEW ==== -->
+    <div *ngIf="viewMode === 'list'" class="view-list-table-wrap">
+      <table class="models-table">
+        <thead>
+          <tr>
+            <th class="col-model">Model</th>
+            <th class="col-context">Context</th>
+            <th class="col-pricing">In / Out</th>
+            <th class="col-speed">Speed</th>
+            <th class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let model of filteredModels" class="model-row" [class.active-row]="model.is_active">
+            <td class="col-model">
+              <div class="bot-icon-list">
+                <div class="model-logo-list"
+                  [style.-webkit-mask-image]="'url(' + getProviderLogoPath(model.provider) + ')'"
+                  [style.mask-image]="'url(' + getProviderLogoPath(model.provider) + ')'"></div>
+              </div>
+              <div class="name-col-list">
+                <div class="model-title-list">
+                  {{ getDisplayName(model) }}
+                  <span class="active-badge-list" *ngIf="model.is_active">ACTIVE</span>
+                  <i *ngIf="model.is_active" class="fa-solid fa-star" style="color: #fbbf24;"></i>
+                </div>
+                <div class="model-id-list">{{ model.model }}</div>
+              </div>
+            </td>
+            <td class="col-context">
+              <span class="context-pill">
+                <i class="fa-solid fa-gauge-high"></i> {{ getMetadata(model.model).context }}
+              </span>
+            </td>
+            <td class="col-pricing">{{ getMetadata(model.model).inOutPrice }}</td>
+            <td class="col-speed">
+              <div class="speed-val">
+                <i class="fa-solid" [ngClass]="getMetadata(model.model).speedIcon"></i>
+                <span>{{ getMetadata(model.model).speed }}</span>
+              </div>
+            </td>
+            <td class="col-actions">
+              <div class="action-wrap-list">
+                <button *ngIf="!model.is_active" class="btn-set-active" (click)="setActive(model)">Set Active</button>
+                <button class="btn-icon-danger" (click)="deleteModel(model.id)"><i
+                    class="fa-regular fa-trash-can"></i></button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 
-  <div *ngIf="!loadingModels && models.length === 0" class="empty-state">
+  <div *ngIf="!loadingModels && filteredModels.length === 0" class="empty-state">
     <i class="fa-solid fa-robot"></i>
-    <p>No models configured yet.</p>
-    <span>Click <strong>New Model</strong> to add your first model.</span>
+    <p>No models found.</p>
+    <span>Try adjusting your search or add a new model via Manage.</span>
   </div>
 </div>

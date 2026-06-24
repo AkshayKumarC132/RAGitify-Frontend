@@ -4,7 +4,7 @@ import { shareReplay, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { UserStateService } from './user-state.service';
-import { DatabaseConnection } from '../models/database-connection.model';
+import { DatabaseConnection, DatabaseSyncLog } from '../models/database-connection.model';
 
 @Injectable({
     providedIn: 'root'
@@ -85,6 +85,20 @@ export class DatabaseConnectionService {
     testConnection(id: string): Observable<{ success: boolean, message: string }> {
         const token = this.getToken();
         return this.api.post<{ success: boolean, message: string }>(`/database-connections/${token}/${id}/test/`, {}, token);
+    }
+
+    syncDatabase(id: string): Observable<{ sync_log: DatabaseSyncLog | null; connection: DatabaseConnection }> {
+        const token = this.getToken();
+        return this.api.post<{ sync_log: DatabaseSyncLog | null; connection: DatabaseConnection }>(
+            `/database-connections/${token}/${id}/sync/`, {}, token
+        ).pipe(tap(() => this.invalidateListCache()));
+    }
+
+    getSyncHistory(connectionId: string): Observable<DatabaseSyncLog[]> {
+        const token = this.getToken();
+        return this.api.get<DatabaseSyncLog[]>(
+            `/database-connections/${token}/${connectionId}/sync-history/`, token
+        );
     }
 
     invalidateListCache(): void {

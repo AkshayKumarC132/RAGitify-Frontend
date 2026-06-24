@@ -29,6 +29,7 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
   loading = true;
   errorMessage = '';
   gridView = false;
+  folderView = false;
   searchQuery = '';
   renameTarget: VectorStore | null = null;
   renameName = '';
@@ -309,6 +310,11 @@ export class WorkspaceLibraryPickerComponent implements OnInit {
 
   setGridView(value: boolean): void {
     this.gridView = value;
+    this.folderView = false;
+  }
+
+  setFolderView(value: boolean): void {
+    this.folderView = value;
   }
 
   toggleFailedView(): void {

@@ -156,6 +156,13 @@
     flex-shrink: 0;
 }
 
+.connector-svg-icon {
+    width: 27px;
+    height: 27px;
+    object-fit: contain;
+    display: block;
+}
+
 .connector-info {
     flex: 1;
     min-width: 0;
@@ -200,6 +207,12 @@
     margin-bottom: 1rem;
     gap: 1rem;
     flex-wrap: wrap;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .connections-search {
@@ -255,6 +268,30 @@
     &:hover {
         color: var(--text-primary);
         background: var(--bg-tertiary);
+    }
+}
+
+.view-toggle {
+    display: flex;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 0.15rem;
+
+    .toggle-btn {
+        border: none;
+        background: transparent;
+        padding: 0.4rem 0.85rem;
+        border-radius: 999px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &.active {
+            background: var(--accent-color);
+            color: #ffffff;
+        }
     }
 }
 
@@ -315,6 +352,114 @@
         font-size: 13px;
         color: var(--text-secondary);
         margin: 0;
+    }
+}
+
+/* Grid View */
+.connections-grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+}
+
+.conn-grid-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+    cursor: pointer;
+
+    &:hover {
+        border-color: var(--accent-color);
+        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.12);
+        transform: translateY(-1px);
+    }
+
+    .card-header {
+        padding: 1.25rem 1.25rem 0.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 1px solid var(--border-color);
+
+        .card-identity {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+
+            .conn-type-icon {
+                width: 36px;
+                height: 36px;
+                border-radius: 10px;
+                background: #e0e9ff;
+                color: #3b82f6;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                flex-shrink: 0;
+            }
+
+            .card-title {
+                .conn-name {
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: var(--text-primary);
+                    margin-bottom: 0.15rem;
+                }
+
+                .conn-host {
+                    font-size: 11px;
+                    color: var(--text-secondary);
+                    // font-family: 'Courier New', monospace;
+                }
+            }
+        }
+    }
+
+    .card-body {
+        padding: 1rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        background: var(--bg-secondary);
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .stat-label {
+                font-size: 10px;
+                font-weight: 700;
+                color: var(--text-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                opacity: 0.7;
+            }
+
+            .stat-val {
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+        }
+    }
+
+    .card-footer {
+        padding: 0.75rem 1.25rem 1.25rem;
+        background: var(--bg-secondary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .created-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
     }
 }
 
@@ -392,7 +537,7 @@
 .conn-host,
 .conn-db {
     color: var(--text-secondary);
-    font-family: 'Courier New', monospace;
+    // font-family: 'Courier New', monospace;
     font-size: 12px;
 }
 

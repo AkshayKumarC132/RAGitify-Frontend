@@ -1,0 +1,188 @@
+<div class="document-details-page">
+    <!-- Reusing the document-details-page container styling for consistency -->
+    <div class="document-details-shell" *ngIf="!loading; else loadingState">
+
+        <!-- Error State -->
+        <div class="document-details-error" *ngIf="error && !connection">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+                <h3>Connection details unavailable</h3>
+                <p>{{ error }}</p>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <ng-container *ngIf="connection">
+            <section class="document-hero">
+                <div class="document-hero-main">
+                    <div class="document-hero-copy">
+                        <h2 [title]="connection.name">{{ connection.name || 'Unnamed Connection' }}</h2>
+                        <div class="document-hero-meta">
+                            <span class="hero-meta-copy">Created {{ formatDateTime(connection.created_at) }}</span>
+                            <span class="document-hero-separator" *ngIf="connection.updated_at">·</span>
+                            <span class="hero-meta-copy" *ngIf="connection.updated_at">Updated {{
+                                formatDateTime(connection.updated_at) }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="document-hero-actions">
+                    <button type="button" class="details-secondary-btn" (click)="syncDatabase()" [disabled]="syncing"
+                        title="Sync database metadata">
+                        <i class="fa-solid" [ngClass]="syncing ? 'fa-spinner fa-spin' : 'fa-rotate'"></i>
+                    </button>
+                    <button type="button" class="details-secondary-btn delete-btn" (click)="deleteConnection()"
+                        title="Delete connection" aria-label="Delete connection">
+                        <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="details-secondary-btn" (click)="onClose()" title="Close details">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Highlights (Quick stats) -->
+            <section class="details-highlights">
+                <article class="highlight-card">
+                    <span class="highlight-label">Host</span>
+                    <strong>{{ connection.host }}</strong>
+                </article>
+                <article class="highlight-card">
+                    <span class="highlight-label">Port</span>
+                    <strong>{{ connection.port || '5432' }}</strong>
+                </article>
+                <article class="highlight-card"
+                    [class.failed-status]="(connection.status || '').toLowerCase() === 'failed'">
+                    <span class="highlight-label">Status</span>
+                    <strong [style.color]="getStatusColor(connection.status)">
+                        {{ connection.status || 'Pending' }}
+                    </strong>
+                </article>
+                <article class="highlight-card">
+                    <span class="highlight-label">Database</span>
+                    <strong>{{ connection.database_name || '-' }}</strong>
+                </article>
+                <article class="highlight-card">
+                    <span class="highlight-label">Schema</span>
+                    <strong>{{ connection.schema_name || 'public' }}</strong>
+                </article>
+                <article class="highlight-card">
+                    <span class="highlight-label">Limit</span>
+                    <strong>{{ connection.result_limit ? connection.result_limit : 'None' }}</strong>
+                </article>
+            </section>
+
+            <!-- Main info grid -->
+            <section class="details-main-grid">
+                <!-- Configuration Card -->
+                <article class="details-card details-card--summary">
+                    <div class="details-card-header">
+                        <h3><i class="fa-solid fa-gear"></i><span>Configuration</span></h3>
+                    </div>
+                    <div class="details-definition-list" style="margin-top: 1rem;">
+                        <div class="details-definition-row">
+                            <span>Username</span>
+                            <strong>{{ connection.username || '-' }}</strong>
+                        </div>
+                        <div class="details-definition-row">
+                            <span>Connection ID</span>
+                            <strong>{{ connection.id }}</strong>
+                        </div>
+                        <div class="details-definition-row">
+                            <span>Schema Synced At</span>
+                            <strong>{{ formatDateTime(connection.schema_synced_at) }}</strong>
+                        </div>
+                        <div class="details-definition-row">
+                            <span>Last Tested At</span>
+                            <strong>{{ formatDateTime(connection.last_tested_at) }}</strong>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Status Card -->
+                <article class="details-card details-card--storage">
+                    <div class="details-card-header">
+                        <h3><i class="fa-solid fa-heart-pulse"></i><span>Health Status</span></h3>
+                    </div>
+                    <p class="details-summary-copy" style="margin-top: 1rem;">
+                        {{ connection.status_message || (connection.status === 'connected' ? 'Connection is active and
+                        healthy.' : 'No status details available.') }}
+                    </p>
+                    <div class="details-definition-list" style="margin-top: 1rem;"
+                        *ngIf="connection.metadata && connection.metadata['tables']">
+                        <div class="details-definition-row">
+                            <span>Tables Synced</span>
+                            <strong>{{ connection.metadata['tables']?.length || 0 }} tables indexed</strong>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Sync History Card -->
+                <article class="details-card details-card--full-width sync-card" style="grid-column: 1 / -1;">
+                    <div class="details-card-header sync-card-header">
+                        <h3><span>Sync Activity & Actions</span></h3>
+                        <span class="events-count" *ngIf="syncHistory.length > 0">{{ syncHistory.length }} events</span>
+                    </div>
+
+                    <div class="sync-history-container" *ngIf="groupedSyncHistory.length > 0; else noHistory">
+                        <table class="sync-history-table">
+                            <thead>
+                                <tr>
+                                    <th>EVENT TYPE</th>
+                                    <th>START TIME</th>
+                                    <th>END TIME</th>
+                                    <th>SYNC DURATION</th>
+                                    <th>EXTRACT</th>
+                                    <th>LOAD</th>
+                                    <th class="text-right">LOADED ROWS</th>
+                                </tr>
+                            </thead>
+                            <tbody *ngFor="let group of groupedSyncHistory">
+                                <!-- Group Header -->
+                                <tr class="date-group-header">
+                                    <td colspan="7">{{ group.dateLabel }}</td>
+                                </tr>
+                                <!-- Group Items -->
+                                <tr class="sync-row" *ngFor="let log of group.logs">
+                                    <td class="event-type">
+                                        <i class="fa-regular fa-circle-check text-success"
+                                            *ngIf="log.status === 'success'"></i>
+                                        <i class="fa-regular fa-circle-xmark text-error"
+                                            *ngIf="log.status !== 'success'"></i>
+                                        <span [ngClass]="log.status === 'success' ? 'text-success' : 'text-error'">
+                                            {{ log.status === 'success' ? 'Successful sync' : 'Failed sync' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ formatTime(log.started_at) }}</td>
+                                    <td>{{ log.completed_at ? formatTime(log.completed_at) : formatTime(log.started_at)
+                                        }}</td>
+                                    <td>{{ formatDuration(log.duration_ms) }}</td>
+                                    <td class="text-muted">-</td>
+                                    <td class="text-muted">-</td>
+                                    <td class="text-right">0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <ng-template #noHistory>
+                        <div class="sync-empty-state">
+                            <p class="details-summary-copy">No sync history available for this connection.</p>
+                            <button type="button" class="btn-primary" (click)="syncDatabase()" [disabled]="syncing"
+                                style="margin-top: 1rem;">
+                                Sync Now
+                            </button>
+                        </div>
+                    </ng-template>
+                </article>
+            </section>
+
+        </ng-container>
+    </div>
+
+    <ng-template #loadingState>
+        <div class="document-details-loading">
+            <div class="spinner-small"></div>
+            <span>Loading connection details...</span>
+        </div>
+    </ng-template>
+</div>

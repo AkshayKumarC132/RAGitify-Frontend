@@ -68,7 +68,12 @@
 
       <ng-container *ngIf="selectedDatabaseConnectionIds.length > 0">
         <div class="document-chip-inline badge-blue" *ngFor="let dbId of selectedDatabaseConnectionIds" tabindex="0">
-          <span class="file-type">DB</span>
+          <ng-container *ngIf="getDatabaseConnection(dbId) as db; else dbFallback">
+            <img [src]="getDatabaseIcon(db)" class="file-type-icon" alt="Database" />
+          </ng-container>
+          <ng-template #dbFallback>
+            <span class="file-type">DB</span>
+          </ng-template>
           <span class="doc-title" [title]="getDatabaseDisplayName(dbId)">{{ getDatabaseDisplayName(dbId) }}</span>
           <button type="button" class="remove-btn" (click)="removeSelectedDatabase(dbId, $event)"
             aria-label="Remove database attachment">
@@ -94,14 +99,247 @@
     </div>
 
     <div class="input-bar">
-      <div class="attachment-controls">
+      <div class="attachment-controls" style="position: relative;">
         <button type="button" class="attachment-toggle" (click)="openPanel('library')"
           [class.active]="activePanel === 'library'" title="Attach Documents" aria-label="Attach Documents">
           <i class="fa-solid fa-plus"></i>
         </button>
+  <div class="attachment-panel" [class.open-upwards]="shouldOpenUpwards" *ngIf="activePanel === 'web'"
+    (click)="$event.stopPropagation()">
+    <h4>Attach Webpage</h4>
+    <input type="text" placeholder="https://example.com/article" [(ngModel)]="webForm.url" />
+    <input type="text" placeholder="Optional title" [(ngModel)]="webForm.title" />
+    <div class="panel-actions">
+      <button type="button" (click)="submitWebForm()" [disabled]="!webForm.url.trim()">Attach</button>
+      <button type="button" (click)="closePanels()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="attachment-panel" [class.open-upwards]="shouldOpenUpwards" *ngIf="activePanel === 'notes'"
+    (click)="$event.stopPropagation()">
+    <h4>Attach Notes</h4>
+    <input type="text" placeholder="Note title" [(ngModel)]="noteForm.title" />
+    <textarea rows="4" placeholder="Add the text you want to reference..." [(ngModel)]="noteForm.content"></textarea>
+    <div class="panel-actions">
+      <button type="button" (click)="submitNoteForm()" [disabled]="!noteForm.content.trim()">Attach</button>
+      <button type="button" (click)="closePanels()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="attachment-panel document-picker-panel" [class.open-upwards]="shouldOpenUpwards"
+    [class.compact-main-menu]="attachmentMenuState === 'main'" *ngIf="activePanel === 'library'"
+    (click)="$event.stopPropagation()">
+
+    <!-- Main Menu -->
+    <div class="attachment-main-menu" *ngIf="attachmentMenuState === 'main'">
+      <button type="button" class="menu-item-btn" (click)="attachmentMenuState = 'document'; activeDocumentTab = 'my'">
+        <div class="menu-icon"><i class="fa-solid fa-file"></i></div>
+        <div class="menu-item-text">
+          <span class="title">Attach document</span>
+        </div>
+      </button>
+      <button type="button" class="menu-item-btn"
+        (click)="attachmentMenuState = 'connectors'; activeDocumentTab = 'database'">
+        <div class="menu-icon"><i class="fa-solid fa-plug"></i></div>
+        <div class="menu-item-text">
+          <span class="title">Connectors</span>
+        </div>
+      </button>
+    </div>
+
+    <ng-container *ngIf="attachmentMenuState !== 'main'">
+      <!-- Back Header -->
+      <div class="menu-header-back">
+        <button type="button" class="back-btn" (click)="attachmentMenuState = 'main'"
+          aria-label="Back to attachment options">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <span class="back-title">{{ attachmentMenuState === 'document' ? 'Attach document' : 'Connectors' }}</span>
+      </div>
+      <!-- Tabs -->
+      <div class="document-tabs" *ngIf="attachmentMenuState === 'document'">
+        <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'my'"
+          (click)="activeDocumentTab = 'my'">
+          <i class="fa-solid fa-download"></i>
+          My Documents
+        </button>
+        <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'shared'"
+          (click)="activeDocumentTab = 'shared'">
+          <i class="fa-solid fa-user-group"></i>
+          Shared with Me
+        </button>
+      </div>
+
+      <!-- Document List -->
+      <div class="documents-list" *ngIf="activeDocumentTab !== 'database'">
+        <ng-container *ngIf="documentsLoading; else documentsReady">
+          <p class="empty-text">Loading documents...</p>
+        </ng-container>
+        <ng-template #documentsReady>
+          <ng-container *ngIf="getDocumentsByLibraryForTab().length; else emptyDocuments">
+            <div class="library-group" *ngFor="let group of getDocumentsByLibraryForTab()">
+              <div class="group-header" (click)="toggleLibraryGroup(group.libraryId)">
+                <div class="group-header-left">
+                  <i class="fa-solid"
+                    [ngClass]="isLibraryExpanded(group.libraryId) ? 'fa-folder-open folder-icon-expanded' : 'fa-folder folder-icon-collapsed'"></i>
+                  <div class="group-info">
+                    <span class="group-name">{{ group.name }}</span>
+                    <span class="group-shared-by" *ngIf="activeDocumentTab === 'shared'">
+                      <i class="fa-solid fa-user"></i> {{ group.user || 'Shared' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="group-header-right">
+                  <span class="group-count">{{ group.documents.length }} docs</span>
+                  <i class="fa-solid group-chevron"
+                    [ngClass]="isLibraryExpanded(group.libraryId) ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                </div>
+              </div>
+
+              <div class="group-documents" *ngIf="isLibraryExpanded(group.libraryId)">
+                <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)"
+                  [class.disabled]="isSelectionDisabled(doc.id)" [class.selected]="isDocumentSelected(doc.id)">
+                  <input type="checkbox" [checked]="isDocumentSelected(doc.id)"
+                    [disabled]="isSelectionDisabled(doc.id)" />
+                  <i class="fa-solid doc-file-icon" [ngClass]="getDocumentFileIcon(doc)"
+                    [class.file-red]="getFileTypeColor(doc) === 'red'"
+                    [class.file-blue]="getFileTypeColor(doc) === 'blue'"
+                    [class.file-green]="getFileTypeColor(doc) === 'green'"
+                    [class.file-orange]="getFileTypeColor(doc) === 'orange'"
+                    [class.file-purple]="getFileTypeColor(doc) === 'purple'"
+                    [class.file-gray]="getFileTypeColor(doc) === 'gray'"></i>
+                  <div class="doc-meta">
+                    <span class="doc-name">{{ getDocumentDisplayName(doc) }}</span>
+                    <span class="doc-info">{{ formatFileSize(doc.file_size) }}<ng-container
+                        *ngIf="formatFileSize(doc.file_size)"> · </ng-container>{{ activeDocumentTab === 'shared' ?
+                      getDocumentSourceLabel(doc) : 'Me' }}</span>
+                  </div>
+                  <span class="file-type-badge" [class.badge-red]="getFileTypeColor(doc) === 'red'"
+                    [class.badge-blue]="getFileTypeColor(doc) === 'blue'"
+                    [class.badge-green]="getFileTypeColor(doc) === 'green'"
+                    [class.badge-orange]="getFileTypeColor(doc) === 'orange'"
+                    [class.badge-purple]="getFileTypeColor(doc) === 'purple'"
+                    [class.badge-gray]="getFileTypeColor(doc) === 'gray'">{{ getDocumentTypeLabel(doc) }}</span>
+                </label>
+              </div>
+            </div>
+          </ng-container>
+        </ng-template>
+      </div>
+
+      <ng-template #emptyDocuments>
+        <p class="empty-text">{{ activeDocumentTab === 'shared' ? 'No shared documents yet.' : 'No documents available.
+          Upload files to get started.' }}</p>
+      </ng-template>
+
+      <!-- Database Section -->
+      <div class="documents-list database-list" *ngIf="activeDocumentTab === 'database'">
+        <ng-container *ngIf="databaseConnectionsLoading; else dbReady">
+          <p class="empty-text">Loading connections...</p>
+        </ng-container>
+
+        <ng-template #dbReady>
+          <ng-container *ngIf="connectedDatabaseConnections.length > 0; else emptyDbs">
+            <div class="library-group">
+              <div class="group-documents">
+                <label *ngFor="let db of connectedDatabaseConnections"
+                  (click)="toggleDatabaseSelectionClick(db.id!, $event)" [class.selected]="isDatabaseSelected(db.id!)">
+                  <input type="checkbox" [checked]="isDatabaseSelected(db.id!)" />
+                  <img [src]="getDatabaseIcon(db)" class="doc-file-icon" alt="Database" style="object-fit: contain;" />
+                  <div class="doc-meta" [title]="db.host + ':' + db.port">
+                    <span class="doc-name">{{ db.name }}</span>
+                    <span class="doc-info">{{ db.database_name }}<ng-container *ngIf="db.schema_name"> · {{
+                        db.schema_name }}</ng-container></span>
+                  </div>
+                  <span class="file-type-badge badge-blue"
+                    style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2);">DB</span>
+                </label>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-template #emptyDbs>
+            <div class="database-empty-state">
+              <div class="db-icon-wrapper">
+                <i class="fa-solid fa-database db-main-icon"></i>
+              </div>
+              <h4>Connect PostgreSQL</h4>
+              <p>Query your database directly in the chat</p>
+              <p class="empty-text" style="margin-top: 12px;">Add database connections from the Workspace tab to get
+                started.</p>
+            </div>
+          </ng-template>
+        </ng-template>
+      </div>
+
+      <!-- Bottom Bar: Search + Upload -->
+      <div class="document-bottom-bar">
+        <div class="document-search-bottom">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" [(ngModel)]="documentSearchQuery" placeholder="Search documents..."
+            aria-label="Search documents" />
+        </div>
+        <div class="bottom-actions">
+          <button type="button" class="clear-btn" (click)="clearLibrarySelection()">Clear</button>
+          <button type="button" class="apply-btn" (click)="confirmLibrarySelection()"
+            [disabled]="!pendingDocumentIds.size && !pendingDatabaseConnectionIds.size">Apply</button>
+        </div>
+      </div>
+    </ng-container>
+  </div>
       </div>
 
       <div class="input-actions">
+
+        <!-- ── Token Usage Ring ───────────────────────────────────── -->
+        <div class="token-ring-wrap"
+             *ngIf="showTokenRing"
+             (mouseenter)="showTokenTooltip = true"
+             (mouseleave)="showTokenTooltip = false"
+             id="token-ring-widget"
+             aria-label="Token usage"
+             role="button"
+             tabindex="0">
+
+          <svg class="token-ring-svg" viewBox="0 0 32 32" aria-hidden="true">
+            <!-- Background track -->
+            <circle cx="16" cy="16" r="12"
+                    fill="none"
+                    class="token-ring-track"
+                    stroke-width="3"/>
+            <!-- Animated fill arc -->
+            <circle cx="16" cy="16" r="12"
+                    fill="none"
+                    [attr.stroke]="tokenFillColor"
+                    stroke-width="3"
+                    stroke-linecap="round"
+                    [attr.stroke-dasharray]="tokenRingDashArray"
+                    stroke-dashoffset="0"
+                    class="token-ring-fill"
+                    transform="rotate(-90 16 16)"/>
+          </svg>
+
+          <!-- Tooltip ──────────────────────────────────────────────── -->
+          <div class="token-tooltip" *ngIf="showTokenTooltip" role="tooltip">
+            <div class="token-tooltip-title">Token usage</div>
+            <div class="token-tooltip-row">
+              <span class="token-label">Input</span>
+              <span class="token-value input-val">{{ tokenUsage!.prompt_tokens | number }}</span>
+            </div>
+            <div class="token-tooltip-row">
+              <span class="token-label">Output</span>
+              <span class="token-value output-val">{{ tokenUsage!.completion_tokens | number }}</span>
+            </div>
+            <div class="token-tooltip-divider"></div>
+            <div class="token-tooltip-row total-row">
+              <span class="token-label total-label">Total</span>
+              <span class="token-value total-val">
+                {{ tokenUsage!.total_tokens | number }}&thinsp;/&thinsp;{{ tokenLimit | number }}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <button type="button" class="web-search-button" [class.active]="isWebSearchEnabled" [disabled]="loading"
           (click)="toggleWebSearch()" [title]="isWebSearchEnabled ? 'Web search enabled' : 'Web search disabled'"
           aria-label="Toggle web search">
@@ -130,176 +368,13 @@
     </div>
   </div>
 
-  <div class="kbd-hint" aria-hidden="true">
-    <span class="kbd-pair"><kbd>Enter</kbd> to send</span>
-    <span class="kbd-divider">·</span>
-    <span class="kbd-pair"><kbd>Shift</kbd>+<kbd>Enter</kbd> for newline</span>
-  </div>
+
 
   <div class="listening-indicator" *ngIf="isListening">
     <span class="pulse"></span>
     <span>Listening...</span>
   </div>
 
-  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'web'"
-    (click)="$event.stopPropagation()">
-    <h4>Attach Webpage</h4>
-    <input type="text" placeholder="https://example.com/article" [(ngModel)]="webForm.url" />
-    <input type="text" placeholder="Optional title" [(ngModel)]="webForm.title" />
-    <div class="panel-actions">
-      <button type="button" (click)="submitWebForm()" [disabled]="!webForm.url.trim()">Attach</button>
-      <button type="button" (click)="closePanels()">Cancel</button>
-    </div>
-  </div>
-
-  <div class="attachment-panel" [class.open-upwards]="hasExistingThread" *ngIf="activePanel === 'notes'"
-    (click)="$event.stopPropagation()">
-    <h4>Attach Notes</h4>
-    <input type="text" placeholder="Note title" [(ngModel)]="noteForm.title" />
-    <textarea rows="4" placeholder="Add the text you want to reference..." [(ngModel)]="noteForm.content"></textarea>
-    <div class="panel-actions">
-      <button type="button" (click)="submitNoteForm()" [disabled]="!noteForm.content.trim()">Attach</button>
-      <button type="button" (click)="closePanels()">Cancel</button>
-    </div>
-  </div>
-
-  <div class="attachment-panel document-picker-panel" [class.open-upwards]="hasExistingThread"
-    *ngIf="activePanel === 'library'" (click)="$event.stopPropagation()">
-
-    <!-- Tabs -->
-    <div class="document-tabs">
-      <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'my'"
-        (click)="activeDocumentTab = 'my'">
-        <i class="fa-solid fa-download"></i>
-        My Documents
-      </button>
-      <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'shared'"
-        (click)="activeDocumentTab = 'shared'">
-        <i class="fa-solid fa-user-group"></i>
-        Shared with Me
-      </button>
-      <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'database'"
-        (click)="activeDocumentTab = 'database'">
-        <i class="fa-solid fa-database"></i>
-        Database
-      </button>
-    </div>
-
-    <!-- Document List -->
-    <div class="documents-list" *ngIf="activeDocumentTab !== 'database'">
-      <ng-container *ngIf="documentsLoading; else documentsReady">
-        <p class="empty-text">Loading documents...</p>
-      </ng-container>
-      <ng-template #documentsReady>
-        <ng-container *ngIf="getDocumentsByLibraryForTab().length; else emptyDocuments">
-          <div class="library-group" *ngFor="let group of getDocumentsByLibraryForTab()">
-            <div class="group-header" (click)="toggleLibraryGroup(group.libraryId)">
-              <div class="group-header-left">
-                <i class="fa-solid"
-                  [ngClass]="isLibraryExpanded(group.libraryId) ? 'fa-folder-open folder-icon-expanded' : 'fa-folder folder-icon-collapsed'"></i>
-                <div class="group-info">
-                  <span class="group-name">{{ group.name }}</span>
-                  <span class="group-shared-by" *ngIf="activeDocumentTab === 'shared'">
-                    <i class="fa-solid fa-user"></i> {{ group.user || 'Shared' }}
-                  </span>
-                </div>
-              </div>
-              <div class="group-header-right">
-                <span class="group-count">{{ group.documents.length }} docs</span>
-                <i class="fa-solid group-chevron"
-                  [ngClass]="isLibraryExpanded(group.libraryId) ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
-              </div>
-            </div>
-
-            <div class="group-documents" *ngIf="isLibraryExpanded(group.libraryId)">
-              <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)"
-                [class.disabled]="isSelectionDisabled(doc.id)" [class.selected]="isDocumentSelected(doc.id)">
-                <input type="checkbox" [checked]="isDocumentSelected(doc.id)"
-                  [disabled]="isSelectionDisabled(doc.id)" />
-                <i class="fa-solid doc-file-icon" [ngClass]="getDocumentFileIcon(doc)"
-                  [class.file-red]="getFileTypeColor(doc) === 'red'"
-                  [class.file-blue]="getFileTypeColor(doc) === 'blue'"
-                  [class.file-green]="getFileTypeColor(doc) === 'green'"
-                  [class.file-orange]="getFileTypeColor(doc) === 'orange'"
-                  [class.file-purple]="getFileTypeColor(doc) === 'purple'"
-                  [class.file-gray]="getFileTypeColor(doc) === 'gray'"></i>
-                <div class="doc-meta">
-                  <span class="doc-name">{{ getDocumentDisplayName(doc) }}</span>
-                  <span class="doc-info">{{ formatFileSize(doc.file_size) }}<ng-container
-                      *ngIf="formatFileSize(doc.file_size)"> · </ng-container>{{ activeDocumentTab === 'shared' ?
-                    getDocumentSourceLabel(doc) : 'Me' }}</span>
-                </div>
-                <span class="file-type-badge" [class.badge-red]="getFileTypeColor(doc) === 'red'"
-                  [class.badge-blue]="getFileTypeColor(doc) === 'blue'"
-                  [class.badge-green]="getFileTypeColor(doc) === 'green'"
-                  [class.badge-orange]="getFileTypeColor(doc) === 'orange'"
-                  [class.badge-purple]="getFileTypeColor(doc) === 'purple'"
-                  [class.badge-gray]="getFileTypeColor(doc) === 'gray'">{{ getDocumentTypeLabel(doc) }}</span>
-              </label>
-            </div>
-          </div>
-        </ng-container>
-      </ng-template>
-    </div>
-
-    <ng-template #emptyDocuments>
-      <p class="empty-text">{{ activeDocumentTab === 'shared' ? 'No shared documents yet.' : 'No documents available.
-        Upload files to get started.' }}</p>
-    </ng-template>
-
-    <!-- Database Section -->
-    <div class="documents-list database-list" *ngIf="activeDocumentTab === 'database'">
-      <ng-container *ngIf="databaseConnectionsLoading; else dbReady">
-        <p class="empty-text">Loading connections...</p>
-      </ng-container>
-
-      <ng-template #dbReady>
-        <ng-container *ngIf="connectedDatabaseConnections.length > 0; else emptyDbs">
-          <div class="library-group">
-            <div class="group-documents" style="display: block;">
-              <label *ngFor="let db of connectedDatabaseConnections"
-                (click)="toggleDatabaseSelectionClick(db.id!, $event)" [class.selected]="isDatabaseSelected(db.id!)">
-                <input type="checkbox" [checked]="isDatabaseSelected(db.id!)" />
-                <img src="assets/postgres.svg" class="doc-file-icon" alt="PostgreSQL" style="object-fit: contain;" />
-                <div class="doc-meta" [title]="db.host + ':' + db.port">
-                  <span class="doc-name">{{ db.name }}</span>
-                  <span class="doc-info">{{ db.database_name }}</span>
-                </div>
-                <span class="file-type-badge badge-blue"
-                  style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2);">DB</span>
-              </label>
-            </div>
-          </div>
-        </ng-container>
-
-        <ng-template #emptyDbs>
-          <div class="database-empty-state">
-            <div class="db-icon-wrapper">
-              <i class="fa-solid fa-database db-main-icon"></i>
-            </div>
-            <h4>Connect PostgreSQL</h4>
-            <p>Query your database directly in the chat</p>
-            <p class="empty-text" style="margin-top: 12px;">Add database connections from the Workspace tab to get
-              started.</p>
-          </div>
-        </ng-template>
-      </ng-template>
-    </div>
-
-    <!-- Bottom Bar: Search + Upload -->
-    <div class="document-bottom-bar">
-      <div class="document-search-bottom">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" [(ngModel)]="documentSearchQuery" placeholder="Search documents..."
-          aria-label="Search documents" />
-      </div>
-      <div class="bottom-actions">
-        <button type="button" class="clear-btn" (click)="clearLibrarySelection()">Clear</button>
-        <button type="button" class="apply-btn" (click)="confirmLibrarySelection()"
-          [disabled]="!pendingDocumentIds.size && !pendingDatabaseConnectionIds.size">Apply</button>
-      </div>
-    </div>
-  </div>
 
 
 </div>

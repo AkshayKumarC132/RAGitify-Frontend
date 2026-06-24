@@ -24,7 +24,6 @@ export class SkillsSectionComponent implements OnInit {
   ) {
     this.skillForm = this.fb.group({
       name: ['', Validators.required],
-      description: [''],
       dos: [''],
       donts: [''],
       is_active: [true]
@@ -54,7 +53,6 @@ export class SkillsSectionComponent implements OnInit {
         this.skillId = skill.id;
         this.skillForm.patchValue({
           name: skill.name,
-          description: (skill as any).description || '',
           dos: skill.do_content || '',
           donts: skill.dont_content || '',
           is_active: !!skill.is_active
@@ -222,7 +220,7 @@ export class SkillsSectionComponent implements OnInit {
     if (this.hasExistingSkill) {
       this.loadSkill();
     } else {
-      this.skillForm.reset({ name: '', description: '', dos: '', donts: '', is_active: true });
+      this.skillForm.reset({ name: '', dos: '', donts: '', is_active: true });
     }
   }
 }

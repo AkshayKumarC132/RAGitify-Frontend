@@ -7,6 +7,7 @@ import { ModelsSectionComponent } from './components/models-section/models-secti
 import { GeneralSectionComponent } from './components/general-section/general-section.component';
 import { AccountSectionComponent } from './components/account-section/account-section.component';
 import { SkillsSectionComponent } from './components/skills-section/skills-section.component';
+import { UsageSectionComponent } from './components/usage-section/usage-section.component';
 import { SettingsRoutingModule } from './settings-routing.module';
 
 @NgModule({
@@ -15,7 +16,8 @@ import { SettingsRoutingModule } from './settings-routing.module';
     ModelsSectionComponent,
     GeneralSectionComponent,
     AccountSectionComponent,
-    SkillsSectionComponent
+    SkillsSectionComponent,
+    UsageSectionComponent
   ],
   imports: [
     CommonModule,

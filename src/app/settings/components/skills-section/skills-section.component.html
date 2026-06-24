@@ -1,95 +1,84 @@
 <div class="skills-section" *ngIf="!isLoading">
-  
+
   <div class="section-header" style="margin-bottom: 1.25rem;">
     <h2 class="section-title">
       <i class="fa-solid fa-wand-magic-sparkles"></i>
       {{ hasExistingSkill ? 'Edit Skill' : 'New Skill Builder' }}
     </h2>
-    
-    <div class="header-actions" style="display: flex; align-items: center; gap: 0.6rem;">
-      <span style="font-size: 13px; font-weight: 650; color: var(--text-secondary);">{{ skillForm.get('is_active')?.value ? 'Active' : 'Inactive' }}</span>
-      <label class="toggle-switch" [class.active]="skillForm.get('is_active')?.value">
-        <input type="checkbox" [formControl]="$any(skillForm.get('is_active'))" (change)="toggleStatus($event)">
-        <span class="slider round"></span>
-      </label>
+
+    <div class="header-actions">
+      <div class="status-toggle-wrapper" [class.is-active]="skillForm.get('is_active')?.value">
+        <span class="status-label">{{ skillForm.get('is_active')?.value ? 'Active' : 'Inactive' }}</span>
+        <label class="toggle-switch">
+          <input type="checkbox" [formControl]="$any(skillForm.get('is_active'))" (change)="toggleStatus($event)">
+          <span class="slider round"></span>
+        </label>
+      </div>
     </div>
   </div>
 
-  <form [formGroup]="skillForm" (ngSubmit)="saveSkill()" class="skills-form" style="display: flex; flex-direction: column; gap: 1rem;">
-    
-    <!-- Skill Identity Section -->
-    <div class="create-form">
-      <h5><i class="fa-solid fa-sparkles" style="color: var(--accent-color);"></i> Skill Identity</h5>
-      
-      <div class="form-group">
-        <label for="name">SKILL NAME <span class="required" style="color: #dc2626;">*</span></label>
-        <input 
-          type="text" 
-          id="name" 
-          formControlName="name" 
-          placeholder="e.g., Medical Report Summarizer"
-          class="form-control"
-          [class.is-invalid]="skillForm.get('name')?.invalid && skillForm.get('name')?.touched"
-        >
-      </div>
+  <form [formGroup]="skillForm" (ngSubmit)="saveSkill()" class="skills-form"
+    style="display: flex; flex-direction: column; gap: 1rem;">
 
-      <div class="form-group" style="margin-bottom: 0;">
-        <label for="description">
-          DESCRIPTION
-          <span style="margin-left: auto; margin-right: 0;" class="provider-badge local">Not passed to instructions</span>
-        </label>
-        <textarea 
-          id="description" 
-          formControlName="description" 
-          placeholder="Brief description of what this skill does..."
-          class="form-control"
-          style="min-height: 80px; resize: vertical;"
-        ></textarea>
-      </div>
-    </div>
-
-    <!-- Instructions Section -->
+    <!-- Combined Skill Form Box -->
     <div class="create-form">
-      <h5><i class="fa-solid fa-book-open" style="color: var(--accent-color);"></i> Instructions</h5>
+      <div class="form-header-group">
+        <h5>
+          Skill Identity
+        </h5>
+      </div>
 
       <div class="form-group">
-        <label for="dos" style="color: #16a34a;">
-          <i class="fa-solid fa-circle-check"></i> DO'S
-        </label>
-        <textarea 
-          id="dos" 
-          formControlName="dos" 
-          placeholder="Describe what this skill should do, how it should behave, tone, output style..."
-          class="form-control"
-          style="min-height: 120px; resize: vertical; border-left: 3px solid rgba(34, 197, 94, 0.6);"
-        ></textarea>
+        <label for="name">SKILL NAME <span class="required"></span></label>
+        <input type="text" id="name" formControlName="name" placeholder="e.g., Medical Report Summarizer"
+          class="form-control" [class.is-invalid]="skillForm.get('name')?.invalid && skillForm.get('name')?.touched">
       </div>
 
-      <div class="form-group" style="margin-bottom: 0;">
-        <label for="donts" style="color: #dc2626;">
-          <i class="fa-solid fa-circle-xmark"></i> DON'TS
-        </label>
-        <textarea 
-          id="donts" 
-          formControlName="donts" 
-          placeholder="Describe what this skill should avoid, topics to skip, behaviors to prevent..."
-          class="form-control"
-          style="min-height: 120px; resize: vertical; border-left: 3px solid rgba(239, 68, 68, 0.6);"
-        ></textarea>
+      <div class="form-header-group" style="margin-top: 2rem;">
+        <h5>
+          Instructions
+        </h5>
+      </div>
+
+      <div class="instruction-grid">
+        <div class="form-group dos-group">
+          <label for="dos">
+            <i class="fa-regular fa-circle-check"></i> DO'S
+            <span class="optional">One instruction per line</span>
+          </label>
+          <textarea id="dos" formControlName="dos"
+            placeholder="Describe what this skill should do, how it should behave, tone, output style..."
+            class="form-control"></textarea>
+        </div>
+
+        <div class="form-group donts-group">
+          <label for="donts">
+            <i class="fa-regular fa-circle-xmark"></i> DON'TS
+            <span class="optional">One instruction per line</span>
+          </label>
+          <textarea id="donts" formControlName="donts"
+            placeholder="Describe what this skill should avoid, topics to skip, behaviors to prevent..."
+            class="form-control"></textarea>
+        </div>
+      </div>
+
+      <!-- Actions contained inside the box -->
+      <div class="form-actions-container">
+        <div class="form-hint">
+          <i class="fa-regular fa-lightbulb"></i> Changes apply to all new conversations
+        </div>
+        <div class="action-buttons">
+          <button type="button" class="btn-premium-secondary" (click)="discard()">
+            Discard
+          </button>
+          <button type="submit" class="btn-premium-primary" [disabled]="skillForm.invalid || isSaving || isValidating">
+            <i class="fa-solid"
+              [ngClass]="isValidating ? 'fa-magnifying-glass fa-beat' : (isSaving ? 'fa-spinner fa-spin' : 'fa-save')"></i>
+            {{ isValidating ? 'Validating...' : (hasExistingSkill ? 'Update Skill' : 'Save Skill') }}
+          </button>
+        </div>
       </div>
     </div>
-
-    <!-- Actions -->
-    <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem;">
-      <button type="button" class="btn-secondary" (click)="discard()">
-        Discard
-      </button>
-      <button type="submit" class="btn-primary" [disabled]="skillForm.invalid || isSaving || isValidating">
-        <i class="fa-solid" [ngClass]="isValidating ? 'fa-magnifying-glass fa-beat' : (isSaving ? 'fa-spinner fa-spin' : 'fa-save')"></i>
-        {{ isValidating ? 'Validating...' : (hasExistingSkill ? 'Update Skill' : 'Save Skill') }}
-      </button>
-    </div>
-
   </form>
 </div>
 

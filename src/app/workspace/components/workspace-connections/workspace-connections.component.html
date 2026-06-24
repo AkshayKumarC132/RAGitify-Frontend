@@ -1,4 +1,4 @@
-<div class="connections-page">
+<div class="connections-page" *ngIf="!selectedConnectionId">
     <!-- Page Header -->
     <header class="connections-header">
         <div class="connections-title-block">
@@ -84,7 +84,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let conn of filteredConnections" class="connections-table-row">
+                    <tr *ngFor="let conn of filteredConnections" class="connections-table-row"
+                        (click)="viewConnectionDetails(conn.id)" style="cursor: pointer;">
                         <td class="col-name">
                             <div class="conn-name-cell">
                                 <div class="conn-type-icon">
@@ -125,6 +126,10 @@
         </div>
     </section>
 </div>
+
+<app-connection-details-page *ngIf="selectedConnectionId" [connectionId]="selectedConnectionId"
+    (close)="closeConnectionDetails()">
+</app-connection-details-page>
 
 <!-- PostgreSQL Wizard Modal -->
 <app-postgres-wizard *ngIf="showWizard" (wizardClose)="onWizardClose()"
