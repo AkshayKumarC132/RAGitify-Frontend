@@ -1,9 +1,9 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Conversation, ConversationMessage } from '../../../shared/models/conversation.model';
-import { ResponseRecord, ResponseCreateRequest, StreamEvent } from '../../../shared/models/response.model';
+import { ResponseRecord, ResponseCreateRequest, StreamEvent, TaskItem } from '../../../shared/models/response.model';
 import { ResponseService } from '../../../shared/services/response.service';
 import { ConversationService } from '../../../shared/services/conversation.service';
 import { ResponseAttentionService } from '../../../shared/services/response-attention.service';
@@ -32,12 +32,14 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
     errorMessage = '';
     isExpanded = false;
     isOverflowing = false;
+    currentTasks: TaskItem[] = [];
     private streamSub?: Subscription;
 
     constructor(
         private responseService: ResponseService,
         private conversationService: ConversationService,
-        private responseAttentionService: ResponseAttentionService
+        private responseAttentionService: ResponseAttentionService,
+        private cdr: ChangeDetectorRef
     ) { }
 
     ngOnInit(): void {
@@ -150,6 +152,17 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
                     // picks up the mutated content and re-renders the message bubble
                     const lastIdx = this.messages.length - 1;
                     this.messages = [...this.messages.slice(0, lastIdx), { ...assistantMessage }];
+                    
+                    // Hide task list once text starts streaming
+                    if (this.currentTasks.length > 0) {
+                        this.currentTasks = [];
+                        this.cdr.detectChanges();
+                    }
+                    
+                    this.scrollToBottom();
+                } else if (event.type === 'task_update') {
+                    this.currentTasks = (event.tasks || []).filter(t => t.status !== 'removed');
+                    this.cdr.detectChanges();
                     this.scrollToBottom();
                 } else if (event.type === 'completed') {
                     this.currentResponse = null;
@@ -178,16 +191,19 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
                     this.scrollToBottom();
                 } else if (event.type === 'failed') {
                     this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
+                    this.currentTasks = [];
                     this.handleError(event.response?.error_message || 'Response failed');
                 }
             },
             error: (err) => {
                 this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
+                this.currentTasks = [];
                 this.handleError('Failed to send message', err);
                 this.messages = this.messages.filter(m => !m.id.startsWith('temp-'));
             },
             complete: () => {
                 this.loading = false;
+                this.currentTasks = [];
             }
         });
     }
@@ -212,6 +228,7 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
         this.stopStream();
         this.currentResponse = null;
         this.loading = false;
+        this.currentTasks = [];
         // Remove any streaming assistant message that might be in progress
         this.messages = this.messages.filter(m => !m.id.startsWith('streaming-'));
         // Also remove the last user message if it was just sent and no response was received
@@ -282,5 +299,18 @@ export class LibraryChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
     get isResponseInProgress(): boolean {
         return this.loading || !!(this.streamSub && !this.streamSub.closed);
+    }
+
+    get showTaskList(): boolean {
+        if (!this.isResponseInProgress) {
+            return false;
+        }
+
+        const lastMessage = this.messages[this.messages.length - 1];
+        if (!lastMessage || lastMessage.role !== 'assistant') {
+            return true;
+        }
+
+        return !lastMessage.content;
     }
 }

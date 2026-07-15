@@ -218,13 +218,14 @@ export class ModelsSectionComponent implements OnInit {
   }
 
   getMetadata(modelName: string) {
+    const lookupName = modelName.toLowerCase();
     // try to match exactly first
-    if (this.MODEL_METADATA_CONFIG[modelName]) {
-      return this.MODEL_METADATA_CONFIG[modelName];
+    if (this.MODEL_METADATA_CONFIG[lookupName]) {
+      return this.MODEL_METADATA_CONFIG[lookupName];
     }
     // Partial matching
     for (const key of Object.keys(this.MODEL_METADATA_CONFIG)) {
-      if (modelName.includes(key) || key.includes(modelName)) {
+      if (lookupName.includes(key) || key.includes(lookupName)) {
         return this.MODEL_METADATA_CONFIG[key];
       }
     }
@@ -243,7 +244,7 @@ export class ModelsSectionComponent implements OnInit {
     if (model.name) return model.name;
     // Strip trailing date suffix like -2026-03-17
     let id = model.model.replace(/-\d{4}-\d{2}-\d{2}$/, '');
-    if (id.startsWith('gpt-')) {
+    if (id.toLowerCase().startsWith('gpt-')) {
       return 'GPT-' + id.slice(4).replace(/-/g, ' ');
     }
     if (id.startsWith('claude-')) {

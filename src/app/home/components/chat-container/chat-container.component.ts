@@ -1,4 +1,5 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild } from '@angular/core';
+import { TaskItem } from '../../../shared/models/response.model';
 
 type ChatMessage = {
   id: string | number;
@@ -21,6 +22,7 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
   @Input() typingStatuses: string[] = ['Retrieving', 'Searching', 'Thinking', 'Generating'];
   @Input() conversationId?: string;
   @Input() enableDataGrid: boolean = false;
+  @Input() tasks: TaskItem[] = [];
 
   @ViewChild('messagesWrapper') private messagesWrapper?: ElementRef<HTMLDivElement>;
 
@@ -28,6 +30,8 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
   private isAutoScrolling = false;
   showJumpToBottom = false;
   private readonly scrollThreshold = 140;
+
+  constructor(private cdr: ChangeDetectorRef) {}
 
   get isTyping(): boolean {
     return this.hasActiveRun;
@@ -46,8 +50,21 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
     return !lastMessage.content;
   }
 
-  private get hasActiveRun(): boolean {
+  get hasActiveRun(): boolean {
     return this.loading || (!!this.currentRun && ['queued', 'in_progress', 'requires_action'].includes(this.currentRun.status));
+  }
+
+  get showTaskList(): boolean {
+    if (!this.hasActiveRun) {
+      return false;
+    }
+
+    const lastMessage = this.messages[this.messages.length - 1];
+    if (!lastMessage || lastMessage.role !== 'assistant') {
+      return true;
+    }
+
+    return !lastMessage.content;
   }
 
   ngAfterViewInit(): void {
@@ -57,6 +74,15 @@ export class ChatContainerComponent implements OnChanges, AfterViewInit, OnDestr
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['messages'] || changes['currentRun']) {
       this.queueScrollToBottom();
+    }
+    // When tasks arrive (rapid-fire from SSE stream), mark this OnPush component
+    // dirty so Angular re-renders it and propagates the new tasks to app-task-list.
+    // Also scroll to bottom so the task list is immediately visible without manual scroll.
+    if (changes['tasks'] || changes['loading']) {
+      this.cdr.markForCheck();
+      if (changes['tasks'] && this.tasks?.length > 0) {
+        this.queueScrollToBottom();
+      }
     }
   }
 

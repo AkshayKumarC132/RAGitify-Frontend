@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { Message } from '../../models/message.model';
@@ -56,8 +57,19 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     modalDataGridColumns: string[] = [];
     modalDataGridRows: Record<string, any>[] = [];
 
+    // New Datagrid Features State
+    searchQuery: string = '';
+    density: 'compact' | 'comfortable' | 'spacious' = 'comfortable';
+    columnVisibility: Record<string, boolean> = {}; // false means hidden
+    pageSize: number = 25;
+    currentPage: number = 1;
+    showColumnMenu: boolean = false;
+    showDensityMenu: boolean = false;
+    showExportMenu: boolean = false;
+
     // SQL Modal State
     showSqlModal = false;
+    sqlActiveSourceIndex: number = 0;
 
     // Inline Data Grid State
     private inlineDataLoaded = false;
@@ -70,7 +82,8 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     constructor(
         private sanitizer: DomSanitizer,
         private conversationService: ConversationService,
-        private cdr: ChangeDetectorRef
+        private cdr: ChangeDetectorRef,
+        private router: Router
     ) { }
 
     // ── Computed getters ──────────────────────────────────────────────
@@ -79,15 +92,20 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         return this.dataSources[this.activeSourceIndex] ?? null;
     }
 
-    /** SQL for the currently active tab's grid_id */
-    get activeSqlQuery(): string | null {
-        if (!this.activeSource) return null;
-        return this.sqlQueryMap[this.activeSource.grid_id] ?? null;
+    /** SQL source for the SQL modal's active tab (independent of datagrid tab) */
+    get sqlActiveSource(): typeof this.dataSources[0] | null {
+        return this.dataSources[this.sqlActiveSourceIndex] ?? null;
     }
 
-    /** Human-readable source name for the currently active tab */
+    /** SQL for the SQL modal's currently selected source */
+    get activeSqlQuery(): string | null {
+        if (!this.sqlActiveSource) return null;
+        return this.sqlQueryMap[this.sqlActiveSource.grid_id] ?? null;
+    }
+
+    /** Human-readable source name for the SQL modal's currently selected source */
     get activeSqlSourceName(): string {
-        return this.activeSource?.source_name ?? '';
+        return this.sqlActiveSource?.source_name ?? '';
     }
 
     get isFailedRun(): boolean {
@@ -200,6 +218,9 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
             });
 
         this.activeSourceIndex = 0;
+        this.searchQuery = '';
+        this.currentPage = 1;
+        this.columnVisibility = {};
     }
 
     private sanitizeContent(content?: string): string {
@@ -237,12 +258,17 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         return this.isCancelledRun;
     }
 
+    get hasBubbleContent(): boolean {
+        if (this.showEmptyState || this.showRunErrorInfo) return true;
+        if (this.displayContent && this.displayContent.trim().length > 0) return true;
+        if (this.showSources && !this.isUser && this.getDocumentIds(this.message).length > 0) return true;
+        return false;
+    }
+
     get isHidden(): boolean {
         if (this.isUser) return false;
-        const hasContent = !!this.displayContent && this.displayContent.trim().length > 0;
-        if (hasContent) return false;
-        if (this.showEmptyState) return false;
-        if (this.showRunErrorInfo) return false;
+        if (this.hasBubbleContent) return false;
+        if (this.hasDataGrid) return false;
         return true;
     }
 
@@ -340,11 +366,45 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         return '';
     }
 
+    get fallbackDataGridTitle(): string {
+        const sourceName = this.message?.metadata?.['source_name'] || this.message?.metadata?.['table_name'];
+        if (sourceName) {
+            return sourceName
+                .replace(/\.(xlsx|csv|xls|json|pdf)/gi, '')
+                .replace(/[-_]/g, ' ')
+                .replace(/\b\w/g, (c: string) => c.toUpperCase())
+                .trim();
+        }
+        if (this.activeSource?.source_name) {
+             return this.getSourceTabLabel(this.activeSource);
+        }
+        return 'Data Records';
+    }
+
+    get fallbackDataGridSubtitle(): string {
+        const rows = this.dataGridRecordCount || 0;
+        let cols = this.dataGridColumns?.length || 0;
+        
+        const totalRows = this.message?.metadata?.['total_rows'] || this.message?.metadata?.['original_row_count'];
+
+        let subtitle = `${rows} rows`;
+        if (cols > 0) {
+            subtitle += ` · ${cols} columns`;
+        }
+        if (totalRows && Number(totalRows) > Number(rows)) {
+             subtitle += ` · filtered from ${Number(totalRows).toLocaleString()}`;
+        }
+        return subtitle;
+    }
+
     // ── Tab switching ─────────────────────────────────────────────────
 
     setActiveSource(index: number): void {
         if (index >= 0 && index < this.dataSources.length) {
             this.activeSourceIndex = index;
+            this.searchQuery = '';
+            this.currentPage = 1;
+            this.columnVisibility = {};
             this.cdr.markForCheck();
         }
     }
@@ -513,9 +573,11 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         this.showDataGridModal = false;
     }
 
-    viewSql(): void {
+    viewSql(sourceIndex?: number): void {
+        const targetIndex = sourceIndex ?? 0;
         // If we already have data, just open the modal
         if (this.dataSources.length > 0) {
+            this.sqlActiveSourceIndex = targetIndex;
             this.showSqlModal = true;
             return;
         }
@@ -524,12 +586,21 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
             this.conversationService.getDataGrid(this.conversationId, this.message.id).subscribe({
                 next: (res) => {
                     this.parseDataGridResponse(res);
+                    this.sqlActiveSourceIndex = targetIndex;
                     this.showSqlModal = true;
                     this.cdr.markForCheck();
                 }
             });
         } else {
+            this.sqlActiveSourceIndex = targetIndex;
             this.showSqlModal = true;
+        }
+    }
+
+    setSqlActiveSource(index: number): void {
+        if (index >= 0 && index < this.dataSources.length) {
+            this.sqlActiveSourceIndex = index;
+            this.cdr.markForCheck();
         }
     }
 
@@ -620,6 +691,40 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         link.download = `${sourceName}_${new Date().getTime()}.csv`;
         link.click();
         URL.revokeObjectURL(link.href);
+        this.showExportMenu = false;
+    }
+
+    exportJson(): void {
+        const src = this.activeSource;
+        const rowsToExport = src?.rows ?? this.modalDataGridRows ?? this.dataGridRows;
+        if (!rowsToExport || rowsToExport.length === 0) return;
+
+        const jsonString = JSON.stringify(rowsToExport, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        const sourceName = src?.source_name
+            ? src.source_name.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+            : 'data_export';
+        link.download = `${sourceName}_${new Date().getTime()}.json`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        this.showExportMenu = false;
+    }
+
+    exportExcel(): void {
+        const src = this.activeSource;
+        const rowsToExport = src?.rows ?? this.modalDataGridRows ?? this.dataGridRows;
+        if (!rowsToExport || rowsToExport.length === 0) return;
+
+        const worksheet = XLSX.utils.json_to_sheet(rowsToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+        const sourceName = src?.source_name
+            ? src.source_name.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+            : 'data_export';
+        XLSX.writeFile(workbook, `${sourceName}_${new Date().getTime()}.xlsx`);
+        this.showExportMenu = false;
     }
 
     onRerunClick(): void {
@@ -640,5 +745,122 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
         return Array.isArray(message.metadata['used_document_ids'])
             ? message.metadata['used_document_ids']
             : [];
+    }
+
+    // ── New Datagrid Feature Methods ─────────────────────────────────
+
+    get visibleColumns(): string[] {
+        if (!this.activeSource) return [];
+        return this.activeSource.columns.filter(col => this.columnVisibility[col] !== false);
+    }
+
+    get filteredRows(): any[] {
+        if (!this.activeSource) return [];
+        let rows = this.activeSource.rows;
+        if (this.searchQuery) {
+            const q = this.searchQuery.toLowerCase();
+            rows = rows.filter(row => {
+                return Object.values(row).some(val =>
+                    String(val).toLowerCase().includes(q)
+                );
+            });
+        }
+        return rows;
+    }
+
+    get pagedRows(): any[] {
+        const rows = this.filteredRows;
+        const start = (this.currentPage - 1) * this.pageSize;
+        return rows.slice(start, start + this.pageSize);
+    }
+
+    get totalPages(): number {
+        return Math.ceil(this.filteredRows.length / this.pageSize) || 1;
+    }
+
+    get paginationStart(): number {
+        if (this.filteredRows.length === 0) return 0;
+        return (this.currentPage - 1) * this.pageSize + 1;
+    }
+
+    get paginationEnd(): number {
+        return Math.min(this.currentPage * this.pageSize, this.filteredRows.length);
+    }
+
+    toggleColumnMenu(event: Event): void {
+        event.stopPropagation();
+        this.showColumnMenu = !this.showColumnMenu;
+        this.showDensityMenu = false;
+        this.showExportMenu = false;
+    }
+
+    toggleDensityMenu(event: Event): void {
+        event.stopPropagation();
+        this.showDensityMenu = !this.showDensityMenu;
+        this.showColumnMenu = false;
+        this.showExportMenu = false;
+    }
+
+    toggleExportMenu(event: Event): void {
+        event.stopPropagation();
+        this.showExportMenu = !this.showExportMenu;
+        this.showColumnMenu = false;
+        this.showDensityMenu = false;
+    }
+
+    closeDropdowns(): void {
+        this.showColumnMenu = false;
+        this.showDensityMenu = false;
+        this.showExportMenu = false;
+    }
+
+    toggleColumnVisibility(col: string, event: Event): void {
+        event.stopPropagation();
+        this.columnVisibility[col] = this.columnVisibility[col] === false;
+        this.cdr.markForCheck();
+    }
+
+    setDensity(density: 'compact' | 'comfortable' | 'spacious'): void {
+        this.density = density;
+        this.showDensityMenu = false;
+        this.cdr.markForCheck();
+    }
+
+    onSearchChange(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        this.searchQuery = input.value;
+        this.currentPage = 1; // reset to first page on search
+        this.cdr.markForCheck();
+    }
+
+    prevPage(): void {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            this.cdr.markForCheck();
+        }
+    }
+
+    nextPage(): void {
+        if (this.currentPage < this.totalPages) {
+            this.currentPage++;
+            this.cdr.markForCheck();
+        }
+    }
+
+    firstPage(): void {
+        this.currentPage = 1;
+        this.cdr.markForCheck();
+    }
+
+    lastPage(): void {
+        this.currentPage = this.totalPages;
+        this.cdr.markForCheck();
+    }
+
+    onPageSizeChange(event: Event): void {
+        const select = event.target as HTMLSelectElement;
+        this.pageSize = parseInt(select.value, 10);
+        this.currentPage = 1;
+        this.cdr.markForCheck();
     }
 }

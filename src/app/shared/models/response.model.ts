@@ -53,9 +53,25 @@ export interface DocumentTool {
   document_ids?: string[];
 }
 
+/** Status values for a pipeline task item. */
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'removed';
+
+/** A single step in the live pipeline task list. */
+export interface TaskItem {
+  /** Stable identifier for the step (e.g. "retrieve", "synthesize"). */
+  id: string;
+  /** Human-readable description shown in the UI. */
+  label: string;
+  /** Current execution status of this step. */
+  status: TaskStatus;
+}
+
 export interface StreamEvent {
   type: string;
   response?: ResponseRecord;
   delta?: string;
   warnings?: string[];
+  /** Present when type === 'task_update' — the full updated task list. */
+  tasks?: TaskItem[];
 }
+

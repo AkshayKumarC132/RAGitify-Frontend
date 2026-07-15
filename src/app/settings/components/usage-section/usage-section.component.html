@@ -75,7 +75,7 @@
       <div class="kpi-card" *ngIf="activeTab === 'activity'">
         <div class="kpi-icon latency-icon"><i class="fa-solid fa-gauge-high"></i></div>
         <div class="kpi-body">
-          <span class="kpi-label">AVG LATENCY</span>
+          <span class="kpi-label">AVG RETRIEVAL</span>
           <span class="kpi-value">{{ avgLatency }}</span>
         </div>
       </div>
@@ -93,18 +93,25 @@
     <ng-container *ngIf="activeTab === 'cost'">
 
       <!-- Daily Cost Chart -->
-      <div class="chart-card" *ngIf="dailyBars.length > 0">
+      <div class="chart-card" *ngIf="dailyCostBars.length > 0">
         <div class="chart-header">
           <div>
             <h3 class="chart-title">Daily Cost</h3>
             <p class="chart-sub">Cost breakdown by model per day</p>
+          </div>
+          <!-- Legend moved to header -->
+          <div class="chart-legend" *ngIf="uniqueModels.length > 0">
+            <span class="legend-item" *ngFor="let model of uniqueModels">
+              <span class="legend-dot" [style.background]="modelColorMap[model]"></span>
+              {{ model }}
+            </span>
           </div>
         </div>
 
         <div class="bar-chart-wrap">
           <!-- Y-axis -->
           <div class="y-axis">
-            <span *ngFor="let tick of chartYTicks" class="y-tick">
+            <span *ngFor="let tick of costYTicks" class="y-tick">
               ${{ tick.toFixed(tick < 1 ? 3 : 2) }}
             </span>
           </div>
@@ -112,17 +119,18 @@
           <!-- Bars -->
           <div class="bars-area">
             <div class="grid-lines">
-              <div class="grid-line" *ngFor="let tick of chartYTicks"></div>
+              <div class="grid-line" *ngFor="let tick of costYTicks"></div>
             </div>
 
-            <div class="bar-col" *ngFor="let bar of dailyBars"
-                 [title]="bar.label + ' — $' + bar.totalCost.toFixed(4)">
+            <div class="bar-col" *ngFor="let bar of dailyCostBars; let i = index"
+                 (mouseenter)="onBarHover($event, 'cost', i)"
+                 (mousemove)="onBarMove($event)"
+                 (mouseleave)="onBarLeave()">
               <div class="bar-stack">
                 <div class="bar-segment"
                      *ngFor="let seg of bar.segments"
-                     [style.height.%]="segmentHeightPct(seg, bar)"
-                     [style.background]="seg.color"
-                     [title]="seg.model + ': $' + seg.cost.toFixed(4)">
+                     [style.height.%]="seg.heightPct"
+                     [style.background]="seg.color">
                 </div>
               </div>
               <span class="bar-label">{{ bar.label }}</span>
@@ -130,17 +138,19 @@
           </div>
         </div>
 
-        <!-- Legend -->
-        <div class="chart-legend" *ngIf="uniqueModels.length > 0">
-          <span class="legend-item" *ngFor="let model of uniqueModels">
-            <span class="legend-dot" [style.background]="modelColorMap[model]"></span>
-            {{ model }}
-          </span>
+        <!-- Tooltip overlay -->
+        <div class="chart-tooltip" *ngIf="hoveredChartType === 'cost' && hoveredBarIndex !== null"
+             [style.left.px]="tooltipX" [style.top.px]="tooltipY">
+          <div class="tooltip-date">{{ dailyCostBars[hoveredBarIndex].label }}</div>
+          <div class="tooltip-row" *ngFor="let model of uniqueModels">
+            <span class="tooltip-model" [style.color]="modelColorMap[model]">{{ model }}</span>
+            <span class="tooltip-cost">: {{ formatTooltipValue('cost', getModelValueForBar('cost', hoveredBarIndex, model)) }}</span>
+          </div>
         </div>
       </div>
 
       <!-- Empty cost chart state -->
-      <div class="chart-card empty-chart" *ngIf="dailyBars.length === 0">
+      <div class="chart-card empty-chart" *ngIf="dailyCostBars.length === 0">
         <i class="fa-solid fa-chart-column"></i>
         <p>No cost data for this period.</p>
       </div>
@@ -158,34 +168,47 @@
               <tr>
                 <th>MODEL</th>
                 <th class="num-col">REQUESTS</th>
-                <th class="num-col">INPUT TOKENS</th>
-                <th class="num-col">OUTPUT TOKENS</th>
-                <th class="num-col">TOTAL TOKENS</th>
+                <th class="num-col">INPUT</th>
+                <th class="num-col">OUTPUT</th>
+                <th class="num-col">TOTAL</th>
+                <th class="num-col">RETRIEVAL</th>
                 <th class="num-col">COST</th>
-                <th class="bar-col-h"></th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let m of modelStats">
                 <td class="model-cell">
-                  <span class="model-dot" [style.background]="m.color"></span>
-                  <span class="model-name">{{ m.model }}</span>
+                  <div class="model-info-wrap">
+                    <div class="model-name-row">
+                      <span class="model-dot" [style.background]="m.color"></span>
+                      <span class="model-name">{{ m.model }}</span>
+                    </div>
+                    <div class="model-progress">
+                      <div class="model-progress-fill"
+                           [style.width.%]="modelBarPct(m)"
+                           [style.background]="m.color"></div>
+                    </div>
+                  </div>
                 </td>
                 <td class="num-col">{{ formatCompact(m.response_count) }}</td>
                 <td class="num-col">{{ formatTokens(m.prompt_tokens) }}</td>
                 <td class="num-col">{{ formatTokens(m.completion_tokens) }}</td>
                 <td class="num-col">{{ formatTokens(m.total_tokens) }}</td>
+                <td class="num-col">{{ formatLatency(m.avg_latency_ms) }}</td>
                 <td class="num-col cost-val">{{ formatCost(m.estimated_cost_usd) }}</td>
-                <td class="bar-col-h">
-                  <div class="inline-bar-wrap">
-                    <div class="inline-bar"
-                         [style.width.%]="modelBarPct(m)"
-                         [style.background]="m.color">
-                    </div>
-                  </div>
-                </td>
               </tr>
             </tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td class="model-cell"><span class="total-label">TOTAL</span></td>
+                <td class="num-col total-val">{{ formatCompact(summaryTotals.requests) }}</td>
+                <td class="num-col total-val">{{ formatTokens(summaryTotals.input) }}</td>
+                <td class="num-col total-val">{{ formatTokens(summaryTotals.output) }}</td>
+                <td class="num-col total-val">{{ formatTokens(summaryTotals.total) }}</td>
+                <td class="num-col">—</td>
+                <td class="num-col cost-val">{{ formatCost(summaryTotals.cost) }}</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -198,14 +221,48 @@
       <!-- Daily Tokens Chart -->
       <div class="chart-card" *ngIf="dailyTokenBars.length > 0">
         <div class="chart-header">
-          <h3 class="chart-title">Daily Token Usage</h3>
-          <p class="chart-sub">Total tokens consumed per day</p>
+          <div>
+            <h3 class="chart-title">Daily Token Usage</h3>
+            <p class="chart-sub">Total tokens consumed per day</p>
+          </div>
+          <!-- Legend -->
+          <div class="chart-legend" *ngIf="uniqueModels.length > 0">
+            <span class="legend-item" *ngFor="let model of uniqueModels">
+              <span class="legend-dot" [style.background]="modelColorMap[model]"></span>
+              {{ model }}
+            </span>
+          </div>
         </div>
-        <div class="activity-chart">
-          <div class="activity-bar-col" *ngFor="let bar of dailyTokenBars"
-               [title]="bar.label + ' — ' + formatTokens(bar.total) + ' tokens'">
-            <div class="activity-bar tokens-color" [style.height.%]="bar.pct"></div>
-            <span class="bar-label">{{ bar.label }}</span>
+        <div class="bar-chart-wrap">
+          <div class="y-axis">
+            <span *ngFor="let tick of tokenYTicks" class="y-tick">{{ formatCompact(tick) }}</span>
+          </div>
+          <div class="bars-area">
+            <div class="grid-lines">
+              <div class="grid-line" *ngFor="let tick of tokenYTicks"></div>
+            </div>
+            <div class="bar-col" *ngFor="let bar of dailyTokenBars; let i = index"
+                 (mouseenter)="onBarHover($event, 'tokens', i)"
+                 (mousemove)="onBarMove($event)"
+                 (mouseleave)="onBarLeave()">
+              <div class="bar-stack">
+                <div class="bar-segment"
+                     *ngFor="let seg of bar.segments"
+                     [style.height.%]="seg.heightPct"
+                     [style.background]="seg.color">
+                </div>
+              </div>
+              <span class="bar-label">{{ bar.label }}</span>
+            </div>
+          </div>
+        </div>
+        <!-- Tooltip overlay -->
+        <div class="chart-tooltip" *ngIf="hoveredChartType === 'tokens' && hoveredBarIndex !== null"
+             [style.left.px]="tooltipX" [style.top.px]="tooltipY">
+          <div class="tooltip-date">{{ dailyTokenBars[hoveredBarIndex].label }}</div>
+          <div class="tooltip-row" *ngFor="let model of uniqueModels">
+            <span class="tooltip-model" [style.color]="modelColorMap[model]">{{ model }}</span>
+            <span class="tooltip-cost">: {{ formatTooltipValue('tokens', getModelValueForBar('tokens', hoveredBarIndex, model)) }}</span>
           </div>
         </div>
       </div>
@@ -213,14 +270,48 @@
       <!-- Daily Requests Chart -->
       <div class="chart-card" *ngIf="dailyRequestBars.length > 0">
         <div class="chart-header">
-          <h3 class="chart-title">Daily Requests</h3>
-          <p class="chart-sub">API calls per day</p>
+          <div>
+            <h3 class="chart-title">Daily Requests</h3>
+            <p class="chart-sub">API calls per day</p>
+          </div>
+          <!-- Legend -->
+          <div class="chart-legend" *ngIf="uniqueModels.length > 0">
+            <span class="legend-item" *ngFor="let model of uniqueModels">
+              <span class="legend-dot" [style.background]="modelColorMap[model]"></span>
+              {{ model }}
+            </span>
+          </div>
         </div>
-        <div class="activity-chart">
-          <div class="activity-bar-col" *ngFor="let bar of dailyRequestBars"
-               [title]="bar.label + ' — ' + bar.total + ' requests'">
-            <div class="activity-bar requests-color" [style.height.%]="bar.pct"></div>
-            <span class="bar-label">{{ bar.label }}</span>
+        <div class="bar-chart-wrap">
+          <div class="y-axis">
+            <span *ngFor="let tick of requestYTicks" class="y-tick">{{ formatCompact(tick) }}</span>
+          </div>
+          <div class="bars-area">
+            <div class="grid-lines">
+              <div class="grid-line" *ngFor="let tick of requestYTicks"></div>
+            </div>
+            <div class="bar-col" *ngFor="let bar of dailyRequestBars; let i = index"
+                 (mouseenter)="onBarHover($event, 'requests', i)"
+                 (mousemove)="onBarMove($event)"
+                 (mouseleave)="onBarLeave()">
+              <div class="bar-stack">
+                <div class="bar-segment"
+                     *ngFor="let seg of bar.segments"
+                     [style.height.%]="seg.heightPct"
+                     [style.background]="seg.color">
+                </div>
+              </div>
+              <span class="bar-label">{{ bar.label }}</span>
+            </div>
+          </div>
+        </div>
+        <!-- Tooltip overlay -->
+        <div class="chart-tooltip" *ngIf="hoveredChartType === 'requests' && hoveredBarIndex !== null"
+             [style.left.px]="tooltipX" [style.top.px]="tooltipY">
+          <div class="tooltip-date">{{ dailyRequestBars[hoveredBarIndex].label }}</div>
+          <div class="tooltip-row" *ngFor="let model of uniqueModels">
+            <span class="tooltip-model" [style.color]="modelColorMap[model]">{{ model }}</span>
+            <span class="tooltip-cost">: {{ formatTooltipValue('requests', getModelValueForBar('requests', hoveredBarIndex, model)) }}</span>
           </div>
         </div>
       </div>
@@ -261,7 +352,7 @@
     </ng-container>
 
     <!-- Empty state when no data at all -->
-    <div class="empty-state" *ngIf="modelStats.length === 0 && dailyBars.length === 0">
+    <div class="empty-state" *ngIf="modelStats.length === 0 && dailyCostBars.length === 0">
       <i class="fa-solid fa-chart-simple"></i>
       <h4>No data yet</h4>
       <p>Start a conversation to see token and cost analytics here.</p>

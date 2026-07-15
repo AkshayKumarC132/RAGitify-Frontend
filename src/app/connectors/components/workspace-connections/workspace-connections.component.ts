@@ -1,10 +1,11 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DatabaseConnectionService } from '../../../shared/services/database-connection.service';
 import { DatabaseConnection } from '../../../shared/models/database-connection.model';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
+import { ToastService } from '../../../shared/services/toast.service';
 
 export interface ConnectorType {
     id: string;
@@ -112,13 +113,18 @@ export class WorkspaceConnectionsComponent implements OnInit, OnDestroy {
     loading = false;
     testingId: string | null = null;
     deletingId: string | null = null;
+    syncingId: string | null = null;
+    editingConnection: DatabaseConnection | null = null;
+    editConnectionSaving = false;
+    activeDropdownId: string | null = null;
 
     private destroy$ = new Subject<void>();
 
     constructor(
         private dbConnectionService: DatabaseConnectionService, 
         private router: Router,
-        private confirmDialogService: ConfirmDialogService
+        private confirmDialogService: ConfirmDialogService,
+        private toastService: ToastService
     ) { }
 
     ngOnInit(): void {
@@ -185,6 +191,47 @@ export class WorkspaceConnectionsComponent implements OnInit, OnDestroy {
         }
     }
 
+    @HostListener('document:click')
+    closeDropdowns(): void {
+        this.activeDropdownId = null;
+    }
+
+    toggleDropdown(connection: DatabaseConnection, event: MouseEvent): void {
+        event.stopPropagation();
+        if (this.activeDropdownId === connection.id) {
+            this.activeDropdownId = null;
+        } else {
+            this.activeDropdownId = connection.id || null;
+        }
+    }
+
+    syncConnection(connection: DatabaseConnection, event: MouseEvent): void {
+        event.stopPropagation();
+        if (!connection.id) return;
+        this.activeDropdownId = null;
+        this.syncingId = connection.id;
+
+        this.dbConnectionService.syncDatabase(connection.id)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (result) => {
+                    this.syncingId = null;
+                    if (result.connection) {
+                        const idx = this.connections.findIndex(c => c.id === result.connection?.id);
+                        if (idx !== -1) {
+                            this.connections[idx] = result.connection;
+                        }
+                        this.applySearch();
+                    }
+                },
+                error: (err) => {
+                    console.error('Failed to sync database', err);
+                    this.toastService.error('Sync Failed', err?.error?.message || 'An error occurred while syncing the database.');
+                    this.syncingId = null;
+                }
+            });
+    }
+
     async deleteConnection(connection: DatabaseConnection, event: MouseEvent): Promise<void> {
         event.stopPropagation();
         if (!connection.id) return;
@@ -211,6 +258,41 @@ export class WorkspaceConnectionsComponent implements OnInit, OnDestroy {
                 this.deletingId = null;
             }
         });
+    }
+
+    openEditModal(connection: DatabaseConnection, event: MouseEvent): void {
+        event.stopPropagation();
+        this.editConnectionSaving = false;
+        this.editingConnection = connection;
+    }
+
+    closeEditModal(): void {
+        this.editConnectionSaving = false;
+        this.editingConnection = null;
+    }
+
+    saveEditedConnection(updates: Partial<DatabaseConnection>): void {
+        if (!this.editingConnection?.id) return;
+
+        this.editConnectionSaving = true;
+        this.dbConnectionService.update(this.editingConnection.id, updates)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (updatedConn) => {
+                    // Update connection in list
+                    const idx = this.connections.findIndex(c => c.id === updatedConn.id);
+                    if (idx !== -1) {
+                        this.connections[idx] = updatedConn;
+                    }
+                    this.applySearch();
+                    this.closeEditModal();
+                },
+                error: (err) => {
+                    console.error('Failed to update connection:', err);
+                    this.toastService.error('Update Failed', err?.error?.message || 'An error occurred while updating the connection.');
+                    this.editConnectionSaving = false;
+                }
+            });
     }
 
     getStatusClass(connection: DatabaseConnection): string {

@@ -131,6 +131,11 @@ export class ResponseService {
               if (eventType === 'response.output_text.delta') {
                 receivedAnyData = true;
                 this.ngZone.run(() => subscriber.next({ type: 'delta', delta: eventPayload.delta || '' }));
+              } else if (eventType === 'response.task_update') {
+                this.ngZone.run(() => subscriber.next({
+                  type: 'task_update',
+                  tasks: eventPayload.tasks || []
+                }));
               } else if (eventType === 'response.completed') {
                 this.ngZone.run(() => {
                   subscriber.next({

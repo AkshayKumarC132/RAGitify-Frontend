@@ -354,74 +354,108 @@
   }
 }
 
-// ── Data Grid Bar (fallback pill) ───────────────────────────────────────
-.data-grid-bar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
+// ── New Data Grid Container (fallback) ───────────────────────────────────────
+.new-data-grid-container {
+  display: flex;
+  flex-direction: column;
   margin-top: 0.75rem;
-  padding: 0.35rem 1rem 0.35rem 0.35rem;
-  background: var(--bg-secondary, #f1f5f9);
   border: none;
-  border-radius: 999px;
+  border-radius: 20px;
+  background: var(--panel-bg, #ffffff);
+  overflow: hidden;
   max-width: 100%;
-  gap: 2.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-.bar-left {
+.new-data-grid-header {
+  display: flex;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 1rem 1rem 1rem 0.25rem;
+  padding: 0.8rem 1rem;
+  gap: 1rem;
+}
+
+.ndg-icon-wrap {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 14px;
-  font-weight: 1000;
-  color: #2862c1;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #7aa5f5;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgb(0 106 193 / 35%);
 
-  .icon-circle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    background-color: #3b82f6;
-    color: white;
-    border-radius: 50%;
-
-    i {
-      font-size: 14px;
-      opacity: 1;
-    }
+  i {
+    font-size: 20px;
   }
 }
 
-.bar-actions {
+.ndg-info {
+  flex: 1;
   display: flex;
-  align-items: center;
-  gap: 0.25rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 0;
 }
 
-.bar-action-btn {
+.ndg-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ndg-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ndg-badge {
+  background: #f7e6e2;
+  color: #5c352d;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+
+.ndg-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.ndg-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.ndg-action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
   background: transparent;
   border: none;
-  color: var(--text-secondary, #64748b);
+  color: var(--text-secondary);
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: none;
 
   &:hover {
     background: rgba(0, 0, 0, 0.05);
     color: var(--text-primary);
   }
-
-  &:active {
-    background: rgba(0, 0, 0, 0.1);
-  }
-
+  
   i {
     font-size: 15px;
   }
@@ -559,6 +593,7 @@
   background: var(--bg-secondary, #f8fafc);
   overflow-x: auto;
   scrollbar-width: none;
+  flex-shrink: 0; // Never let tabs row collapse in a flex-column modal
 
   &::-webkit-scrollbar {
     display: none;
@@ -855,6 +890,7 @@
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
   background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+  flex-shrink: 0;
 }
 
 .modal-title-group {
@@ -959,12 +995,37 @@
   color: var(--text-secondary);
   background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
   border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.07));
+  flex-shrink: 0;
 }
 
 .sql-source-highlight {
   font-weight: 600;
   color: #b45309;
   margin-left: 0.35rem;
+}
+
+// Small "SQL" badge shown on tabs in the SQL modal
+.sql-tab-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #4f46e5;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+// SQL modal tabs — sits directly under modal-header; override border-top to avoid double border,
+// ensure the row never shrinks inside the flex-column modal.
+.sql-modal-tabs {
+  border-top: none;
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.07));
+  flex-shrink: 0;
+  min-height: auto;
 }
 
 .modal-body {
@@ -1071,12 +1132,270 @@
 }
 
 .modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 0.6rem 1.25rem;
   font-size: 12px;
   font-weight: 500;
-  color: #2563eb;
   border-top: 1px solid var(--border-color);
   background: var(--bg-secondary);
+
+  .footer-left {
+    color: var(--text-secondary);
+    .pagination-highlight {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+  }
+
+  .footer-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .rows-per-page {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+
+    .rows-select {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 0.1rem 0.25rem;
+      color: var(--text-primary);
+      font-size: 12px;
+      outline: none;
+    }
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+
+      &:hover:not(:disabled) {
+        background: var(--bg-tertiary);
+        border-color: var(--border-color);
+      }
+      
+      &:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+    }
+
+    .page-info {
+      font-variant-numeric: tabular-nums;
+      margin: 0 0.25rem;
+    }
+  }
+}
+
+// ── Dropdown and Overlay ──
+.dropdown-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+}
+
+.modal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.25rem;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+
+  .toolbar-left, .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+
+  input {
+    border: none;
+    background: transparent;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 12px;
+    width: 140px;
+  }
+}
+
+.dropdown-container {
+  position: relative;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// SQL button gets a subtle indigo tint to distinguish it
+.toolbar-btn-sql {
+  color: #4f46e5;
+
+  &:hover:not(:disabled) {
+    background: rgba(99, 102, 241, 0.08);
+    border-color: rgba(99, 102, 241, 0.25);
+    color: #4338ca;
+  }
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10001;
+  min-width: 180px;
+  padding: 0.5rem 0;
+
+  &.columns-menu {
+    max-height: 250px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .menu-list {
+    overflow-y: auto;
+    max-height: 200px;
+    &::-webkit-scrollbar { width: 4px; }
+    &::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+  }
+
+  .menu-title {
+    padding: 0.25rem 1rem 0.5rem;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0.25rem;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-primary);
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s;
+    user-select: none;
+
+    &:hover {
+      background: var(--bg-secondary);
+    }
+    
+    &.active {
+      background: rgba(59, 130, 246, 0.08);
+      color: #2563eb;
+    }
+
+    .check-icon, .menu-icon {
+      font-size: 12px;
+      width: 14px;
+      text-align: center;
+    }
+    
+    .check-icon {
+      color: #2563eb;
+    }
+  }
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+
+  .source-file-icon {
+    font-size: 12px;
+    color: #217346;
+  }
+}
+
+// ── Table Density ──
+.data-grid-table {
+  &.density-compact td {
+    padding: 0.25rem 0.5rem;
+  }
+  &.density-comfortable td {
+    padding: 0.5rem 0.75rem;
+  }
+  &.density-spacious td {
+    padding: 0.85rem 1rem;
+  }
 }
 
 // ── SQL Modal Body ────────────────────────────────────────────────────

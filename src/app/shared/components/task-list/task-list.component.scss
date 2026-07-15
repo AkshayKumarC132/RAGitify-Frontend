@@ -1,0 +1,206 @@
+// ══════════════════════════════════════════════════════════════════
+//  Task List Tree View — Clean timeline-style UI
+// ══════════════════════════════════════════════════════════════════
+
+// ── Shared Colors (Dark / Light) ──────────────────────────────────
+:host {
+  // Common theme variables
+  --tl-brand:          #3b82f6;  // Purple from screenshot
+  --tl-success:        #10b981;  // Green from screenshot
+  --tl-text-primary:   rgba(255, 255, 255, 0.9);
+  --tl-text-secondary: rgba(255, 255, 255, 0.6);
+  --tl-text-muted:     rgba(255, 255, 255, 0.4);
+  --tl-line-color:     rgba(255, 255, 255, 0.15);
+  --tl-shimmer-base:   var(--tl-text-primary);
+  --tl-shimmer-highlight: var(--tl-brand);
+}
+
+:host-context(body.theme-light) {
+  --tl-brand:          #3b82f6;
+  --tl-success:        #10b981;
+  --tl-text-primary:   #1f2937;
+  --tl-text-secondary: #4b5563;
+  --tl-text-muted:     #9ca3af;
+  --tl-line-color:     #e5e7eb;
+  --tl-shimmer-base:   var(--tl-text-primary);
+  --tl-shimmer-highlight: var(--tl-brand);
+}
+
+// ── Layout & Typography ───────────────────────────────────────────
+.task-tree-container {
+  display: flex;
+  flex-direction: column;
+  margin: 6px 0 16px 2px;
+  font-family: inherit;
+}
+
+// ── Interactive Header ────────────────────────────────────────────
+.task-tree-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+  transition: opacity 0.2s;
+  color: var(--tl-text-secondary);
+  
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.header-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--tl-text-muted);
+  
+  &.expanded {
+    transform: rotate(90deg);
+  }
+}
+
+.header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .icon-pending { color: var(--tl-text-muted); }
+  .icon-spinner { color: var(--tl-brand); animation: tl-pulse 1.5s infinite; }
+  .icon-check   { color: var(--tl-success); }
+}
+
+.header-label {
+  font-size: 0.875rem; // 14px
+  font-weight: 500;
+  color: var(--tl-text-primary);
+
+  &.shimmer-active {
+    background: linear-gradient(
+      90deg,
+      var(--tl-shimmer-base) 0%,
+      var(--tl-shimmer-base) 40%,
+      var(--tl-shimmer-highlight) 50%,
+      var(--tl-shimmer-base) 60%,
+      var(--tl-shimmer-base) 100%
+    );
+    background-size: 200% auto;
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: text-shimmer 2.5s linear infinite;
+  }
+}
+
+.header-progress {
+  font-size: 0.8125rem; // 13px
+  color: var(--tl-text-muted);
+  margin-left: 2px;
+}
+
+// ── Tree Body ─────────────────────────────────────────────────────
+.task-tree-body {
+  margin-top: 8px;
+  padding-left: 20px; // Indent matching the chevron width
+}
+
+
+.task-tree-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// ── Individual Node ───────────────────────────────────────────────
+.task-node {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  min-height: 28px;
+  
+  // States
+  &.task-pending .task-label { color: var(--tl-text-muted); }
+  &.task-in-progress .task-label {
+    font-weight: 500;
+    background: linear-gradient(
+      90deg,
+      var(--tl-shimmer-base) 0%,
+      var(--tl-shimmer-base) 40%,
+      var(--tl-shimmer-highlight) 50%,
+      var(--tl-shimmer-base) 60%,
+      var(--tl-shimmer-base) 100%
+    );
+    background-size: 200% auto;
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: text-shimmer 2.5s linear infinite;
+  }
+  &.task-completed .task-label { color: var(--tl-text-secondary); }
+}
+
+// ── Node Icon & Connecting Line ───────────────────────────────────
+.node-icon-wrapper {
+  position: relative;
+  width: 16px;
+  display: flex;
+  justify-content: center;
+  padding-top: 6px; // Align icon vertically with text
+  flex-shrink: 0;
+  
+  // The connecting vertical line
+  &.has-line::after {
+    content: '';
+    position: absolute;
+    top: 22px; // Start below the icon
+    bottom: -6px; // Extend to the next item
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background-color: var(--tl-line-color);
+    border-radius: 1px;
+  }
+}
+
+// ── Icon States ───────────────────────────────────────────────────
+.node-icon-wrapper {
+  .icon-pending { color: var(--tl-text-muted); }
+  .icon-spinner { color: var(--tl-brand); animation: tl-pulse 1.5s infinite; }
+  .icon-check   { color: var(--tl-success); }
+}
+
+@keyframes tl-pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes text-shimmer {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+// ── Node Content (Label + Duration) ───────────────────────────────
+.node-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.task-label {
+  font-size: 0.8125rem; // 13px
+  transition: color 0.2s ease;
+}
+
+.task-duration {
+  font-size: 0.75rem; // 12px
+  color: var(--tl-text-muted);
+  font-variant-numeric: tabular-nums;
+}

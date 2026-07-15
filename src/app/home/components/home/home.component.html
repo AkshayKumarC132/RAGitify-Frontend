@@ -90,12 +90,12 @@
 
         <app-chat-container *ngIf="!isConversationEmpty" [messages]="messages" [currentRun]="currentRun"
           [conversationId]="currentThread?.id" [enableDataGrid]="currentThread?.enable_data_grid || false"
-          [loading]="loading" [typingStatuses]="typingStatuses">
+          [loading]="loading" [typingStatuses]="typingStatuses" [tasks]="currentTasks">
         </app-chat-container>
       </div>
 
       <div class="input-area" [class.centered]="isConversationEmpty">
-        <app-chat-input [mode]="mode" [loading]="loading || attachmentsInProgress" [currentRun]="currentRun"
+        <app-chat-input [class.home-chat-mode]="isConversationEmpty" [mode]="mode" [loading]="loading || attachmentsInProgress" [currentRun]="currentRun"
           [allowCancelRun]="false" [isTemporaryChat]="isTemporaryChat" [libraries]="libraries"
           [selectedLibraryId]="selectedLibraryId" [documents]="allDocuments" [selectedDocumentIds]="selectedDocumentIds"
           [databaseConnections]="databaseConnections" [databaseConnectionsLoading]="databaseConnectionsLoading"

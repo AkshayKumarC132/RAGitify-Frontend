@@ -5,6 +5,7 @@ import { DatabaseConnection, DatabaseSyncLog } from '../../../shared/models/data
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
+import { ToastService } from '../../../shared/services/toast.service';
 
 @Component({
     selector: 'app-connection-details-page',
@@ -18,6 +19,8 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
     loading = false;
     error: string | null = null;
     syncing = false;
+    editingConnection: DatabaseConnection | null = null;
+    editConnectionSaving = false;
     syncHistory: DatabaseSyncLog[] = [];
     groupedSyncHistory: { dateLabel: string, logs: DatabaseSyncLog[] }[] = [];
 
@@ -27,7 +30,8 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
         private dbConnectionService: DatabaseConnectionService,
         private route: ActivatedRoute,
         private router: Router,
-        private confirmService: ConfirmDialogService
+        private confirmService: ConfirmDialogService,
+        private toastService: ToastService
     ) { }
 
     ngOnInit(): void {
@@ -143,6 +147,35 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
         }
     }
 
+    openEditModal(): void {
+        this.editConnectionSaving = false;
+        this.editingConnection = this.connection;
+    }
+
+    closeEditModal(): void {
+        this.editConnectionSaving = false;
+        this.editingConnection = null;
+    }
+
+    saveEditedConnection(updates: Partial<DatabaseConnection>): void {
+        if (!this.connection?.id) return;
+
+        this.editConnectionSaving = true;
+        this.dbConnectionService.update(this.connection.id, updates)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (updatedConn) => {
+                    this.connection = updatedConn;
+                    this.closeEditModal();
+                },
+                error: (err) => {
+                    console.error('Failed to update connection:', err);
+                    this.toastService.error('Update Failed', err?.error?.message || 'An error occurred while updating the connection.');
+                    this.editConnectionSaving = false;
+                }
+            });
+    }
+
     formatDateTime(dateStr?: string): string {
         if (!dateStr) return '-';
         return new Date(dateStr).toLocaleString();
@@ -211,5 +244,54 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
         if (s === 'success') return '#10b981';
         if (s === 'failed') return '#ef4444';
         return '#64748b';
+    }
+
+    get lastSyncTime(): string {
+        if (this.syncHistory && this.syncHistory.length > 0) {
+            return this.formatDateTime(this.syncHistory[0].started_at);
+        }
+        return this.connection?.schema_synced_at ? this.formatDateTime(this.connection.schema_synced_at) : '-';
+    }
+
+    get avgSyncDuration(): string {
+        if (!this.syncHistory || this.syncHistory.length === 0) return '-';
+        const total = this.syncHistory.reduce((sum, log) => sum + (log.duration_ms || 0), 0);
+        const avg = total / this.syncHistory.length;
+        return this.formatDuration(avg);
+    }
+
+    get syncFrequency(): string {
+        const metadata = this.connection?.metadata || {};
+        const frequency = metadata['sync_frequency'] ?? metadata['syncFrequency'];
+        if (typeof frequency === 'string' && frequency.trim()) {
+            const frequencyNumber = Number(frequency);
+            if (Number.isFinite(frequencyNumber)) {
+                return this.formatSyncFrequencyHours(frequencyNumber);
+            }
+            return frequency.trim();
+        }
+        if (typeof frequency === 'number' && Number.isFinite(frequency)) {
+            return this.formatSyncFrequencyHours(frequency);
+        }
+
+        const frequencyHours = metadata['sync_frequency_hours'] ?? metadata['syncFrequencyHours'];
+        if (typeof frequencyHours === 'string' && frequencyHours.trim()) {
+            const frequencyHoursNumber = Number(frequencyHours);
+            if (Number.isFinite(frequencyHoursNumber)) {
+                return this.formatSyncFrequencyHours(frequencyHoursNumber);
+            }
+        }
+        if (typeof frequencyHours === 'number' && Number.isFinite(frequencyHours)) {
+            return this.formatSyncFrequencyHours(frequencyHours);
+        }
+
+        return 'Manual';
+    }
+
+    private formatSyncFrequencyHours(hours: number): string {
+        if (hours <= 0) return 'Manual';
+        if (hours === 1) return 'Hourly';
+        if (hours < 1) return `Every ${Math.round(hours * 60)} minutes`;
+        return `Every ${hours} hours`;
     }
 }

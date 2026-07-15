@@ -8,7 +8,7 @@ import { ChatInputComponent, LibrarySelectionEvent } from '../chat-input/chat-in
 import { Assistant } from '../../../shared/models/assistant.model';
 import { Conversation, ConversationCreateRequest, ConversationMessage } from '../../../shared/models/conversation.model';
 import { Document } from '../../../shared/models/document.model';
-import { ResponseCreateRequest, ResponseRecord, StreamEvent } from '../../../shared/models/response.model';
+import { ResponseCreateRequest, ResponseRecord, StreamEvent, TaskItem } from '../../../shared/models/response.model';
 import { SelectedLLMProvider, User } from '../../../shared/models/user.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { AssistantService } from '../../../shared/services/assistant.service';
@@ -58,6 +58,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   databaseConnections: DatabaseConnection[] = [];
   selectedDatabaseConnectionIds: string[] = [];
   prompts: Assistant[] = [];
+  currentTasks: TaskItem[] = [];
   selectedPromptId: string | null = null;
   attachmentsInProgress = false;
   attachmentMessage = '';
@@ -449,7 +450,14 @@ export class HomeComponent implements OnInit, OnDestroy {
               ...this.messages.slice(0, lastIdx),
               { ...assistantMessage }
             ];
+            // Hide task list once text starts streaming
+            if (this.currentTasks.length > 0) {
+              this.currentTasks = [];
+            }
+          } else if (event.type === 'task_update') {
+            this.currentTasks = (event.tasks || []).filter(t => t.status !== 'removed');
           } else if (event.type === 'completed') {
+            this.currentTasks = [];
             this.applyWarnings(event.warnings);
             const outMetadata = event.response?.output?.[0]?.metadata;
             if (outMetadata) {
@@ -458,6 +466,7 @@ export class HomeComponent implements OnInit, OnDestroy {
             assistantMessage.metadata = { ...(assistantMessage.metadata || {}), ...(outMetadata || {}) };
             this.finalizeResponse(event.response!, conversation.id);
           } else if (event.type === 'failed') {
+            this.currentTasks = [];
             this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
             this.messages = this.messages.filter(m => m.id !== optimisticMessage.id);
             this.currentRun = null;
@@ -468,6 +477,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         error: (error) => {
           this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
           this.messages = this.messages.filter(m => m.id !== optimisticMessage.id);
+          this.currentTasks = [];
           this.currentRun = null;
           this.loading = false;
           if (error?.payload?.code === 'WEB_SEARCH_UNSUPPORTED_MODEL') {
@@ -484,6 +494,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         },
         complete: () => {
           this.loading = false;
+          this.currentTasks = [];
         }
       });
     } catch (error) {
@@ -929,6 +940,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       }
 
       this.loading = true;
+      // Restore task list state from the service (events fired before reconnect are not replayed)
+      this.currentTasks = [...(streamState.currentTasks || [])];
       this.currentRun = { id: 'pending', conversation: threadId, status: 'in_progress', model: this.selectedModel || this.responseService.getDefaultModel(), instructions: '', input_messages: [], output: [], metadata: {}, created_at: new Date().toISOString(), completed_at: null };
 
       this.stopStream();
@@ -941,7 +954,14 @@ export class HomeComponent implements OnInit, OnDestroy {
               ...this.messages.slice(0, lastIdx),
               { ...streamState.assistantMessage }
             ];
+            // Hide task list once text starts streaming
+            if (this.currentTasks.length > 0) {
+              this.currentTasks = [];
+            }
+          } else if (event.type === 'task_update') {
+            this.currentTasks = (event.tasks || []).filter(t => t.status !== 'removed');
           } else if (event.type === 'completed') {
+            this.currentTasks = [];
             this.applyWarnings(event.warnings);
             const outMetadata = event.response?.output?.[0]?.metadata;
             if (outMetadata) {
@@ -949,6 +969,7 @@ export class HomeComponent implements OnInit, OnDestroy {
             }
             this.finalizeResponse(event.response!, threadId);
           } else if (event.type === 'failed') {
+            this.currentTasks = [];
             this.messages = this.messages.filter(m => m.id !== streamState.assistantMessage.id);
             this.messages = this.messages.filter(m => m.id !== streamState.userMessage.id);
             this.currentRun = null;
@@ -959,6 +980,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         error: (error) => {
           this.messages = this.messages.filter(m => m.id !== streamState.assistantMessage.id);
           this.messages = this.messages.filter(m => m.id !== streamState.userMessage.id);
+          this.currentTasks = [];
           this.currentRun = null;
           this.loading = false;
           if (error?.payload?.code === 'WEB_SEARCH_UNSUPPORTED_MODEL') {
@@ -975,6 +997,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         },
         complete: () => {
           this.loading = false;
+          this.currentTasks = [];
         }
       });
     } else if (streamState.runStatus === 'completed') {

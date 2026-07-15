@@ -2,7 +2,7 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Subject, Subscription } from 'rxjs';
 import { ConversationMessage } from '../models/conversation.model';
-import { StreamEvent, ResponseCreateRequest } from '../models/response.model';
+import { StreamEvent, ResponseCreateRequest, TaskItem } from '../models/response.model';
 import { ResponseService } from './response.service';
 import { ToastService } from './toast.service';
 
@@ -16,6 +16,7 @@ export interface ActiveStreamState {
   runStatus: string;
   warnings: string[];
   error: string | null;
+  currentTasks: TaskItem[];
 }
 
 @Injectable({
@@ -56,6 +57,7 @@ export class ChatStreamService implements OnDestroy {
       runStatus: 'in_progress',
       warnings: [],
       error: null,
+      currentTasks: [],
       subscription: new Subscription() // placeholder
     };
 
@@ -66,6 +68,11 @@ export class ChatStreamService implements OnDestroy {
       next: (event: StreamEvent) => {
         if (event.type === 'delta' && event.delta) {
           state.assistantMessage.content += event.delta;
+          if (state.currentTasks.length > 0) {
+            state.currentTasks = [];
+          }
+        } else if (event.type === 'task_update') {
+          state.currentTasks = (event.tasks || []).filter(t => t.status !== 'removed');
         } else if (event.type === 'completed') {
           state.runStatus = 'completed';
           state.warnings = event.warnings || [];

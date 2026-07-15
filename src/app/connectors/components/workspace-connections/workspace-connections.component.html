@@ -11,7 +11,7 @@
                     pull from live data.</p>
             </div>
         </div>
-        <button type="button" class="new-connection-btn" (click)="openNewConnection()">
+        <button type="button" class="new-connection-btn" (click)="openNewConnection()" disabled>
             <i class="fa-solid fa-plus"></i>
             <span>New Connection</span>
         </button>
@@ -98,12 +98,23 @@
                             <div class="conn-host">{{ conn.host }}:{{ conn.port }}</div>
                         </div>
                     </div>
-                    <div class="card-actions" (click)="$event.stopPropagation()">
-                        <button type="button" class="conn-action-btn danger" (click)="deleteConnection(conn, $event)"
-                            [disabled]="deletingId === conn.id" title="Delete connection">
-                            <i class="fa-solid"
-                                [ngClass]="deletingId === conn.id ? 'fa-spinner fa-spin' : 'fa-trash-can'"></i>
+                    <div class="card-actions dropdown-container" (click)="$event.stopPropagation()">
+                        <button type="button" class="conn-action-btn dots" (click)="toggleDropdown(conn, $event)" title="Actions" [disabled]="syncingId === conn.id || deletingId === conn.id">
+                            <i class="fa-solid fa-ellipsis-vertical" *ngIf="syncingId !== conn.id && deletingId !== conn.id"></i>
+                            <i class="fa-solid fa-spinner fa-spin" *ngIf="syncingId === conn.id || deletingId === conn.id"></i>
                         </button>
+
+                        <div class="dropdown-menu" *ngIf="activeDropdownId === conn.id">
+                            <button type="button" class="dropdown-item" (click)="syncConnection(conn, $event)">
+                                <i class="fa-solid fa-rotate"></i> Sync connection
+                            </button>
+                            <button type="button" class="dropdown-item" (click)="openEditModal(conn, $event)">
+                                <i class="fa-solid fa-pen"></i> Edit connection
+                            </button>
+                            <button type="button" class="dropdown-item danger" (click)="deleteConnection(conn, $event)">
+                                <i class="fa-solid fa-trash-can"></i> Delete connection
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -147,11 +158,14 @@
                                 <div class="conn-type-icon" [style.background]="getDatabaseBgColor(conn)">
                                     <img [src]="getDatabaseIcon(conn)" alt="Database" style="width: 18px; height: 18px; object-fit: contain;" />
                                 </div>
-                                <span class="conn-name">{{ conn.name || 'Unnamed' }}</span>
+                                <div style="display: flex; flex-direction: column;">
+                                    <span class="conn-name">{{ conn.name || 'Unnamed' }}</span>
+                                    <span style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">{{ conn.connection_type?.name || 'Unknown' }}</span>
+                                </div>
                             </div>
                         </td>
                         <td class="col-host">
-                            <span class="conn-host">{{ conn.host }}:{{ conn.port }}</span>
+                            <span class="conn-host" [title]="conn.host + ':' + conn.port">{{ (conn.host + ':' + conn.port) | slice:0:15 }}{{ (conn.host + ':' + conn.port).length > 15 ? '...' : '' }}</span>
                         </td>
                         <td class="col-db">
                             <span class="conn-db">{{ conn.database_name }}</span>
@@ -168,6 +182,16 @@
                         <td class="col-created">{{ formatDate(conn.created_at) }}</td>
                         <td class="col-actions">
                             <div class="conn-actions">
+                                <button type="button" class="conn-action-btn sync"
+                                    (click)="syncConnection(conn, $event)" [disabled]="syncingId === conn.id"
+                                    title="Sync connection">
+                                    <i class="fa-solid"
+                                        [ngClass]="syncingId === conn.id ? 'fa-spinner fa-spin' : 'fa-rotate'"></i>
+                                </button>
+                                <button type="button" class="conn-action-btn edit"
+                                    (click)="openEditModal(conn, $event)" title="Edit connection">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
                                 <button type="button" class="conn-action-btn danger"
                                     (click)="deleteConnection(conn, $event)" [disabled]="deletingId === conn.id"
                                     title="Delete connection">
@@ -181,4 +205,13 @@
             </table>
         </div>
     </section>
+
+    <!-- Edit Modal -->
+    <app-edit-connection-modal
+        *ngIf="editingConnection"
+        [connection]="editingConnection"
+        [loading]="editConnectionSaving"
+        (close)="closeEditModal()"
+        (save)="saveEditedConnection($event)">
+    </app-edit-connection-modal>
 </div>

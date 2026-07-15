@@ -37,7 +37,7 @@
             <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last" [conversationId]="conversation?.id" [enableDataGrid]="conversation?.enable_data_grid || false" [showSources]="false" [isStreaming]="last && isResponseInProgress && message.role === 'assistant'">
             </app-message-bubble>
 
-            <app-typing-indicator *ngIf="showTypingIndicator" [cycle]="true"></app-typing-indicator>
+            <app-task-list [tasks]="currentTasks" [visible]="showTaskList"></app-task-list>
         </div>
 
         <!-- Input Area -->

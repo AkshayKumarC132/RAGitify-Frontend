@@ -26,6 +26,9 @@
                     </div>
                 </div>
                 <div class="document-hero-actions">
+                    <button type="button" class="details-secondary-btn" (click)="openEditModal()" title="Edit connection">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
                     <button type="button" class="details-secondary-btn" (click)="syncDatabase()" [disabled]="syncing"
                         title="Sync database metadata">
                         <i class="fa-solid" [ngClass]="syncing ? 'fa-spinner fa-spin' : 'fa-rotate'"></i>
@@ -42,7 +45,7 @@
 
             <!-- Highlights (Quick stats) -->
             <section class="details-highlights">
-                <article class="highlight-card">
+                <article class="highlight-card" [title]="connection.host">
                     <span class="highlight-label">Host</span>
                     <strong>{{ connection.host }}</strong>
                 </article>
@@ -73,48 +76,21 @@
 
             <!-- Main info grid -->
             <section class="details-main-grid">
-                <!-- Configuration Card -->
-                <article class="details-card details-card--summary">
-                    <div class="details-card-header">
-                        <h3><i class="fa-solid fa-gear"></i><span>Configuration</span></h3>
-                    </div>
-                    <div class="details-definition-list" style="margin-top: 1rem;">
-                        <div class="details-definition-row">
-                            <span>Username</span>
-                            <strong>{{ connection.username || '-' }}</strong>
-                        </div>
-                        <div class="details-definition-row">
-                            <span>Connection ID</span>
-                            <strong>{{ connection.id }}</strong>
-                        </div>
-                        <div class="details-definition-row">
-                            <span>Schema Synced At</span>
-                            <strong>{{ formatDateTime(connection.schema_synced_at) }}</strong>
-                        </div>
-                        <div class="details-definition-row">
-                            <span>Last Tested At</span>
-                            <strong>{{ formatDateTime(connection.last_tested_at) }}</strong>
-                        </div>
-                    </div>
-                </article>
-
-                <!-- Status Card -->
-                <article class="details-card details-card--storage">
-                    <div class="details-card-header">
-                        <h3><i class="fa-solid fa-heart-pulse"></i><span>Health Status</span></h3>
-                    </div>
-                    <p class="details-summary-copy" style="margin-top: 1rem;">
-                        {{ connection.status_message || (connection.status === 'connected' ? 'Connection is active and
-                        healthy.' : 'No status details available.') }}
-                    </p>
-                    <div class="details-definition-list" style="margin-top: 1rem;"
-                        *ngIf="connection.metadata && connection.metadata['tables']">
-                        <div class="details-definition-row">
-                            <span>Tables Synced</span>
-                            <strong>{{ connection.metadata['tables']?.length || 0 }} tables indexed</strong>
-                        </div>
-                    </div>
-                </article>
+                <!-- Status Row (Replacing Configuration and Health Status) -->
+                <div class="sync-stats-grid">
+                    <article class="details-card sync-stat-card">
+                        <span class="sync-stat-label">Last Sync Time</span>
+                        <strong class="sync-stat-value">{{ lastSyncTime }}</strong>
+                    </article>
+                    <article class="details-card sync-stat-card">
+                        <span class="sync-stat-label">Avg Sync Duration</span>
+                        <strong class="sync-stat-value">{{ avgSyncDuration }}</strong>
+                    </article>
+                    <article class="details-card sync-stat-card">
+                        <span class="sync-stat-label">Sync Frequency</span>
+                        <strong class="sync-stat-value">{{ syncFrequency }}</strong>
+                    </article>
+                </div>
 
                 <!-- Sync History Card -->
                 <article class="details-card details-card--full-width sync-card" style="grid-column: 1 / -1;">
@@ -185,4 +161,13 @@
             <span>Loading connection details...</span>
         </div>
     </ng-template>
+
+    <!-- Edit Modal -->
+    <app-edit-connection-modal
+        *ngIf="editingConnection"
+        [connection]="editingConnection"
+        [loading]="editConnectionSaving"
+        (close)="closeEditModal()"
+        (save)="saveEditedConnection($event)">
+    </app-edit-connection-modal>
 </div>

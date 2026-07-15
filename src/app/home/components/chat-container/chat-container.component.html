@@ -4,7 +4,9 @@
       [message]="message" [isLast]="last" [isStreaming]="last && isTyping && message.role === 'assistant'" [conversationId]="conversationId" [enableDataGrid]="enableDataGrid">
     </app-message-bubble>
 
-    <app-typing-indicator *ngIf="showTypingIndicator" [cycle]="true" [statuses]="typingStatuses"></app-typing-indicator>
+
+    <!-- Live pipeline task list — shows during multi-step queries -->
+    <app-task-list [tasks]="tasks" [visible]="showTaskList"></app-task-list>
   </div>
 
   <button type="button" class="jump-to-bottom-btn" *ngIf="showJumpToBottom" (click)="jumpToBottom()"

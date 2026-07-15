@@ -1,0 +1,68 @@
+<div class="task-tree-container" *ngIf="visible">
+  <!-- Interactive Header -->
+  <div class="task-tree-header" (click)="toggleExpand()" role="button" [attr.aria-expanded]="isExpanded" tabindex="0">
+    <!-- Chevron -->
+    <div class="header-chevron" [class.expanded]="isExpanded">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="4,2 8,6 4,10" />
+      </svg>
+    </div>
+    
+    <!-- Active task icon -->
+    <div class="header-icon">
+      <svg *ngIf="activeTask?.status === 'pending'" class="icon-pending" width="12" height="12" viewBox="0 0 12 12">
+        <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+      </svg>
+      <svg *ngIf="!activeTask || activeTask.status === 'in_progress'" class="icon-spinner" width="12" height="12" viewBox="0 0 12 12">
+        <circle cx="6" cy="6" r="5" fill="currentColor"/>
+      </svg>
+      <svg *ngIf="activeTask?.status === 'completed'" class="icon-check" width="12" height="12" viewBox="0 0 16 16">
+        <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        <polyline points="4.5,8 7,10.5 11.5,5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+    
+    <!-- Active task label -->
+    <span class="header-label" [class.shimmer-active]="!activeTask || activeTask.status === 'in_progress'">{{ activeTask?.label || 'Searching...' }}</span>
+    <span class="header-progress" *ngIf="progressText">· {{ progressText }}</span>
+  </div>
+
+  <!-- Expanded Tree Body -->
+  <div class="task-tree-body" *ngIf="isExpanded">
+    <ul class="task-tree-list" role="list">
+      <li
+        *ngFor="let task of visibleTasks; trackBy: trackById; let i = index; let last = last"
+        class="task-node"
+        [class.task-pending]="task.status === 'pending'"
+        [class.task-in-progress]="task.status === 'in_progress'"
+        [class.task-completed]="task.status === 'completed'"
+        role="listitem"
+        [attr.aria-label]="task.label + ' — ' + task.status"
+      >
+        <!-- Icon (with connecting tree line below if not last) -->
+        <div class="node-icon-wrapper" [class.has-line]="!last">
+          <!-- Pending: hollow ring / small dot -->
+          <svg *ngIf="task.status === 'pending'" class="icon-pending" width="12" height="12" viewBox="0 0 12 12">
+             <circle cx="6" cy="6" r="3" fill="currentColor" opacity="0.4"/>
+          </svg>
+
+          <!-- In-progress: solid brand dot -->
+          <svg *ngIf="task.status === 'in_progress'" class="icon-spinner" width="12" height="12" viewBox="0 0 12 12">
+            <circle cx="6" cy="6" r="4.5" fill="currentColor"/>
+          </svg>
+
+          <!-- Completed: green checkmark -->
+          <svg *ngIf="task.status === 'completed'" class="icon-check" width="14" height="14" viewBox="0 0 16 16">
+            <polyline points="3.5,8.5 6.5,11.5 12.5,4.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+
+        <!-- Label & Duration -->
+        <div class="node-content">
+          <span class="task-label">{{ task.label }}</span>
+          <span class="task-duration" *ngIf="getDuration(task.id)">{{ getDuration(task.id) | number:'1.1-1' }}s</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>

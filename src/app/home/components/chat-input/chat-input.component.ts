@@ -73,6 +73,16 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     return Math.min(100, (this.tokenUsage.total_tokens / this.tokenLimit) * 100);
   }
 
+  get promptTokenPercent(): number {
+    if (!this.tokenUsage || this.tokenLimit <= 0) return 0;
+    return (this.tokenUsage.prompt_tokens / this.tokenLimit) * 100;
+  }
+
+  get completionTokenPercent(): number {
+    if (!this.tokenUsage || this.tokenLimit <= 0) return 0;
+    return (this.tokenUsage.completion_tokens / this.tokenLimit) * 100;
+  }
+
   /** Arc color that transitions green → amber → red */
   get tokenFillColor(): string {
     const pct = this.tokenFillPercent;
@@ -336,6 +346,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
       this.activePanel = panel;
 
       if (panel === 'library') {
+        this.expandedLibraries.clear();
         this.attachmentMenuState = 'main';
         this.pendingLibraryId = this.selectedLibraryId;
         this.pendingDocumentIds = new Set((this.selectedDocumentIds || []).map(id => String(id)));

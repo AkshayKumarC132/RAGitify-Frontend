@@ -1,0 +1,78 @@
+<div class="modal-backdrop">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h2 class="modal-title">
+                <i class="fa-solid fa-pen" style="margin-right: 8px;"></i>
+                Edit Connection
+            </h2>
+            <button type="button" class="close-btn" (click)="onClose()" [disabled]="loading">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Connection Name</label>
+                <div class="input-wrapper">
+                    <input type="text" [(ngModel)]="editData.name" placeholder="Postgres Production" [disabled]="loading" />
+                </div>
+            </div>
+
+            <div class="form-row-2">
+                <div class="form-group flex-2">
+                    <label>Host</label>
+                    <div class="input-wrapper with-icon">
+                        <i class="fa-solid fa-server input-icon"></i>
+                        <input type="text" [(ngModel)]="editData.host" placeholder="db.example.com" [disabled]="loading" />
+                    </div>
+                </div>
+                <div class="form-group flex-1">
+                    <label>Port</label>
+                    <div class="input-wrapper">
+                        <input type="number" [(ngModel)]="editData.port" placeholder="5432" [disabled]="loading" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row-2">
+                <div class="form-group flex-1">
+                    <label>Database</label>
+                    <div class="input-wrapper">
+                        <input type="text" [(ngModel)]="editData.database_name" placeholder="analytics_db" [disabled]="loading" />
+                    </div>
+                </div>
+                <div class="form-group flex-1">
+                    <label>Schema <i class="fa-solid fa-circle-info info-icon" title="Optional. Defaults to public in postgres."></i></label>
+                    <div class="input-wrapper">
+                        <input type="text" [(ngModel)]="editData.schema_name" placeholder="public" [disabled]="loading" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Username</label>
+                <div class="input-wrapper">
+                    <input type="text" [(ngModel)]="editData.username" [disabled]="loading" autocomplete="off" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-wrapper password-wrapper">
+                    <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="editData.password" placeholder="••••••••" [disabled]="loading" autocomplete="new-password" />
+                    <button type="button" class="toggle-password" (click)="togglePasswordVisibility()" [disabled]="loading">
+                        <i class="fa-solid" [class]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="onClose()" [disabled]="loading">Cancel</button>
+            <button type="button" class="btn-primary" (click)="onSave()" [disabled]="!isValid() || loading">
+                <i class="fa-solid" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                {{ loading ? 'Saving...' : 'Save Changes' }}
+            </button>
+        </div>
+    </div>
+</div>

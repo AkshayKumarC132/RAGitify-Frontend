@@ -324,17 +324,17 @@
             <div class="token-tooltip-title">Token usage</div>
             <div class="token-tooltip-row">
               <span class="token-label">Input</span>
-              <span class="token-value input-val">{{ tokenUsage!.prompt_tokens | number }}</span>
+              <span class="token-value input-val">{{ promptTokenPercent | number:'1.1-1' }}%</span>
             </div>
             <div class="token-tooltip-row">
               <span class="token-label">Output</span>
-              <span class="token-value output-val">{{ tokenUsage!.completion_tokens | number }}</span>
+              <span class="token-value output-val">{{ completionTokenPercent | number:'1.1-1' }}%</span>
             </div>
             <div class="token-tooltip-divider"></div>
             <div class="token-tooltip-row total-row">
               <span class="token-label total-label">Total</span>
               <span class="token-value total-val">
-                {{ tokenUsage!.total_tokens | number }}&thinsp;/&thinsp;{{ tokenLimit | number }}
+                {{ tokenFillPercent | number:'1.1-1' }}%
               </span>
             </div>
           </div>

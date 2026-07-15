@@ -23,9 +23,10 @@ import { DocPreviewDirective } from './directives/doc-preview.directive';
 import { TypingLabelComponent } from './components/typing-label/typing-label.component';
 import { TypingIndicatorComponent } from './components/typing-indicator/typing-indicator.component';
 import { MessageBubbleComponent } from './components/message-bubble/message-bubble.component';
+import { TaskListComponent } from './components/task-list/task-list.component';
 
 @NgModule({
-  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe, ToastComponent, SkeletonComponent, TopProgressComponent, CommandPaletteComponent, DocPreviewDirective],
+  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe, ToastComponent, SkeletonComponent, TopProgressComponent, CommandPaletteComponent, DocPreviewDirective, TaskListComponent],
   imports: [
     CommonModule,
     HttpClientModule,
@@ -74,7 +75,8 @@ import { MessageBubbleComponent } from './components/message-bubble/message-bubb
     SkeletonComponent,
     TopProgressComponent,
     CommandPaletteComponent,
-    DocPreviewDirective
+    DocPreviewDirective,
+    TaskListComponent
   ]
 })
 export class SharedModule { }

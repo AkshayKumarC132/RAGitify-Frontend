@@ -217,11 +217,11 @@
   flex-shrink: 0;
   font-size: 16px;
 
-  &.cost-icon    { background: rgba(34,197,94,0.1);  color: #22c55e; }
-  &.token-icon   { background: rgba(99,102,241,0.1); color: #6366f1; }
-  &.request-icon { background: rgba(245,158,11,0.1); color: #f59e0b; }
-  &.latency-icon { background: rgba(6,182,212,0.1);  color: #06b6d4; }
-  &.success-icon { background: rgba(16,185,129,0.1); color: #10b981; }
+  &.cost-icon    { background: rgba(99,102,241,0.1); color: #6a6cf0; }
+  &.token-icon   { background: rgba(99,102,241,0.1); color: #6265f3; }
+  &.request-icon { background: rgba(99,102,241,0.1); color: #5658f1 }
+  &.latency-icon { background: rgba(99,102,241,0.1); color: #484bf0; }
+  &.success-icon { background: rgba(99,102,241,0.1); color: #2327fa; }
 }
 
 .kpi-body {
@@ -249,9 +249,10 @@
 // ── Chart card ────────────────────────────────────────────────────────────
 .chart-card {
   border: 1px solid var(--border-color);
-  border-radius: 18px;
+  border-radius: 20px;
   background: var(--bg-secondary);
   padding: 1.5rem 1.75rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 
   &.empty-chart {
     display: flex;
@@ -272,6 +273,10 @@
   justify-content: space-between;
   margin-bottom: 1.25rem;
   gap: 1rem;
+
+  .chart-legend {
+    margin-top: 0;
+  }
 }
 
 .chart-title {
@@ -377,7 +382,7 @@
   color: var(--text-secondary);
   white-space: nowrap;
   position: absolute;
-  bottom: 0;
+  bottom: -20px;
   text-align: center;
 }
 
@@ -386,7 +391,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem 1.25rem;
-  margin-top: 1.25rem;
   justify-content: center;
 }
 
@@ -405,48 +409,50 @@
   flex-shrink: 0;
 }
 
-// ── Activity simple bars ──────────────────────────────────────────────────
-.activity-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 160px;
-  overflow-x: auto;
-  padding-bottom: 22px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-color) transparent;
+// ── Chart Tooltip ─────────────────────────────────────────────────────────
+.chart-tooltip {
+  position: fixed; // Fixed position since coordinates are clientX/Y
+  z-index: 100;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+  min-width: 180px;
+
+  .tooltip-date {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .tooltip-row {
+    display: flex;
+    font-size: 11.5px;
+    margin-bottom: 0.25rem;
+    &:last-child { margin-bottom: 0; }
+  }
+
+  .tooltip-model {
+    font-weight: 500;
+  }
+
+  .tooltip-cost {
+    color: var(--text-secondary);
+  }
 }
 
-.activity-bar-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  min-width: 28px;
-  flex: 1;
-  position: relative;
-  cursor: default;
-  justify-content: flex-end;
-}
-
-.activity-bar {
-  width: 100%;
-  max-width: 32px;
-  border-radius: 4px 4px 0 0;
-  min-height: 2px;
-  transition: opacity 0.15s ease;
-  &:hover { opacity: 0.8; }
-
-  &.tokens-color   { background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%); }
-  &.requests-color { background: linear-gradient(180deg, #f59e0b 0%, #f97316 100%); }
-}
+// Old activity simple bars removed (now using standard stacked bars)
 
 // ── Breakdown table ───────────────────────────────────────────────────────
 .breakdown-card {
   border: 1px solid var(--border-color);
-  border-radius: 18px;
+  border-radius: 20px;
   background: var(--bg-secondary);
   overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
 .breakdown-header {
@@ -476,7 +482,7 @@
 
   td {
     padding: 0.85rem 0.75rem;
-    border-bottom: 1px solid rgba(var(--border-color-rgb, 0,0,0), 0.04);
+    border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
     vertical-align: middle;
 
@@ -499,8 +505,19 @@
 .model-cell {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
   white-space: nowrap;
+}
+
+.model-info-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.model-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .model-dot {
@@ -512,22 +529,45 @@
 
 .model-name { font-weight: 500; }
 
+.model-progress {
+  width: 60px;
+  height: 3px;
+  background: var(--border-color);
+  border-radius: 2px;
+  margin-left: 1.2rem; // align under the model name, accounting for dot + gap
+  overflow: hidden;
+}
+
+.model-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
 .cost-val {
   font-weight: 700;
   color: var(--text-primary);
 }
 
-.inline-bar-wrap {
-  height: 5px;
-  background: var(--bg-tertiary);
-  border-radius: 3px;
-  overflow: hidden;
+.total-row {
+  border-top: 1px solid var(--border-color);
+  
+  td {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
 }
 
-.inline-bar {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s ease;
+.total-label {
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.total-val {
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────

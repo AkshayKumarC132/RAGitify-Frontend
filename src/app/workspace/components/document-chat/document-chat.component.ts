@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { Document } from '../../../shared/models/document.model';
 import { Conversation, ConversationMessage } from '../../../shared/models/conversation.model';
-import { ResponseRecord, ResponseCreateRequest, DocumentTool } from '../../../shared/models/response.model';
+import { ResponseRecord, ResponseCreateRequest, DocumentTool, TaskItem } from '../../../shared/models/response.model';
 import { ConversationService } from '../../../shared/services/conversation.service';
 import { ResponseService } from '../../../shared/services/response.service';
 import { ResponseAttentionService } from '../../../shared/services/response-attention.service';
@@ -30,6 +30,7 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
   private streamSub?: Subscription;
   private ephemeralMetadataMap = new Map<string, any>();
   private scrollPending = false;
+  currentTasks: TaskItem[] = [];
 
   constructor(
     private conversationService: ConversationService,
@@ -170,11 +171,22 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
           // picks up the mutated content and re-renders the message bubble
           const lastIdx = this.messages.length - 1;
           this.messages = [...this.messages.slice(0, lastIdx), { ...assistantMessage }];
+          
+          // Hide task list once text starts streaming
+          if (this.currentTasks.length > 0) {
+            this.currentTasks = [];
+          }
+          
+          this.cdr.detectChanges();
+          this.scrollToBottom();
+        } else if (event.type === 'task_update') {
+          this.currentTasks = (event.tasks || []).filter(t => t.status !== 'removed');
           this.cdr.detectChanges();
           this.scrollToBottom();
         } else if (event.type === 'completed') {
           this.currentResponse = null;
           this.loading = false;
+          this.currentTasks = [];
 
           const outMetadata = event.response?.output?.[0]?.metadata;
           if (outMetadata && this.conversation) {
@@ -198,16 +210,19 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
           this.scrollToBottom();
         } else if (event.type === 'failed') {
           this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
+          this.currentTasks = [];
           this.handleError(event.response?.error_message || 'Response failed');
         }
       },
       error: (err) => {
         this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
+        this.currentTasks = [];
         this.handleError('Failed to send message', err);
         this.messages = this.messages.filter(m => !m.id.startsWith('temp-'));
       },
       complete: () => {
         this.loading = false;
+        this.currentTasks = [];
       }
     });
   }
@@ -326,5 +341,18 @@ export class DocumentChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get isResponseInProgress(): boolean {
     return this.loading || this.currentResponse?.status === 'in_progress';
+  }
+
+  get showTaskList(): boolean {
+    if (!this.isResponseInProgress) {
+      return false;
+    }
+
+    const lastMessage = this.messages[this.messages.length - 1];
+    if (!lastMessage || lastMessage.role !== 'assistant') {
+      return true;
+    }
+
+    return !lastMessage.content;
   }
 }

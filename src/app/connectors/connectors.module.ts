@@ -8,6 +8,7 @@ import { WorkspaceConnectionsComponent } from './components/workspace-connection
 import { ConnectionDetailsPageComponent } from './components/connection-details-page/connection-details-page.component';
 import { PostgresWizardComponent } from './components/postgres-wizard/postgres-wizard.component';
 import { ClickhouseWizardComponent } from './components/clickhouse-wizard/clickhouse-wizard.component';
+import { EditConnectionModalComponent } from './components/edit-connection-modal/edit-connection-modal.component';
 
 @NgModule({
     declarations: [
@@ -15,7 +16,8 @@ import { ClickhouseWizardComponent } from './components/clickhouse-wizard/clickh
         WorkspaceConnectionsComponent,
         ConnectionDetailsPageComponent,
         PostgresWizardComponent,
-        ClickhouseWizardComponent
+        ClickhouseWizardComponent,
+        EditConnectionModalComponent
     ],
     imports: [
         CommonModule,
