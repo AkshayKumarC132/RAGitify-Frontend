@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { shareReplay, tap } from 'rxjs/operators';
+import { HttpContext } from '@angular/common/http';
+import { SKIP_LOADING } from '../interceptors/loading.interceptor';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { UserStateService } from './user-state.service';
@@ -90,7 +92,7 @@ export class DatabaseConnectionService {
     syncDatabase(id: string): Observable<{ sync_log: DatabaseSyncLog | null; connection: DatabaseConnection }> {
         const token = this.getToken();
         return this.api.post<{ sync_log: DatabaseSyncLog | null; connection: DatabaseConnection }>(
-            `/database-connections/${token}/${id}/sync/`, {}, token
+            `/database-connections/${token}/${id}/sync/`, {}, token, new HttpContext().set(SKIP_LOADING, true)
         ).pipe(tap(() => this.invalidateListCache()));
     }
 

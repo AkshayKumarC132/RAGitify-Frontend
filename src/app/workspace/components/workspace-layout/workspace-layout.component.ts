@@ -14,7 +14,7 @@ import { CommandPaletteService } from '../../../shared/services/command-palette.
   styleUrls: ['./workspace-layout.component.scss']
 })
 export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
-  activeSection: 'knowledge' | 'prompts' = 'knowledge';
+  activeSection: 'knowledge' = 'knowledge';
   activeDocumentId: string | null = null;
   activeLibraryStatsId: string | null = null;
   sidebarCollapsed = false;
@@ -152,8 +152,8 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
   }
 
   goToWorkspace(): void {
-    // When user is on Your Libraries (picker), stay on picker. When in Prompts, go to Your Libraries (picker).
-    if (this.showLibraryPicker || this.activeSection === 'prompts') {
+    // When user is on Your Libraries (picker), stay on picker.
+    if (this.showLibraryPicker) {
       this.router.navigate(['/workspace'], { queryParams: {} });
       return;
     }
@@ -162,10 +162,6 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
       ?? this.activeLibraryStatsId
       ?? this.route.snapshot.queryParamMap.get('libraryId');
     this.router.navigate(['/workspace'], { queryParams: libraryId ? { libraryId } : {} });
-  }
-
-  goToPrompts(): void {
-    this.router.navigate(['/workspace'], { queryParams: { view: 'prompts' } });
   }
 
   goToLibraryPicker(): void {
@@ -249,8 +245,8 @@ export class WorkspaceLayoutComponent implements OnInit, OnDestroy {
   }
 
   private applyLayoutRouteState(): void {
-    this.showLibraryPicker = !this.activeDocumentId && !this.activeLibraryStatsId && !this.currentLibraryId && this.currentView !== 'prompts';
-    this.activeSection = this.currentView === 'prompts' ? 'prompts' : 'knowledge';
+    this.showLibraryPicker = !this.activeDocumentId && !this.activeLibraryStatsId && !this.currentLibraryId;
+    this.activeSection = 'knowledge';
   }
 
   private ensureSidebarLibraries(): void {

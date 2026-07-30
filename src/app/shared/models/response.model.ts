@@ -12,6 +12,7 @@ export interface ResponseRecord {
   completed_at: string | null;
   error_message?: string;
   has_data_grid?: boolean;
+  data_grid_id?: number;
   data_grid_row_count?: number;
 }
 
@@ -20,7 +21,7 @@ export interface ResponseCreateRequest {
   model?: string;
   instructions?: string;
   input: ResponseInput[];
-  tools?: DocumentTool[];
+  tools?: Tool[];
   db_connection_ids?: string[];
   stream?: boolean;
   metadata?: Record<string, any>;
@@ -52,6 +53,18 @@ export interface DocumentTool {
   vector_store_ids: string[];
   document_ids?: string[];
 }
+
+/** Attaches a prior DataGrid result to the turn.
+ *  The backend validates ownership, injects the query_datagrid function tool,
+ *  and appends column/schema context instructions automatically. */
+export interface DataGridTool {
+  type: 'datagrid';
+  datagrid_id: number;
+}
+
+/** Union of all tool types accepted by the Responses API. */
+export type Tool = DocumentTool | DataGridTool;
+
 
 /** Status values for a pipeline task item. */
 export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'removed';

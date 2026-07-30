@@ -107,10 +107,6 @@ export class ConnectorsLayoutComponent implements OnInit, OnDestroy {
         this.router.navigate(['/workspace']);
     }
 
-    goToPrompts(): void {
-        this.router.navigate(['/workspace'], { queryParams: { view: 'prompts' } });
-    }
-
     onBrandClick(): void {
         if (this.sidebarCollapsed) return;
         this.goToNewChat();
@@ -154,6 +150,46 @@ export class ConnectorsLayoutComponent implements OnInit, OnDestroy {
         if (s === 'connected' || s === 'success') return 'status-dot connected';
         if (s === 'failed' || s === 'error') return 'status-dot failed';
         return 'status-dot pending';
+    }
+
+    getDatabaseIcon(conn: DatabaseConnection): string {
+        const typeName = (
+            conn.connection_type?.driver_name ||
+            conn.connection_type?.name ||
+            conn.metadata?.['connection_type'] ||
+            conn.metadata?.['type'] ||
+            (conn.port === 8123 || conn.port === 9000 ? 'clickhouse' : '')
+        ).toString().toLowerCase();
+
+        if (typeName.includes('postgres')) return 'assets/postgres.svg';
+        if (typeName.includes('clickhouse')) return 'assets/clickhouse.svg';
+        if (typeName.includes('mysql')) return 'assets/mysql.svg';
+        if (typeName.includes('mongodb')) return 'assets/mongodb.svg';
+        if (typeName.includes('redis')) return 'assets/redis.svg';
+        if (typeName.includes('snowflake')) return 'assets/snowflake.svg';
+        if (typeName.includes('bigquery')) return 'assets/bigquery.svg';
+
+        return 'assets/postgres.svg'; // fallback
+    }
+
+    getDatabaseTypeName(conn: DatabaseConnection): string {
+        const typeName = (
+            conn.connection_type?.driver_name ||
+            conn.connection_type?.name ||
+            conn.metadata?.['connection_type'] ||
+            conn.metadata?.['type'] ||
+            (conn.port === 8123 || conn.port === 9000 ? 'clickhouse' : '')
+        ).toString().toLowerCase();
+
+        if (typeName.includes('postgres')) return 'PostgreSQL';
+        if (typeName.includes('clickhouse')) return 'ClickHouse';
+        if (typeName.includes('mysql')) return 'MySQL';
+        if (typeName.includes('mongodb')) return 'MongoDB';
+        if (typeName.includes('redis')) return 'Redis';
+        if (typeName.includes('snowflake')) return 'Snowflake';
+        if (typeName.includes('bigquery')) return 'BigQuery';
+
+        return conn.connection_type?.name || 'Database';
     }
 
     logout(): void {

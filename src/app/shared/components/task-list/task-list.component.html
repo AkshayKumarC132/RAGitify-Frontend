@@ -23,7 +23,7 @@
     </div>
     
     <!-- Active task label -->
-    <span class="header-label" [class.shimmer-active]="!activeTask || activeTask.status === 'in_progress'">{{ activeTask?.label || 'Searching...' }}</span>
+    <span class="header-label" [class.shimmer-active]="!activeTask || activeTask.status === 'in_progress'">{{ activeTask?.label || dynamicFallbackLabel }}</span>
     <span class="header-progress" *ngIf="progressText">· {{ progressText }}</span>
   </div>
 

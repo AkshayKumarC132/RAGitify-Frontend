@@ -82,6 +82,11 @@ export class ChatStreamService implements OnDestroy {
               ...event.response.output[0].metadata
             };
           }
+          if (event.response?.has_data_grid) {
+            state.assistantMessage.has_data_grid = true;
+            state.assistantMessage.data_grid_id = event.response.data_grid_id;
+            state.assistantMessage.data_grid_row_count = event.response.data_grid_row_count;
+          }
           this.updateActiveStreamsSubject();
           this.showCompletionToast(state);
         } else if (event.type === 'failed') {

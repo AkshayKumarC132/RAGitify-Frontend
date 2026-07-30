@@ -19,14 +19,18 @@ import { SkeletonComponent } from './components/skeleton/skeleton.component';
 import { TopProgressComponent } from './components/top-progress/top-progress.component';
 import { CommandPaletteComponent } from './components/command-palette/command-palette.component';
 import { DocPreviewDirective } from './directives/doc-preview.directive';
+import { DatagridPreviewDirective } from './directives/datagrid-preview.directive';
 
 import { TypingLabelComponent } from './components/typing-label/typing-label.component';
 import { TypingIndicatorComponent } from './components/typing-indicator/typing-indicator.component';
 import { MessageBubbleComponent } from './components/message-bubble/message-bubble.component';
 import { TaskListComponent } from './components/task-list/task-list.component';
+import { ConnectionWarningModalComponent } from './components/connection-warning-modal/connection-warning-modal.component';
+import { ContextRailComponent } from './components/context-rail/context-rail.component';
+import { ContextPopoverComponent } from './components/context-popover/context-popover.component';
 
 @NgModule({
-  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe, ToastComponent, SkeletonComponent, TopProgressComponent, CommandPaletteComponent, DocPreviewDirective, TaskListComponent],
+  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe, ToastComponent, SkeletonComponent, TopProgressComponent, CommandPaletteComponent, DocPreviewDirective, DatagridPreviewDirective, TaskListComponent, ConnectionWarningModalComponent, ContextRailComponent, ContextPopoverComponent],
   imports: [
     CommonModule,
     HttpClientModule,
@@ -76,7 +80,11 @@ import { TaskListComponent } from './components/task-list/task-list.component';
     TopProgressComponent,
     CommandPaletteComponent,
     DocPreviewDirective,
-    TaskListComponent
+    DatagridPreviewDirective,
+    TaskListComponent,
+    ConnectionWarningModalComponent,
+    ContextRailComponent,
+    ContextPopoverComponent
   ]
 })
 export class SharedModule { }

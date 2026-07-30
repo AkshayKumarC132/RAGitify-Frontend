@@ -1,14 +1,37 @@
 import { Location } from '@angular/common';
-import { Component, OnDestroy, OnInit, ViewChild, HostListener } from '@angular/core';
+import {
+  Component,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  HostListener,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, lastValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { ChatInputComponent, LibrarySelectionEvent } from '../chat-input/chat-input.component';
+import {
+  ChatInputComponent,
+  LibrarySelectionEvent,
+} from '../chat-input/chat-input.component';
 import { Assistant } from '../../../shared/models/assistant.model';
-import { Conversation, ConversationCreateRequest, ConversationMessage } from '../../../shared/models/conversation.model';
+import {
+  Conversation,
+  ConversationCreateRequest,
+  ConversationMessage,
+} from '../../../shared/models/conversation.model';
 import { Document } from '../../../shared/models/document.model';
-import { ResponseCreateRequest, ResponseRecord, StreamEvent, TaskItem } from '../../../shared/models/response.model';
+import {
+  ResponseRecord,
+  ResponseCreateRequest,
+  ResponseInput,
+  StreamEvent,
+  TaskItem,
+  DocumentTool,
+  DataGridTool,
+  Tool,
+} from '../../../shared/models/response.model';
 import { SelectedLLMProvider, User } from '../../../shared/models/user.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { AssistantService } from '../../../shared/services/assistant.service';
@@ -21,17 +44,24 @@ import { ThreadSearchPopupService } from '../../../shared/services/thread-search
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentShareService } from '../../../shared/services/document-share.service';
 import { DatabaseConnectionService } from '../../../shared/services/database-connection.service';
-import { DatabaseConnection } from '../../../shared/models/database-connection.model';
+import {
+  DatabaseConnection,
+  FailedConnectionInfo,
+} from '../../../shared/models/database-connection.model';
 import { SharedWithMeItem } from '../../../shared/models/document-share.model';
+import { DatagridAttachmentService } from '../../../shared/services/datagrid-attachment.service';
 import { ChatStreamService } from '../../../shared/services/chat-stream.service';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
-import { ConversationExportService, ExportFormat } from '../../../shared/services/conversation-export.service';
+import {
+  ConversationExportService,
+  ExportFormat,
+} from '../../../shared/services/conversation-export.service';
 import { ToastService } from '../../../shared/services/toast.service';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
-  styleUrls: ['./home.component.scss']
+  styleUrls: ['./home.component.scss'],
 })
 export class HomeComponent implements OnInit, OnDestroy {
   @ViewChild(ChatInputComponent) chatInput?: ChatInputComponent;
@@ -73,9 +103,21 @@ export class HomeComponent implements OnInit, OnDestroy {
   errorMessage = '';
   warningMessages: string[] = [];
   isTemporaryChat = false;
+  showConnectionWarningModal = false;
+  failedDbConnections: FailedConnectionInfo[] = [];
+  private _pendingRetryMessageId: string | null = null;
+  private _pendingRetryContent: string | null = null;
+  private _pendingRetryWebSearch: boolean = false;
+  /** Last user message text — used by the connection-warning retry flow. */
+  private _lastMessageContent = '';
+  private _lastMessageWebSearch = false;
   conversationMenuOpen = false;
   /** Token usage from the most recent assistant response in this thread */
-  currentTokenUsage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | null = null;
+  currentTokenUsage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  } | null = null;
   private ephemeralMetadataMap = new Map<string, any>();
 
   private attachmentMessageTimeout?: ReturnType<typeof setTimeout>;
@@ -110,20 +152,25 @@ export class HomeComponent implements OnInit, OnDestroy {
     'Tell me an interesting historical fact.',
     'How can I learn a new language?',
     'What are the latest trends in technology?',
-    'Can you suggest some fun hobbies?'
+    'Can you suggest some fun hobbies?',
   ];
 
   defaultQuestions: string[] = [];
 
   // Memoized — updated in updateTypingStatuses() so OnPush ChatContainerComponent
   // only re-renders when mode actually changes, not on every CD cycle.
-  private _typingStatuses: string[] = ['Thinking', 'Retrieving', 'Generating', 'Searching'];
+  private _typingStatuses: string[] = [
+    'Thinking',
+    'Retrieving',
+    'Generating',
+    'Searching',
+  ];
 
   documentQuestions = [
     'Summarize the attached documents',
     'What are the key takeaways?',
     'Analyze the main themes in this library',
-    'List the most important information found'
+    'List the most important information found',
   ];
 
   constructor(
@@ -142,14 +189,16 @@ export class HomeComponent implements OnInit, OnDestroy {
     private chatStreamService: ChatStreamService,
     private confirmDialogService: ConfirmDialogService,
     private exportService: ConversationExportService,
+    private datagridAttachmentService: DatagridAttachmentService,
     private toast: ToastService,
     private fb: FormBuilder,
-    private location: Location
+    private location: Location,
+    private cdr: ChangeDetectorRef,
   ) {
     this.profileForm = this.fb.group({
       first_name: [''],
       last_name: [''],
-      email: ['', [Validators.email]]
+      email: ['', [Validators.email]],
     });
   }
 
@@ -157,7 +206,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.shuffleDefaultQuestions();
     this.authService.restoreUserFromStorage();
     this.checkPlaygroundRoute(this.router.url);
-    this.setupIncomplete = !this.authService.isLlmReady(this.authService.getCurrentStatus());
+    this.setupIncomplete = !this.authService.isLlmReady(
+      this.authService.getCurrentStatus(),
+    );
 
     if (!this.setupIncomplete && !this.isTemporaryChat) {
       this.initializeData();
@@ -167,9 +218,12 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     this.authService.userStatus$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(status => {
+      .subscribe((status) => {
         const isReady = this.authService.isLlmReady(status);
-        this.activeProvider = status?.selected_llm_provider || (status as any)?.active_provider || null;
+        this.activeProvider =
+          status?.selected_llm_provider ||
+          (status as any)?.active_provider ||
+          null;
         this.setupIncomplete = !isReady;
 
         if (isReady && !this.dataInitialized && !this.isTemporaryChat) {
@@ -187,36 +241,37 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(user => {
+      .subscribe((user) => {
         this.currentUser = user;
         if (user) {
-          this.profileForm.patchValue({
-            first_name: user.first_name || '',
-            last_name: user.last_name || '',
-            email: user.email || ''
-          }, { emitEvent: false });
+          this.profileForm.patchValue(
+            {
+              first_name: user.first_name || '',
+              last_name: user.last_name || '',
+              email: user.email || '',
+            },
+            { emitEvent: false },
+          );
         }
       });
 
-    this.route.params
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(params => {
-        const threadId = params['conversationId'] || params['threadId'] || null;
-        this.pendingThreadId = threadId;
-        if (threadId && !this.setupIncomplete && !this.isTemporaryChat) {
-          this.loadThread(threadId);
-        }
-      });
-
-    this.searchPopupSub = this.threadSearchPopupService.getThreadSelected().subscribe(thread => {
-      this.onThreadSelected(thread);
+    this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const threadId = params['conversationId'] || params['threadId'] || null;
+      this.pendingThreadId = threadId;
+      if (threadId && !this.setupIncomplete && !this.isTemporaryChat) {
+        this.loadThread(threadId);
+      }
     });
 
-    this.router.events
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.checkPlaygroundRoute(this.router.url);
+    this.searchPopupSub = this.threadSearchPopupService
+      .getThreadSelected()
+      .subscribe((thread) => {
+        this.onThreadSelected(thread);
       });
+
+    this.router.events.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.checkPlaygroundRoute(this.router.url);
+    });
   }
 
   ngOnDestroy(): void {
@@ -251,7 +306,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   get suggestedQuestions(): string[] {
-    return this.mode === 'document' ? this.documentQuestions : this.defaultQuestions;
+    return this.mode === 'document'
+      ? this.documentQuestions
+      : this.defaultQuestions;
   }
 
   get librariesLoadingState(): boolean {
@@ -277,21 +334,21 @@ export class HomeComponent implements OnInit, OnDestroy {
   get currentTokenLimit(): number {
     const model = (this.selectedModel || '').toLowerCase();
     const limits: [string, number][] = [
-      ['gpt-4o',            128_000],
-      ['gpt-4-turbo',       128_000],
-      ['gpt-4-32k',          32_768],
-      ['gpt-4',               8_192],
-      ['gpt-3.5-turbo-16k',  16_385],
-      ['gpt-3.5-turbo',      16_385],
-      ['claude-3',          200_000],
-      ['claude-2',          100_000],
-      ['gemini-1.5-pro',  1_048_576],
+      ['gpt-4o', 128_000],
+      ['gpt-4-turbo', 128_000],
+      ['gpt-4-32k', 32_768],
+      ['gpt-4', 8_192],
+      ['gpt-3.5-turbo-16k', 16_385],
+      ['gpt-3.5-turbo', 16_385],
+      ['claude-3', 200_000],
+      ['claude-2', 100_000],
+      ['gemini-1.5-pro', 1_048_576],
       ['gemini-1.5-flash', 1_048_576],
-      ['gemini-pro',         32_768],
-      ['mistral-large',      32_768],
-      ['mixtral',            32_768],
-      ['llama-3',             8_192],
-      ['llama-2',             4_096],
+      ['gemini-pro', 32_768],
+      ['mistral-large', 32_768],
+      ['mixtral', 32_768],
+      ['llama-3', 8_192],
+      ['llama-2', 4_096],
     ];
     for (const [key, limit] of limits) {
       if (model.includes(key)) return limit;
@@ -301,11 +358,26 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private updateTypingStatuses(): void {
     if (this.mode === 'document') {
-      this._typingStatuses = ['Retrieving', 'Searching', 'Thinking', 'Generating'];
+      this._typingStatuses = [
+        'Retrieving',
+        'Searching',
+        'Thinking',
+        'Generating',
+      ];
     } else if (this.mode === 'web') {
-      this._typingStatuses = ['Searching', 'Retrieving', 'Thinking', 'Generating'];
+      this._typingStatuses = [
+        'Searching',
+        'Retrieving',
+        'Thinking',
+        'Generating',
+      ];
     } else {
-      this._typingStatuses = ['Thinking', 'Retrieving', 'Generating', 'Searching'];
+      this._typingStatuses = [
+        'Thinking',
+        'Retrieving',
+        'Generating',
+        'Searching',
+      ];
     }
   }
 
@@ -326,7 +398,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     const token = this.authService.getToken();
     const updatedUser: User = {
       ...this.currentUser,
-      ...this.profileForm.value
+      ...this.profileForm.value,
     };
 
     if (token) {
@@ -341,7 +413,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   navigateToSetup(): void {
-    this.router.navigate(['/setup-llm'], { queryParams: { reason: 'llm_required' } });
+    this.router.navigate(['/setup-llm'], {
+      queryParams: { reason: 'llm_required' },
+    });
   }
 
   onSidebarToggled(collapsed: boolean): void {
@@ -371,6 +445,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.attachmentMessage = '';
     this.currentTokenUsage = null;
     this.updateModeFromSelection(true);
+    this.datagridAttachmentService.clearAttachment();
     this.warningMessages = [];
     this.errorMessage = '';
     this.stopResponsePolling();
@@ -394,9 +469,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.chatInput?.updateInput(question);
   }
 
-
-
-  onAttachmentPanelOpened(panel: 'library' | 'prompts' | 'web' | 'notes'): void {
+  onAttachmentPanelOpened(
+    panel: 'library' | 'prompts' | 'web' | 'notes',
+  ): void {
     if (panel === 'library') {
       this.ensureLibrariesLoaded();
       this.ensureDocumentsLoaded();
@@ -415,7 +490,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.updateTypingStatuses();
   }
 
-  async onMessageSent(payload: string | { content: string; webSearch: boolean }): Promise<void> {
+  async onMessageSent(
+    payload: string | { content: string; webSearch: boolean },
+  ): Promise<void> {
     const isObject = typeof payload === 'object' && payload !== null;
     const content = isObject ? (payload as any).content : (payload as string);
     const webSearch = isObject ? (payload as any).webSearch : false;
@@ -423,82 +500,159 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (!trimmed || this.isTemporaryChat || this.loading) {
       return;
     }
+    this._lastMessageContent = trimmed;
+    this._lastMessageWebSearch = webSearch;
 
     this.clearError();
     const optimisticMessage = this.buildLocalMessage('user', trimmed);
     this.messages = [...this.messages, optimisticMessage];
     this.loading = true;
-    this.currentRun = { id: 'pending', conversation: this.currentThread?.id || null, status: 'in_progress', model: this.selectedModel || this.responseService.getDefaultModel(), instructions: '', input_messages: [], output: [], metadata: {}, created_at: new Date().toISOString(), completed_at: null };
+    this.currentRun = {
+      id: 'pending',
+      conversation: this.currentThread?.id || null,
+      status: 'in_progress',
+      model: this.selectedModel || this.responseService.getDefaultModel(),
+      instructions: '',
+      input_messages: [],
+      output: [],
+      metadata: {},
+      created_at: new Date().toISOString(),
+      completed_at: null,
+    };
 
     try {
       const conversation = await this.ensureConversation(trimmed);
-      const request = await this.buildResponseRequest(trimmed, conversation.id, webSearch);
+      const request = await this.buildResponseRequest(
+        trimmed,
+        conversation.id,
+        webSearch,
+      );
 
       // Add a placeholder assistant message for streaming
       const assistantMessage = this.buildLocalMessage('assistant', '');
       this.messages = [...this.messages, assistantMessage];
 
       // Instead of ResponseService.createStream, use ChatStreamService to start the stream
-      this.streamSub = this.chatStreamService.startStream(conversation.id, request, optimisticMessage, assistantMessage, conversation.title || trimmed).subscribe({
-        next: (event: StreamEvent) => {
-          if (event.type === 'delta' && event.delta) {
-            // assistantMessage.content is already updated by ChatStreamService.
-            // Create a new object reference for the last message so OnPush-enabled
-            // MessageBubbleComponent detects the change without ngDoCheck.
-            const lastIdx = this.messages.length - 1;
-            this.messages = [
-              ...this.messages.slice(0, lastIdx),
-              { ...assistantMessage }
-            ];
-            // Hide task list once text starts streaming
-            if (this.currentTasks.length > 0) {
+      this.streamSub = this.chatStreamService
+        .startStream(
+          conversation.id,
+          request,
+          optimisticMessage,
+          assistantMessage,
+          conversation.title || trimmed,
+        )
+        .subscribe({
+          next: (event: StreamEvent) => {
+            if (event.type === 'delta' && event.delta) {
+              // assistantMessage.content is already updated by ChatStreamService.
+              // Create a new object reference for the last message so OnPush-enabled
+              // MessageBubbleComponent detects the change without ngDoCheck.
+              const lastIdx = this.messages.length - 1;
+              this.messages = [
+                ...this.messages.slice(0, lastIdx),
+                { ...assistantMessage },
+              ];
+              // Hide task list once text starts streaming
+              if (this.currentTasks.length > 0) {
+                this.currentTasks = [];
+              }
+            } else if (event.type === 'task_update') {
+              this.currentTasks = (event.tasks || []).filter(
+                (t) => t.status !== 'removed',
+              );
+            } else if (event.type === 'completed') {
               this.currentTasks = [];
+              this.applyWarnings(event.warnings);
+              const outMetadata = event.response?.output?.[0]?.metadata;
+              if (outMetadata) {
+                this.ephemeralMetadataMap.set(
+                  String(conversation.id),
+                  outMetadata,
+                );
+              }
+              assistantMessage.metadata = {
+                ...(assistantMessage.metadata || {}),
+                ...(outMetadata || {}),
+              };
+              this.finalizeResponse(event.response!, conversation.id);
+            } else if (event.type === 'failed') {
+              this.currentTasks = [];
+              this.messages = this.messages.filter(
+                (m) => m.id !== assistantMessage.id,
+              );
+              this.messages = this.messages.filter(
+                (m) => m.id !== optimisticMessage.id,
+              );
+              this.currentRun = null;
+              this.loading = false;
+              this.handleError(
+                event.response?.error_message || 'Response failed',
+                event.response,
+              );
             }
-          } else if (event.type === 'task_update') {
-            this.currentTasks = (event.tasks || []).filter(t => t.status !== 'removed');
-          } else if (event.type === 'completed') {
+          },
+          error: (error) => {
+            this.messages = this.messages.filter(
+              (m) => m.id !== assistantMessage.id,
+            );
             this.currentTasks = [];
-            this.applyWarnings(event.warnings);
-            const outMetadata = event.response?.output?.[0]?.metadata;
-            if (outMetadata) {
-              this.ephemeralMetadataMap.set(String(conversation.id), outMetadata);
-            }
-            assistantMessage.metadata = { ...(assistantMessage.metadata || {}), ...(outMetadata || {}) };
-            this.finalizeResponse(event.response!, conversation.id);
-          } else if (event.type === 'failed') {
-            this.currentTasks = [];
-            this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
-            this.messages = this.messages.filter(m => m.id !== optimisticMessage.id);
             this.currentRun = null;
             this.loading = false;
-            this.handleError(event.response?.error_message || 'Response failed', event.response);
-          }
-        },
-        error: (error) => {
-          this.messages = this.messages.filter(m => m.id !== assistantMessage.id);
-          this.messages = this.messages.filter(m => m.id !== optimisticMessage.id);
-          this.currentTasks = [];
-          this.currentRun = null;
-          this.loading = false;
-          if (error?.payload?.code === 'WEB_SEARCH_UNSUPPORTED_MODEL') {
-            this.confirmDialogService.confirm({
-              title: 'Web Search Unsupported',
-              message: error.payload.error || 'The selected model does not support native web search.',
-              type: 'warning',
-              confirmText: 'Got it',
-              hideCancel: true
-            });
-          } else {
-            this.handleError('Failed to send message', error);
-          }
-        },
-        complete: () => {
-          this.loading = false;
-          this.currentTasks = [];
-        }
-      });
+            if (error?.payload?.code === 'WEB_SEARCH_UNSUPPORTED_MODEL') {
+              this.messages = this.messages.filter(
+                (m) => m.id !== optimisticMessage.id,
+              );
+              this.confirmDialogService.confirm({
+                title: 'Web Search Unsupported',
+                message:
+                  error.payload.error ||
+                  'The selected model does not support native web search.',
+                type: 'warning',
+                confirmText: 'Got it',
+                hideCancel: true,
+              });
+            } else if (
+              error?.payload?.code === 'DATABASE_CONNECTION_UNAVAILABLE'
+            ) {
+              // DO NOT filter optimisticMessage. Leave it in the UI!
+              this._pendingRetryMessageId = optimisticMessage.id;
+              this._pendingRetryContent = trimmed;
+              this._pendingRetryWebSearch = webSearch;
+
+              this.failedDbConnections = error.payload.connections || [];
+
+              // Immediately reflect the failure in the local list so the
+              // attachment panel shows "Failed" without needing navigation.
+              const failedIds = new Set(
+                this.failedDbConnections.map((fc: any) => String(fc.id)),
+              );
+              this.databaseConnections = this.databaseConnections.map((db) =>
+                failedIds.has(String(db.id)) ? { ...db, status: 'failed' } : db,
+              );
+              // Invalidate cache so the next list() call hits the backend.
+              this.dbConnectionService.invalidateListCache();
+              this.databaseConnectionsLoaded = false;
+
+              setTimeout(() => {
+                this.showConnectionWarningModal = true;
+                this.cdr.detectChanges();
+              });
+            } else {
+              this.messages = this.messages.filter(
+                (m) => m.id !== optimisticMessage.id,
+              );
+              this.handleError('Failed to send message', error);
+            }
+          },
+          complete: () => {
+            this.loading = false;
+            this.currentTasks = [];
+          },
+        });
     } catch (error) {
-      this.messages = this.messages.filter(message => message.id !== optimisticMessage.id);
+      this.messages = this.messages.filter(
+        (message) => message.id !== optimisticMessage.id,
+      );
       this.currentRun = null;
       this.loading = false;
       this.handleError('Failed to send message', error);
@@ -514,7 +668,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     await this.uploadFiles(Array.from(files), vectorStoreId);
   }
 
-  async onWebpageAttach(payload: { url: string; title?: string }): Promise<void> {
+  async onWebpageAttach(payload: {
+    url: string;
+    title?: string;
+  }): Promise<void> {
     if (!payload?.url?.trim()) {
       return;
     }
@@ -522,10 +679,12 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.attachmentsInProgress = true;
     try {
       const vectorStoreId = await this.resolveUploadVectorStoreId();
-      await lastValueFrom(this.documentService.ingest({
-        s3_file_url: payload.url.trim(),
-        vector_store_id: vectorStoreId || undefined
-      }));
+      await lastValueFrom(
+        this.documentService.ingest({
+          s3_file_url: payload.url.trim(),
+          vector_store_id: vectorStoreId || undefined,
+        }),
+      );
       this.setAttachmentMessage('Webpage attached successfully.');
       this.loadDocuments();
     } catch (error) {
@@ -549,7 +708,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   async onLibrarySelected(selection: LibrarySelectionEvent): Promise<void> {
-    if (!selection || selection.type === 'clear' || (selection.type === 'library' && !selection.libraryId)) {
+    if (
+      !selection ||
+      selection.type === 'clear' ||
+      (selection.type === 'library' && !selection.libraryId)
+    ) {
       this.selectedLibraryId = null;
       this.selectedDocumentIds = [];
       this.selectedDatabaseConnectionIds = [];
@@ -567,11 +730,18 @@ export class HomeComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.selectedDocumentIds = (selection.documentIds || []).map(id => String(id));
-    this.selectedDatabaseConnectionIds = (selection.databaseConnectionIds || []).map(id => String(id));
+    this.selectedDocumentIds = (selection.documentIds || []).map((id) =>
+      String(id),
+    );
+    this.selectedDatabaseConnectionIds = (
+      selection.databaseConnectionIds || []
+    ).map((id) => String(id));
     this.selectedLibraryId = null;
 
-    if (!this.selectedDocumentIds.length && !this.selectedDatabaseConnectionIds.length) {
+    if (
+      !this.selectedDocumentIds.length &&
+      !this.selectedDatabaseConnectionIds.length
+    ) {
       // this.setAttachmentMessage('Document selection cleared.');
       this.updateModeFromSelection(true);
       return;
@@ -583,7 +753,11 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   onPromptSelected(promptId: string | null): void {
     this.selectedPromptId = promptId;
-    this.setAttachmentMessage(promptId ? 'Prompt selected for the next reply.' : 'Prompt selection cleared.');
+    this.setAttachmentMessage(
+      promptId
+        ? 'Prompt selected for the next reply.'
+        : 'Prompt selection cleared.',
+    );
   }
 
   onCancelRun(): void {
@@ -609,7 +783,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.handleError('Failed to cancel response', error);
-        }
+        },
       });
     } else {
       this.stopResponsePolling();
@@ -627,14 +801,14 @@ export class HomeComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Unable to update conversation title', error);
-      }
+      },
     });
   }
 
   onThreadRemove(thread: Conversation): void {
     this.conversationService.delete(thread.id).subscribe({
       next: () => {
-        this.threads = this.threads.filter(item => item.id !== thread.id);
+        this.threads = this.threads.filter((item) => item.id !== thread.id);
         if (this.currentThread?.id === thread.id) {
           this.currentThread = null;
           this.messages = [];
@@ -645,7 +819,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Unable to delete conversation', error);
-      }
+      },
     });
   }
 
@@ -674,19 +848,24 @@ export class HomeComponent implements OnInit, OnDestroy {
     const previousPinnedState = !!thread.is_pinned;
     thread.is_pinned = !previousPinnedState;
 
-    this.conversationService.patch(thread.id, { is_pinned: thread.is_pinned }).subscribe({
-      next: (updatedThread) => {
-        thread.is_pinned = updatedThread.is_pinned;
-        this.upsertThread(thread);
-      },
-      error: (err) => {
-        console.error('Failed to update pin status', err);
-        thread.is_pinned = previousPinnedState;
-      }
-    });
+    this.conversationService
+      .patch(thread.id, { is_pinned: thread.is_pinned })
+      .subscribe({
+        next: (updatedThread) => {
+          thread.is_pinned = updatedThread.is_pinned;
+          this.upsertThread(thread);
+        },
+        error: (err) => {
+          console.error('Failed to update pin status', err);
+          thread.is_pinned = previousPinnedState;
+        },
+      });
   }
 
-  async editCurrentThread(thread: Conversation, event?: MouseEvent): Promise<void> {
+  async editCurrentThread(
+    thread: Conversation,
+    event?: MouseEvent,
+  ): Promise<void> {
     event?.stopPropagation();
     this.closeConversationMenu();
 
@@ -697,10 +876,14 @@ export class HomeComponent implements OnInit, OnDestroy {
       promptValue: currentTitle,
       promptPlaceholder: 'Chat title...',
       confirmText: 'Rename',
-      cancelText: 'Cancel'
+      cancelText: 'Cancel',
     });
 
-    if (updatedTitle && updatedTitle.trim() && updatedTitle.trim() !== currentTitle) {
+    if (
+      updatedTitle &&
+      updatedTitle.trim() &&
+      updatedTitle.trim() !== currentTitle
+    ) {
       this.onThreadRename({ thread, title: updatedTitle.trim() });
     }
   }
@@ -711,16 +894,18 @@ export class HomeComponent implements OnInit, OnDestroy {
     const previousState = !!thread.enable_data_grid;
     thread.enable_data_grid = !previousState;
 
-    this.conversationService.patch(thread.id, { enable_data_grid: thread.enable_data_grid }).subscribe({
-      next: (updatedThread) => {
-        thread.enable_data_grid = updatedThread.enable_data_grid;
-        this.upsertThread(thread);
-      },
-      error: (err) => {
-        console.error('Failed to update data grid toggle status', err);
-        thread.enable_data_grid = previousState;
-      }
-    });
+    this.conversationService
+      .patch(thread.id, { enable_data_grid: thread.enable_data_grid })
+      .subscribe({
+        next: (updatedThread) => {
+          thread.enable_data_grid = updatedThread.enable_data_grid;
+          this.upsertThread(thread);
+        },
+        error: (err) => {
+          console.error('Failed to update data grid toggle status', err);
+          thread.enable_data_grid = previousState;
+        },
+      });
   }
 
   exportConversation(format: ExportFormat, event?: MouseEvent): void {
@@ -730,26 +915,38 @@ export class HomeComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.messages || this.messages.length === 0) {
-      this.toast.info('Nothing to export', 'This conversation has no messages yet.');
+      this.toast.info(
+        'Nothing to export',
+        'This conversation has no messages yet.',
+      );
       return;
     }
     try {
       this.exportService.export(this.currentThread, this.messages, format);
-      this.toast.success('Export ready', `Conversation downloaded as ${format.toUpperCase()}.`);
+      this.toast.success(
+        'Export ready',
+        `Conversation downloaded as ${format.toUpperCase()}.`,
+      );
     } catch (err) {
       console.error('Failed to export conversation', err);
-      this.toast.error('Export failed', 'Could not generate the download. Please try again.');
+      this.toast.error(
+        'Export failed',
+        'Could not generate the download. Please try again.',
+      );
     }
   }
 
-  async deleteCurrentThread(thread: Conversation, event?: MouseEvent): Promise<void> {
+  async deleteCurrentThread(
+    thread: Conversation,
+    event?: MouseEvent,
+  ): Promise<void> {
     event?.stopPropagation();
     this.closeConversationMenu();
 
     const confirmed = await this.confirmDialogService.confirm({
       title: 'Delete chat?',
       message: 'This will delete',
-      itemName: thread.title || 'this conversation'
+      itemName: thread.title || 'this conversation',
     });
 
     if (confirmed) {
@@ -774,7 +971,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         error: () => {
           this.authService.clearAuth();
           this.router.navigate(['/auth/login']);
-        }
+        },
       });
       return;
     }
@@ -836,7 +1033,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private shuffleDefaultQuestions(): void {
-    const shuffled = [...this.allDefaultQuestions].sort(() => 0.5 - Math.random());
+    const shuffled = [...this.allDefaultQuestions].sort(
+      () => 0.5 - Math.random(),
+    );
     this.defaultQuestions = shuffled.slice(0, 5);
   }
 
@@ -848,7 +1047,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.threadsLoading = true;
     this.conversationService.list().subscribe({
       next: (threads) => {
-        this.threads = this.sortThreads(threads || []).filter(thread => !thread.is_temporary);
+        this.threads = this.sortThreads(threads || []).filter(
+          (thread) => !thread.is_temporary,
+        );
         this.threadsLoaded = true;
         this.threadsLoading = false;
 
@@ -859,7 +1060,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       error: (error) => {
         this.threadsLoading = false;
         console.error('Error loading conversations:', error);
-      }
+      },
     });
   }
 
@@ -873,8 +1074,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.selectedPromptId = null;
     this.attachmentMessage = '';
     this.updateModeFromSelection(true);
+    this.datagridAttachmentService.clearAttachment();
 
-    const existingThread = this.threads.find(thread => thread.id === threadId);
+    const existingThread = this.threads.find(
+      (thread) => thread.id === threadId,
+    );
 
     if (existingThread) {
       this.currentThread = existingThread;
@@ -891,7 +1095,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Error hydrating conversation:', error);
         this.messages = [];
-      }
+      },
     });
   }
 
@@ -899,7 +1103,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.ensureDocumentsLoaded();
     this.conversationService.getMessages(threadId).subscribe({
       next: (messages) => {
-        if (this.currentThread?.id !== threadId && this.pendingThreadId !== threadId) {
+        if (
+          this.currentThread?.id !== threadId &&
+          this.pendingThreadId !== threadId
+        ) {
           return;
         }
         const ephemeral = this.ephemeralMetadataMap.get(String(threadId));
@@ -907,7 +1114,10 @@ export class HomeComponent implements OnInit, OnDestroy {
           // Find the last assistant message
           for (let i = messages.length - 1; i >= 0; i--) {
             if (messages[i].role === 'assistant') {
-              messages[i].metadata = { ...(messages[i].metadata || {}), ...ephemeral };
+              messages[i].metadata = {
+                ...(messages[i].metadata || {}),
+                ...ephemeral,
+              };
               break;
             }
           }
@@ -918,7 +1128,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error loading conversation messages:', error);
-      }
+      },
     });
   }
 
@@ -929,12 +1139,18 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
 
     if (streamState.runStatus === 'in_progress') {
-      const userMsgExists = this.messages.some(m => m.id === streamState.userMessage.id || (m.role === 'user' && m.content === streamState.userMessage.content));
+      const userMsgExists = this.messages.some(
+        (m) =>
+          m.id === streamState.userMessage.id ||
+          (m.role === 'user' && m.content === streamState.userMessage.content),
+      );
       if (!userMsgExists) {
         this.messages = [...this.messages, streamState.userMessage];
       }
 
-      const assistantMsgExists = this.messages.some(m => m.id === streamState.assistantMessage.id);
+      const assistantMsgExists = this.messages.some(
+        (m) => m.id === streamState.assistantMessage.id,
+      );
       if (!assistantMsgExists) {
         this.messages = [...this.messages, streamState.assistantMessage];
       }
@@ -942,7 +1158,18 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.loading = true;
       // Restore task list state from the service (events fired before reconnect are not replayed)
       this.currentTasks = [...(streamState.currentTasks || [])];
-      this.currentRun = { id: 'pending', conversation: threadId, status: 'in_progress', model: this.selectedModel || this.responseService.getDefaultModel(), instructions: '', input_messages: [], output: [], metadata: {}, created_at: new Date().toISOString(), completed_at: null };
+      this.currentRun = {
+        id: 'pending',
+        conversation: threadId,
+        status: 'in_progress',
+        model: this.selectedModel || this.responseService.getDefaultModel(),
+        instructions: '',
+        input_messages: [],
+        output: [],
+        metadata: {},
+        created_at: new Date().toISOString(),
+        completed_at: null,
+      };
 
       this.stopStream();
       this.streamSub = streamState.eventSubject.subscribe({
@@ -952,14 +1179,16 @@ export class HomeComponent implements OnInit, OnDestroy {
             const lastIdx = this.messages.length - 1;
             this.messages = [
               ...this.messages.slice(0, lastIdx),
-              { ...streamState.assistantMessage }
+              { ...streamState.assistantMessage },
             ];
             // Hide task list once text starts streaming
             if (this.currentTasks.length > 0) {
               this.currentTasks = [];
             }
           } else if (event.type === 'task_update') {
-            this.currentTasks = (event.tasks || []).filter(t => t.status !== 'removed');
+            this.currentTasks = (event.tasks || []).filter(
+              (t) => t.status !== 'removed',
+            );
           } else if (event.type === 'completed') {
             this.currentTasks = [];
             this.applyWarnings(event.warnings);
@@ -970,35 +1199,66 @@ export class HomeComponent implements OnInit, OnDestroy {
             this.finalizeResponse(event.response!, threadId);
           } else if (event.type === 'failed') {
             this.currentTasks = [];
-            this.messages = this.messages.filter(m => m.id !== streamState.assistantMessage.id);
-            this.messages = this.messages.filter(m => m.id !== streamState.userMessage.id);
+            this.messages = this.messages.filter(
+              (m) => m.id !== streamState.assistantMessage.id,
+            );
+            this.messages = this.messages.filter(
+              (m) => m.id !== streamState.userMessage.id,
+            );
             this.currentRun = null;
             this.loading = false;
-            this.handleError(event.response?.error_message || 'Response failed', event.response);
+            this.handleError(
+              event.response?.error_message || 'Response failed',
+              event.response,
+            );
           }
         },
         error: (error) => {
-          this.messages = this.messages.filter(m => m.id !== streamState.assistantMessage.id);
-          this.messages = this.messages.filter(m => m.id !== streamState.userMessage.id);
+          this.messages = this.messages.filter(
+            (m) => m.id !== streamState.assistantMessage.id,
+          );
+          this.messages = this.messages.filter(
+            (m) => m.id !== streamState.userMessage.id,
+          );
           this.currentTasks = [];
           this.currentRun = null;
           this.loading = false;
           if (error?.payload?.code === 'WEB_SEARCH_UNSUPPORTED_MODEL') {
+            this.messages = this.messages.filter(
+              (m) => m.id !== streamState.userMessage.id,
+            );
             this.confirmDialogService.confirm({
               title: 'Web Search Unsupported',
-              message: error.payload.error || 'The selected model does not support native web search.',
+              message:
+                error.payload.error ||
+                'The selected model does not support native web search.',
               type: 'warning',
               confirmText: 'Got it',
-              hideCancel: true
+              hideCancel: true,
+            });
+          } else if (
+            error?.payload?.code === 'DATABASE_CONNECTION_UNAVAILABLE'
+          ) {
+            this._pendingRetryMessageId = streamState.userMessage.id;
+            this._pendingRetryContent = streamState.userMessage.content;
+            this._pendingRetryWebSearch = false; // Cannot infer this from message easily, assuming false
+
+            this.failedDbConnections = error.payload.connections || [];
+            setTimeout(() => {
+              this.showConnectionWarningModal = true;
+              this.cdr.detectChanges();
             });
           } else {
+            this.messages = this.messages.filter(
+              (m) => m.id !== streamState.userMessage.id,
+            );
             this.handleError('Failed to send message', error);
           }
         },
         complete: () => {
           this.loading = false;
           this.currentTasks = [];
-        }
+        },
       });
     } else if (streamState.runStatus === 'completed') {
       this.chatStreamService.clearStreamState(threadId);
@@ -1051,7 +1311,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       error: (error) => {
         this.librariesLoading = false;
         console.error('Error loading libraries:', error);
-      }
+      },
     });
   }
 
@@ -1062,11 +1322,11 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     this.promptsLoading = true;
     const request = lastValueFrom(this.assistantService.list())
-      .then(prompts => {
+      .then((prompts) => {
         this.prompts = prompts || [];
         this.promptsLoaded = true;
       })
-      .catch(error => {
+      .catch((error) => {
         this.promptsLoaded = false;
         console.error('Error loading prompts:', error);
       })
@@ -1094,7 +1354,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       error: (error) => {
         this.databaseConnectionsLoading = false;
         console.error('Error loading database connections:', error);
-      }
+      },
     });
   }
 
@@ -1106,39 +1366,45 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.documentsLoading = true;
     Promise.all([
       lastValueFrom(this.documentService.list(undefined, true)),
-      lastValueFrom(this.documentShareService.listSharedWithMe())
-    ]).then(([documents, sharedWithMe]) => {
-      const ownedDocuments = documents || [];
-      const sharedDocuments = this.mapSharedDocuments(sharedWithMe || []);
-      const deduped = new Map<string, Document>();
+      lastValueFrom(this.documentShareService.listSharedWithMe()),
+    ])
+      .then(([documents, sharedWithMe]) => {
+        const ownedDocuments = documents || [];
+        const sharedDocuments = this.mapSharedDocuments(sharedWithMe || []);
+        const deduped = new Map<string, Document>();
 
-      [...ownedDocuments, ...sharedDocuments].forEach(document => {
-        deduped.set(document.id, document);
+        [...ownedDocuments, ...sharedDocuments].forEach((document) => {
+          deduped.set(document.id, document);
+        });
+
+        this.allDocuments = Array.from(deduped.values());
+        this.documentsLoaded = true;
+        this.documentsLoading = false;
+        if (this.messages.length) {
+          this.messages = this.decorateMessagesWithAttachments(this.messages);
+        }
+      })
+      .catch((error) => {
+        this.documentsLoading = false;
+        console.error('Error loading documents:', error);
       });
-
-      this.allDocuments = Array.from(deduped.values());
-      this.documentsLoaded = true;
-      this.documentsLoading = false;
-      if (this.messages.length) {
-        this.messages = this.decorateMessagesWithAttachments(this.messages);
-      }
-    }).catch(error => {
-      this.documentsLoading = false;
-      console.error('Error loading documents:', error);
-    });
   }
 
-  private async ensureConversation(firstMessage: string): Promise<Conversation> {
+  private async ensureConversation(
+    firstMessage: string,
+  ): Promise<Conversation> {
     if (this.currentThread) {
       return this.currentThread;
     }
 
     const payload: ConversationCreateRequest = {
       title: this.buildConversationTitle(firstMessage),
-      is_temporary: false
+      is_temporary: false,
     };
 
-    const thread = await lastValueFrom(this.conversationService.create(payload));
+    const thread = await lastValueFrom(
+      this.conversationService.create(payload),
+    );
     this.currentThread = thread;
     this.pendingThreadId = thread.id;
     this.upsertThread(thread);
@@ -1146,28 +1412,50 @@ export class HomeComponent implements OnInit, OnDestroy {
     return thread;
   }
 
-  private async buildResponseRequest(content: string, conversationId: string, webSearch: boolean = false): Promise<ResponseCreateRequest> {
+  private async buildResponseRequest(
+    content: string,
+    conversationId: string,
+    webSearch: boolean = false,
+  ): Promise<ResponseCreateRequest> {
     await this.ensurePromptsLoaded();
 
-    const prompt = this.prompts.find(item => item.id === this.selectedPromptId);
-    const model = prompt?.model || this.selectedModel || this.responseService.getDefaultModel();
+    const prompt = this.prompts.find(
+      (item) => item.id === this.selectedPromptId,
+    );
+    const model =
+      prompt?.model ||
+      this.selectedModel ||
+      this.responseService.getDefaultModel();
     const instructions = this.buildInstructions(prompt);
     const tools = this.buildTools();
+
+    const attachedConnectors = this.getAttachedConnectorsByIds(
+      this.selectedDatabaseConnectionIds,
+    );
+    const attachedGrid = this.datagridAttachmentService.getCurrentAttachment();
 
     return {
       conversation: conversationId,
       model,
       instructions,
       web_search: webSearch,
-      input: [{
-        role: 'user',
-        content: [{ type: 'input_text', text: content }]
-      }],
+      input: [
+        {
+          role: 'user',
+          content: [{ type: 'input_text', text: content }],
+        },
+      ],
       tools,
-      db_connection_ids: this.selectedDatabaseConnectionIds.length ? [...this.selectedDatabaseConnectionIds] : undefined,
+      db_connection_ids: this.selectedDatabaseConnectionIds.length
+        ? [...this.selectedDatabaseConnectionIds]
+        : undefined,
       metadata: {
-        mode: this.mode
-      }
+        mode: this.mode,
+        ...(attachedConnectors.length
+          ? { attached_connectors: attachedConnectors }
+          : {}),
+        ...(attachedGrid ? { attached_datagrid: attachedGrid } : {}),
+      },
     };
   }
 
@@ -1179,78 +1467,105 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
 
     if (this.mode === 'web') {
-      instructionParts.push('Use broad web-style reasoning and state uncertainty clearly when context is limited.');
+      instructionParts.push(
+        'Use broad web-style reasoning and state uncertainty clearly when context is limited.',
+      );
     }
+
+    // NOTE: DataGrid context instructions are now generated server-side by the backend
+    // (ResponsesAPIView) when datagrid_id is present in the request. The backend produces
+    // a richer instruction that includes column names, row count, and source info.
+    // Do NOT inject a [System Context] DataGrid instruction here.
 
     return instructionParts.length ? instructionParts.join('\n\n') : undefined;
   }
 
-  private buildTools(): ResponseCreateRequest['tools'] | undefined {
-    const vectorStoreIds = new Set<string>();
+  private buildTools(): Tool[] | undefined {
+    const tools: Tool[] = [];
 
+    // ── Document tool ──
+    const vectorStoreIds = new Set<string>();
     if (this.selectedLibraryId) {
       vectorStoreIds.add(this.selectedLibraryId);
     }
-
     if (this.selectedDocumentIds.length) {
       this.allDocuments
-        .filter(document => this.selectedDocumentIds.includes(document.id))
-        .forEach(document => vectorStoreIds.add(document.vector_store));
+        .filter((document) => this.selectedDocumentIds.includes(document.id))
+        .forEach((document) => vectorStoreIds.add(document.vector_store));
     }
-
     const normalizedVectorStoreIds = Array.from(vectorStoreIds).filter(Boolean);
-    if (!normalizedVectorStoreIds.length) {
-      return undefined;
+    if (normalizedVectorStoreIds.length) {
+      const docTool: DocumentTool = {
+        type: 'document',
+        vector_store_ids: normalizedVectorStoreIds,
+      };
+      if (this.selectedDocumentIds.length) {
+        docTool.document_ids = [...this.selectedDocumentIds];
+      }
+      tools.push(docTool);
     }
 
-    const payload: NonNullable<ResponseCreateRequest['tools']>[number] = {
-      type: 'document',
-      vector_store_ids: normalizedVectorStoreIds
-    };
-
-    if (this.selectedDocumentIds.length) {
-      payload.document_ids = [...this.selectedDocumentIds];
+    // ── DataGrid tool ──
+    // When a DataGrid is attached the backend validates ownership, injects the
+    // query_datagrid function tool, and appends column/schema instructions.
+    const attachedGrid = this.datagridAttachmentService.getCurrentAttachment();
+    if (attachedGrid) {
+      tools.push({
+        type: 'datagrid',
+        datagrid_id: attachedGrid.id,
+      } as DataGridTool);
     }
 
-    return [payload];
+    return tools.length ? tools : undefined;
   }
 
-  private startResponsePolling(responseId: string, threadId: string, optimisticMessageId: string): void {
+  private startResponsePolling(
+    responseId: string,
+    threadId: string,
+    optimisticMessageId: string,
+  ): void {
     this.stopResponsePolling();
-    this.responsePollSub = this.responseService.pollResponseStatus(responseId).subscribe({
-      next: async (response) => {
-        if (!response) {
-          return;
-        }
-
-        this.currentRun = response;
-        this.applyWarnings(response.warnings);
-
-        if (response.status === 'completed') {
-          const outMetadata = response.output?.[0]?.metadata;
-          if (outMetadata) {
-            this.ephemeralMetadataMap.set(String(threadId), outMetadata);
+    this.responsePollSub = this.responseService
+      .pollResponseStatus(responseId)
+      .subscribe({
+        next: async (response) => {
+          if (!response) {
+            return;
           }
-          await this.finalizeResponse(response, threadId);
-          this.stopResponsePolling();
-          return;
-        }
 
-        if (response.status === 'failed' || response.status === 'cancelled') {
+          this.currentRun = response;
+          this.applyWarnings(response.warnings);
+
+          if (response.status === 'completed') {
+            const outMetadata = response.output?.[0]?.metadata;
+            if (outMetadata) {
+              this.ephemeralMetadataMap.set(String(threadId), outMetadata);
+            }
+            await this.finalizeResponse(response, threadId);
+            this.stopResponsePolling();
+            return;
+          }
+
+          if (response.status === 'failed' || response.status === 'cancelled') {
+            this.loading = false;
+            this.currentRun = null;
+            this.messages = this.messages.filter(
+              (message) => message.id !== optimisticMessageId,
+            );
+            this.handleError(
+              response.error_message || 'Response failed',
+              response,
+            );
+            this.stopResponsePolling();
+          }
+        },
+        error: (error) => {
           this.loading = false;
           this.currentRun = null;
-          this.messages = this.messages.filter(message => message.id !== optimisticMessageId);
-          this.handleError(response.error_message || 'Response failed', response);
           this.stopResponsePolling();
-        }
-      },
-      error: (error) => {
-        this.loading = false;
-        this.currentRun = null;
-        this.stopResponsePolling();
-        this.handleError('Failed while waiting for the response', error);
-      }
-    });
+          this.handleError('Failed while waiting for the response', error);
+        },
+      });
   }
 
   private stopResponsePolling(): void {
@@ -1265,12 +1580,18 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async finalizeResponse(response: ResponseRecord, threadId: string): Promise<void> {
+  private async finalizeResponse(
+    response: ResponseRecord,
+    threadId: string,
+  ): Promise<void> {
     this.chatStreamService.clearStreamState(threadId);
     this.loading = false;
     this.currentRun = null;
     this.applyWarnings(response.warnings);
-    this.responseAttentionService.notifyResponseReady('Home chat response ready', response.output?.[0]?.content?.[0]?.text);
+    this.responseAttentionService.notifyResponseReady(
+      'Home chat response ready',
+      response.output?.[0]?.content?.[0]?.text,
+    );
     // Fire both requests in parallel — thread metadata and messages are independent.
     this.loadMessages(threadId);
     await this.refreshThread(threadId);
@@ -1278,7 +1599,9 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private async refreshThread(threadId: string): Promise<void> {
     try {
-      const thread = await lastValueFrom(this.conversationService.getById(threadId));
+      const thread = await lastValueFrom(
+        this.conversationService.getById(threadId),
+      );
       this.upsertThread(thread);
       if (this.currentThread?.id === thread.id) {
         this.currentThread = thread;
@@ -1307,7 +1630,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (!this.librariesLoaded) {
       this.ensureLibrariesLoaded();
       if (this.librariesLoading) {
-        this.libraries = (await lastValueFrom(this.vectorStoreService.list())) || [];
+        this.libraries =
+          (await lastValueFrom(this.vectorStoreService.list())) || [];
         this.librariesLoaded = true;
       }
     }
@@ -1316,19 +1640,25 @@ export class HomeComponent implements OnInit, OnDestroy {
       return this.selectedLibraryId;
     }
 
-    const defaultLibrary = this.libraries.find(library => library.vs_type === 'DEFAULT');
+    const defaultLibrary = this.libraries.find(
+      (library) => library.vs_type === 'DEFAULT',
+    );
     if (defaultLibrary) {
       return defaultLibrary.id;
     }
 
-    const firstWritableLibrary = this.libraries.find(library => library.vs_type !== 'SHARED');
+    const firstWritableLibrary = this.libraries.find(
+      (library) => library.vs_type !== 'SHARED',
+    );
     return firstWritableLibrary?.id || null;
   }
 
   private mapSharedDocuments(items: SharedWithMeItem[]): Document[] {
-    const sharedLibraryId = this.libraries.find(library => library.vs_type === 'SHARED')?.id || 'shared';
+    const sharedLibraryId =
+      this.libraries.find((library) => library.vs_type === 'SHARED')?.id ||
+      'shared';
 
-    return items.map(item => ({
+    return items.map((item) => ({
       id: item.document_id,
       title: item.document_title,
       original_filename: item.document_title,
@@ -1341,23 +1671,30 @@ export class HomeComponent implements OnInit, OnDestroy {
       ingestion_status: 'completed',
       access_type: 'shared',
       source: 'LOCAL',
-      metadata: item.expires_at ? { expires_at: item.expires_at } : undefined
+      metadata: item.expires_at ? { expires_at: item.expires_at } : undefined,
     }));
   }
 
-  private async uploadFiles(files: File[], vectorStoreId: string | null): Promise<void> {
+  private async uploadFiles(
+    files: File[],
+    vectorStoreId: string | null,
+  ): Promise<void> {
     if (!files.length) {
       return;
     }
 
     this.attachmentsInProgress = true;
     try {
-      await lastValueFrom(this.documentService.ingest({
-        files,
-        vector_store_id: vectorStoreId || undefined
-      }));
+      await lastValueFrom(
+        this.documentService.ingest({
+          files,
+          vector_store_id: vectorStoreId || undefined,
+        }),
+      );
 
-      this.setAttachmentMessage(`Attached ${files.length} item(s) successfully.`);
+      this.setAttachmentMessage(
+        `Attached ${files.length} item(s) successfully.`,
+      );
       this.loadDocuments();
     } catch (error) {
       this.setAttachmentMessage('Failed to upload files.');
@@ -1367,43 +1704,122 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  private buildLocalMessage(role: 'user' | 'assistant', content: string): ConversationMessage {
-    const attachedDocuments = role === 'user'
-      ? this.getAttachedDocumentsByIds(this.selectedDocumentIds)
-      : [];
+  private buildLocalMessage(
+    role: 'user' | 'assistant',
+    content: string,
+  ): ConversationMessage {
+    const attachedDocuments =
+      role === 'user'
+        ? this.getAttachedDocumentsByIds(this.selectedDocumentIds)
+        : [];
+    const attachedConnectors =
+      role === 'user'
+        ? this.getAttachedConnectorsByIds(this.selectedDatabaseConnectionIds)
+        : [];
+    const attachedGrid =
+      role === 'user'
+        ? this.datagridAttachmentService.getCurrentAttachment()
+        : null;
+
+    const metadata: Record<string, any> = {};
+    if (attachedDocuments.length)
+      metadata['attached_documents'] = attachedDocuments;
+    if (attachedConnectors.length)
+      metadata['attached_connectors'] = attachedConnectors;
+    if (attachedGrid) metadata['attached_datagrid'] = attachedGrid;
 
     return {
       id: `${role}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       role,
       content,
       created_at: new Date().toISOString(),
-      metadata: attachedDocuments.length ? { attached_documents: attachedDocuments } : undefined
+      metadata: Object.keys(metadata).length ? metadata : undefined,
     };
   }
 
-  private decorateMessagesWithAttachments(messages: ConversationMessage[]): ConversationMessage[] {
+  private decorateMessagesWithAttachments(
+    messages: ConversationMessage[],
+  ): ConversationMessage[] {
     return messages.map((message, index) => {
-      if (message.role !== 'user' || message.metadata?.['attached_documents']) {
+      if (message.role !== 'user') {
         return message;
       }
 
-      const documentIds = this.getPersistedDocumentIdsForMessage(message, messages[index + 1]);
-      const attachedDocuments = this.getAttachedDocumentsByIds(documentIds);
-      if (!attachedDocuments.length) {
-        return message;
-      }
+      const newMeta: Record<string, any> = { ...(message.metadata || {}) };
 
-      return {
-        ...message,
-        metadata: {
-          ...(message.metadata || {}),
-          attached_documents: attachedDocuments
+      // Documents
+      if (!newMeta['attached_documents']) {
+        const documentIds = this.getPersistedDocumentIdsForMessage(
+          message,
+          messages[index + 1],
+        );
+        const attachedDocuments = this.getAttachedDocumentsByIds(documentIds);
+        if (attachedDocuments.length) {
+          newMeta['attached_documents'] = attachedDocuments;
         }
-      };
+      }
+
+      // Connectors
+      if (!newMeta['attached_connectors']) {
+        const assistantMeta = messages[index + 1]?.metadata || {};
+
+        // 1. Check if the full attached_connectors array was persisted in the assistant's metadata
+        if (Array.isArray(assistantMeta['attached_connectors'])) {
+          newMeta['attached_connectors'] = assistantMeta['attached_connectors'];
+        }
+        // 2. Otherwise check for raw db_connection_ids and re-hydrate
+        else {
+          const connectorIds =
+            this.extractConnectorIdsFromMetadata(message.metadata) ||
+            this.extractConnectorIdsFromMetadata(assistantMeta);
+
+          if (connectorIds && connectorIds.length) {
+            const connectors = this.getAttachedConnectorsByIds(connectorIds);
+            if (connectors.length) {
+              newMeta['attached_connectors'] = connectors;
+            }
+          }
+        }
+      }
+
+      // DataGrid — hydrate from the assistant response's metadata if not already in user message
+      if (!newMeta['attached_datagrid']) {
+        const assistantMeta = messages[index + 1]?.metadata || {};
+        const persistedGrid =
+          assistantMeta['attached_datagrid'] ||
+          message.metadata?.['attached_datagrid'];
+        if (persistedGrid && typeof persistedGrid === 'object') {
+          newMeta['attached_datagrid'] = persistedGrid;
+        }
+      }
+
+      if (
+        Object.keys(newMeta).length ===
+          Object.keys(message.metadata || {}).length &&
+        JSON.stringify(newMeta) === JSON.stringify(message.metadata || {})
+      ) {
+        return message;
+      }
+
+      return { ...message, metadata: newMeta };
     });
   }
 
-  private getPersistedDocumentIdsForMessage(message: ConversationMessage, nextMessage?: ConversationMessage): string[] {
+  private extractConnectorIdsFromMetadata(
+    metadata?: Record<string, any>,
+  ): string[] | null {
+    if (!metadata) return null;
+    if (Array.isArray(metadata['db_connection_ids']))
+      return metadata['db_connection_ids'];
+    if (Array.isArray(metadata['used_db_connection_ids']))
+      return metadata['used_db_connection_ids'];
+    return null;
+  }
+
+  private getPersistedDocumentIdsForMessage(
+    message: ConversationMessage,
+    nextMessage?: ConversationMessage,
+  ): string[] {
     const directIds = this.extractDocumentIdsFromMetadata(message.metadata);
     if (directIds.length) {
       return directIds;
@@ -1416,19 +1832,21 @@ export class HomeComponent implements OnInit, OnDestroy {
     return [];
   }
 
-  private extractDocumentIdsFromMetadata(metadata?: Record<string, any>): string[] {
+  private extractDocumentIdsFromMetadata(
+    metadata?: Record<string, any>,
+  ): string[] {
     if (!metadata) {
       return [];
     }
 
     const directIds = metadata['document_ids'];
     if (Array.isArray(directIds)) {
-      return directIds.map(id => String(id)).filter(Boolean);
+      return directIds.map((id) => String(id)).filter(Boolean);
     }
 
     const usedIds = metadata['used_document_ids'];
     if (Array.isArray(usedIds)) {
-      return usedIds.map(id => String(id)).filter(Boolean);
+      return usedIds.map((id) => String(id)).filter(Boolean);
     }
 
     const tools = metadata['tools'];
@@ -1436,31 +1854,63 @@ export class HomeComponent implements OnInit, OnDestroy {
       return [];
     }
 
-    const ids = tools.flatMap(tool => Array.isArray(tool?.document_ids) ? tool.document_ids : []);
-    return ids.map(id => String(id)).filter(Boolean);
+    const ids = tools.flatMap((tool) =>
+      Array.isArray(tool?.document_ids) ? tool.document_ids : [],
+    );
+    return ids.map((id) => String(id)).filter(Boolean);
   }
 
-  private getAttachedDocumentsByIds(documentIds: string[]): Array<{ id: string; name: string }> {
+  private getAttachedDocumentsByIds(
+    documentIds: string[],
+  ): Array<{ id: string; name: string }> {
     if (!documentIds.length) {
       return [];
     }
 
-    const selectedIds = new Set(documentIds.map(id => String(id)));
+    const selectedIds = new Set(documentIds.map((id) => String(id)));
     return this.allDocuments
-      .filter(document => selectedIds.has(String(document.id)))
-      .map(document => ({
+      .filter((document) => selectedIds.has(String(document.id)))
+      .map((document) => ({
         id: String(document.id),
-        name: document.title || document.original_filename || `Document ${document.id}`
+        name:
+          document.title ||
+          document.original_filename ||
+          `Document ${document.id}`,
+      }));
+  }
+
+  private getAttachedConnectorsByIds(
+    connectorIds: string[],
+  ): Array<{ id: string; name: string; type: string }> {
+    if (!connectorIds.length) {
+      return [];
+    }
+    const selectedIds = new Set(connectorIds.map((id) => String(id)));
+    return this.databaseConnections
+      .filter((conn) => conn.id && selectedIds.has(String(conn.id)))
+      .map((conn) => ({
+        id: String(conn.id),
+        name: conn.name || conn.database_name || `Connection ${conn.id}`,
+        type:
+          conn.connection_type?.name ||
+          conn.connection_type?.driver_name ||
+          'Database',
       }));
   }
 
   private buildConversationTitle(content: string): string {
     const normalized = content.replace(/\s+/g, ' ').trim();
-    return normalized.length <= 60 ? normalized : `${normalized.slice(0, 57)}...`;
+    return normalized.length <= 60
+      ? normalized
+      : `${normalized.slice(0, 57)}...`;
   }
 
   private updateModeFromSelection(forceNormal = false): void {
-    if (forceNormal && !this.selectedLibraryId && !this.selectedDocumentIds.length) {
+    if (
+      forceNormal &&
+      !this.selectedLibraryId &&
+      !this.selectedDocumentIds.length
+    ) {
       this.mode = 'normal';
       return;
     }
@@ -1477,8 +1927,12 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private sortThreads(threads: Conversation[]): Conversation[] {
     return [...threads].sort((left, right) => {
-      const leftTimestamp = new Date(left.updated_at || left.created_at).getTime();
-      const rightTimestamp = new Date(right.updated_at || right.created_at).getTime();
+      const leftTimestamp = new Date(
+        left.updated_at || left.created_at,
+      ).getTime();
+      const rightTimestamp = new Date(
+        right.updated_at || right.created_at,
+      ).getTime();
       return rightTimestamp - leftTimestamp;
     });
   }
@@ -1488,7 +1942,9 @@ export class HomeComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const existingIndex = this.threads.findIndex(item => item.id === thread.id);
+    const existingIndex = this.threads.findIndex(
+      (item) => item.id === thread.id,
+    );
     const next = [...this.threads];
 
     if (existingIndex >= 0) {
@@ -1517,6 +1973,54 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ── Connection-warning modal handlers ────────────────────────────────────
+
+  onConnectionWarningRetry(): void {
+    this.showConnectionWarningModal = false;
+    // Invalidate cache so the retry picks up the latest connection state
+    this.dbConnectionService.invalidateListCache();
+    this.databaseConnectionsLoaded = false;
+    if (this._pendingRetryMessageId && this._pendingRetryContent) {
+      // Remove the failed message bubble right before retrying so we don't duplicate
+      this.messages = this.messages.filter(
+        (m) => m.id !== this._pendingRetryMessageId,
+      );
+      const contentToRetry = this._pendingRetryContent;
+      const webSearchToRetry = this._pendingRetryWebSearch;
+
+      this._pendingRetryMessageId = null;
+      this._pendingRetryContent = null;
+      this._pendingRetryWebSearch = false;
+
+      this.onMessageSent({
+        content: contentToRetry,
+        webSearch: webSearchToRetry,
+      });
+    }
+  }
+
+  onConnectionWarningEdit(connectionId: string): void {
+    this.showConnectionWarningModal = false;
+    this.router.navigate(['/connectors', connectionId]);
+  }
+
+  onConnectionWarningDismiss(): void {
+    this.showConnectionWarningModal = false;
+    if (this._pendingRetryMessageId && this._pendingRetryContent) {
+      // User cancelled, so remove the stuck message bubble and put the text back in the input box
+      this.messages = this.messages.filter(
+        (m) => m.id !== this._pendingRetryMessageId,
+      );
+      this.chatInput?.updateInput(this._pendingRetryContent);
+
+      this._pendingRetryMessageId = null;
+      this._pendingRetryContent = null;
+      this._pendingRetryWebSearch = false;
+    }
+  }
+
+  // ── Error display ─────────────────────────────────────────────────────────
+
   private handleError(message: string, error?: unknown): void {
     this.errorMessage = message;
     console.error(message, error);
@@ -1529,8 +2033,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private applyWarnings(warnings?: string[]): void {
-    this.warningMessages = (warnings || []).filter(warning =>
-      !!warning && warning.trim() !== 'Served from semantic cache.'
+    this.warningMessages = (warnings || []).filter(
+      (warning) =>
+        !!warning && warning.trim() !== 'Served from semantic cache.',
     );
     if (!this.warningMessages.length) {
       return;
@@ -1543,5 +2048,4 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.warningMessages = [];
     }, 6000);
   }
-
 }

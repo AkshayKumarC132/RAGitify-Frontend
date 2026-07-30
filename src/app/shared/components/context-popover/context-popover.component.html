@@ -1,0 +1,70 @@
+<!-- Click-outside overlay -->
+<div class="ctx-popover-overlay" (click)="onOverlayClick($event)" aria-hidden="true"></div>
+
+<!-- Popover panel -->
+<div class="ctx-popover" role="listbox" [attr.aria-label]="'All ' + items.length + ' attachments'" (click)="$event.stopPropagation()">
+
+  <!-- ── Search ───────────────────────────────────────────────── -->
+  <div class="ctx-pop-search">
+    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+    <input
+      type="text"
+      class="ctx-pop-search-input"
+      [placeholder]="'Search ' + items.length + ' attachments…'"
+      [value]="searchQuery"
+      (input)="onSearch($event)"
+      autocomplete="off"
+      autofocus />
+  </div>
+
+  <!-- ── Filter tabs ──────────────────────────────────────────── -->
+  <div class="ctx-pop-tabs">
+    <button type="button" class="ctx-pop-tab" [class.active]="activeFilter === 'all'" (click)="setFilter('all')">
+      All <span class="ctx-pop-tab-count">{{ items.length }}</span>
+    </button>
+    <button type="button" class="ctx-pop-tab" [class.active]="activeFilter === 'file'" (click)="setFilter('file')" *ngIf="fileCount > 0">
+      Files <span class="ctx-pop-tab-count">{{ fileCount }}</span>
+    </button>
+    <button type="button" class="ctx-pop-tab" [class.active]="activeFilter === 'database'" (click)="setFilter('database')" *ngIf="dbCount > 0">
+      DBs <span class="ctx-pop-tab-count">{{ dbCount }}</span>
+    </button>
+  </div>
+
+  <!-- ── Item list ────────────────────────────────────────────── -->
+  <div class="ctx-pop-list" role="group">
+    <div
+      *ngFor="let item of filteredItems"
+      class="ctx-pop-item"
+      [class.ctx-pop-item-db]="item.type === 'database'"
+      role="option">
+
+      <!-- Icon -->
+      <div class="ctx-pop-item-icon">
+        <img *ngIf="item.iconUrl" [src]="item.iconUrl" [alt]="item.subType || ''" class="ctx-pop-item-img" />
+        <i *ngIf="!item.iconUrl" [ngClass]="item.iconClasses" [style.color]="item.iconColor" aria-hidden="true"></i>
+      </div>
+
+      <!-- Name + sub-type -->
+      <div class="ctx-pop-item-info">
+        <span class="ctx-pop-item-name" [title]="item.name">{{ item.name }}</span>
+        <span class="ctx-pop-item-subtype" *ngIf="item.subType">{{ item.subType | uppercase }}</span>
+      </div>
+
+      <!-- Type pill -->
+      <span class="ctx-pop-item-type-pill" [class.pill-db]="item.type === 'database'">
+        {{ item.type === 'database' ? 'DB' : 'File' }}
+      </span>
+    </div>
+
+    <!-- Empty state -->
+    <div class="ctx-pop-empty" *ngIf="filteredItems.length === 0">
+      <i class="fa-regular fa-face-meh" aria-hidden="true"></i>
+      <span>No matches found</span>
+    </div>
+  </div>
+
+  <!-- ── Footer ───────────────────────────────────────────────── -->
+  <div class="ctx-pop-footer">
+    Same {{ items.length }} attachment{{ items.length !== 1 ? 's' : '' }} — one card, still reusable
+  </div>
+</div>

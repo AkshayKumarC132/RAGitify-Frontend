@@ -1,0 +1,70 @@
+<div class="cwm-backdrop" (click)="onBackdropClick($event)">
+  <div class="cwm-modal" role="dialog" aria-modal="true" aria-labelledby="cwm-title">
+
+    <!-- ── Header ── -->
+    <div class="cwm-header">
+      <div class="cwm-header-icon">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div class="cwm-header-text">
+        <h2 class="cwm-title" id="cwm-title">Database Connection Issue</h2>
+        <p class="cwm-subtitle">
+          {{ failedConnections.length === 1
+            ? '1 attached connection needs attention before you can chat.'
+            : failedConnections.length + ' attached connections need attention before you can chat.' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Connection error cards ── -->
+    <div class="cwm-connections">
+      <div
+        *ngFor="let conn of failedConnections"
+        class="cwm-card"
+        [ngClass]="getErrorClass(conn.code)">
+
+        <div class="cwm-card-top">
+          <!-- Error type icon -->
+          <div class="cwm-err-icon-wrap">
+            <i [class]="getErrorIcon(conn.code)"></i>
+          </div>
+
+          <!-- Connection name + error message -->
+          <div class="cwm-card-info">
+            <span class="cwm-conn-name">{{ conn.name || 'Unnamed Connection' }}</span>
+            <span class="cwm-err-msg">{{ conn.message }}</span>
+          </div>
+
+          <!-- Per-card edit button -->
+          <button
+            type="button"
+            class="cwm-edit-btn"
+            (click)="onEdit(conn.id)"
+            title="Edit this connection">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>Edit</span>
+          </button>
+        </div>
+
+        <!-- Recommended action hint -->
+        <div class="cwm-action-hint" *ngIf="conn.action">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>{{ conn.action }}</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Footer actions ── -->
+    <div class="cwm-footer">
+      <button type="button" class="cwm-btn cwm-btn-secondary" (click)="onDismiss()">
+        Dismiss
+      </button>
+      <button type="button" class="cwm-btn cwm-btn-primary" (click)="onRetry()">
+        <i class="fa-solid fa-rotate-right"></i>
+        Retry
+      </button>
+    </div>
+
+  </div>
+</div>

@@ -26,6 +26,14 @@ export interface DatabaseConnection {
     updated_at?: string;
 }
 
+export interface FailedConnectionInfo {
+    id: string;
+    name: string;
+    code: string;
+    message: string;
+    action: string;
+}
+
 export interface DatabaseSyncLog {
     id: string;
     connection: string;

@@ -9,6 +9,7 @@ import { ConnectionDetailsPageComponent } from './components/connection-details-
 import { PostgresWizardComponent } from './components/postgres-wizard/postgres-wizard.component';
 import { ClickhouseWizardComponent } from './components/clickhouse-wizard/clickhouse-wizard.component';
 import { EditConnectionModalComponent } from './components/edit-connection-modal/edit-connection-modal.component';
+import { ConnectionChatComponent } from './components/connection-chat/connection-chat.component';
 
 @NgModule({
     declarations: [
@@ -17,7 +18,8 @@ import { EditConnectionModalComponent } from './components/edit-connection-modal
         ConnectionDetailsPageComponent,
         PostgresWizardComponent,
         ClickhouseWizardComponent,
-        EditConnectionModalComponent
+        EditConnectionModalComponent,
+        ConnectionChatComponent
     ],
     imports: [
         CommonModule,

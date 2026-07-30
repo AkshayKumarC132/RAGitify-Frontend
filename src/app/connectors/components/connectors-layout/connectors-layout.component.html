@@ -39,7 +39,7 @@
                     </div>
                     <button type="button" class="conn-sidebar-item" *ngFor="let conn of filteredConnections"
                         [class.active]="conn.id === activeConnectionId" (click)="navigateToConnection(conn.id)">
-                        <img src="assets/postgres.svg" class="conn-sidebar-icon" alt="PostgreSQL" />
+                        <img [src]="getDatabaseIcon(conn)" class="conn-sidebar-icon" [alt]="getDatabaseTypeName(conn)" />
                         <div class="conn-sidebar-info">
                             <span class="conn-sidebar-name">{{ conn.name || conn.database_name }}</span>
                             <span class="conn-sidebar-sub">{{ conn.database_name }}</span>
@@ -73,12 +73,6 @@
                     [attr.title]="sidebarCollapsed ? 'Open connectors' : null">
                     <i class="fa-solid fa-plug" aria-hidden="true"></i>
                     <span class="button-text" *ngIf="!sidebarCollapsed">Connectors</span>
-                </button>
-                <button type="button" class="workspace-button" (click)="goToPrompts()" aria-label="Open prompts"
-                    [attr.data-tooltip]="sidebarCollapsed ? 'Prompts' : null"
-                    [attr.title]="sidebarCollapsed ? 'Open prompts' : null">
-                    <i class="fa-solid fa-robot" aria-hidden="true"></i>
-                    <span class="button-text" *ngIf="!sidebarCollapsed">Prompts</span>
                 </button>
             </nav>
             <div class="sidebar-footer">

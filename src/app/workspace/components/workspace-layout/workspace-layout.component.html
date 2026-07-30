@@ -19,15 +19,15 @@
       </button>
     </div>
 
-    <!-- New Chat / Workspace / Prompts: hidden when in Knowledge Library -->
-    <nav class="sidebar-actions" *ngIf="showLibraryPicker || activeSection === 'prompts'">
+    <!-- New Chat / Workspace / Connectors: hidden when in Knowledge Library -->
+    <nav class="sidebar-actions" *ngIf="showLibraryPicker">
       <button type="button" class="new-thread-button" (click)="goToNewChat()" aria-label="Start a new chat"
         [attr.data-tooltip]="sidebarCollapsed ? 'Start a new chat' : null"
         [attr.title]="sidebarCollapsed ? 'Start a new chat' : null">
         <i class="fa-solid fa-plus" aria-hidden="true"></i>
         <span class="button-text" *ngIf="!sidebarCollapsed">New Chat</span>
       </button>
-      <button type="button" class="workspace-button" [class.active]="activeSection !== 'prompts'"
+      <button type="button" class="workspace-button active"
         (click)="goToWorkspace()" aria-label="Open workspace"
         [attr.data-tooltip]="sidebarCollapsed ? 'Workspace' : null"
         [attr.title]="sidebarCollapsed ? 'Open workspace' : null">
@@ -39,12 +39,6 @@
         [attr.title]="sidebarCollapsed ? 'Open connectors' : null">
         <i class="fa-solid fa-plug" aria-hidden="true"></i>
         <span class="button-text" *ngIf="!sidebarCollapsed">Connectors</span>
-      </button>
-      <button type="button" class="workspace-button" [class.active]="activeSection === 'prompts'"
-        (click)="goToPrompts()" aria-label="Open prompts" [attr.data-tooltip]="sidebarCollapsed ? 'Prompts' : null"
-        [attr.title]="sidebarCollapsed ? 'Open prompts' : null">
-        <i class="fa-solid fa-robot" aria-hidden="true"></i>
-        <span class="button-text" *ngIf="!sidebarCollapsed">Prompts</span>
       </button>
     </nav>
 
@@ -91,7 +85,7 @@
     </ng-container>
 
     <!-- Bottom: Home and Logout (hidden inside Knowledge Library workspace view) -->
-    <div class="sidebar-footer" *ngIf="showLibraryPicker || activeSection === 'prompts'">
+    <div class="sidebar-footer" *ngIf="showLibraryPicker">
       <button type="button" class="sidebar-footer-btn" (click)="goToHome()" aria-label="Go to home"
         [attr.data-tooltip]="sidebarCollapsed ? 'Home' : null" title="Home">
         <span>Home</span>
@@ -188,7 +182,6 @@
     </div>
 
     <div class="workspace-panels">
-      <app-prompts-section *ngIf="activeSection === 'prompts'"></app-prompts-section>
       <app-document-details-page *ngIf="activeSection === 'knowledge' && activeDocumentId"
         [documentId]="activeDocumentId"></app-document-details-page>
       @if (activeSection === 'knowledge' && activeLibraryStatsId && !activeDocumentId) {

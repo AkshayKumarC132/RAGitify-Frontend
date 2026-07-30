@@ -1,10 +1,15 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener, ChangeDetectorRef, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
 import { Document } from '../../../shared/models/document.model';
 import { ToastService } from '../../../shared/services/toast.service';
 import { DatabaseConnectionService } from '../../../shared/services/database-connection.service';
 import { DatabaseConnection } from '../../../shared/models/database-connection.model';
+import { DatagridAttachmentService } from '../../../shared/services/datagrid-attachment.service';
+import { AttachedDataGrid } from '../../../shared/models/conversation.model';
+import { ConnectionSyncService } from '../../../shared/services/connection-sync.service';
+import { Subscription } from 'rxjs';
 
 type AttachmentPanel = 'web' | 'notes' | 'library' | null;
 
@@ -114,8 +119,42 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     );
   }
 
-  get connectedDatabaseConnections(): DatabaseConnection[] {
-    return (this.databaseConnections || []).filter(db => db.status === 'connected');
+  /** Returns ALL database connections, not just connected ones. */
+  get allDatabaseConnections(): DatabaseConnection[] {
+    return this.databaseConnections || [];
+  }
+
+  /** Returns true when the connection is in a failed/error state. */
+  isConnectionFailed(db: DatabaseConnection): boolean {
+    const s = (db.status || '').toLowerCase();
+    return s === 'failed' || s === 'error';
+  }
+
+  isConnectionSyncing(db: DatabaseConnection): boolean {
+    return !!db.id && this.connectionSyncService.isSyncing(db.id);
+  }
+
+  /** Human-readable status label shown as the badge instead of plain "DB". */
+  getConnectionStatusLabel(db: DatabaseConnection): string {
+    if (this.isConnectionSyncing(db)) return 'Syncing...';
+    const s = (db.status || '').toLowerCase();
+    if (s === 'connected' || s === 'success') return 'Connected';
+    if (s === 'failed' || s === 'error') return 'Failed';
+    if (s === 'pending') return 'Pending';
+    return 'DB';
+  }
+
+  /** CSS classes for the status badge. */
+  getConnectionStatusBadgeClass(db: DatabaseConnection): Record<string, boolean> {
+    const isSyncing = this.isConnectionSyncing(db);
+    const s = (db.status || '').toLowerCase();
+    return {
+      'badge-connected': !isSyncing && (s === 'connected' || s === 'success'),
+      'badge-failed':    !isSyncing && (s === 'failed'    || s === 'error'),
+      'badge-pending':   !isSyncing && s === 'pending',
+      'badge-syncing': isSyncing,
+      'badge-blue':      !isSyncing && (!s || (s !== 'connected' && s !== 'success' && s !== 'failed' && s !== 'error' && s !== 'pending')),
+    };
   }
 
   @Output() messageSent = new EventEmitter<{ content: string, webSearch: boolean } | string>();
@@ -154,19 +193,34 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   isWebSearchEnabled = false;
   showMoreDocsMenu = false;
   private recognition: SpeechRecognitionLike | null = null;
+  attachedDataGrid: AttachedDataGrid | null = null;
+  private datagridSub: Subscription | null = null;
 
   constructor(
     private cdr: ChangeDetectorRef,
     private toast: ToastService,
-    private dbService: DatabaseConnectionService
+    private dbService: DatabaseConnectionService,
+    private datagridAttachmentService: DatagridAttachmentService,
+    private connectionSyncService: ConnectionSyncService,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
     this.initializeSpeechRecognition();
+    this.datagridSub = this.datagridAttachmentService.attachedDataGrid$.subscribe(grid => {
+      this.attachedDataGrid = grid;
+      this.cdr.detectChanges();
+    });
   }
 
   getDatabaseIcon(db: DatabaseConnection): string {
-    const typeName = (db.connection_type?.driver_name || db.connection_type?.name || '').toLowerCase();
+    const typeName = (
+      db.connection_type?.driver_name ||
+      db.connection_type?.name ||
+      db.metadata?.['connection_type'] ||
+      db.metadata?.['type'] ||
+      (db.port === 8123 || db.port === 9000 ? 'clickhouse' : '')
+    ).toString().toLowerCase();
     
     if (typeName.includes('postgres')) return 'assets/postgres.svg';
     if (typeName.includes('clickhouse')) return 'assets/clickhouse.svg';
@@ -194,6 +248,14 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
       this.recognition.onerror = null;
       this.recognition.stop();
     }
+    if (this.datagridSub) {
+      this.datagridSub.unsubscribe();
+    }
+  }
+
+  removeAttachedDataGrid(event: Event): void {
+    event.stopPropagation();
+    this.datagridAttachmentService.clearAttachment();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -590,6 +652,11 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     event.preventDefault();
     event.stopPropagation();
     if (!dbId) return;
+
+    // Block selection for failed/error or syncing connections
+    const conn = this.databaseConnections?.find(db => String(db.id) === String(dbId));
+    if (conn && (this.isConnectionFailed(conn) || this.isConnectionSyncing(conn))) return;
+
     const isCurrentlySelected = this.pendingDatabaseConnectionIds.has(String(dbId));
 
     if (isCurrentlySelected) {
@@ -599,6 +666,12 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     }
 
     this.cdr.detectChanges();
+  }
+
+  navigateToConnection(dbId: string, event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.router.navigate(['/connectors', dbId]);
   }
 
   toggleDocumentSelectionById(documentId: string, selected: boolean): boolean {

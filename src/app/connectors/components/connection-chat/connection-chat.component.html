@@ -1,0 +1,72 @@
+<div class="document-chat-overlay" (click)="close()">
+  <div class="document-chat-panel" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="header-content">
+        <img *ngIf="connection" [src]="getDatabaseIcon()" class="connection-icon" [alt]="connection.name || connection.database_name || 'Database'" />
+        <i *ngIf="!connection" class="fa-solid fa-plug"></i>
+        <div class="header-text">
+          <h3>{{ connection?.name || connection?.database_name || 'Connection Chat' }}</h3>
+        </div>
+      </div>
+      <button type="button" class="close-button" (click)="close()" aria-label="Close chat">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Error Message -->
+    <div class="error-banner" *ngIf="errorMessage">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="messages-container" #messagesContainer>
+      <div *ngIf="messages.length === 0" class="empty-state">
+        <i class="fa-solid fa-database"></i>
+        <p>Ask questions about this connection</p>
+        <span class="empty-state-hint">Query and analyze database tables or schema data in real-time</span>
+      </div>
+
+      <app-message-bubble *ngFor="let message of messages; let last = last" [message]="message" [isLast]="last" [conversationId]="conversation?.id" [enableDataGrid]="conversation?.enable_data_grid || false" [showSources]="false" [isStreaming]="last && isResponseInProgress && message.role === 'assistant'">
+      </app-message-bubble>
+
+      <!-- Task List — live pipeline progress -->
+      <app-task-list [tasks]="currentTasks" [visible]="showTaskList"></app-task-list>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <div class="input-wrapper" [class.expanded]="isExpanded" [class.has-attachments]="!!attachedDataGrid">
+        <div class="selected-documents-grid" *ngIf="attachedDataGrid">
+          <div class="document-chip-inline badge-indigo datagrid-chip" [appDatagridPreview]="attachedDataGrid" tabindex="0">
+            <i class="fa-solid fa-table-list"></i>
+            <div class="datagrid-chip-info">
+              <span class="doc-title">{{ attachedDataGrid.name }}</span>
+              <span class="datagrid-chip-meta" *ngIf="attachedDataGrid.row_count || attachedDataGrid.columns?.length">
+                <ng-container *ngIf="attachedDataGrid.row_count">{{ attachedDataGrid.row_count | number }} rows</ng-container>
+                <ng-container *ngIf="attachedDataGrid.columns?.length"> · {{ attachedDataGrid.columns!.slice(0, 4).join(', ') }}<ng-container *ngIf="attachedDataGrid.columns!.length > 4">, …</ng-container></ng-container>
+              </span>
+            </div>
+            <button type="button" class="remove-btn" (click)="removeAttachedDataGrid($event)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+        <div class="chat-input-shell">
+          <textarea #messageInput [(ngModel)]="messageInputText" (keydown)="onKeyPress($event)" (input)="autoResizeInput()"
+            placeholder="Ask a question about this database connection..." class="chat-input" [class.is-scrolling]="isOverflowing"
+            [disabled]="loading || isResponseInProgress" rows="1"></textarea>
+        </div>
+        <div class="input-bar">
+          <div class="input-actions">
+            <button type="button" class="send-button" (click)="sendMessage()"
+              [disabled]="!messageInputText.trim() || loading || isResponseInProgress" title="Send message"
+              aria-label="Send message">
+              <i *ngIf="!loading && !isResponseInProgress" class="fa-solid fa-arrow-up"></i>
+              <i *ngIf="loading || isResponseInProgress" class="fa-solid fa-spinner fa-spin"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

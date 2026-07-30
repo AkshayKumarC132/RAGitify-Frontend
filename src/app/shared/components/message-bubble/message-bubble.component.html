@@ -1,11 +1,15 @@
 <div *ngIf="!isHidden" class="message-bubble" [class.user]="isUser" [class.assistant]="!isUser"
     [class.empty-state]="showEmptyState" [class.streaming]="isStreaming">
-    <div class="attached-documents" *ngIf="isUser && attachedDocuments.length">
-        <span class="attached-document-chip" *ngFor="let document of attachedDocuments">
-            <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
-            <span>{{ document.name }}</span>
-        </span>
-    </div>
+    <!-- ── Unified Context Rail — replaces stacked chips ─────────────── -->
+    <!-- Shows type-grouped summary badges + truncated chips + +N overflow  -->
+    <app-context-rail
+        *ngIf="isUser && (attachedDocuments.length || attachedConnectors.length || attachedDataGrid)"
+        [documents]="attachedDocuments"
+        [connectors]="attachedConnectors"
+        [attachedDatagrid]="attachedDataGrid"
+        (datagridClick)="scrollToDatagrid($event)">
+    </app-context-rail>
+
     <div class="message-content" [class.has-run-error]="showRunErrorInfo" *ngIf="hasBubbleContent">
         <div *ngIf="showRunErrorInfo" class="run-error-info" aria-hidden="true">
             <span class="run-error-icon">i</span>
@@ -35,7 +39,7 @@
     <!-- ═══════════════════════════════════════════════════════════
          Inline Data Grid (v2 — multi-source)
          ═══════════════════════════════════════════════════════════ -->
-    <div *ngIf="hasDataGrid && !showEmptyState && enableDataGrid" class="inline-data-grid">
+    <div *ngIf="hasDataGrid && !showEmptyState && enableDataGrid" class="inline-data-grid" [attr.id]="message.data_grid_id ? 'datagrid-' + message.data_grid_id : null">
 
         <!-- ── Header ──────────────────────────────────────────── -->
         <div class="idg-header">
@@ -53,6 +57,10 @@
                 </div>
             </div>
             <div class="idg-header-actions">
+                <button type="button" class="idg-btn idg-btn-sql" (click)="attachToConversation()" title="Query this data">
+                    <i class="fa-regular fa-comments"></i>
+                    <span>Query</span>
+                </button>
                 <button type="button" class="idg-btn idg-btn-sql" (click)="viewSql()" title="View SQL">
                     <i class="fa-solid fa-code"></i>
                     <span>View SQL</span>
@@ -130,7 +138,7 @@
     </div>
 
     <!-- Data Grid Bar (fallback when enableDataGrid is false) -->
-    <div *ngIf="hasDataGrid && !showEmptyState && !enableDataGrid" class="new-data-grid-container">
+    <div *ngIf="hasDataGrid && !showEmptyState && !enableDataGrid" class="new-data-grid-container" [attr.id]="message.data_grid_id ? 'datagrid-' + message.data_grid_id : null">
         <div class="new-data-grid-header">
             <div class="ndg-icon-wrap">
                 <i class="fa-solid fa-database"></i>
@@ -147,6 +155,9 @@
             <div class="ndg-actions">
                 <button type="button" class="ndg-action-btn" (click)="previewDataGrid()" title="Preview data">
                     <i class="fa-regular fa-eye"></i>
+                </button>
+                <button type="button" class="ndg-action-btn" (click)="attachToConversation()" title="Query this data">
+                    <i class="fa-regular fa-comments"></i>
                 </button>
                 <button type="button" class="ndg-action-btn" (click)="viewSql()" title="View SQL">
                     <i class="fa-solid fa-code"></i>

@@ -99,9 +99,9 @@
                         </div>
                     </div>
                     <div class="card-actions dropdown-container" (click)="$event.stopPropagation()">
-                        <button type="button" class="conn-action-btn dots" (click)="toggleDropdown(conn, $event)" title="Actions" [disabled]="syncingId === conn.id || deletingId === conn.id">
-                            <i class="fa-solid fa-ellipsis-vertical" *ngIf="syncingId !== conn.id && deletingId !== conn.id"></i>
-                            <i class="fa-solid fa-spinner fa-spin" *ngIf="syncingId === conn.id || deletingId === conn.id"></i>
+                        <button type="button" class="conn-action-btn dots" (click)="toggleDropdown(conn, $event)" [title]="isSyncing(conn.id!) ? 'Syncing connection' : deletingId === conn.id ? 'Deleting connection' : 'Actions'" [disabled]="isSyncing(conn.id!) || deletingId === conn.id">
+                            <i class="fa-solid fa-ellipsis-vertical" *ngIf="!isSyncing(conn.id!) && deletingId !== conn.id"></i>
+                            <i class="fa-solid fa-spinner fa-spin" *ngIf="isSyncing(conn.id!) || deletingId === conn.id"></i>
                         </button>
 
                         <div class="dropdown-menu" *ngIf="activeDropdownId === conn.id">
@@ -183,10 +183,10 @@
                         <td class="col-actions">
                             <div class="conn-actions">
                                 <button type="button" class="conn-action-btn sync"
-                                    (click)="syncConnection(conn, $event)" [disabled]="syncingId === conn.id"
-                                    title="Sync connection">
+                                    (click)="syncConnection(conn, $event)" [disabled]="isSyncing(conn.id!)"
+                                    [title]="isSyncing(conn.id!) ? 'Syncing connection' : 'Sync connection'">
                                     <i class="fa-solid"
-                                        [ngClass]="syncingId === conn.id ? 'fa-spinner fa-spin' : 'fa-rotate'"></i>
+                                        [ngClass]="isSyncing(conn.id!) ? 'fa-spinner fa-spin' : 'fa-rotate'"></i>
                                 </button>
                                 <button type="button" class="conn-action-btn edit"
                                     (click)="openEditModal(conn, $event)" title="Edit connection">

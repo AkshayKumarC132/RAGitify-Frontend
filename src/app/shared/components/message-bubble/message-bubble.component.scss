@@ -57,6 +57,7 @@
   color: var(--text-secondary);
   font-size: 0.75rem;
   line-height: 1;
+  cursor: pointer;
 
   i {
     font-size: 0.75rem;
@@ -68,6 +69,128 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+}
+
+.attached-connectors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+  max-width: min(100%, 42rem);
+}
+
+.attached-connector-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #818cf8;
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+
+  i {
+    font-size: 0.75rem;
+    opacity: 0.85;
+  }
+
+  img.connector-type-icon {
+    width: 0.9rem;
+    height: 0.9rem;
+    object-fit: contain;
+  }
+
+  span:last-child {
+    max-width: 18rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// ── Datagrid attachment card ──────────────────────────────────────────────────
+.attached-datagrid-card {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  max-width: min(100%, 26rem);
+  margin-bottom: 0.45rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.4);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  .adg-accent-bar {
+    width: 4px;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, #6366f1 0%, #818cf8 100%);
+    border-radius: 4px 0 0 4px;
+  }
+
+  .adg-body {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem 0.5rem 0.65rem;
+    min-width: 0;
+  }
+
+  .adg-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.375rem;
+    background: rgba(99, 102, 241, 0.15);
+    flex-shrink: 0;
+
+    i {
+      font-size: 0.9rem;
+      color: #818cf8;
+    }
+  }
+
+  .adg-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .adg-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary, #e2e8f0);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 18rem;
+  }
+
+  .adg-meta {
+    font-size: 0.7rem;
+    color: var(--text-secondary, #94a3b8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 18rem;
   }
 }
 
@@ -1459,4 +1582,29 @@
   50% {
     opacity: 0;
   }
+}
+
+// ── WhatsApp-style Highlight Animation ─────────────────────────────────────
+@keyframes highlight-pulse {
+  0% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+  15% {
+    background-color: rgba(59, 130, 246, 0.15);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
+  }
+  80% {
+    background-color: rgba(59, 130, 246, 0.15);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.highlight-flash {
+  animation: highlight-pulse 2s ease-out;
+  border-radius: 0.5rem;
 }

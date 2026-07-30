@@ -24,15 +24,15 @@
   border-radius: 0;
 
   &:hover {
-    --doc-bg: #f8f9fa;
+    --doc-bg: var(--bg-tertiary);
   }
 
   &.selected {
-    --doc-bg: #f8f9fa;
-    border-left: 2px solid #1a73e8;
+    --doc-bg: var(--bg-tertiary);
+    border-left: 2px solid var(--accent-color);
 
     .doc-title {
-      color: #1a73e8;
+      color: var(--accent-color);
     }
   }
 }
@@ -53,7 +53,7 @@
 }
 
 .doc-title {
-  color: #3c4043;
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 12px;
   line-height: 1.3;

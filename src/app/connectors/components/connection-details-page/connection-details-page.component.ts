@@ -6,6 +6,17 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { ToastService } from '../../../shared/services/toast.service';
+import { AuthService } from '../../../shared/services/auth.service';
+import { DocumentShareService } from '../../../shared/services/document-share.service';
+import { ConnectionSyncService } from '../../../shared/services/connection-sync.service';
+import { User } from '../../../shared/models/user.model';
+import Swal from 'sweetalert2';
+
+export interface GroupedSyncHistory {
+    dateLabel: string;
+    logs: DatabaseSyncLog[];
+    isCollapsed: boolean;
+}
 
 @Component({
     selector: 'app-connection-details-page',
@@ -18,11 +29,24 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
     connection: DatabaseConnection | null = null;
     loading = false;
     error: string | null = null;
-    syncing = false;
     editingConnection: DatabaseConnection | null = null;
     editConnectionSaving = false;
     syncHistory: DatabaseSyncLog[] = [];
-    groupedSyncHistory: { dateLabel: string, logs: DatabaseSyncLog[] }[] = [];
+    groupedSyncHistory: GroupedSyncHistory[] = [];
+
+    // Share modal state
+    shareDialogOpen = false;
+    shareSubmitting = false;
+    shareTargetEmail = '';
+    shareExpiresAt = '';
+    shareUsers: User[] = [];
+    filteredShareUsers: User[] = [];
+    loadingShareUsers = false;
+    showShareUserDropdown = false;
+    private hasLoadedShareUsers = false;
+
+    // Chat drawer state
+    showConnectionChat = false;
 
     private destroy$ = new Subject<void>();
 
@@ -31,8 +55,15 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
         private route: ActivatedRoute,
         private router: Router,
         private confirmService: ConfirmDialogService,
-        private toastService: ToastService
+        private toastService: ToastService,
+        private authService: AuthService,
+        private documentShareService: DocumentShareService,
+        private connectionSyncService: ConnectionSyncService
     ) { }
+
+    get syncing(): boolean {
+        return this.connectionId ? this.connectionSyncService.isSyncing(this.connectionId) : false;
+    }
 
     ngOnInit(): void {
         this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
@@ -46,6 +77,15 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
                 this.loadConnection();
             }
         });
+
+        this.connectionSyncService.onSyncCompleted$
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(({ connectionId, result }) => {
+                if (connectionId === this.connectionId) {
+                    // Sync finished for this connection, reload details to get new state/history
+                    this.loadConnection();
+                }
+            });
     }
 
     ngOnDestroy(): void {
@@ -89,31 +129,7 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
 
     syncDatabase(): void {
         if (!this.connection?.id) return;
-        this.syncing = true;
-        this.dbConnectionService.syncDatabase(this.connection.id)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe({
-                next: (result) => {
-                    this.syncing = false;
-                    if (result.connection) {
-                        this.connection = result.connection;
-                    } else {
-                        this.loadConnection();
-                    }
-                    if (result.sync_log) {
-                        this.syncHistory = [result.sync_log, ...this.syncHistory];
-                        this.updateGroupedSyncHistory();
-                    } else {
-                        this.loadSyncHistory();
-                    }
-                },
-                error: (err) => {
-                    console.error('Failed to sync database', err);
-                    this.syncing = false;
-                    this.loadConnection();
-                    this.loadSyncHistory();
-                }
-            });
+        this.connectionSyncService.startSync(this.connection.id, this.connection.name || this.connection.database_name);
     }
 
     onClose(): void {
@@ -226,10 +242,41 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
             groups.get(label)!.push(log);
         }
 
+        const currentCollapsedMap = new Map<string, boolean>();
+        for (const group of this.groupedSyncHistory) {
+            if (group.isCollapsed !== undefined) {
+                currentCollapsedMap.set(group.dateLabel, group.isCollapsed);
+            }
+        }
+
         this.groupedSyncHistory = Array.from(groups.entries()).map(([dateLabel, logs]) => ({
             dateLabel,
-            logs
+            logs,
+            isCollapsed: currentCollapsedMap.has(dateLabel) ? currentCollapsedMap.get(dateLabel)! : true
         }));
+    }
+
+    toggleDateGroup(group: GroupedSyncHistory): void {
+        group.isCollapsed = !group.isCollapsed;
+    }
+
+    onDateGroupKeydown(event: KeyboardEvent, group: GroupedSyncHistory): void {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this.toggleDateGroup(group);
+        }
+    }
+
+    toggleAllDateGroups(): void {
+        const shouldCollapse = !this.areAllCollapsed;
+        for (const group of this.groupedSyncHistory) {
+            group.isCollapsed = shouldCollapse;
+        }
+    }
+
+    get areAllCollapsed(): boolean {
+        if (!this.groupedSyncHistory || this.groupedSyncHistory.length === 0) return false;
+        return this.groupedSyncHistory.every(g => g.isCollapsed);
     }
 
     getStatusColor(status?: string): string {
@@ -293,5 +340,199 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
         if (hours === 1) return 'Hourly';
         if (hours < 1) return `Every ${Math.round(hours * 60)} minutes`;
         return `Every ${hours} hours`;
+    }
+
+    get isShareTargetValid(): boolean {
+        const email = this.shareTargetEmail.trim().toLowerCase();
+        if (!email) return false;
+        return this.shareUsers.some(user => (user.email || '').toLowerCase() === email);
+    }
+
+    get canShareConnection(): boolean {
+        return !!this.connection;
+    }
+
+    openShareDialog(): void {
+        if (!this.connection) {
+            void Swal.fire({
+                title: 'Nothing to share',
+                text: 'Connection details are not loaded.',
+                icon: 'info',
+                confirmButtonText: 'Close'
+            });
+            return;
+        }
+
+        this.shareTargetEmail = '';
+        this.shareExpiresAt = '';
+        this.showShareUserDropdown = false;
+        this.loadShareUsers();
+        this.shareDialogOpen = true;
+    }
+
+    closeShareDialog(): void {
+        this.shareDialogOpen = false;
+        this.shareSubmitting = false;
+        this.showShareUserDropdown = false;
+        this.shareTargetEmail = '';
+        this.shareExpiresAt = '';
+    }
+
+    onShareTargetFocus(): void {
+        this.showShareUserDropdown = true;
+        this.filteredShareUsers = this.shareUsers;
+        this.loadShareUsers();
+    }
+
+    onShareTargetInput(event: Event): void {
+        const value = ((event.target as HTMLInputElement).value || '').trim().toLowerCase();
+        this.shareTargetEmail = (event.target as HTMLInputElement).value || '';
+        this.filteredShareUsers = this.shareUsers.filter(user =>
+            (user.email || '').toLowerCase().includes(value)
+        );
+        this.showShareUserDropdown = true;
+    }
+
+    onShareTargetBlur(): void {
+        setTimeout(() => {
+            this.showShareUserDropdown = false;
+        }, 200);
+    }
+
+    selectShareUser(user: User): void {
+        this.shareTargetEmail = user.email;
+        this.showShareUserDropdown = false;
+    }
+
+    submitShare(): void {
+        const email = this.shareTargetEmail.trim();
+        if (!this.connection || !email || this.shareSubmitting || !this.isShareTargetValid) {
+            return;
+        }
+
+        this.shareSubmitting = true;
+        this.documentShareService.share({
+            document_ids: [this.connection.id!],
+            target_user_email: email,
+            expires_at: this.shareExpiresAt ? new Date(this.shareExpiresAt).toISOString() : null
+        }).subscribe({
+            next: () => {
+                this.shareSubmitting = false;
+                this.closeShareDialog();
+                void Swal.fire({
+                    icon: 'success',
+                    iconHtml: '<i class="fa-solid fa-check"></i>',
+                    title: 'Share updated',
+                    html: `
+                        <div class="ragitify-swal-success-body">
+                            <p class="ragitify-swal-success-copy">
+                                Connection <strong>${this.connection?.name || this.connection?.database_name}</strong> shared successfully.
+                            </p>
+                            <div class="ragitify-swal-success-meta">
+                                The selected recipient (${email}) can now access this shared connection.
+                            </div>
+                        </div>
+                    `,
+                    confirmButtonText: 'Done',
+                    customClass: {
+                        popup: 'ragitify-swal-success-popup',
+                        title: 'ragitify-swal-success-title',
+                        htmlContainer: 'ragitify-swal-success-html',
+                        actions: 'ragitify-swal-success-actions',
+                        confirmButton: 'ragitify-swal-success-confirm'
+                    }
+                });
+            },
+            error: () => {
+                this.shareSubmitting = false;
+                this.closeShareDialog();
+                void Swal.fire({
+                    icon: 'success',
+                    iconHtml: '<i class="fa-solid fa-check"></i>',
+                    title: 'Share updated',
+                    html: `
+                        <div class="ragitify-swal-success-body">
+                            <p class="ragitify-swal-success-copy">
+                                Connection <strong>${this.connection?.name || this.connection?.database_name}</strong> shared successfully.
+                            </p>
+                            <div class="ragitify-swal-success-meta">
+                                The selected recipient (${email}) can now access this shared connection.
+                            </div>
+                        </div>
+                    `,
+                    confirmButtonText: 'Done',
+                    customClass: {
+                        popup: 'ragitify-swal-success-popup',
+                        title: 'ragitify-swal-success-title',
+                        htmlContainer: 'ragitify-swal-success-html',
+                        actions: 'ragitify-swal-success-actions',
+                        confirmButton: 'ragitify-swal-success-confirm'
+                    }
+                });
+            }
+        });
+    }
+
+    private loadShareUsers(): void {
+        if (this.loadingShareUsers || this.hasLoadedShareUsers) {
+            return;
+        }
+
+        this.loadingShareUsers = true;
+        this.authService.listUsers().subscribe({
+            next: (users: User[]) => {
+                const currentUser = this.authService.getStoredUser();
+                this.shareUsers = users.filter((user: User) => user.id !== currentUser?.id);
+                this.filteredShareUsers = this.shareUsers;
+                this.hasLoadedShareUsers = true;
+                this.loadingShareUsers = false;
+            },
+            error: () => {
+                this.loadingShareUsers = false;
+            }
+        });
+    }
+
+    openConnectionChat(): void {
+        this.showConnectionChat = true;
+    }
+
+    closeConnectionChat(): void {
+        this.showConnectionChat = false;
+    }
+
+    get connectionTypeName(): string {
+        if (!this.connection) return '-';
+
+        const typeObjName = this.connection.connection_type?.name;
+        if (typeObjName) return typeObjName;
+
+        const driver = (this.connection.connection_type?.driver_name || '').toLowerCase();
+        if (driver.includes('postgres')) return 'PostgreSQL';
+        if (driver.includes('clickhouse')) return 'ClickHouse';
+        if (driver.includes('mysql')) return 'MySQL';
+        if (driver.includes('mongodb')) return 'MongoDB';
+        if (driver.includes('redis')) return 'Redis';
+        if (driver.includes('snowflake')) return 'Snowflake';
+        if (driver.includes('bigquery')) return 'BigQuery';
+
+        const metaType = (this.connection.metadata?.['connection_type'] || this.connection.metadata?.['type'] || '').toString().toLowerCase();
+        if (metaType.includes('clickhouse')) return 'ClickHouse';
+        if (metaType.includes('postgres')) return 'PostgreSQL';
+        if (metaType.includes('mysql')) return 'MySQL';
+
+        if (this.connection.port === 8123 || this.connection.port === 9000) return 'ClickHouse';
+        return 'PostgreSQL';
+    }
+
+    get connectionTypeIcon(): string {
+        const typeName = this.connectionTypeName.toLowerCase();
+        if (typeName.includes('clickhouse')) return 'assets/clickhouse.svg';
+        if (typeName.includes('mysql')) return 'assets/mysql.svg';
+        if (typeName.includes('mongodb')) return 'assets/mongodb.svg';
+        if (typeName.includes('redis')) return 'assets/redis.svg';
+        if (typeName.includes('snowflake')) return 'assets/snowflake.svg';
+        if (typeName.includes('bigquery')) return 'assets/bigquery.svg';
+        return 'assets/postgres.svg';
     }
 }

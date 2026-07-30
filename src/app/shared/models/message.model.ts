@@ -6,6 +6,9 @@ export interface Message {
   content: string;
   created_at: string;
   metadata?: Record<string, any>;
+  has_data_grid?: boolean;
+  data_grid_id?: number;
+  data_grid_row_count?: number;
 }
 
 export interface MessageCreateRequest {

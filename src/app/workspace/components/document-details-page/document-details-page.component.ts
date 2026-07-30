@@ -181,9 +181,11 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
     if (this.documentSummary && this.documentSummary !== 'No summary is available for this document yet.') {
       navigator.clipboard.writeText(this.documentSummary).then(() => {
         this.summaryCopied = true;
+        this.cdr.detectChanges();
         this.toast.success('Copied to clipboard', 'Document summary copied.');
         setTimeout(() => {
           this.summaryCopied = false;
+          this.cdr.detectChanges();
         }, 2000);
       }).catch(() => {
         this.toast.error('Copy failed', 'Could not access the clipboard.');

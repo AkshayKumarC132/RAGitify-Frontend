@@ -1,0 +1,77 @@
+<!-- Context Rail: unified, type-grouped replacement for stacked attachment chips -->
+<div class="ctx-rail" *ngIf="hasSummary" (click)="$event.stopPropagation()">
+
+  <!-- ── CONTEXT label + Type-summary badge row ────────────────────── -->
+  <div class="ctx-rail-header" *ngIf="allItems.length > 0">
+    <span class="ctx-rail-label">CONTEXT</span>
+    <span class="ctx-summary-badge files" *ngIf="fileCount > 0">
+      <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
+      {{ fileCount }} {{ fileCount === 1 ? 'file' : 'files' }}
+    </span>
+    <span class="ctx-summary-badge dbs" *ngIf="dbCount > 0">
+      <i class="fa-solid fa-database" aria-hidden="true"></i>
+      {{ dbCount }} {{ dbCount === 1 ? 'DB' : 'DBs' }}
+    </span>
+  </div>
+
+  <!-- ── Inline chips row ───────────────────────────────────────────── -->
+  <div class="ctx-rail-chips" *ngIf="allItems.length > 0">
+    <span
+      *ngFor="let item of visibleItems"
+      class="ctx-chip"
+      [class.ctx-chip-file]="item.type === 'file'"
+      [class.ctx-chip-db]="item.type === 'database'"
+      [title]="item.name">
+      <!-- Icon: use img if iconUrl available, else FA icon -->
+      <img *ngIf="item.iconUrl" [src]="item.iconUrl" class="ctx-chip-img" [alt]="item.subType || ''" />
+      <i *ngIf="!item.iconUrl" [ngClass]="item.iconClasses" [style.color]="item.iconColor" aria-hidden="true"></i>
+      <span class="ctx-chip-name">{{ item.displayName }}</span>
+    </span>
+
+    <!-- +N overflow button -->
+    <button
+      *ngIf="overflowCount > 0"
+      type="button"
+      class="ctx-overflow-btn"
+      [title]="overflowCount + ' more attachments'"
+      (click)="openPopover($event)"
+      [attr.aria-expanded]="popoverOpen"
+      aria-haspopup="listbox">
+      +{{ overflowCount }} more <i class="fa-solid fa-chevron-right ctx-overflow-chevron" aria-hidden="true"></i>
+    </button>
+
+    <!-- Context Popover (progressive disclosure) -->
+    <app-context-popover
+      *ngIf="popoverOpen"
+      [items]="allItems"
+      [open]="popoverOpen"
+      (closePopover)="closePopover()">
+    </app-context-popover>
+  </div>
+
+  <!-- ── Datagrid reply card (reply-privileged) ─────────────────────── -->
+  <div
+    *ngIf="attachedDatagrid"
+    class="ctx-datagrid-card"
+    (click)="onDatagridClick()"
+    [title]="'Go to DataGrid: ' + attachedDatagrid.name"
+    tabindex="0"
+    role="button"
+    (keydown.enter)="onDatagridClick()">
+    <div class="ctx-dg-accent-bar"></div>
+    <div class="ctx-dg-body">
+      <div class="ctx-dg-icon">
+        <i class="fa-solid fa-table-list" aria-hidden="true"></i>
+      </div>
+      <div class="ctx-dg-info">
+        <span class="ctx-dg-name" [title]="attachedDatagrid.name">{{ attachedDatagrid.name }}</span>
+        <span class="ctx-dg-meta">
+          DataGrid #{{ attachedDatagrid.id }}
+          <ng-container *ngIf="attachedDatagrid.row_count"> · {{ attachedDatagrid.row_count | number }} rows</ng-container>
+        </span>
+      </div>
+      <i class="fa-solid fa-arrow-right ctx-dg-arrow" aria-hidden="true"></i>
+    </div>
+  </div>
+
+</div>

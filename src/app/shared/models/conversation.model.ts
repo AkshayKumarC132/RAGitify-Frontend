@@ -1,3 +1,12 @@
+/** A single attachment item in the unified context rail */
+export interface ContextItem {
+  type: 'file' | 'database';
+  id: string;
+  name: string;
+  /** e.g. 'postgres', 'clickhouse', 'xlsx', 'csv', 'pdf' */
+  subType?: string;
+}
+
 export interface Conversation {
   id: string;
   title: string | null;
@@ -22,6 +31,8 @@ export interface ConversationMessage {
   created_at: string;
   metadata?: Record<string, any>;
   has_data_grid?: boolean;
+  data_grid_id?: number;
+  data_grid_row_count?: number;
   /** Token counts from the linked ResponseRecord — only present on assistant messages */
   usage?: {
     prompt_tokens: number;
@@ -52,4 +63,11 @@ export interface DataGridResponse {
     rows: Record<string, any>[];
   }>;
   sql_query: Record<string, string> | null;
+}
+
+export interface AttachedDataGrid {
+  id: number;
+  name: string;
+  row_count?: number;
+  columns?: string[];
 }

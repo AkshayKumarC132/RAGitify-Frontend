@@ -8,11 +8,14 @@ import { DocumentService } from '../../../shared/services/document.service';
 import { DocumentShareService } from '../../../shared/services/document-share.service';
 import { SharedWithMeItem } from '../../../shared/models/document-share.model';
 import { ConversationMessage } from '../../../shared/models/conversation.model';
-import { ResponseRecord, ResponseCreateRequest, StreamEvent } from '../../../shared/models/response.model';
+import { ResponseRecord, ResponseCreateRequest, StreamEvent, TaskItem } from '../../../shared/models/response.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document } from '../../../shared/models/document.model';
 import { DatabaseConnectionService } from '../../../shared/services/database-connection.service';
-import { DatabaseConnection } from '../../../shared/models/database-connection.model';
+import { DatabaseConnection, FailedConnectionInfo } from '../../../shared/models/database-connection.model';
+import { Router } from '@angular/router';
+import { ChatInputComponent, LibrarySelectionEvent } from '../chat-input/chat-input.component';
+import { ConnectionSyncService } from '../../../shared/services/connection-sync.service';
 
 @Component({
     selector: 'app-playground',
@@ -23,16 +26,17 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     private readonly maxSelectedDocuments = 10;
 
     @ViewChild('messagesContainer') messagesContainer?: ElementRef<HTMLDivElement>;
-    @ViewChild('messageInput') messageInput?: ElementRef<HTMLTextAreaElement>;
+    @ViewChild(ChatInputComponent) chatInput?: ChatInputComponent;
     @Output() closed = new EventEmitter<void>();
 
     messages: ConversationMessage[] = [];
+    currentTasks: TaskItem[] = [];
     conversationId: string | null = null;
     loading = false;
     inputMessage = '';
     errorMessage = '';
     warningMessages: string[] = [];
-    mode: 'normal' | 'document' = 'normal';
+    mode: 'normal' | 'web' | 'document' = 'normal';
     isExpanded = false;
     isOverflowing = false;
     private streamSub?: Subscription;
@@ -48,15 +52,54 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     expandedLibraries = new Set<string>();
     documentSearchQuery = '';
     librariesLoaded = false;
-    private librariesLoading = false;
+    librariesLoading = false;
     documentsLoaded = false;
     documentsLoading = false;
     databaseConnections: DatabaseConnection[] = [];
     databaseConnectionsLoaded = false;
     databaseConnectionsLoading = false;
+    showConnectionWarningModal = false;
+    failedDbConnections: FailedConnectionInfo[] = [];
+    private _pendingRetryMessageId: string | null = null;
+    private _pendingRetryContent: string | null = null;
+    private _lastSentMessage = '';
 
-    get connectedDatabaseConnections(): DatabaseConnection[] {
-        return (this.databaseConnections || []).filter(db => db.status === 'connected');
+    /** Returns ALL database connections, not just connected ones. */
+    get allDatabaseConnections(): DatabaseConnection[] {
+        return this.databaseConnections || [];
+    }
+
+    /** Returns true when the connection is in a failed/error state. */
+    isConnectionFailed(db: DatabaseConnection): boolean {
+        const s = (db.status || '').toLowerCase();
+        return s === 'failed' || s === 'error';
+    }
+
+    isConnectionSyncing(db: DatabaseConnection): boolean {
+        return !!db.id && this.connectionSyncService.isSyncing(db.id);
+    }
+
+    /** Human-readable status label shown as the badge. */
+    getConnectionStatusLabel(db: DatabaseConnection): string {
+        if (this.isConnectionSyncing(db)) return 'Syncing...';
+        const s = (db.status || '').toLowerCase();
+        if (s === 'connected' || s === 'success') return 'Connected';
+        if (s === 'failed'    || s === 'error')   return 'Failed';
+        if (s === 'pending') return 'Pending';
+        return 'DB';
+    }
+
+    /** CSS classes for the status badge. */
+    getConnectionStatusBadgeClass(db: DatabaseConnection): Record<string, boolean> {
+        const isSyncing = this.isConnectionSyncing(db);
+        const s = (db.status || '').toLowerCase();
+        return {
+            'badge-connected': !isSyncing && (s === 'connected' || s === 'success'),
+            'badge-failed':    !isSyncing && (s === 'failed'    || s === 'error'),
+            'badge-pending':   !isSyncing && s === 'pending',
+            'badge-syncing':   isSyncing,
+            'badge-blue':      !isSyncing && (!s || (s !== 'connected' && s !== 'success' && s !== 'failed' && s !== 'error' && s !== 'pending')),
+        };
     }
 
     private allDefaultQuestions = [
@@ -81,7 +124,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         'Key takeaways from attachments'
     ];
 
-    get showTypingIndicator(): boolean {
+    get showTaskList(): boolean {
         if (!this.loading) {
             return false;
         }
@@ -144,6 +187,8 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         private documentService: DocumentService,
         private documentShareService: DocumentShareService,
         private dbConnectionService: DatabaseConnectionService,
+        private connectionSyncService: ConnectionSyncService,
+        private router: Router,
         private cdr: ChangeDetectorRef
     ) { }
 
@@ -163,235 +208,43 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
 
     onQuestionClick(question: string): void {
         this.inputMessage = question;
+        this.chatInput?.updateInput(question);
     }
 
+    onMessageSent(event: { content: string; webSearch: boolean } | string): void {
+        const text = typeof event === 'string' ? event : event.content;
+        if (!text || !text.trim() || this.loading || !this.conversationId) return;
 
-
-    openLibraryPanel(): void {
-        if (this.libraryPanelOpen) {
-            this.closePanel();
-            return;
-        }
-
-        this.loadLibraries();
-        this.loadDocuments();
-        this.loadDatabaseConnections();
-        this.libraryPanelOpen = true;
-        this.pendingDocumentIds = new Set(this.selectedDocumentIds.map(String));
-        this.pendingDatabaseConnectionIds = new Set(this.selectedDatabaseConnectionIds.map(String));
-        this.documentSearchQuery = '';
+        this.inputMessage = text.trim();
+        this.sendMessage();
     }
 
-    closePanel(): void {
-        this.autoApplyDocumentSelection();
-        this.libraryPanelOpen = false;
-        this.documentSearchQuery = '';
-    }
-
-    @HostListener('document:click', ['$event'])
-    onDocumentClick(event: MouseEvent): void {
-        const target = event.target as HTMLElement;
-        if (!target.closest('.attachment-controls') && !target.closest('.attachment-panel')) {
-            this.autoApplyDocumentSelection();
-            this.libraryPanelOpen = false;
-            this.documentSearchQuery = '';
-        }
-    }
-
-    confirmSelection(): void {
-        this.selectedDocumentIds = Array.from(this.pendingDocumentIds);
-        this.selectedDatabaseConnectionIds = Array.from(this.pendingDatabaseConnectionIds);
-        this.mode = (this.selectedDocumentIds.length || this.selectedDatabaseConnectionIds.length) ? 'document' : 'normal';
-        this.libraryPanelOpen = false;
-    }
-
-    getDocumentsByLibraryForTab(): { libraryId: string; name: string; user?: string | null; documents: Document[] }[] {
-        const filtered = this.availableDocuments.filter(doc => {
-            if (this.activeDocumentTab === 'shared') {
-                return doc.access_type === 'shared';
-            }
-            return doc.access_type !== 'shared';
-        });
-
-        const grouping = new Map<string, Document[]>();
-        filtered.forEach(doc => {
-            const list = grouping.get(doc.vector_store) || [];
-            list.push(doc);
-            grouping.set(doc.vector_store, list);
-        });
-
-        return Array.from(grouping.entries())
-            .map(([libraryId, docs]) => ({
-                libraryId,
-                name: this.getLibraryName(libraryId),
-                user: docs.length > 0 && docs[0].user ? docs[0].user : null,
-                documents: docs
-            }))
-            .filter(group => group.documents.length > 0);
-    }
-
-    formatFileSize(bytes?: number): string {
-        if (!bytes) return '';
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-    }
-
-    getFileTypeColor(doc: Document): string {
-        const type = (doc.file_type || doc.original_filename?.split('.').pop() || '').toLowerCase();
-        if (type === 'pdf') return 'red';
-        if (['doc', 'docx'].includes(type)) return 'blue';
-        if (['xls', 'xlsx', 'csv'].includes(type)) return 'green';
-        if (['ppt', 'pptx'].includes(type)) return 'orange';
-        if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(type)) return 'purple';
-        return 'gray';
-    }
-
-    getDocumentFileIcon(doc: Document): string {
-        const type = (doc.file_type || doc.original_filename?.split('.').pop() || '').toLowerCase();
-        const iconMap: Record<string, string> = {
-            'pdf': 'fa-file-pdf',
-            'doc': 'fa-file-word',
-            'docx': 'fa-file-word',
-            'xls': 'fa-file-excel',
-            'xlsx': 'fa-file-excel',
-            'csv': 'fa-file-csv',
-            'ppt': 'fa-file-powerpoint',
-            'pptx': 'fa-file-powerpoint',
-            'txt': 'fa-file-lines',
-            'md': 'fa-file-lines',
-        };
-        return iconMap[type] || 'fa-file';
-    }
-
-    private autoApplyDocumentSelection(): void {
-        if (!this.libraryPanelOpen) return;
-        const pendingArray = Array.from(this.pendingDocumentIds);
-        const pendingDbArray = Array.from(this.pendingDatabaseConnectionIds);
-
-        if (pendingArray.length > 0 || pendingDbArray.length > 0) {
-            this.selectedDocumentIds = pendingArray;
-            this.selectedDatabaseConnectionIds = pendingDbArray;
-            this.mode = 'document';
-        } else if (this.selectedDocumentIds.length > 0 || this.selectedDatabaseConnectionIds.length > 0) {
+    onLibrarySelected(event: LibrarySelectionEvent): void {
+        if (event.type === 'clear') {
             this.selectedDocumentIds = [];
             this.selectedDatabaseConnectionIds = [];
             this.mode = 'normal';
+        } else if (event.type === 'documents') {
+            this.selectedDocumentIds = event.documentIds;
+            this.selectedDatabaseConnectionIds = event.databaseConnectionIds || [];
+            this.mode = (this.selectedDocumentIds.length > 0 || this.selectedDatabaseConnectionIds.length > 0) ? 'document' : 'normal';
         }
     }
 
-    clearSelection(): void {
-        this.selectedDocumentIds = [];
-        this.selectedDatabaseConnectionIds = [];
-        this.pendingDocumentIds.clear();
-        this.pendingDatabaseConnectionIds.clear();
-        this.mode = 'normal';
-        this.libraryPanelOpen = false;
-        this.documentSearchQuery = '';
-    }
-
-    removeSelectedDocument(id: string, event?: MouseEvent): void {
-        if (event) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        const next = new Set(this.selectedDocumentIds.map(String));
-        next.delete(String(id));
-        this.selectedDocumentIds = Array.from(next);
-        if (!this.selectedDocumentIds.length && !this.selectedDatabaseConnectionIds.length) {
-            this.mode = 'normal';
+    onAttachmentPanelOpened(panel: 'web' | 'notes' | 'library' | null): void {
+        if (panel === 'library') {
+            this.loadLibraries();
+            this.loadDocuments();
+            this.loadDatabaseConnections();
         }
     }
 
-    getDocumentsByLibrary(): { libraryId: string; name: string; user?: string | null; documents: Document[] }[] {
-        const grouping = new Map<string, Document[]>();
-        this.availableDocuments.forEach(document => {
-            const list = grouping.get(document.vector_store) || [];
-            list.push(document);
-            grouping.set(document.vector_store, list);
-        });
-
-        return Array.from(grouping.entries())
-            .map(([libraryId, documents]) => ({
-                libraryId,
-                name: this.getLibraryName(libraryId),
-                user: documents.length > 0 && documents[0].user ? documents[0].user : null,
-                documents
-            }))
-            .filter(group => group.documents.length > 0);
-    }
-
-    isDocumentSelected(documentId: string): boolean {
-        return this.pendingDocumentIds.has(String(documentId));
-    }
-
-    isDatabaseSelected(dbId: string | undefined): boolean {
-        if (!dbId) return false;
-        return this.pendingDatabaseConnectionIds.has(String(dbId));
-    }
-
-    toggleDatabaseSelectionClick(dbId: string | undefined, event: MouseEvent): void {
-        event.preventDefault();
-        event.stopPropagation();
-        if (!dbId) return;
-        const isCurrentlySelected = this.pendingDatabaseConnectionIds.has(String(dbId));
-
-        if (isCurrentlySelected) {
-            this.pendingDatabaseConnectionIds.delete(String(dbId));
-        } else {
-            this.pendingDatabaseConnectionIds.add(String(dbId));
-        }
-
-        this.cdr.detectChanges();
-    }
-
-    isSelectionDisabled(documentId: string): boolean {
-        return !this.isDocumentSelected(documentId) && this.pendingDocumentIds.size >= this.maxSelectedDocuments;
-    }
-
-    toggleLibraryGroup(libraryId: string): void {
-        if (this.expandedLibraries.has(libraryId)) {
-            this.expandedLibraries.delete(libraryId);
-        } else {
-            this.expandedLibraries.add(libraryId);
-        }
-    }
-
-    isLibraryExpanded(libraryId: string): boolean {
-        return this.documentSearchQuery.trim().length > 0 || this.expandedLibraries.has(libraryId);
-    }
-
-    toggleDocumentSelectionClick(documentId: string, event: MouseEvent): void {
-        event.preventDefault();
-        event.stopPropagation();
-        const isCurrentlySelected = this.pendingDocumentIds.has(String(documentId));
-        const newState = !isCurrentlySelected;
-        const updated = this.toggleDocumentSelectionById(documentId, newState);
-        if (!updated) {
-            return;
-        }
-
-        const label = event.currentTarget as HTMLElement;
-        const checkbox = label.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
-        if (checkbox) {
-            checkbox.checked = newState;
-        }
-    }
-
-    getDocumentTypeLabel(document: Document): string {
-        return (document.file_type || document.original_filename?.split('.').pop() || 'file').toUpperCase();
-    }
-
-    getDocumentSourceLabel(document: Document): string {
-        return document.access_type === 'shared' ? 'Shared' : 'Owned';
+    onModeToggle(newMode: 'normal' | 'web' | 'document'): void {
+        this.mode = newMode;
     }
 
     getDocumentDisplayName(document: Document): string {
         return document.title || document.original_filename || `Document ${document.id}`;
-    }
-
-    getDocumentDate(document: Document): string | undefined {
-        return document.created_at || document.updated_at || document.uploaded_at;
     }
 
     getDocumentStatus(document: Document): string {
@@ -406,15 +259,10 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
             id: String(document.id),
             name: this.getDocumentDisplayName(document)
         }));
+        this._lastSentMessage = content;
         this.inputMessage = '';
         this.isExpanded = false;
         this.loading = true;
-
-        setTimeout(() => {
-            if (this.messageInput?.nativeElement) {
-                this.messageInput.nativeElement.style.height = 'auto';
-            }
-        });
 
         const tempMsg: ConversationMessage = {
             id: 'temp-' + Date.now(),
@@ -475,9 +323,16 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
                     // (mirrors the approach used in home.component.ts via ChatStreamService)
                     const lastIdx = this.messages.length - 1;
                     this.messages = [...this.messages.slice(0, lastIdx), { ...assistantMsg }];
+                    if (this.currentTasks.length > 0) {
+                        this.currentTasks = [];
+                    }
                     this.scrollToBottom();
+                } else if (event.type === 'task_update') {
+                    this.currentTasks = (event.tasks || []).filter(t => t.status !== 'removed');
+                    this.cdr.markForCheck();
                 } else if (event.type === 'completed') {
                     this.loading = false;
+                    this.currentTasks = [];
                     this.warningMessages = this.filterWarnings(event.warnings);
                     this.responseAttentionService.notifyResponseReady(
                         'Playground response ready',
@@ -485,45 +340,45 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
                     );
                     this.scrollToBottom();
                 } else if (event.type === 'failed') {
+                    this.currentTasks = [];
                     this.messages = this.messages.filter(m => m.id !== assistantMsg.id);
                     this.handleError(event.response?.error_message || 'Response failed', null);
                 }
             },
             error: (err: any) => {
+                this.loading = false;
+                this.currentTasks = [];
                 this.messages = this.messages.filter(m => m.id !== assistantMsg.id);
-                this.handleError('Failed to send message', err);
-                this.messages = this.messages.filter(m => m.id !== tempMsg.id);
+                if (err?.payload?.code === 'DATABASE_CONNECTION_UNAVAILABLE') {
+                    // DO NOT filter the user's message! Leave it in the UI.
+                    this._pendingRetryMessageId = tempMsg.id;
+                    this._pendingRetryContent = content; // 'content' from earlier in sendMessage
+                    this.failedDbConnections = err.payload.connections || [];
+
+                    // Immediately reflect the failure in the local list.
+                    const failedIds = new Set(this.failedDbConnections.map((fc: any) => String(fc.id)));
+                    this.databaseConnections = this.databaseConnections.map(db =>
+                        failedIds.has(String(db.id)) ? { ...db, status: 'failed' } : db
+                    );
+                    // Invalidate cache so the next list() call hits the backend.
+                    this.dbConnectionService.invalidateListCache();
+                    this.databaseConnectionsLoaded = false;
+
+                    setTimeout(() => {
+                        this.showConnectionWarningModal = true;
+                        this.cdr.detectChanges();
+                    });
+                } else {
+                    this.handleError('Failed to send message', err);
+                    this.messages = this.messages.filter(m => m.id !== tempMsg.id);
+                    this.cdr.detectChanges();
+                }
             },
             complete: () => {
+                this.currentTasks = [];
                 this.loading = false;
             }
         });
-    }
-
-    autoResizeInput(): void {
-        if (this.messageInput?.nativeElement) {
-            const textarea = this.messageInput.nativeElement;
-            const maxHeight = 150;
-            textarea.style.height = 'auto';
-            const contentHeight = textarea.scrollHeight;
-            textarea.style.height = `${Math.min(contentHeight, maxHeight)}px`;
-            this.isOverflowing = contentHeight > maxHeight;
-
-            // Same oscillation-safe logic as home chat-input:
-            // Expand on scrollHeight threshold, only collapse when input is empty
-            if (contentHeight > 52) {
-                this.isExpanded = true;
-            } else if (!this.inputMessage) {
-                this.isExpanded = false;
-            }
-        }
-    }
-
-    onKeyPress(event: KeyboardEvent): void {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            this.sendMessage();
-        }
     }
 
     private shuffleDefaultQuestions(): void {
@@ -619,6 +474,40 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         if (this.streamSub) {
             this.streamSub.unsubscribe();
             this.streamSub = undefined;
+        }
+    }
+
+    onConnectionWarningRetry(): void {
+        this.showConnectionWarningModal = false;
+        // Invalidate cache so the retry picks up the latest connection state
+        this.dbConnectionService.invalidateListCache();
+        this.databaseConnectionsLoaded = false;
+        if (this._pendingRetryMessageId && this._pendingRetryContent) {
+            this.messages = this.messages.filter(m => m.id !== this._pendingRetryMessageId);
+            const retryContent = this._pendingRetryContent;
+            this._pendingRetryMessageId = null;
+            this._pendingRetryContent = null;
+            // Put it back into the input and trigger send
+            this.inputMessage = retryContent;
+            this.sendMessage();
+        } else {
+            this.sendMessage();
+        }
+    }
+
+    onConnectionWarningEdit(connectionId: string): void {
+        this.showConnectionWarningModal = false;
+        // In incognito, they shouldn't edit connection strings directly, but we can emit an event or route them
+    }
+
+    onConnectionWarningDismiss(): void {
+        this.showConnectionWarningModal = false;
+        if (this._pendingRetryMessageId && this._pendingRetryContent) {
+            this.messages = this.messages.filter(m => m.id !== this._pendingRetryMessageId);
+            this.inputMessage = this._pendingRetryContent;
+            this._pendingRetryMessageId = null;
+            this._pendingRetryContent = null;
+            this.chatInput?.updateInput(this.inputMessage);
         }
     }
 

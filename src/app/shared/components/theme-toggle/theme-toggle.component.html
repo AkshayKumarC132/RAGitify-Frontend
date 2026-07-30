@@ -1,7 +1,7 @@
 <div class="theme-toggle-wrapper" (click)="$event.stopPropagation()" *ngIf="(preference$ | async) as pref">
   <button type="button" class="theme-toggle" [class.is-compact]="compact" (click)="toggleMenu($event)"
     [attr.aria-label]="'Color theme: ' + pref" [attr.aria-expanded]="menuOpen" [attr.title]="'Theme — ' + pref">
-    <i class="fa-solid" [ngClass]="iconFor((theme$ | async) || 'light')" aria-hidden="true"></i>
+    <i class="fa-solid fa-moon" aria-hidden="true"></i>
     <span *ngIf="!compact">{{ pref === 'system' ? 'System theme' : (pref === 'dark' ? 'Dark mode' : 'Light mode') }}</span>
   </button>
 

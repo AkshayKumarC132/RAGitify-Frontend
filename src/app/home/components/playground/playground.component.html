@@ -1,7 +1,7 @@
 <div class="incognito-frame">
     <div class="playground-topbar">
         <div class="topbar-left">
-            <i class="fa-solid fa-user-secret"></i>
+            <i class="fa-solid fa-ghost"></i>
             <span>Incognito chat</span>
         </div>
         <button class="close-btn" type="button" (click)="closed.emit()" title="Exit Incognito"
@@ -23,191 +23,35 @@
             <app-message-bubble *ngFor="let msg of messages; let last = last" [message]="msg" [isLast]="last"
                 [isStreaming]="last && loading && msg.role === 'assistant'">
             </app-message-bubble>
+            <app-task-list [tasks]="currentTasks" [visible]="showTaskList"></app-task-list>
         </div>
 
         <div class="input-area-wrapper">
-            <div class="input-card" [class.document-mode-active]="mode === 'document'" [class.expanded]="isExpanded">
-
-                <div class="chat-input-shell">
-                    <textarea #messageInput (input)="autoResizeInput()" [(ngModel)]="inputMessage"
-                        (keydown)="onKeyPress($event)" placeholder="How can I help you today?"
-                        [class.is-scrolling]="isOverflowing" [disabled]="loading || !conversationId"
-                        rows="1"></textarea>
-                </div>
-
-                <div class="input-bar">
-                    <div class="attachment-controls">
-                        <button class="add-button" [class.active]="libraryPanelOpen" title="Attach Documents"
-                            (click)="openLibraryPanel()">
-                            <i class="fa-solid fa-plus"></i>
-                        </button>
-                    </div>
-
-                    <div class="right-actions">
-                        <button class="send-btn" (click)="sendMessage()" [disabled]="!inputMessage.trim() || loading">
-                            <i class="fa-solid fa-arrow-up"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="attachment-panel document-picker-panel" [class.open-upwards]="messages.length > 0"
-                    *ngIf="libraryPanelOpen" (click)="$event.stopPropagation()">
-                    <!-- Tabs -->
-                    <div class="document-tabs">
-                        <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'my'"
-                            (click)="activeDocumentTab = 'my'">
-                            <i class="fa-solid fa-download"></i>
-                            My Documents
-                        </button>
-                        <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'shared'"
-                            (click)="activeDocumentTab = 'shared'">
-                            <i class="fa-solid fa-user-group"></i>
-                            Shared with Me
-                        </button>
-                        <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'database'"
-                            (click)="activeDocumentTab = 'database'">
-                            <i class="fa-solid fa-database"></i>
-                            Database
-                        </button>
-                    </div>
-
-                    <!-- Document List -->
-                    <div class="documents-list" *ngIf="activeDocumentTab !== 'database'">
-                        <ng-container *ngIf="documentsLoading; else documentsReady">
-                            <p class="empty-text">Loading documents...</p>
-                        </ng-container>
-                        <ng-template #documentsReady>
-                            <ng-container *ngIf="getDocumentsByLibraryForTab().length; else emptyDocuments">
-                                <div class="library-group" *ngFor="let group of getDocumentsByLibraryForTab()">
-                                    <div class="group-header" (click)="toggleLibraryGroup(group.libraryId)">
-                                        <div class="group-header-left">
-                                            <i class="fa-solid"
-                                                [ngClass]="isLibraryExpanded(group.libraryId) ? 'fa-folder-open folder-icon-expanded' : 'fa-folder folder-icon-collapsed'"></i>
-                                            <div class="group-info">
-                                                <span class="group-name">{{ group.name }}</span>
-                                                <span class="group-shared-by" *ngIf="activeDocumentTab === 'shared'">
-                                                    <i class="fa-solid fa-user"></i> {{ group.user || 'Shared' }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div class="group-header-right">
-                                            <span class="group-count">{{ group.documents.length }} docs</span>
-                                            <i class="fa-solid group-chevron"
-                                                [ngClass]="isLibraryExpanded(group.libraryId) ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
-                                        </div>
-                                    </div>
-
-                                    <div class="group-documents" *ngIf="isLibraryExpanded(group.libraryId)">
-                                        <label *ngFor="let doc of group.documents"
-                                            (click)="toggleDocumentSelectionClick(doc.id, $event)"
-                                            [class.disabled]="isSelectionDisabled(doc.id)"
-                                            [class.selected]="isDocumentSelected(doc.id)">
-                                            <input type="checkbox" [checked]="isDocumentSelected(doc.id)"
-                                                [disabled]="isSelectionDisabled(doc.id)" />
-                                            <i class="fa-solid doc-file-icon" [ngClass]="getDocumentFileIcon(doc)"
-                                                [class.file-red]="getFileTypeColor(doc) === 'red'"
-                                                [class.file-blue]="getFileTypeColor(doc) === 'blue'"
-                                                [class.file-green]="getFileTypeColor(doc) === 'green'"
-                                                [class.file-orange]="getFileTypeColor(doc) === 'orange'"
-                                                [class.file-purple]="getFileTypeColor(doc) === 'purple'"
-                                                [class.file-gray]="getFileTypeColor(doc) === 'gray'"></i>
-                                            <div class="doc-meta">
-                                                <span class="doc-name">{{ getDocumentDisplayName(doc) }}</span>
-                                                <span class="doc-info">{{ formatFileSize(doc.file_size) }}<ng-container
-                                                        *ngIf="formatFileSize(doc.file_size)"> · </ng-container>{{
-                                                    activeDocumentTab === 'shared' ?
-                                                    getDocumentSourceLabel(doc) : 'Me' }}</span>
-                                            </div>
-                                            <span class="file-type-badge"
-                                                [class.badge-red]="getFileTypeColor(doc) === 'red'"
-                                                [class.badge-blue]="getFileTypeColor(doc) === 'blue'"
-                                                [class.badge-green]="getFileTypeColor(doc) === 'green'"
-                                                [class.badge-orange]="getFileTypeColor(doc) === 'orange'"
-                                                [class.badge-purple]="getFileTypeColor(doc) === 'purple'"
-                                                [class.badge-gray]="getFileTypeColor(doc) === 'gray'">{{
-                                                getDocumentTypeLabel(doc) }}</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </ng-container>
-                        </ng-template>
-                    </div>
-
-                    <ng-template #emptyDocuments>
-                        <p class="empty-text">{{ activeDocumentTab === 'shared' ? 'No shared documents yet.' : 'No
-                            documents
-                            available.
-                            Upload files to get started.' }}</p>
-                    </ng-template>
-
-                    <!-- Database Section -->
-                    <div class="documents-list database-list" *ngIf="activeDocumentTab === 'database'">
-                        <ng-container *ngIf="databaseConnectionsLoading; else dbReady">
-                            <p class="empty-text">Loading connections...</p>
-                        </ng-container>
-
-                        <ng-template #dbReady>
-                            <ng-container *ngIf="connectedDatabaseConnections.length > 0; else emptyDbs">
-                                <div class="library-group">
-                                    <div class="group-documents" style="display: block;">
-                                        <label *ngFor="let db of connectedDatabaseConnections"
-                                            (click)="toggleDatabaseSelectionClick(db.id, $event)"
-                                            [class.selected]="isDatabaseSelected(db.id)">
-                                            <input type="checkbox" [checked]="isDatabaseSelected(db.id)" />
-                                            <i class="fa-solid fa-server doc-file-icon" class="file-blue"
-                                                style="margin-top: 10px;"></i>
-                                            <div class="doc-meta"
-                                                style="margin-left: 12px; display: inline-flex; flex-direction: column;">
-                                                <span class="doc-name">{{ db.name }}</span>
-                                                <span class="doc-info" style="font-size: 11px;">{{ db.database_name }} ·
-                                                    {{ db.host }}:{{ db.port }}</span>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-                            </ng-container>
-
-                            <ng-template #emptyDbs>
-                                <div class="database-empty-state">
-                                    <div class="db-icon-wrapper">
-                                        <i class="fa-solid fa-database db-main-icon"></i>
-                                    </div>
-                                    <p class="empty-text">No database connections found. Configure them in normal chat
-                                        first.</p>
-                                </div>
-                            </ng-template>
-                        </ng-template>
-                    </div>
-
-                    <!-- Bottom Bar: Search + Upload -->
-                    <div class="document-bottom-bar">
-                        <div class="document-search-bottom">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="text" [(ngModel)]="documentSearchQuery" placeholder="Search documents..."
-                                aria-label="Search documents" />
-                        </div>
-                        <div class="bottom-actions">
-                            <button type="button" class="clear-btn" (click)="clearSelection()">Clear</button>
-                            <button type="button" class="apply-btn" (click)="confirmSelection()"
-                                [disabled]="!pendingDocumentIds.size && !pendingDatabaseConnectionIds.size">Apply</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <app-chat-input
+                [class.home-chat-mode]="messages.length === 0"
+                [mode]="mode"
+                [loading]="loading"
+                [libraries]="libraries"
+                [documents]="allDocuments"
+                [selectedDocumentIds]="selectedDocumentIds"
+                [databaseConnections]="allDatabaseConnections"
+                [databaseConnectionsLoading]="databaseConnectionsLoading"
+                [selectedDatabaseConnectionIds]="selectedDatabaseConnectionIds"
+                [librariesLoading]="librariesLoading"
+                [documentsLoading]="documentsLoading"
+                [isTemporaryChat]="true"
+                [hasExistingThread]="messages.length > 0"
+                (messageSent)="onMessageSent($event)"
+                (modeToggle)="onModeToggle($event)"
+                (librarySelected)="onLibrarySelected($event)"
+                (attachmentPanelOpened)="onAttachmentPanelOpened($event)">
+            </app-chat-input>
 
             <div class="suggested-questions" *ngIf="messages.length === 0">
                 <button type="button" class="question-pill" *ngFor="let question of suggestedQuestions"
                     (click)="onQuestionClick(question)">
                     {{ question }}
                 </button>
-            </div>
-
-            <div class="selection-pills" *ngIf="selectionCount > 0">
-                <div class="attachment-pill">
-                    <span>{{ selectionLabel }}</span>
-                    <button type="button" (click)="clearSelection()">x</button>
-                </div>
-
             </div>
 
             <div class="error-toast" *ngIf="errorMessage">{{ errorMessage }}</div>
@@ -219,3 +63,12 @@
         </div>
     </div>
 </div>
+
+<!-- ── Database connection warning modal ──────────────────────────────────── -->
+<app-connection-warning-modal
+  *ngIf="showConnectionWarningModal"
+  [failedConnections]="failedDbConnections"
+  (retry)="onConnectionWarningRetry()"
+  (editConnection)="onConnectionWarningEdit($event)"
+  (dismiss)="onConnectionWarningDismiss()">
+</app-connection-warning-modal>

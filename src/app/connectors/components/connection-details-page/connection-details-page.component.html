@@ -1,4 +1,43 @@
 <div class="document-details-page">
+    <!-- Share Dialog Backdrop & Modal -->
+    <div class="library-rename-backdrop" *ngIf="shareDialogOpen" (click)="closeShareDialog()">
+        <div class="library-rename-modal operation-modal" (click)="$event.stopPropagation()">
+            <h3 class="rename-title">Share connection</h3>
+            <p class="rename-subtitle">Share this database connection with another user in your tenant.</p>
+            <div class="operation-preview-list" *ngIf="connection">
+                <span class="operation-preview-chip">{{ connection.name || connection.database_name }}</span>
+            </div>
+            <div class="rename-field share-user-autocomplete">
+                <label for="detailsShareTargetEmail">Recipient email</label>
+                <input id="detailsShareTargetEmail" type="email" [(ngModel)]="shareTargetEmail"
+                    placeholder="Select recipient..." autocomplete="off" (focus)="onShareTargetFocus()"
+                    (blur)="onShareTargetBlur()" (input)="onShareTargetInput($event)" />
+                <div class="share-user-dropdown"
+                    *ngIf="showShareUserDropdown && (filteredShareUsers.length > 0 || loadingShareUsers)">
+                    <div class="share-user-option loading" *ngIf="loadingShareUsers">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i>
+                        <span>Loading users...</span>
+                    </div>
+                    <div *ngFor="let user of filteredShareUsers" class="share-user-option" (mousedown)="selectShareUser(user)">
+                        <i class="fa-regular fa-user"></i>
+                        <span>{{ user.email }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="rename-field">
+                <label for="detailsShareExpiresAt">Expires at (optional)</label>
+                <input id="detailsShareExpiresAt" type="datetime-local" [(ngModel)]="shareExpiresAt" />
+            </div>
+            <div class="rename-actions">
+                <button type="button" class="rename-btn rename-btn-secondary" (click)="closeShareDialog()">Cancel</button>
+                <button type="button" class="rename-btn rename-btn-primary" (click)="submitShare()"
+                    [disabled]="!isShareTargetValid || shareSubmitting">
+                    {{ shareSubmitting ? 'Sharing...' : 'Share' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Reusing the document-details-page container styling for consistency -->
     <div class="document-details-shell" *ngIf="!loading; else loadingState">
 
@@ -30,8 +69,16 @@
                         <i class="fa-solid fa-pen"></i>
                     </button>
                     <button type="button" class="details-secondary-btn" (click)="syncDatabase()" [disabled]="syncing"
-                        title="Sync database metadata">
+                        [title]="syncing ? 'Syncing connection' : 'Sync connection'">
                         <i class="fa-solid" [ngClass]="syncing ? 'fa-spinner fa-spin' : 'fa-rotate'"></i>
+                    </button>
+                    <button type="button" class="details-secondary-btn" (click)="openShareDialog()"
+                        [disabled]="!canShareConnection" title="Share">
+                        <i class="fa-solid fa-share-nodes"></i>
+                    </button>
+                    <button type="button" class="details-secondary-btn" (click)="openConnectionChat()"
+                        title="Chat" aria-label="Chat with connection">
+                        <i class="fa-solid fa-comments" aria-hidden="true"></i>
                     </button>
                     <button type="button" class="details-secondary-btn delete-btn" (click)="deleteConnection()"
                         title="Delete connection" aria-label="Delete connection">
@@ -45,6 +92,13 @@
 
             <!-- Highlights (Quick stats) -->
             <section class="details-highlights">
+                <article class="highlight-card">
+                    <span class="highlight-label">Type</span>
+                    <strong style="display: flex; align-items: center; gap: 0.4rem;">
+                        <img [src]="connectionTypeIcon" alt="Type" style="width: 16px; height: 16px; object-fit: contain;" />
+                        {{ connectionTypeName }}
+                    </strong>
+                </article>
                 <article class="highlight-card" [title]="connection.host">
                     <span class="highlight-label">Host</span>
                     <strong>{{ connection.host }}</strong>
@@ -53,13 +107,7 @@
                     <span class="highlight-label">Port</span>
                     <strong>{{ connection.port || '5432' }}</strong>
                 </article>
-                <article class="highlight-card"
-                    [class.failed-status]="(connection.status || '').toLowerCase() === 'failed'">
-                    <span class="highlight-label">Status</span>
-                    <strong [style.color]="getStatusColor(connection.status)">
-                        {{ connection.status || 'Pending' }}
-                    </strong>
-                </article>
+
                 <article class="highlight-card">
                     <span class="highlight-label">Database</span>
                     <strong>{{ connection.database_name || '-' }}</strong>
@@ -78,6 +126,13 @@
             <section class="details-main-grid">
                 <!-- Status Row (Replacing Configuration and Health Status) -->
                 <div class="sync-stats-grid">
+                    <article class="details-card sync-stat-card"
+                        [class.failed-status]="(connection.status || '').toLowerCase() === 'failed'">
+                        <span class="sync-stat-label">Status</span>
+                        <strong class="sync-stat-value" [style.color]="getStatusColor(connection.status)">
+                            {{ (connection.status || 'Pending') | titlecase }}
+                        </strong>
+                    </article>
                     <article class="details-card sync-stat-card">
                         <span class="sync-stat-label">Last Sync Time</span>
                         <strong class="sync-stat-value">{{ lastSyncTime }}</strong>
@@ -96,7 +151,14 @@
                 <article class="details-card details-card--full-width sync-card" style="grid-column: 1 / -1;">
                     <div class="details-card-header sync-card-header">
                         <h3><span>Sync Activity & Actions</span></h3>
-                        <span class="events-count" *ngIf="syncHistory.length > 0">{{ syncHistory.length }} events</span>
+                        <div class="sync-header-right" *ngIf="syncHistory.length > 0">
+                            <button type="button" class="btn-toggle-all" (click)="toggleAllDateGroups()"
+                                [title]="areAllCollapsed ? 'Expand all date groups' : 'Collapse all date groups'">
+                                <i class="fa-solid" [ngClass]="areAllCollapsed ? 'fa-angles-down' : 'fa-angles-up'"></i>
+                                <span>{{ areAllCollapsed ? 'Expand All' : 'Collapse All' }}</span>
+                            </button>
+                            <span class="events-count">{{ syncHistory.length }} events</span>
+                        </div>
                     </div>
 
                     <div class="sync-history-container" *ngIf="groupedSyncHistory.length > 0; else noHistory">
@@ -114,28 +176,39 @@
                             </thead>
                             <tbody *ngFor="let group of groupedSyncHistory">
                                 <!-- Group Header -->
-                                <tr class="date-group-header">
-                                    <td colspan="7">{{ group.dateLabel }}</td>
+                                <tr class="date-group-header" (click)="toggleDateGroup(group)" (keydown)="onDateGroupKeydown($event, group)"
+                                    tabindex="0" role="button" [attr.aria-expanded]="!group.isCollapsed"
+                                    [title]="(group.isCollapsed ? 'Expand ' : 'Collapse ') + group.dateLabel">
+                                    <td colspan="7">
+                                        <div class="date-group-header-content">
+                                            <i class="fa-solid toggle-icon"
+                                                [ngClass]="group.isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'"></i>
+                                            <span class="date-label">{{ group.dateLabel }}</span>
+                                            <span class="event-badge">{{ group.logs.length }} {{ group.logs.length === 1 ? 'event' : 'events' }}</span>
+                                        </div>
+                                    </td>
                                 </tr>
                                 <!-- Group Items -->
-                                <tr class="sync-row" *ngFor="let log of group.logs">
-                                    <td class="event-type">
-                                        <i class="fa-regular fa-circle-check text-success"
-                                            *ngIf="log.status === 'success'"></i>
-                                        <i class="fa-regular fa-circle-xmark text-error"
-                                            *ngIf="log.status !== 'success'"></i>
-                                        <span [ngClass]="log.status === 'success' ? 'text-success' : 'text-error'">
-                                            {{ log.status === 'success' ? 'Successful sync' : 'Failed sync' }}
-                                        </span>
-                                    </td>
-                                    <td>{{ formatTime(log.started_at) }}</td>
-                                    <td>{{ log.completed_at ? formatTime(log.completed_at) : formatTime(log.started_at)
-                                        }}</td>
-                                    <td>{{ formatDuration(log.duration_ms) }}</td>
-                                    <td class="text-muted">-</td>
-                                    <td class="text-muted">-</td>
-                                    <td class="text-right">0</td>
-                                </tr>
+                                <ng-container *ngIf="!group.isCollapsed">
+                                    <tr class="sync-row" *ngFor="let log of group.logs">
+                                        <td class="event-type">
+                                            <i class="fa-regular fa-circle-check text-success"
+                                                *ngIf="log.status === 'success'"></i>
+                                            <i class="fa-regular fa-circle-xmark text-error"
+                                                *ngIf="log.status !== 'success'"></i>
+                                            <span [ngClass]="log.status === 'success' ? 'text-success' : 'text-error'">
+                                                {{ log.status === 'success' ? 'Successful sync' : 'Failed sync' }}
+                                            </span>
+                                        </td>
+                                        <td>{{ formatTime(log.started_at) }}</td>
+                                        <td>{{ log.completed_at ? formatTime(log.completed_at) : formatTime(log.started_at)
+                                            }}</td>
+                                        <td>{{ formatDuration(log.duration_ms) }}</td>
+                                        <td class="text-muted">-</td>
+                                        <td class="text-muted">-</td>
+                                        <td class="text-right">0</td>
+                                    </tr>
+                                </ng-container>
                             </tbody>
                         </table>
                     </div>
@@ -170,4 +243,11 @@
         (close)="closeEditModal()"
         (save)="saveEditedConnection($event)">
     </app-edit-connection-modal>
+
+    <!-- Connection Chat Overlay -->
+    <app-connection-chat
+        *ngIf="showConnectionChat && connection"
+        [connection]="connection"
+        (closed)="closeConnectionChat()">
+    </app-connection-chat>
 </div>

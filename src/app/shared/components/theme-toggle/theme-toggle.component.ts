@@ -40,12 +40,5 @@ export class ThemeToggleComponent {
     this.themeService.toggleTheme();
   }
 
-  iconFor(pref: ThemePreference | 'light' | 'dark'): string {
-    switch (pref) {
-      case 'dark': return 'fa-moon';
-      case 'light': return 'fa-sun';
-      case 'system': return 'fa-desktop';
-      default: return 'fa-circle-half-stroke';
-    }
-  }
+
 }

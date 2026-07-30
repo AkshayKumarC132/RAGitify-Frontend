@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, DoCheck } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, DoCheck, ChangeDetectorRef } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -33,7 +33,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
   private copyResetTimeout?: ReturnType<typeof setTimeout>;
   private previousContent: string = '';
 
-  constructor(private sanitizer: DomSanitizer) { }
+  constructor(private sanitizer: DomSanitizer, private cdr: ChangeDetectorRef) { }
 
   get isFailedRun(): boolean {
     return !this.isUser && this.run?.status === 'failed';
@@ -197,11 +197,13 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges, DoC
 
   private showCopiedFeedback(): void {
     this.copied = true;
+    this.cdr.detectChanges();
     if (this.copyResetTimeout) {
       clearTimeout(this.copyResetTimeout);
     }
     this.copyResetTimeout = setTimeout(() => {
       this.copied = false;
+      this.cdr.detectChanges();
     }, 2000);
   }
 
