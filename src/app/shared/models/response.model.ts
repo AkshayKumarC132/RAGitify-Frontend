@@ -1,3 +1,5 @@
+export type ResearchDepth = 'fast' | 'normal' | 'deep';
+
 export interface ResponseRecord {
   id: string;
   conversation: string | null;
@@ -19,6 +21,8 @@ export interface ResponseRecord {
 export interface ResponseCreateRequest {
   conversation?: string;
   model?: string;
+  /** Controls backend retrieval and reasoning intensity for this response. */
+  research_depth?: ResearchDepth;
   instructions?: string;
   input: ResponseInput[];
   tools?: Tool[];

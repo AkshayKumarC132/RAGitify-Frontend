@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  ElementRef,
   EventEmitter,
   HostListener,
   Input,
@@ -28,7 +29,7 @@ export class ContextPopoverComponent implements OnChanges {
   searchQuery = '';
   activeFilter: FilterTab = 'all';
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(private cdr: ChangeDetectorRef, private el: ElementRef) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['open'] && this.open) {
@@ -85,9 +86,11 @@ export class ContextPopoverComponent implements OnChanges {
     this.close();
   }
 
-  /** Click-outside handled by the overlay in the template */
-  onOverlayClick(event: Event): void {
-    event.stopPropagation();
-    this.close();
+  /** Click-outside handled by document:click */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.el.nativeElement.contains(event.target)) {
+      this.close();
+    }
   }
 }

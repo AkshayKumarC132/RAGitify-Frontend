@@ -8,13 +8,13 @@ import { DocumentService } from '../../../shared/services/document.service';
 import { DocumentShareService } from '../../../shared/services/document-share.service';
 import { SharedWithMeItem } from '../../../shared/models/document-share.model';
 import { ConversationMessage } from '../../../shared/models/conversation.model';
-import { ResponseRecord, ResponseCreateRequest, StreamEvent, TaskItem } from '../../../shared/models/response.model';
+import { ResponseRecord, ResponseCreateRequest, ResearchDepth, StreamEvent, TaskItem } from '../../../shared/models/response.model';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document } from '../../../shared/models/document.model';
 import { DatabaseConnectionService } from '../../../shared/services/database-connection.service';
 import { DatabaseConnection, FailedConnectionInfo } from '../../../shared/models/database-connection.model';
 import { Router } from '@angular/router';
-import { ChatInputComponent, LibrarySelectionEvent } from '../chat-input/chat-input.component';
+import { ChatInputComponent, ChatMessagePayload, LibrarySelectionEvent } from '../chat-input/chat-input.component';
 import { ConnectionSyncService } from '../../../shared/services/connection-sync.service';
 
 @Component({
@@ -37,6 +37,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
     errorMessage = '';
     warningMessages: string[] = [];
     mode: 'normal' | 'web' | 'document' = 'normal';
+    researchDepth: ResearchDepth = 'normal';
     isExpanded = false;
     isOverflowing = false;
     private streamSub?: Subscription;
@@ -211,10 +212,11 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         this.chatInput?.updateInput(question);
     }
 
-    onMessageSent(event: { content: string; webSearch: boolean } | string): void {
+    onMessageSent(event: ChatMessagePayload | string): void {
         const text = typeof event === 'string' ? event : event.content;
         if (!text || !text.trim() || this.loading || !this.conversationId) return;
 
+        this.researchDepth = typeof event === 'string' ? 'normal' : event.researchDepth;
         this.inputMessage = text.trim();
         this.sendMessage();
     }
@@ -279,6 +281,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         const request: ResponseCreateRequest = {
             conversation: this.conversationId,
             model: this.responseService.getDefaultModel(),
+            research_depth: this.researchDepth,
             input: [{
                 role: 'user',
                 content: [{ type: 'input_text', text: content }]

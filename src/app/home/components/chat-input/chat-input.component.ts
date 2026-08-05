@@ -10,6 +10,7 @@ import { DatagridAttachmentService } from '../../../shared/services/datagrid-att
 import { AttachedDataGrid } from '../../../shared/models/conversation.model';
 import { ConnectionSyncService } from '../../../shared/services/connection-sync.service';
 import { Subscription } from 'rxjs';
+import { ResearchDepth } from '../../../shared/models/response.model';
 
 type AttachmentPanel = 'web' | 'notes' | 'library' | null;
 
@@ -33,6 +34,12 @@ export type LibrarySelectionEvent =
   | { type: 'library'; libraryId: string | null }
   | { type: 'documents'; documentIds: string[]; databaseConnectionIds?: string[] }
   | { type: 'clear' };
+
+export interface ChatMessagePayload {
+  content: string;
+  webSearch: boolean;
+  researchDepth: ResearchDepth;
+}
 
 @Component({
   selector: 'app-chat-input',
@@ -157,7 +164,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     };
   }
 
-  @Output() messageSent = new EventEmitter<{ content: string, webSearch: boolean } | string>();
+  @Output() messageSent = new EventEmitter<ChatMessagePayload | string>();
   @Output() modeToggle = new EventEmitter<'normal' | 'web' | 'document'>();
   @Output() filesSelected = new EventEmitter<FileList>();
   @Output() webpageAttached = new EventEmitter<{ url: string; title?: string }>();
@@ -191,6 +198,8 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   isOverflowing = false;
   isExpanded = false;
   isWebSearchEnabled = false;
+  researchDepth: ResearchDepth = 'normal';
+  showResearchDepthMenu = false;
   showMoreDocsMenu = false;
   private recognition: SpeechRecognitionLike | null = null;
   attachedDataGrid: AttachedDataGrid | null = null;
@@ -284,7 +293,11 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   }
 
   private emitMessage(): void {
-    this.messageSent.emit({ content: this.message, webSearch: this.isWebSearchEnabled });
+    this.messageSent.emit({
+      content: this.message,
+      webSearch: this.isWebSearchEnabled,
+      researchDepth: this.researchDepth,
+    });
     this.message = '';
     this.isExpanded = false;
     setTimeout(() => this.adjustTextareaHeight(), 0);
@@ -356,6 +369,37 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     this.isWebSearchEnabled = !this.isWebSearchEnabled;
   }
 
+  toggleResearchDepthMenu(): void {
+    this.showResearchDepthMenu = !this.showResearchDepthMenu;
+  }
+
+  selectResearchDepth(researchDepth: ResearchDepth): void {
+    this.researchDepth = researchDepth;
+    this.showResearchDepthMenu = false;
+  }
+
+  getResearchDepthLabel(): string {
+    switch (this.researchDepth) {
+      case 'fast':
+        return 'Fast';
+      case 'deep':
+        return 'Deep Research';
+      default:
+        return 'Normal';
+    }
+  }
+
+  getResearchDepthIcon(): string {
+    switch (this.researchDepth) {
+      case 'fast':
+        return 'fa-bolt';
+      case 'deep':
+        return 'fa-magnifying-glass';
+      default:
+        return 'fa-wand-magic-sparkles';
+    }
+  }
+
 
 
   @HostListener('document:click', ['$event'])
@@ -365,20 +409,24 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     const clickedPanel = target.closest('.attachment-panel');
     const clickedMenu = target.closest('.attachment-menu');
     const clickedMoreDocsMenu = target.closest('.more-docs-wrapper');
+    const clickedResearchDepthSelector = target.closest('.response-mode-selector');
 
     if (!clickedMoreDocsMenu && this.showMoreDocsMenu) {
       this.showMoreDocsMenu = false;
     }
 
-    if (clickedAttachmentControl || clickedPanel || clickedMenu) {
-      return;
+    if (!clickedResearchDepthSelector && this.showResearchDepthMenu) {
+      this.showResearchDepthMenu = false;
     }
 
-    if (!this.activePanel) {
-      return;
+    if (!clickedAttachmentControl && !clickedPanel && !clickedMenu && this.activePanel) {
+      this.closeMenus();
     }
+  }
 
-    this.closeMenus();
+  @HostListener('document:keydown.escape')
+  onEscapePressed(): void {
+    this.showResearchDepthMenu = false;
   }
 
   triggerFilePicker(input: HTMLInputElement): void {

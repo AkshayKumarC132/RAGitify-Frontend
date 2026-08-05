@@ -13,6 +13,7 @@ import { Subject, Subscription, lastValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   ChatInputComponent,
+  ChatMessagePayload,
   LibrarySelectionEvent,
 } from '../chat-input/chat-input.component';
 import { Assistant } from '../../../shared/models/assistant.model';
@@ -30,6 +31,7 @@ import {
   TaskItem,
   DocumentTool,
   DataGridTool,
+  ResearchDepth,
   Tool,
 } from '../../../shared/models/response.model';
 import { SelectedLLMProvider, User } from '../../../shared/models/user.model';
@@ -108,9 +110,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   private _pendingRetryMessageId: string | null = null;
   private _pendingRetryContent: string | null = null;
   private _pendingRetryWebSearch: boolean = false;
+  private _pendingRetryResearchDepth: ResearchDepth = 'normal';
   /** Last user message text — used by the connection-warning retry flow. */
   private _lastMessageContent = '';
   private _lastMessageWebSearch = false;
+  private _lastMessageResearchDepth: ResearchDepth = 'normal';
   conversationMenuOpen = false;
   /** Token usage from the most recent assistant response in this thread */
   currentTokenUsage: {
@@ -491,17 +495,19 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   async onMessageSent(
-    payload: string | { content: string; webSearch: boolean },
+    payload: ChatMessagePayload | string,
   ): Promise<void> {
     const isObject = typeof payload === 'object' && payload !== null;
-    const content = isObject ? (payload as any).content : (payload as string);
-    const webSearch = isObject ? (payload as any).webSearch : false;
+    const content = isObject ? (payload as ChatMessagePayload).content : payload;
+    const webSearch = isObject ? (payload as ChatMessagePayload).webSearch : false;
+    const researchDepth = isObject ? (payload as ChatMessagePayload).researchDepth : 'normal';
     const trimmed = content.trim();
     if (!trimmed || this.isTemporaryChat || this.loading) {
       return;
     }
     this._lastMessageContent = trimmed;
     this._lastMessageWebSearch = webSearch;
+    this._lastMessageResearchDepth = researchDepth;
 
     this.clearError();
     const optimisticMessage = this.buildLocalMessage('user', trimmed);
@@ -526,6 +532,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         trimmed,
         conversation.id,
         webSearch,
+        researchDepth,
       );
 
       // Add a placeholder assistant message for streaming
@@ -618,6 +625,7 @@ export class HomeComponent implements OnInit, OnDestroy {
               this._pendingRetryMessageId = optimisticMessage.id;
               this._pendingRetryContent = trimmed;
               this._pendingRetryWebSearch = webSearch;
+              this._pendingRetryResearchDepth = researchDepth;
 
               this.failedDbConnections = error.payload.connections || [];
 
@@ -1241,7 +1249,8 @@ export class HomeComponent implements OnInit, OnDestroy {
           ) {
             this._pendingRetryMessageId = streamState.userMessage.id;
             this._pendingRetryContent = streamState.userMessage.content;
-            this._pendingRetryWebSearch = false; // Cannot infer this from message easily, assuming false
+            this._pendingRetryWebSearch = this._lastMessageWebSearch;
+            this._pendingRetryResearchDepth = this._lastMessageResearchDepth;
 
             this.failedDbConnections = error.payload.connections || [];
             setTimeout(() => {
@@ -1416,6 +1425,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     content: string,
     conversationId: string,
     webSearch: boolean = false,
+    researchDepth: ResearchDepth = 'normal',
   ): Promise<ResponseCreateRequest> {
     await this.ensurePromptsLoaded();
 
@@ -1439,6 +1449,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       model,
       instructions,
       web_search: webSearch,
+      research_depth: researchDepth,
       input: [
         {
           role: 'user',
@@ -1987,14 +1998,17 @@ export class HomeComponent implements OnInit, OnDestroy {
       );
       const contentToRetry = this._pendingRetryContent;
       const webSearchToRetry = this._pendingRetryWebSearch;
+      const researchDepthToRetry = this._pendingRetryResearchDepth;
 
       this._pendingRetryMessageId = null;
       this._pendingRetryContent = null;
       this._pendingRetryWebSearch = false;
+      this._pendingRetryResearchDepth = 'normal';
 
       this.onMessageSent({
         content: contentToRetry,
         webSearch: webSearchToRetry,
+        researchDepth: researchDepthToRetry,
       });
     }
   }
@@ -2016,6 +2030,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       this._pendingRetryMessageId = null;
       this._pendingRetryContent = null;
       this._pendingRetryWebSearch = false;
+      this._pendingRetryResearchDepth = 'normal';
     }
   }
 

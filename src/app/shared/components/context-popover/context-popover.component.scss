@@ -1,13 +1,7 @@
 // ── Context Popover ───────────────────────────────────────────────────────────
 // Appears on top of the +N button; shows full searchable, filterable attachment list
 
-// Click-outside transparent overlay
-.ctx-popover-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 998;
-  cursor: default;
-}
+
 
 // Main panel — opens BELOW the chip row, right-aligned (user messages are flex-end)
 .ctx-popover {

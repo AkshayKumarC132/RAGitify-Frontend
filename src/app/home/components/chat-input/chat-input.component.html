@@ -1,181 +1,113 @@
 <div class="chat-input-container">
-  <input
-    type="file"
-    #filePicker
-    multiple
-    hidden
-    (change)="handleFilesChange($event)"
-  />
+  <input type="file" #filePicker multiple hidden (change)="handleFilesChange($event)" />
 
-  <div
-    class="input-wrapper"
-    [class.document-mode-active]="mode === 'document'"
-    [class.expanded]="isExpanded"
+  <div class="input-wrapper" [class.document-mode-active]="mode === 'document'" [class.expanded]="isExpanded"
     [class.has-attachments]="
       selectedDocumentIds.length > 0 ||
       selectedLibraryId ||
       selectedDatabaseConnectionIds.length > 0 ||
       attachedDataGrid
-    "
-  >
+    ">
     <!-- Selected Attachments View -->
-    <div
-      class="selected-documents-grid"
-      *ngIf="
+    <div class="selected-documents-grid" *ngIf="
         selectedDocumentIds.length > 0 ||
         selectedLibraryId ||
         selectedDatabaseConnectionIds.length > 0 ||
         attachedDataGrid
-      "
-    >
+      ">
       <ng-container *ngIf="selectedLibraryId">
         <div class="document-chip-inline library-mode">
           <i class="fa-solid fa-folder"></i>
           <span class="doc-title">{{
             getLibraryLabel() || selectedLibraryId
-          }}</span>
-          <button
-            type="button"
-            class="remove-btn"
-            (click)="removeSelectedLibrary($event)"
-          >
+            }}</span>
+          <button type="button" class="remove-btn" (click)="removeSelectedLibrary($event)">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
       </ng-container>
 
       <ng-container *ngIf="attachedDataGrid">
-        <div
-          class="document-chip-inline badge-indigo datagrid-chip"
-          [appDatagridPreview]="attachedDataGrid"
-          tabindex="0"
-        >
+        <div class="document-chip-inline badge-indigo datagrid-chip" [appDatagridPreview]="attachedDataGrid"
+          tabindex="0">
           <i class="fa-solid fa-table-list"></i>
           <div class="datagrid-chip-info">
             <span class="doc-title">{{ attachedDataGrid.name }}</span>
-            <span
-              class="datagrid-chip-meta"
-              *ngIf="
+            <span class="datagrid-chip-meta" *ngIf="
                 attachedDataGrid.row_count || attachedDataGrid.columns?.length
-              "
-            >
-              <ng-container *ngIf="attachedDataGrid.row_count"
-                >{{ attachedDataGrid.row_count | number }} rows</ng-container
-              >
+              ">
+              <ng-container *ngIf="attachedDataGrid.row_count">{{ attachedDataGrid.row_count | number }}
+                rows</ng-container>
               <ng-container *ngIf="attachedDataGrid.columns?.length">
                 ·
                 {{
-                  attachedDataGrid.columns!.slice(0, 4).join(
-                    ",
+                attachedDataGrid.columns!.slice(0, 4).join(
+                ",
                 "
-                  )
-                }}<ng-container *ngIf="attachedDataGrid.columns!.length > 4"
-                  >, …</ng-container
-                ></ng-container
-              >
+                )
+                }}<ng-container *ngIf="attachedDataGrid.columns!.length > 4">, …</ng-container></ng-container>
             </span>
           </div>
-          <button
-            type="button"
-            class="remove-btn"
-            (click)="removeAttachedDataGrid($event)"
-          >
+          <button type="button" class="remove-btn" (click)="removeAttachedDataGrid($event)">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
       </ng-container>
 
       <ng-container *ngIf="selectedDocumentIds.length > 0">
-        <div
-          class="document-chip-inline"
-          *ngFor="let doc of visibleSelectedDocuments"
-          [appDocPreview]="doc.id"
-          [docPreviewTitle]="getDocumentDisplayName(doc)"
-          tabindex="0"
-          [class.badge-red]="getFileTypeColor(doc) === 'red'"
-          [class.badge-blue]="getFileTypeColor(doc) === 'blue'"
+        <div class="document-chip-inline" *ngFor="let doc of visibleSelectedDocuments" [appDocPreview]="doc.id"
+          [docPreviewTitle]="getDocumentDisplayName(doc)" tabindex="0"
+          [class.badge-red]="getFileTypeColor(doc) === 'red'" [class.badge-blue]="getFileTypeColor(doc) === 'blue'"
           [class.badge-green]="getFileTypeColor(doc) === 'green'"
           [class.badge-orange]="getFileTypeColor(doc) === 'orange'"
           [class.badge-purple]="getFileTypeColor(doc) === 'purple'"
-          [class.badge-gray]="getFileTypeColor(doc) === 'gray'"
-        >
+          [class.badge-gray]="getFileTypeColor(doc) === 'gray'">
           <span class="file-type">{{ getDocumentTypeLabel(doc) }}</span>
-          <span class="doc-title" [title]="getDocumentDisplayName(doc)">{{
+          <span class="doc-title">{{
             getDocumentDisplayName(doc)
-          }}</span>
-          <button
-            type="button"
-            class="remove-btn"
-            (click)="removeSelectedDocument(doc.id, $event)"
-            aria-label="Remove document attachment"
-          >
+            }}</span>
+          <button type="button" class="remove-btn" (click)="removeSelectedDocument(doc.id, $event)"
+            aria-label="Remove document attachment">
             <i class="fa-solid fa-xmark" aria-hidden="true"></i>
           </button>
         </div>
 
-        <div
-          class="more-docs-wrapper"
-          *ngIf="hiddenSelectedDocuments.length > 0"
-        >
-          <div
-            class="document-chip-inline more-chip"
-            (click)="toggleMoreDocsMenu($event)"
-          >
-            <span class="plus-text"
-              >+ {{ hiddenSelectedDocuments.length }}
+        <div class="more-docs-wrapper" *ngIf="hiddenSelectedDocuments.length > 0">
+          <div class="document-chip-inline more-chip" (click)="toggleMoreDocsMenu($event)">
+            <span class="plus-text">+ {{ hiddenSelectedDocuments.length }}
               {{
-                hiddenSelectedDocuments.length === 1 ? "document" : "documents"
-              }}</span
-            >
+              hiddenSelectedDocuments.length === 1 ? "document" : "documents"
+              }}</span>
           </div>
 
-          <div
-            class="more-docs-menu"
-            *ngIf="showMoreDocsMenu"
-            (click)="$event.stopPropagation()"
-          >
+          <div class="more-docs-menu" *ngIf="showMoreDocsMenu" (click)="$event.stopPropagation()">
             <div class="menu-header">
-              <span class="menu-title"
-                >+{{ hiddenSelectedDocuments.length }} more
+              <span class="menu-title">+{{ hiddenSelectedDocuments.length }} more
                 {{
-                  hiddenSelectedDocuments.length === 1
-                    ? "document"
-                    : "documents"
-                }}</span
-              >
+                hiddenSelectedDocuments.length === 1
+                ? "document"
+                : "documents"
+                }}</span>
               <span class="subtext">Click × to remove</span>
             </div>
             <div class="menu-items">
-              <div
-                class="menu-doc-item"
-                *ngFor="let doc of hiddenSelectedDocuments"
-              >
-                <div
-                  class="file-type-badge"
-                  [class.badge-red]="getFileTypeColor(doc) === 'red'"
+              <div class="menu-doc-item" *ngFor="let doc of hiddenSelectedDocuments" [appDocPreview]="doc.id"
+                [docPreviewTitle]="getDocumentDisplayName(doc)">
+                <div class="file-type-badge" [class.badge-red]="getFileTypeColor(doc) === 'red'"
                   [class.badge-blue]="getFileTypeColor(doc) === 'blue'"
                   [class.badge-green]="getFileTypeColor(doc) === 'green'"
                   [class.badge-orange]="getFileTypeColor(doc) === 'orange'"
                   [class.badge-purple]="getFileTypeColor(doc) === 'purple'"
-                  [class.badge-gray]="getFileTypeColor(doc) === 'gray'"
-                >
+                  [class.badge-gray]="getFileTypeColor(doc) === 'gray'">
                   {{ getDocumentTypeLabel(doc) }}
                 </div>
                 <div class="menu-doc-info">
-                  <span
-                    class="doc-title"
-                    [title]="getDocumentDisplayName(doc)"
-                    >{{ getDocumentDisplayName(doc) }}</span
-                  >
+                  <span class="doc-title" [title]="getDocumentDisplayName(doc)">{{ getDocumentDisplayName(doc) }}</span>
                   <span class="doc-size">{{
                     formatFileSize(doc.file_size) || "Unknown size"
-                  }}</span>
+                    }}</span>
                 </div>
-                <button
-                  type="button"
-                  class="remove-btn"
-                  (click)="removeSelectedDocument(doc.id, $event)"
-                >
+                <button type="button" class="remove-btn" (click)="removeSelectedDocument(doc.id, $event)">
                   <i class="fa-solid fa-xmark"></i>
                 </button>
               </div>
@@ -185,32 +117,18 @@
       </ng-container>
 
       <ng-container *ngIf="selectedDatabaseConnectionIds.length > 0">
-        <div
-          class="document-chip-inline badge-blue"
-          *ngFor="let dbId of selectedDatabaseConnectionIds"
-          tabindex="0"
-        >
-          <ng-container
-            *ngIf="getDatabaseConnection(dbId) as db; else dbFallback"
-          >
-            <img
-              [src]="getDatabaseIcon(db)"
-              class="file-type-icon"
-              alt="Database"
-            />
+        <div class="document-chip-inline badge-blue" *ngFor="let dbId of selectedDatabaseConnectionIds" tabindex="0">
+          <ng-container *ngIf="getDatabaseConnection(dbId) as db; else dbFallback">
+            <img [src]="getDatabaseIcon(db)" class="file-type-icon" alt="Database" />
           </ng-container>
           <ng-template #dbFallback>
             <span class="file-type">DB</span>
           </ng-template>
           <span class="doc-title" [title]="getDatabaseDisplayName(dbId)">{{
             getDatabaseDisplayName(dbId)
-          }}</span>
-          <button
-            type="button"
-            class="remove-btn"
-            (click)="removeSelectedDatabase(dbId, $event)"
-            aria-label="Remove database attachment"
-          >
+            }}</span>
+          <button type="button" class="remove-btn" (click)="removeSelectedDatabase(dbId, $event)"
+            aria-label="Remove database attachment">
             <i class="fa-solid fa-xmark" aria-hidden="true"></i>
           </button>
         </div>
@@ -218,31 +136,13 @@
     </div>
 
     <div class="chat-input-shell">
-      <textarea
-        #messageArea
-        [(ngModel)]="message"
-        (keydown)="onKeyPress($event)"
-        (input)="onInputChange()"
-        placeholder="How can I help you today?  (type / for commands)"
-        class="chat-input"
-        [class.is-scrolling]="isOverflowing"
-        [disabled]="loading"
-        rows="1"
-      ></textarea>
+      <textarea #messageArea [(ngModel)]="message" (keydown)="onKeyPress($event)" (input)="onInputChange()"
+        placeholder="How can I help you today?  (type / for commands)" class="chat-input"
+        [class.is-scrolling]="isOverflowing" [disabled]="loading" rows="1"></textarea>
 
-      <div
-        class="slash-menu"
-        *ngIf="filteredSlashCommands.length > 0"
-        role="listbox"
-        aria-label="Slash commands"
-      >
-        <button
-          type="button"
-          class="slash-menu-item"
-          *ngFor="let cmd of filteredSlashCommands"
-          (click)="cmd.action()"
-          role="option"
-        >
+      <div class="slash-menu" *ngIf="filteredSlashCommands.length > 0" role="listbox" aria-label="Slash commands">
+        <button type="button" class="slash-menu-item" *ngFor="let cmd of filteredSlashCommands" (click)="cmd.action()"
+          role="option">
           <span class="slash-menu-cmd">{{ cmd.command }}</span>
           <span class="slash-menu-desc">{{ cmd.description }}</span>
         </button>
@@ -251,106 +151,54 @@
 
     <div class="input-bar">
       <div class="attachment-controls" style="position: relative">
-        <button
-          type="button"
-          class="attachment-toggle"
-          (click)="openPanel('library')"
-          [class.active]="activePanel === 'library'"
-          title="Attach Documents"
-          aria-label="Attach Documents"
-        >
+        <button type="button" class="attachment-toggle" (click)="openPanel('library')"
+          [class.active]="activePanel === 'library'" title="Attach Documents" aria-label="Attach Documents">
           <i class="fa-solid fa-plus"></i>
         </button>
-        <div
-          class="attachment-panel"
-          [class.open-upwards]="shouldOpenUpwards"
-          *ngIf="activePanel === 'web'"
-          (click)="$event.stopPropagation()"
-        >
+        <div class="attachment-panel" [class.open-upwards]="shouldOpenUpwards" *ngIf="activePanel === 'web'"
+          (click)="$event.stopPropagation()">
           <h4>Attach Webpage</h4>
-          <input
-            type="text"
-            placeholder="https://example.com/article"
-            [(ngModel)]="webForm.url"
-          />
-          <input
-            type="text"
-            placeholder="Optional title"
-            [(ngModel)]="webForm.title"
-          />
+          <input type="text" placeholder="https://example.com/article" [(ngModel)]="webForm.url" />
+          <input type="text" placeholder="Optional title" [(ngModel)]="webForm.title" />
           <div class="panel-actions">
-            <button
-              type="button"
-              (click)="submitWebForm()"
-              [disabled]="!webForm.url.trim()"
-            >
+            <button type="button" (click)="submitWebForm()" [disabled]="!webForm.url.trim()">
               Attach
             </button>
             <button type="button" (click)="closePanels()">Cancel</button>
           </div>
         </div>
 
-        <div
-          class="attachment-panel"
-          [class.open-upwards]="shouldOpenUpwards"
-          *ngIf="activePanel === 'notes'"
-          (click)="$event.stopPropagation()"
-        >
+        <div class="attachment-panel" [class.open-upwards]="shouldOpenUpwards" *ngIf="activePanel === 'notes'"
+          (click)="$event.stopPropagation()">
           <h4>Attach Notes</h4>
-          <input
-            type="text"
-            placeholder="Note title"
-            [(ngModel)]="noteForm.title"
-          />
-          <textarea
-            rows="4"
-            placeholder="Add the text you want to reference..."
-            [(ngModel)]="noteForm.content"
-          ></textarea>
+          <input type="text" placeholder="Note title" [(ngModel)]="noteForm.title" />
+          <textarea rows="4" placeholder="Add the text you want to reference..."
+            [(ngModel)]="noteForm.content"></textarea>
           <div class="panel-actions">
-            <button
-              type="button"
-              (click)="submitNoteForm()"
-              [disabled]="!noteForm.content.trim()"
-            >
+            <button type="button" (click)="submitNoteForm()" [disabled]="!noteForm.content.trim()">
               Attach
             </button>
             <button type="button" (click)="closePanels()">Cancel</button>
           </div>
         </div>
 
-        <div
-          class="attachment-panel document-picker-panel"
-          [class.open-upwards]="shouldOpenUpwards"
-          [class.compact-main-menu]="attachmentMenuState === 'main'"
-          *ngIf="activePanel === 'library'"
-          (click)="$event.stopPropagation()"
-        >
+        <div class="attachment-panel document-picker-panel" [class.open-upwards]="shouldOpenUpwards"
+          [class.compact-main-menu]="attachmentMenuState === 'main'" *ngIf="activePanel === 'library'"
+          (click)="$event.stopPropagation()">
           <!-- Main Menu -->
-          <div
-            class="attachment-main-menu"
-            *ngIf="attachmentMenuState === 'main'"
-          >
-            <button
-              type="button"
-              class="menu-item-btn"
-              (click)="
+          <div class="attachment-main-menu" *ngIf="attachmentMenuState === 'main'">
+            <button type="button" class="menu-item-btn" (click)="
                 attachmentMenuState = 'document'; activeDocumentTab = 'my'
-              "
-            >
+              ">
               <div class="menu-icon"><i class="fa-solid fa-file"></i></div>
               <div class="menu-item-text">
                 <span class="title">Attach document</span>
               </div>
             </button>
-            <button
-              type="button"
-              class="menu-item-btn"
-              (click)="
+            <button type="button" class="menu-item-btn" (click)="
                 attachmentMenuState = 'connectors';
                 activeDocumentTab = 'database'
-              "
-            >
+              ">
               <div class="menu-icon"><i class="fa-solid fa-plug"></i></div>
               <div class="menu-item-text">
                 <span class="title">Connectors</span>
@@ -361,165 +209,100 @@
           <ng-container *ngIf="attachmentMenuState !== 'main'">
             <!-- Back Header -->
             <div class="menu-header-back">
-              <button
-                type="button"
-                class="back-btn"
-                (click)="attachmentMenuState = 'main'"
-                aria-label="Back to attachment options"
-              >
+              <button type="button" class="back-btn" (click)="attachmentMenuState = 'main'"
+                aria-label="Back to attachment options">
                 <i class="fa-solid fa-arrow-left"></i>
               </button>
               <span class="back-title">{{
                 attachmentMenuState === "document"
-                  ? "Attach document"
-                  : "Connectors"
-              }}</span>
+                ? "Attach document"
+                : "Connectors"
+                }}</span>
             </div>
             <!-- Tabs -->
-            <div
-              class="document-tabs"
-              *ngIf="attachmentMenuState === 'document'"
-            >
-              <button
-                type="button"
-                class="document-tab"
-                [class.active]="activeDocumentTab === 'my'"
-                (click)="activeDocumentTab = 'my'"
-              >
+            <div class="document-tabs" *ngIf="attachmentMenuState === 'document'">
+              <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'my'"
+                (click)="activeDocumentTab = 'my'">
                 <i class="fa-solid fa-download"></i>
                 My Documents
               </button>
-              <button
-                type="button"
-                class="document-tab"
-                [class.active]="activeDocumentTab === 'shared'"
-                (click)="activeDocumentTab = 'shared'"
-              >
+              <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'shared'"
+                (click)="activeDocumentTab = 'shared'">
                 <i class="fa-solid fa-user-group"></i>
                 Shared with Me
               </button>
             </div>
 
             <!-- Document List -->
-            <div
-              class="documents-list"
-              *ngIf="activeDocumentTab !== 'database'"
-            >
+            <div class="documents-list" *ngIf="activeDocumentTab !== 'database'">
               <ng-container *ngIf="documentsLoading; else documentsReady">
                 <p class="empty-text">Loading documents...</p>
               </ng-container>
               <ng-template #documentsReady>
-                <ng-container
-                  *ngIf="
+                <ng-container *ngIf="
                     getDocumentsByLibraryForTab().length;
                     else emptyDocuments
-                  "
-                >
-                  <div
-                    class="library-group"
-                    *ngFor="let group of getDocumentsByLibraryForTab()"
-                  >
-                    <div
-                      class="group-header"
-                      (click)="toggleLibraryGroup(group.libraryId)"
-                    >
+                  ">
+                  <div class="library-group" *ngFor="let group of getDocumentsByLibraryForTab()">
+                    <div class="group-header" (click)="toggleLibraryGroup(group.libraryId)">
                       <div class="group-header-left">
-                        <i
-                          class="fa-solid"
-                          [ngClass]="
+                        <i class="fa-solid" [ngClass]="
                             isLibraryExpanded(group.libraryId)
                               ? 'fa-folder-open folder-icon-expanded'
                               : 'fa-folder folder-icon-collapsed'
-                          "
-                        ></i>
+                          "></i>
                         <div class="group-info">
                           <span class="group-name">{{ group.name }}</span>
-                          <span
-                            class="group-shared-by"
-                            *ngIf="activeDocumentTab === 'shared'"
-                          >
+                          <span class="group-shared-by" *ngIf="activeDocumentTab === 'shared'">
                             <i class="fa-solid fa-user"></i>
                             {{ group.user || "Shared" }}
                           </span>
                         </div>
                       </div>
                       <div class="group-header-right">
-                        <span class="group-count"
-                          >{{ group.documents.length }} docs</span
-                        >
-                        <i
-                          class="fa-solid group-chevron"
-                          [ngClass]="
+                        <span class="group-count">{{ group.documents.length }} docs</span>
+                        <i class="fa-solid group-chevron" [ngClass]="
                             isLibraryExpanded(group.libraryId)
                               ? 'fa-chevron-down'
                               : 'fa-chevron-right'
-                          "
-                        ></i>
+                          "></i>
                       </div>
                     </div>
 
-                    <div
-                      class="group-documents"
-                      *ngIf="isLibraryExpanded(group.libraryId)"
-                    >
-                      <label
-                        *ngFor="let doc of group.documents"
-                        (click)="toggleDocumentSelectionClick(doc.id, $event)"
-                        [class.disabled]="isSelectionDisabled(doc.id)"
-                        [class.selected]="isDocumentSelected(doc.id)"
-                      >
-                        <input
-                          type="checkbox"
-                          [checked]="isDocumentSelected(doc.id)"
-                          [disabled]="isSelectionDisabled(doc.id)"
-                        />
-                        <i
-                          class="fa-solid doc-file-icon"
-                          [ngClass]="getDocumentFileIcon(doc)"
+                    <div class="group-documents" *ngIf="isLibraryExpanded(group.libraryId)">
+                      <label *ngFor="let doc of group.documents" (click)="toggleDocumentSelectionClick(doc.id, $event)"
+                        [class.disabled]="isSelectionDisabled(doc.id)" [class.selected]="isDocumentSelected(doc.id)">
+                        <input type="checkbox" [checked]="isDocumentSelected(doc.id)"
+                          [disabled]="isSelectionDisabled(doc.id)" />
+                        <i class="fa-solid doc-file-icon" [ngClass]="getDocumentFileIcon(doc)"
                           [class.file-red]="getFileTypeColor(doc) === 'red'"
                           [class.file-blue]="getFileTypeColor(doc) === 'blue'"
-                          [class.file-green]="getFileTypeColor(doc) === 'green'"
-                          [class.file-orange]="
+                          [class.file-green]="getFileTypeColor(doc) === 'green'" [class.file-orange]="
                             getFileTypeColor(doc) === 'orange'
-                          "
-                          [class.file-purple]="
+                          " [class.file-purple]="
                             getFileTypeColor(doc) === 'purple'
-                          "
-                          [class.file-gray]="getFileTypeColor(doc) === 'gray'"
-                        ></i>
+                          " [class.file-gray]="getFileTypeColor(doc) === 'gray'"></i>
                         <div class="doc-meta">
                           <span class="doc-name">{{
                             getDocumentDisplayName(doc)
-                          }}</span>
-                          <span class="doc-info"
-                            >{{ formatFileSize(doc.file_size)
-                            }}<ng-container
-                              *ngIf="formatFileSize(doc.file_size)"
-                            >
-                              · </ng-container
-                            >{{
-                              activeDocumentTab === "shared"
-                                ? getDocumentSourceLabel(doc)
-                                : "Me"
-                            }}</span
-                          >
+                            }}</span>
+                          <span class="doc-info">{{ formatFileSize(doc.file_size)
+                            }}<ng-container *ngIf="formatFileSize(doc.file_size)">
+                              · </ng-container>{{
+                            activeDocumentTab === "shared"
+                            ? getDocumentSourceLabel(doc)
+                            : "Me"
+                            }}</span>
                         </div>
-                        <span
-                          class="file-type-badge"
-                          [class.badge-red]="getFileTypeColor(doc) === 'red'"
-                          [class.badge-blue]="getFileTypeColor(doc) === 'blue'"
-                          [class.badge-green]="
+                        <span class="file-type-badge" [class.badge-red]="getFileTypeColor(doc) === 'red'"
+                          [class.badge-blue]="getFileTypeColor(doc) === 'blue'" [class.badge-green]="
                             getFileTypeColor(doc) === 'green'
-                          "
-                          [class.badge-orange]="
+                          " [class.badge-orange]="
                             getFileTypeColor(doc) === 'orange'
-                          "
-                          [class.badge-purple]="
+                          " [class.badge-purple]="
                             getFileTypeColor(doc) === 'purple'
-                          "
-                          [class.badge-gray]="getFileTypeColor(doc) === 'gray'"
-                          >{{ getDocumentTypeLabel(doc) }}</span
-                        >
+                          " [class.badge-gray]="getFileTypeColor(doc) === 'gray'">{{ getDocumentTypeLabel(doc)
+                          }}</span>
                       </label>
                     </div>
                   </div>
@@ -530,9 +313,9 @@
             <ng-template #emptyDocuments>
               <p class="empty-text">
                 {{
-                  activeDocumentTab === "shared"
-                    ? "No shared documents yet."
-                    : "No documents
+                activeDocumentTab === "shared"
+                ? "No shared documents yet."
+                : "No documents
                 available.
                 Upload files to get started."
                 }}
@@ -540,73 +323,43 @@
             </ng-template>
 
             <!-- Database Section -->
-            <div
-              class="documents-list database-list"
-              *ngIf="activeDocumentTab === 'database'"
-            >
+            <div class="documents-list database-list" *ngIf="activeDocumentTab === 'database'">
               <ng-container *ngIf="databaseConnectionsLoading; else dbReady">
                 <p class="empty-text">Loading connections...</p>
               </ng-container>
 
               <ng-template #dbReady>
-                <ng-container
-                  *ngIf="allDatabaseConnections.length > 0; else emptyDbs"
-                >
+                <ng-container *ngIf="allDatabaseConnections.length > 0; else emptyDbs">
                   <div class="library-group">
                     <div class="group-documents">
-                      <label
-                        *ngFor="let db of allDatabaseConnections"
+                      <label *ngFor="let db of allDatabaseConnections"
                         (click)="toggleDatabaseSelectionClick(db.id!, $event)"
-                        [class.selected]="isDatabaseSelected(db.id!)"
-                        [class.connection-failed]="isConnectionFailed(db)"
-                        [class.connection-syncing]="isConnectionSyncing(db)"
-                        [title]="
+                        [class.selected]="isDatabaseSelected(db.id!)" [class.connection-failed]="isConnectionFailed(db)"
+                        [class.connection-syncing]="isConnectionSyncing(db)" [title]="
                           isConnectionSyncing(db)
                             ? 'This connection is currently syncing. Please wait for it to complete.'
                             : isConnectionFailed(db)
                               ? 'This connection has failed. Fix it from the Connectors page.'
                               : db.host + ':' + db.port
-                        "
-                      >
-                        <input
-                          type="checkbox"
-                          [checked]="isDatabaseSelected(db.id!)"
-                          [disabled]="
+                        ">
+                        <input type="checkbox" [checked]="isDatabaseSelected(db.id!)" [disabled]="
                             isConnectionFailed(db) || isConnectionSyncing(db)
-                          "
-                        />
-                        <img
-                          [src]="getDatabaseIcon(db)"
-                          class="doc-file-icon"
-                          alt="Database"
-                          style="object-fit: contain"
-                        />
+                          " />
+                        <img [src]="getDatabaseIcon(db)" class="doc-file-icon" alt="Database"
+                          style="object-fit: contain" />
                         <div class="doc-meta">
                           <span class="doc-name">{{ db.name }}</span>
-                          <span class="doc-info"
-                            >{{ db.database_name
+                          <span class="doc-info">{{ db.database_name
                             }}<ng-container *ngIf="db.schema_name">
-                              · {{ db.schema_name }}</ng-container
-                            ></span
-                          >
+                              · {{ db.schema_name }}</ng-container></span>
                         </div>
                         <div class="db-status-container">
-                          <span
-                            class="file-type-badge"
-                            [ngClass]="getConnectionStatusBadgeClass(db)"
-                          >
+                          <span class="file-type-badge" [ngClass]="getConnectionStatusBadgeClass(db)">
                             {{ getConnectionStatusLabel(db) }}
                           </span>
-                          <button
-                            *ngIf="isConnectionFailed(db)"
-                            type="button"
-                            class="fix-connection-btn"
-                            title="Go to connection details"
-                            (click)="navigateToConnection(db.id!, $event)"
-                          >
-                            <i
-                              class="fa-solid fa-arrow-up-right-from-square"
-                            ></i>
+                          <button *ngIf="isConnectionFailed(db)" type="button" class="fix-connection-btn"
+                            title="Go to connection details" (click)="navigateToConnection(db.id!, $event)">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
                           </button>
                         </div>
                       </label>
@@ -634,30 +387,17 @@
             <div class="document-bottom-bar">
               <div class="document-search-bottom">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input
-                  type="text"
-                  [(ngModel)]="documentSearchQuery"
-                  placeholder="Search documents..."
-                  aria-label="Search documents"
-                />
+                <input type="text" [(ngModel)]="documentSearchQuery" placeholder="Search documents..."
+                  aria-label="Search documents" />
               </div>
               <div class="bottom-actions">
-                <button
-                  type="button"
-                  class="clear-btn"
-                  (click)="clearLibrarySelection()"
-                >
+                <button type="button" class="clear-btn" (click)="clearLibrarySelection()">
                   Clear
                 </button>
-                <button
-                  type="button"
-                  class="apply-btn"
-                  (click)="confirmLibrarySelection()"
-                  [disabled]="
+                <button type="button" class="apply-btn" (click)="confirmLibrarySelection()" [disabled]="
                     !pendingDocumentIds.size &&
                     !pendingDatabaseConnectionIds.size
-                  "
-                >
+                  ">
                   Apply
                 </button>
               </div>
@@ -666,42 +406,64 @@
         </div>
       </div>
 
+      <div class="response-mode-selector">
+        <button type="button" class="response-mode-trigger" [class.is-open]="showResearchDepthMenu" [disabled]="loading"
+          (click)="toggleResearchDepthMenu()" [attr.aria-expanded]="showResearchDepthMenu" aria-haspopup="menu"
+          aria-controls="response-mode-menu" title="Choose response mode">
+          <i class="fa-solid" [ngClass]="getResearchDepthIcon()" aria-hidden="true"></i>
+          <span>{{ getResearchDepthLabel() }}</span>
+          <i class="fa-solid fa-chevron-down response-mode-chevron" aria-hidden="true"></i>
+        </button>
+
+        <div *ngIf="showResearchDepthMenu" id="response-mode-menu" class="response-mode-menu" role="menu"
+          aria-label="Response mode">
+          <div class="response-mode-menu-title">Response mode</div>
+
+          <button type="button" class="response-mode-option" [class.selected]="researchDepth === 'fast'"
+            role="menuitemradio" [attr.aria-checked]="researchDepth === 'fast'" (click)="selectResearchDepth('fast')">
+            <i class="fa-solid fa-bolt response-mode-icon" aria-hidden="true"></i>
+            <span class="response-mode-copy">
+              <span class="response-mode-option-title">Lite</span>
+              <span class="response-mode-option-description">Instant answers for simple questions</span>
+            </span>
+            <i *ngIf="researchDepth === 'fast'" class="fa-solid fa-check response-mode-check" aria-hidden="true"></i>
+          </button>
+
+          <button type="button" class="response-mode-option" [class.selected]="researchDepth === 'normal'"
+            role="menuitemradio" [attr.aria-checked]="researchDepth === 'normal'"
+            (click)="selectResearchDepth('normal')">
+            <i class="fa-solid fa-wand-magic-sparkles response-mode-icon" aria-hidden="true"></i>
+            <span class="response-mode-copy">
+              <span class="response-mode-option-title">Normal</span>
+              <span class="response-mode-option-description">Balanced reasoning for everyday work</span>
+            </span>
+            <i *ngIf="researchDepth === 'normal'" class="fa-solid fa-check response-mode-check" aria-hidden="true"></i>
+          </button>
+
+          <button type="button" class="response-mode-option" [class.selected]="researchDepth === 'deep'"
+            role="menuitemradio" [attr.aria-checked]="researchDepth === 'deep'" (click)="selectResearchDepth('deep')">
+            <i class="fa-solid fa-magnifying-glass response-mode-icon" aria-hidden="true"></i>
+            <span class="response-mode-copy">
+              <span class="response-mode-option-title">Deep Research</span>
+              <span class="response-mode-option-description">Searches many sources and returns a detailed answer</span>
+            </span>
+            <i *ngIf="researchDepth === 'deep'" class="fa-solid fa-check response-mode-check" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
       <div class="input-actions">
         <!-- ── Token Usage Ring ───────────────────────────────────── -->
-        <div
-          class="token-ring-wrap"
-          *ngIf="showTokenRing"
-          (mouseenter)="showTokenTooltip = true"
-          (mouseleave)="showTokenTooltip = false"
-          id="token-ring-widget"
-          aria-label="Token usage"
-          role="button"
-          tabindex="0"
-        >
+        <div class="token-ring-wrap" *ngIf="showTokenRing" (mouseenter)="showTokenTooltip = true"
+          (mouseleave)="showTokenTooltip = false" id="token-ring-widget" aria-label="Token usage" role="button"
+          tabindex="0">
           <svg class="token-ring-svg" viewBox="0 0 32 32" aria-hidden="true">
             <!-- Background track -->
-            <circle
-              cx="16"
-              cy="16"
-              r="12"
-              fill="none"
-              class="token-ring-track"
-              stroke-width="3"
-            />
+            <circle cx="16" cy="16" r="12" fill="none" class="token-ring-track" stroke-width="3" />
             <!-- Animated fill arc -->
-            <circle
-              cx="16"
-              cy="16"
-              r="12"
-              fill="none"
-              [attr.stroke]="tokenFillColor"
-              stroke-width="3"
-              stroke-linecap="round"
-              [attr.stroke-dasharray]="tokenRingDashArray"
-              stroke-dashoffset="0"
-              class="token-ring-fill"
-              transform="rotate(-90 16 16)"
-            />
+            <circle cx="16" cy="16" r="12" fill="none" [attr.stroke]="tokenFillColor" stroke-width="3"
+              stroke-linecap="round" [attr.stroke-dasharray]="tokenRingDashArray" stroke-dashoffset="0"
+              class="token-ring-fill" transform="rotate(-90 16 16)" />
           </svg>
 
           <!-- Tooltip ──────────────────────────────────────────────── -->
@@ -709,15 +471,11 @@
             <div class="token-tooltip-title">Token usage</div>
             <div class="token-tooltip-row">
               <span class="token-label">Input</span>
-              <span class="token-value input-val"
-                >{{ promptTokenPercent | number: "1.1-1" }}%</span
-              >
+              <span class="token-value input-val">{{ promptTokenPercent | number: "1.1-1" }}%</span>
             </div>
             <div class="token-tooltip-row">
               <span class="token-label">Output</span>
-              <span class="token-value output-val"
-                >{{ completionTokenPercent | number: "1.1-1" }}%</span
-              >
+              <span class="token-value output-val">{{ completionTokenPercent | number: "1.1-1" }}%</span>
             </div>
             <div class="token-tooltip-divider"></div>
             <div class="token-tooltip-row total-row">
@@ -729,43 +487,23 @@
           </div>
         </div>
 
-        <button
-          type="button"
-          class="web-search-button"
-          [class.active]="isWebSearchEnabled"
-          [disabled]="loading"
-          (click)="toggleWebSearch()"
-          [title]="
+        <button type="button" class="web-search-button" [class.active]="isWebSearchEnabled" [disabled]="loading"
+          (click)="toggleWebSearch()" [title]="
             isWebSearchEnabled ? 'Web search enabled' : 'Web search disabled'
-          "
-          aria-label="Toggle web search"
-        >
+          " aria-label="Toggle web search">
           <i class="fa-solid fa-globe"></i>
         </button>
 
-        <button
-          type="button"
-          class="mic-button"
-          [class.active]="isListening"
-          [disabled]="loading || !speechSupported"
-          (click)="toggleVoiceInput()"
-          [title]="isListening ? 'Stop voice input' : 'Voice dictation'"
-          aria-label="Toggle voice dictation"
-        >
-          <i
-            class="fa-solid"
-            [ngClass]="isListening ? 'fa-microphone-slash' : 'fa-microphone'"
-          ></i>
+        <button type="button" class="mic-button" [class.active]="isListening" [disabled]="loading || !speechSupported"
+          (click)="toggleVoiceInput()" [title]="isListening ? 'Stop voice input' : 'Voice dictation'"
+          aria-label="Toggle voice dictation">
+          <i class="fa-solid" [ngClass]="isListening ? 'fa-microphone-slash' : 'fa-microphone'"></i>
           <span class="listening-pulse" *ngIf="isListening"></span>
         </button>
 
-        <button
-          class="send-button"
-          (click)="runActive ? onCancelRun() : sendMessage()"
-          [disabled]="
+        <button class="send-button" (click)="runActive ? onCancelRun() : sendMessage()" [disabled]="
             (runActive && !allowCancelRun) || (!runActive && !canSendMessage)
-          "
-          [title]="
+          " [title]="
             runActive
               ? allowCancelRun
                 ? 'Stop run'
@@ -773,9 +511,7 @@
               : canSendMessage
                 ? 'Press Enter to send · Shift+Enter for newline'
                 : 'Enter a message to send'
-          "
-          aria-label="Send message"
-        >
+          " aria-label="Send message">
           <ng-container *ngIf="runActive; else sendState">
             <i class="fa-solid fa-stop"></i>
           </ng-container>
