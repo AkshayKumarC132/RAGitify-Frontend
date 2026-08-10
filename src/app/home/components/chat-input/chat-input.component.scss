@@ -2445,7 +2445,7 @@
       margin: 0 0 24px 0;
     }
 
-    .configure-db-btn {
+      .configure-db-btn {
       background-color: #0f172a;
       color: white;
       border: none;
@@ -2460,6 +2460,13 @@
         background-color: #1e293b;
       }
     }
+  }
+
+  .shared-empty-text {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
   }
 }
 

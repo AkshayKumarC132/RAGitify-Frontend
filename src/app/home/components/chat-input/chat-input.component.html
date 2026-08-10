@@ -322,6 +322,20 @@
               </p>
             </ng-template>
 
+            <!-- Database Tabs -->
+            <div class="document-tabs" *ngIf="attachmentMenuState === 'connectors'">
+              <button type="button" class="document-tab" [class.active]="activeDatabaseTab === 'my'"
+                (click)="activeDatabaseTab = 'my'">
+                <i class="fa-solid fa-plug"></i>
+                My Connectors
+              </button>
+              <button type="button" class="document-tab" [class.active]="activeDatabaseTab === 'shared'"
+                (click)="activeDatabaseTab = 'shared'">
+                <i class="fa-solid fa-user-group"></i>
+                Shared with Me
+              </button>
+            </div>
+
             <!-- Database Section -->
             <div class="documents-list database-list" *ngIf="activeDocumentTab === 'database'">
               <ng-container *ngIf="databaseConnectionsLoading; else dbReady">
@@ -351,7 +365,8 @@
                           <span class="doc-name">{{ db.name }}</span>
                           <span class="doc-info">{{ db.database_name
                             }}<ng-container *ngIf="db.schema_name">
-                              · {{ db.schema_name }}</ng-container></span>
+                              · {{ db.schema_name }}</ng-container><ng-container *ngIf="activeDatabaseTab === 'shared'">
+                              · Shared by <i class="fa-solid fa-user"></i> {{ db.owner_email || 'User' }}</ng-container></span>
                         </div>
                         <div class="db-status-container">
                           <span class="file-type-badge" [ngClass]="getConnectionStatusBadgeClass(db)">
@@ -368,7 +383,7 @@
                 </ng-container>
 
                 <ng-template #emptyDbs>
-                  <div class="database-empty-state">
+                  <div class="database-empty-state" *ngIf="activeDatabaseTab === 'my'">
                     <div class="db-icon-wrapper">
                       <i class="fa-solid fa-database db-main-icon"></i>
                     </div>
@@ -379,6 +394,9 @@
                       started.
                     </p>
                   </div>
+                  <p class="shared-empty-text" *ngIf="activeDatabaseTab === 'shared'">
+                    No shared connections yet.
+                  </p>
                 </ng-template>
               </ng-template>
             </div>

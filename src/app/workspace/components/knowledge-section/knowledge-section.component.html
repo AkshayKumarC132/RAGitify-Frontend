@@ -485,6 +485,18 @@
                 <div class="custom-select-option" [class.selected]="sharedDateFilter === 'older'" (click)="selectSharedDate('older')">Older</div>
               </div>
             </div>
+            <div class="document-filter-field custom-select-container" (click)="$event.stopPropagation()">
+              <label>Type</label>
+              <div class="custom-select-value" [class.open]="showSharedTypeDropdown" (click)="toggleSharedTypeDropdown($event)">
+                <span class="text-truncate">{{ sharedTypeFilter === 'all' ? 'All types' : (sharedTypeFilter | titlecase) }}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+              <div class="custom-select-dropdown" *ngIf="showSharedTypeDropdown">
+                <div class="custom-select-option" [class.selected]="sharedTypeFilter === 'all'" (click)="selectSharedType('all')">All types</div>
+                <div class="custom-select-option" [class.selected]="sharedTypeFilter === 'document'" (click)="selectSharedType('document')">Document</div>
+                <div class="custom-select-option" [class.selected]="sharedTypeFilter === 'connection'" (click)="selectSharedType('connection')">Connection</div>
+              </div>
+            </div>
             <div class="document-filter-actions">
               <span class="filter-results">{{ filteredSharedWithMe.length }} results</span>
               <button type="button" class="filter-reset-btn" (click)="resetSharedFilters()"
@@ -504,11 +516,12 @@
             <table class="documents-table shared-documents-table">
               <thead>
                 <tr>
-                  <th class="col-name">Document</th>
-                  <th>Owner</th>
-                  <th>Status</th>
-                  <th>Date Shared</th>
-                  <th>Expiry</th>
+                  <th class="col-name">Name</th>
+                  <th class="col-type">Type</th>
+                  <th class="col-email">Owner</th>
+                  <th class="col-status">Status</th>
+                  <th class="col-date">Date Shared</th>
+                  <th class="col-date">Expiry</th>
                   <th class="col-actions">Actions</th>
                 </tr>
               </thead>
@@ -516,19 +529,24 @@
                 <tr *ngFor="let item of filteredSharedWithMe">
                   <td class="col-name">
                     <div class="doc-name-stack">
-                      <button type="button" class="doc-name-link" (click)="openDocumentDetails(item.document_id)"
-                        [title]="item.document_title">
-                        <span class="doc-name-text">{{ item.document_title }}</span>
+                      <button type="button" class="doc-name-link" (click)="openItemDetails(item)"
+                        [title]="item.resourceTitle">
+                        <span class="doc-name-text">{{ item.resourceTitle }}</span>
                       </button>
                     </div>
                   </td>
-                  <td>{{ item.owner_email }}</td>
-                  <td>
+                  <td class="col-type">
+                    <span class="meta-chip" [ngClass]="item.itemType === 'document' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'">
+                      {{ item.itemType | titlecase }}
+                    </span>
+                  </td>
+                  <td class="col-email" [title]="item.ownerEmail">{{ item.ownerEmail }}</td>
+                  <td class="col-status">
                     <span class="share-status-chip" [class.inactive]="getShareStatusLabel(item) !== 'Active'">{{
                       getShareStatusLabel(item) }}</span>
                   </td>
-                  <td>{{ formatDate(item.shared_at) }}</td>
-                  <td>{{ getShareExpiryLabel(item) }}</td>
+                  <td class="col-date">{{ item.sharedAt ? formatDate(item.sharedAt) : 'N/A' }}</td>
+                  <td class="col-date">{{ getShareExpiryLabel(item) }}</td>
                   <td class="col-actions">
                     <button type="button" class="share-action-btn danger compact" (click)="revokeSharedWithMe(item)">
                       <i class="fa-solid fa-link-slash"></i>
@@ -574,6 +592,18 @@
                 <div class="custom-select-option" [class.selected]="sharedByMeDateFilter === 'older'" (click)="selectSharedByMeDate('older')">Older</div>
               </div>
             </div>
+            <div class="document-filter-field custom-select-container" (click)="$event.stopPropagation()">
+              <label>Type</label>
+              <div class="custom-select-value" [class.open]="showSharedByMeTypeDropdown" (click)="toggleSharedByMeTypeDropdown($event)">
+                <span class="text-truncate">{{ sharedByMeTypeFilter === 'all' ? 'All types' : (sharedByMeTypeFilter | titlecase) }}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+              <div class="custom-select-dropdown" *ngIf="showSharedByMeTypeDropdown">
+                <div class="custom-select-option" [class.selected]="sharedByMeTypeFilter === 'all'" (click)="selectSharedByMeType('all')">All types</div>
+                <div class="custom-select-option" [class.selected]="sharedByMeTypeFilter === 'document'" (click)="selectSharedByMeType('document')">Document</div>
+                <div class="custom-select-option" [class.selected]="sharedByMeTypeFilter === 'connection'" (click)="selectSharedByMeType('connection')">Connection</div>
+              </div>
+            </div>
             <div class="document-filter-actions">
               <span class="filter-results">{{ filteredSharedByMe.length }} results</span>
               <button type="button" class="filter-reset-btn" (click)="resetSharedByMeFilters()"
@@ -592,11 +622,12 @@
             <table class="documents-table shared-documents-table">
               <thead>
                 <tr>
-                  <th class="col-name">Document</th>
-                  <th>Recipient</th>
-                  <th>Status</th>
-                  <th>Date Shared</th>
-                  <th>Expiry</th>
+                  <th class="col-name">Name</th>
+                  <th class="col-type">Type</th>
+                  <th class="col-email">Recipient</th>
+                  <th class="col-status">Status</th>
+                  <th class="col-date">Date Shared</th>
+                  <th class="col-date">Expiry</th>
                   <th class="col-actions">Actions</th>
                 </tr>
               </thead>
@@ -604,19 +635,24 @@
                 <tr *ngFor="let item of filteredSharedByMe">
                   <td class="col-name">
                     <div class="doc-name-stack">
-                      <button type="button" class="doc-name-link" (click)="openDocumentDetails(item.document_id)"
-                        [title]="item.document_title">
-                        <span class="doc-name-text">{{ item.document_title }}</span>
+                      <button type="button" class="doc-name-link" (click)="openItemDetails(item)"
+                        [title]="item.resourceTitle">
+                        <span class="doc-name-text">{{ item.resourceTitle }}</span>
                       </button>
                     </div>
                   </td>
-                  <td>{{ item.recipient_email }}</td>
-                  <td>
+                  <td class="col-type">
+                    <span class="meta-chip" [ngClass]="item.itemType === 'document' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'">
+                      {{ item.itemType | titlecase }}
+                    </span>
+                  </td>
+                  <td class="col-email" [title]="item.recipientEmail">{{ item.recipientEmail }}</td>
+                  <td class="col-status">
                     <span class="share-status-chip" [class.inactive]="getShareStatusLabel(item) !== 'Active'">{{
                       getShareStatusLabel(item) }}</span>
                   </td>
-                  <td>{{ formatDate(item.shared_at) }}</td>
-                  <td>{{ getShareExpiryLabel(item) }}</td>
+                  <td class="col-date">{{ item.sharedAt ? formatDate(item.sharedAt) : 'N/A' }}</td>
+                  <td class="col-date">{{ getShareExpiryLabel(item) }}</td>
                   <td class="col-actions">
                     <button type="button" class="share-action-btn danger compact" (click)="revokeShareByOwner(item)">
                       <i class="fa-solid fa-link-slash"></i>

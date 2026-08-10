@@ -9,8 +9,8 @@ import {
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, Subscription, lastValueFrom } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, Subscription, lastValueFrom, of } from 'rxjs';
+import { takeUntil, catchError } from 'rxjs/operators';
 import {
   ChatInputComponent,
   ChatMessagePayload,
@@ -46,10 +46,12 @@ import { ThreadSearchPopupService } from '../../../shared/services/thread-search
 import { VectorStoreService } from '../../../shared/services/vector-store.service';
 import { DocumentShareService } from '../../../shared/services/document-share.service';
 import { DatabaseConnectionService } from '../../../shared/services/database-connection.service';
+import { ConnectionShareService } from '../../../shared/services/connection-share.service';
 import {
   DatabaseConnection,
   FailedConnectionInfo,
 } from '../../../shared/models/database-connection.model';
+import { ConnectionSharedWithMeItem } from '../../../shared/models/connection-share.model';
 import { SharedWithMeItem } from '../../../shared/models/document-share.model';
 import { DatagridAttachmentService } from '../../../shared/services/datagrid-attachment.service';
 import { ChatStreamService } from '../../../shared/services/chat-stream.service';
@@ -189,6 +191,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     private documentService: DocumentService,
     private documentShareService: DocumentShareService,
     private dbConnectionService: DatabaseConnectionService,
+    private connectionShareService: ConnectionShareService,
     private threadSearchPopupService: ThreadSearchPopupService,
     private chatStreamService: ChatStreamService,
     private confirmDialogService: ConfirmDialogService,
@@ -1354,16 +1357,26 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
 
     this.databaseConnectionsLoading = true;
-    this.dbConnectionService.list().subscribe({
-      next: (connections) => {
-        this.databaseConnections = connections || [];
-        this.databaseConnectionsLoaded = true;
-        this.databaseConnectionsLoading = false;
-      },
-      error: (error) => {
-        this.databaseConnectionsLoading = false;
-        console.error('Error loading database connections:', error);
-      },
+    Promise.all([
+      lastValueFrom(this.dbConnectionService.list().pipe(catchError(() => of([])))),
+      lastValueFrom(this.connectionShareService.listSharedWithMe().pipe(catchError(() => of([])))),
+    ]).then(([connections, sharedWithMe]) => {
+      const ownedConnections = connections || [];
+      const sharedConnections = ConnectionShareService.mapToDatabaseConnections(sharedWithMe || []);
+      const deduped = new Map<string, DatabaseConnection>();
+
+      [...ownedConnections, ...sharedConnections].forEach((conn) => {
+        if (conn.id) {
+          deduped.set(conn.id, conn);
+        }
+      });
+
+      this.databaseConnections = Array.from(deduped.values());
+      this.databaseConnectionsLoaded = true;
+      this.databaseConnectionsLoading = false;
+    }).catch(error => {
+      this.databaseConnectionsLoading = false;
+      console.error('Error loading database connections:', error);
     });
   }
 

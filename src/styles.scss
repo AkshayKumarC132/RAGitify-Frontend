@@ -1850,35 +1850,43 @@ app-knowledge-section {
 
     th:nth-child(1),
     td:nth-child(1) {
-      width: 42%;
+      width: 22%;
     }
 
     th:nth-child(2),
     td:nth-child(2) {
-      width: 20%;
+      width: 10%;
     }
 
     th:nth-child(3),
     td:nth-child(3) {
-      width: 12%;
+      width: 18%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     th:nth-child(4),
     td:nth-child(4) {
-      width: 12%;
-      white-space: nowrap;
+      width: 9%;
     }
 
     th:nth-child(5),
     td:nth-child(5) {
-      width: 12%;
+      width: 13%;
       white-space: nowrap;
     }
 
     th:nth-child(6),
     td:nth-child(6) {
-      width: 120px;
-      text-align: right;
+      width: 13%;
+      white-space: nowrap;
+    }
+
+    th:nth-child(7),
+    td:nth-child(7) {
+      width: 15%;
+      text-align: center;
     }
 
     .col-name .doc-name-stack {
@@ -1894,12 +1902,6 @@ app-knowledge-section {
       white-space: nowrap;
     }
 
-    td:nth-child(2) {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
     td:nth-child(3) .share-status-chip {
       max-width: 100%;
       white-space: nowrap;
@@ -1907,7 +1909,7 @@ app-knowledge-section {
 
     .share-action-btn.compact {
       justify-content: center;
-      min-width: 96px;
+      min-width: 0;
     }
   }
 
@@ -1915,19 +1917,19 @@ app-knowledge-section {
     .shared-documents-table {
       th:nth-child(1),
       td:nth-child(1) {
-        width: 34%;
+        width: 20%;
       }
 
-      th:nth-child(2),
-      td:nth-child(2) {
-        width: 22%;
+      th:nth-child(3),
+      td:nth-child(3) {
+        width: 16%;
       }
 
-      th:nth-child(4),
-      td:nth-child(4),
       th:nth-child(5),
-      td:nth-child(5) {
-        width: 14%;
+      td:nth-child(5),
+      th:nth-child(6),
+      td:nth-child(6) {
+        width: 12%;
       }
     }
   }

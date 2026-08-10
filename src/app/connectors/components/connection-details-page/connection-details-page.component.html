@@ -77,7 +77,7 @@
                         <i class="fa-solid fa-share-nodes"></i>
                     </button>
                     <button type="button" class="details-secondary-btn" (click)="openConnectionChat()"
-                        title="Chat" aria-label="Chat with connection">
+                        [disabled]="hasFailed" title="Chat" aria-label="Chat with connection">
                         <i class="fa-solid fa-comments" aria-hidden="true"></i>
                     </button>
                     <button type="button" class="details-secondary-btn delete-btn" (click)="deleteConnection()"

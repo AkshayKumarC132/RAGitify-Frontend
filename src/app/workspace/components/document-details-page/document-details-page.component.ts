@@ -153,6 +153,12 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
       && (this.document.ingestion_status || this.document.status) === 'completed';
   }
 
+  get hasFailed(): boolean {
+    if (!this.document) return false;
+    const status = (this.document.ingestion_status || this.document.status || '').toLowerCase();
+    return status === 'failed';
+  }
+
   get currentLibraryId(): string | null {
     return this.route.snapshot.queryParamMap.get('libraryId');
   }
@@ -731,9 +737,15 @@ export class DocumentDetailsPageComponent implements OnInit, OnChanges, OnDestro
     return JSON.stringify(value);
   }
 
+  closeDetails(): void {
+    this.router.navigate(['/workspace'], {
+      queryParams: this.currentLibraryId ? { libraryId: this.currentLibraryId } : {}
+    });
+  }
+
   private extractErrorMessage(error: unknown, fallback: string): string {
-    const candidate = error as { error?: { detail?: string; message?: string }; message?: string };
-    return candidate?.error?.detail || candidate?.error?.message || candidate?.message || fallback;
+    const candidate = error as { error?: { error?: string; detail?: string; message?: string }; message?: string };
+    return candidate?.error?.error || candidate?.error?.detail || candidate?.error?.message || candidate?.message || fallback;
   }
 
   private loadShareUsers(): void {

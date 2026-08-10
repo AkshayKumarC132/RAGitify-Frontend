@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Output, EventEmitter, HostListener, ChangeDetectorRef } from '@angular/core';
-import { Subscription, lastValueFrom } from 'rxjs';
+import { Subscription, lastValueFrom, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ConversationService } from '../../../shared/services/conversation.service';
 import { ResponseService } from '../../../shared/services/response.service';
 import { ResponseAttentionService } from '../../../shared/services/response-attention.service';
@@ -12,7 +13,9 @@ import { ResponseRecord, ResponseCreateRequest, ResearchDepth, StreamEvent, Task
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document } from '../../../shared/models/document.model';
 import { DatabaseConnectionService } from '../../../shared/services/database-connection.service';
+import { ConnectionShareService } from '../../../shared/services/connection-share.service';
 import { DatabaseConnection, FailedConnectionInfo } from '../../../shared/models/database-connection.model';
+import { ConnectionSharedWithMeItem } from '../../../shared/models/connection-share.model';
 import { Router } from '@angular/router';
 import { ChatInputComponent, ChatMessagePayload, LibrarySelectionEvent } from '../chat-input/chat-input.component';
 import { ConnectionSyncService } from '../../../shared/services/connection-sync.service';
@@ -188,6 +191,7 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         private documentService: DocumentService,
         private documentShareService: DocumentShareService,
         private dbConnectionService: DatabaseConnectionService,
+        private connectionShareService: ConnectionShareService,
         private connectionSyncService: ConnectionSyncService,
         private router: Router,
         private cdr: ChangeDetectorRef
@@ -443,16 +447,26 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         }
 
         this.databaseConnectionsLoading = true;
-        this.dbConnectionService.list().subscribe({
-            next: (connections) => {
-                this.databaseConnections = connections || [];
-                this.databaseConnectionsLoaded = true;
-                this.databaseConnectionsLoading = false;
-            },
-            error: (error) => {
-                this.databaseConnectionsLoading = false;
-                console.error('Error loading database connections:', error);
-            }
+        Promise.all([
+            lastValueFrom(this.dbConnectionService.list().pipe(catchError(() => of([])))),
+            lastValueFrom(this.connectionShareService.listSharedWithMe().pipe(catchError(() => of([]))))
+        ]).then(([connections, sharedWithMe]) => {
+            const ownedConnections = connections || [];
+            const sharedConnections = ConnectionShareService.mapToDatabaseConnections(sharedWithMe || []);
+            const deduped = new Map<string, DatabaseConnection>();
+
+            [...ownedConnections, ...sharedConnections].forEach((conn) => {
+                if (conn.id) {
+                    deduped.set(conn.id, conn);
+                }
+            });
+
+            this.databaseConnections = Array.from(deduped.values());
+            this.databaseConnectionsLoaded = true;
+            this.databaseConnectionsLoading = false;
+        }).catch(error => {
+            this.databaseConnectionsLoading = false;
+            console.error('Error loading database connections:', error);
         });
     }
 
@@ -547,7 +561,6 @@ export class PlaygroundComponent implements OnInit, OnDestroy, AfterViewInit {
         const name = match ? match.name : 'Unknown Library';
         return name.length > 75 ? `${name.slice(0, 75)}...` : name;
     }
-
     private mapSharedDocuments(items: SharedWithMeItem[]): Document[] {
         const sharedLibraryId = this.libraries.find(library => library.vs_type === 'SHARED')?.id || 'shared';
 

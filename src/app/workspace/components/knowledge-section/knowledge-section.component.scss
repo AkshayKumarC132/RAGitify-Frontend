@@ -180,6 +180,12 @@
   &.inline {
     margin-left: 0.45rem;
   }
+
+  // Type-chip colour modifiers used by the shared-items tables
+  &.bg-blue-100 { background: rgba(59, 130, 246, 0.12); }
+  &.text-blue-800 { color: #1e40af; }
+  &.bg-green-100 { background: rgba(34, 197, 94, 0.12); }
+  &.text-green-800 { color: #166534; }
 }
 
 .documents-toolbar {
@@ -574,6 +580,14 @@
   .col-actions {
     width: 80px;
     vertical-align: middle;
+  }
+
+  // Shared-table actions use labelled buttons rather than the icon-only document menu.
+  // Reserve enough room for the cell padding and center the control below its header.
+  &.shared-documents-table .col-actions {
+    width: 110px;
+    text-align: center;
+    white-space: nowrap;
   }
 
   .actions-cell-wrap {

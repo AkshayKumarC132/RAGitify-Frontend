@@ -111,7 +111,7 @@
             <i class="fa-solid fa-share-nodes"></i>
           </button>
           <button *ngIf="document" type="button" class="details-secondary-btn" (click)="openDocumentChat()"
-            title="Chat" aria-label="Chat with document">
+            [disabled]="hasFailed" title="Chat" aria-label="Chat with document">
             <i class="fa-solid fa-comments" aria-hidden="true"></i>
           </button>
           <button *ngIf="document" type="button" class="details-secondary-btn"
@@ -123,6 +123,9 @@
             class="details-secondary-btn delete-btn" (click)="deleteDocument()" title="Delete"
             aria-label="Delete document">
             <i class="fa-solid fa-trash" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="details-secondary-btn" (click)="closeDetails()" title="Close details">
+            <i class="fa-solid fa-xmark"></i>
           </button>
           <a *ngIf="document?.signed_url" class="details-primary-btn" [href]="document?.signed_url" target="_blank"
             rel="noopener noreferrer" title="Open File">

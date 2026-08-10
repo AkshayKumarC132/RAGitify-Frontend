@@ -7,6 +7,9 @@ import { VectorStoreService } from '../../../shared/services/vector-store.servic
 import { DocumentService } from '../../../shared/services/document.service';
 import { DocumentAccessService } from '../../../shared/services/document-access.service';
 import { DocumentShareService } from '../../../shared/services/document-share.service';
+import { ConnectionShareService } from '../../../shared/services/connection-share.service';
+import { SharedWithMeItem, SharedByMeItem } from '../../../shared/models/document-share.model';
+import { ConnectionSharedWithMeItem, ConnectionSharedByMeItem } from '../../../shared/models/connection-share.model';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { WorkspaceKnowledgeContextService } from '../../services/workspace-knowledge-context.service';
 import { WorkspaceLibraryDeleteFlowService } from '../../services/workspace-library-delete-flow.service';
@@ -15,9 +18,24 @@ import { ToastService } from '../../../shared/services/toast.service';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Document, DocumentStatus } from '../../../shared/models/document.model';
 import { DocumentAccess } from '../../../shared/models/document-access.model';
-import { SharedByMeItem, SharedWithMeItem } from '../../../shared/models/document-share.model';
 import { User } from '../../../shared/models/user.model';
 import Swal from 'sweetalert2/dist/sweetalert2.js';
+
+
+export interface UnifiedShareItem {
+  itemType: 'document' | 'connection';
+  id: string | number;
+  resourceId: string;
+  resourceTitle: string;
+  ownerEmail: string;
+  recipientEmail: string;
+  sharedAt: string;
+  expiresAt: string | null;
+  isActive: boolean;
+  active: boolean;
+  revokedAt: string | null;
+  raw: SharedWithMeItem | SharedByMeItem | ConnectionSharedWithMeItem | ConnectionSharedByMeItem;
+}
 
 @Component({
   selector: 'app-knowledge-section',
@@ -30,8 +48,8 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   vectorStores: VectorStore[] = [];
   documents: Document[] = [];
   documentAccessList: DocumentAccess[] = [];
-  sharedWithMe: SharedWithMeItem[] = [];
-  sharedByMe: SharedByMeItem[] = [];
+  sharedWithMe: UnifiedShareItem[] = [];
+  sharedByMe: UnifiedShareItem[] = [];
   /** Full document list (all libraries). Loaded lazily for "Accessed". */
   allDocuments: Document[] = [];
   private allDocumentsLoaded = false;
@@ -66,8 +84,10 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   fileTypeFilter = 'all';
   sharedOwnerFilter = 'all';
   sharedDateFilter: 'all' | '7d' | '30d' | '90d' | 'older' = 'all';
+  sharedTypeFilter: 'all' | 'document' | 'connection' = 'all';
   sharedRecipientFilter = 'all';
   sharedByMeDateFilter: 'all' | '7d' | '30d' | '90d' | 'older' = 'all';
+  sharedByMeTypeFilter: 'all' | 'document' | 'connection' = 'all';
   activeWorkspaceTab: 'documents' | 'shared-with-me' | 'shared-by-me' = 'documents';
   openActionsDocId: string | null = null;
   loadingSharedWithMe = false;
@@ -93,6 +113,7 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     private documentService: DocumentService,
     private documentAccessService: DocumentAccessService,
     private documentShareService: DocumentShareService,
+    private connectionShareService: ConnectionShareService,
     private confirmDialogService: ConfirmDialogService,
     private authService: AuthService,
     private knowledgeContext: WorkspaceKnowledgeContextService,
@@ -709,8 +730,10 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   showSizeDropdown = false;
   showSharedOwnerDropdown = false;
   showSharedDateDropdown = false;
+  showSharedTypeDropdown = false;
   showSharedRecipientDropdown = false;
   showSharedByMeDateDropdown = false;
+  showSharedByMeTypeDropdown = false;
 
   closeAllDropdowns(): void {
     this.showFileTypeDropdown = false;
@@ -720,8 +743,10 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.showSizeDropdown = false;
     this.showSharedOwnerDropdown = false;
     this.showSharedDateDropdown = false;
+    this.showSharedTypeDropdown = false;
     this.showSharedRecipientDropdown = false;
     this.showSharedByMeDateDropdown = false;
+    this.showSharedByMeTypeDropdown = false;
   }
 
   toggleFileTypeDropdown(event: Event): void {
@@ -837,6 +862,31 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     this.closeAllDropdowns();
   }
 
+  
+  toggleSharedTypeDropdown(event: Event): void {
+    event.stopPropagation();
+    const current = this.showSharedTypeDropdown;
+    this.closeAllDropdowns();
+    this.showSharedTypeDropdown = !current;
+  }
+
+  selectSharedType(option: 'all' | 'document' | 'connection'): void {
+    this.sharedTypeFilter = option;
+    this.closeAllDropdowns();
+  }
+
+  toggleSharedByMeTypeDropdown(event: Event): void {
+    event.stopPropagation();
+    const current = this.showSharedByMeTypeDropdown;
+    this.closeAllDropdowns();
+    this.showSharedByMeTypeDropdown = !current;
+  }
+
+  selectSharedByMeType(option: 'all' | 'document' | 'connection'): void {
+    this.sharedByMeTypeFilter = option;
+    this.closeAllDropdowns();
+  }
+
   toggleSharedDateDropdown(event: Event): void {
     event.stopPropagation();
     const current = this.showSharedDateDropdown;
@@ -922,17 +972,21 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     return docs;
   }
 
-  get filteredSharedWithMe(): SharedWithMeItem[] {
+  get filteredSharedWithMe(): UnifiedShareItem[] {
     let items = this.filterShareItems(this.sharedWithMe, 'recipient');
 
     if (this.sharedOwnerFilter !== 'all') {
-      items = items.filter(item => item.owner_email === this.sharedOwnerFilter);
+      items = items.filter(item => item.ownerEmail === this.sharedOwnerFilter);
+    }
+
+    if (this.sharedTypeFilter !== 'all') {
+      items = items.filter(item => item.itemType === this.sharedTypeFilter);
     }
 
     if (this.sharedDateFilter !== 'all') {
       const now = Date.now();
       items = items.filter(item => {
-        const dateValue = item.shared_at ? new Date(item.shared_at).getTime() : NaN;
+        const dateValue = item.sharedAt ? new Date(item.sharedAt).getTime() : NaN;
         if (Number.isNaN(dateValue)) {
           return false;
         }
@@ -947,17 +1001,21 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     return items;
   }
 
-  get filteredSharedByMe(): SharedByMeItem[] {
+  get filteredSharedByMe(): UnifiedShareItem[] {
     let items = this.filterShareItems(this.sharedByMe, 'owner');
 
     if (this.sharedRecipientFilter !== 'all') {
-      items = items.filter(item => item.recipient_email === this.sharedRecipientFilter);
+      items = items.filter(item => item.recipientEmail === this.sharedRecipientFilter);
+    }
+
+    if (this.sharedByMeTypeFilter !== 'all') {
+      items = items.filter(item => item.itemType === this.sharedByMeTypeFilter);
     }
 
     if (this.sharedByMeDateFilter !== 'all') {
       const now = Date.now();
       items = items.filter(item => {
-        const dateValue = item.shared_at ? new Date(item.shared_at).getTime() : NaN;
+        const dateValue = item.sharedAt ? new Date(item.sharedAt).getTime() : NaN;
         if (Number.isNaN(dateValue)) {
           return false;
         }
@@ -999,28 +1057,28 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     return Array.from(
       new Set(
         this.sharedWithMe
-          .map(item => item.owner_email)
+          .map(item => item.ownerEmail)
           .filter((owner): owner is string => !!owner)
       )
     ).sort((a, b) => a.localeCompare(b));
   }
 
   get hasActiveSharedFilters(): boolean {
-    return this.sharedOwnerFilter !== 'all' || this.sharedDateFilter !== 'all';
+    return this.sharedOwnerFilter !== 'all' || this.sharedDateFilter !== 'all' || this.sharedTypeFilter !== 'all';
   }
 
   get availableSharedRecipients(): string[] {
     return Array.from(
       new Set(
         this.sharedByMe
-          .map(item => item.recipient_email)
+          .map(item => item.recipientEmail)
           .filter((recipient): recipient is string => !!recipient)
       )
     ).sort((a, b) => a.localeCompare(b));
   }
 
   get hasActiveSharedByMeFilters(): boolean {
-    return this.sharedRecipientFilter !== 'all' || this.sharedByMeDateFilter !== 'all';
+    return this.sharedRecipientFilter !== 'all' || this.sharedByMeDateFilter !== 'all' || this.sharedByMeTypeFilter !== 'all';
   }
 
   getTruncatedLibraryOptionName(name: string | undefined | null): string {
@@ -1069,11 +1127,13 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
   resetSharedFilters(): void {
     this.sharedOwnerFilter = 'all';
     this.sharedDateFilter = 'all';
+    this.sharedTypeFilter = 'all';
   }
 
   resetSharedByMeFilters(): void {
     this.sharedRecipientFilter = 'all';
     this.sharedByMeDateFilter = 'all';
+    this.sharedByMeTypeFilter = 'all';
   }
 
   get documentCounts(): Record<string, number> {
@@ -1359,6 +1419,14 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  openItemDetails(item: UnifiedShareItem): void {
+    if (item.itemType === 'document') {
+      this.openDocumentDetails(item.resourceId);
+    } else {
+      this.router.navigate(['/connectors', item.resourceId]);
+    }
+  }
+
   openDocumentDetails(documentOrId: Document | string): void {
     const documentId = typeof documentOrId === 'string' ? documentOrId : documentOrId.id;
     const queryParams: Record<string, string> = {};
@@ -1541,10 +1609,10 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     });
   }
 
-  async revokeShareByOwner(item: SharedByMeItem): Promise<void> {
+  async revokeShareByOwner(item: UnifiedShareItem): Promise<void> {
     const result = await Swal.fire({
       title: 'Revoke this share?',
-      text: `${item.document_title} will no longer be available to ${item.recipient_email}.`,
+      text: `${item.resourceTitle} will no longer be available to ${item.recipientEmail}.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Revoke share',
@@ -1555,23 +1623,25 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.documentShareService.revokeByOwner({
-      document_ids: [item.document_id],
-      target_user_id: item.recipient_id
-    }).subscribe({
-      next: () => {
-        this.sharedByMe = this.sharedByMe.filter(share => !(share.document_id === item.document_id && share.recipient_id === item.recipient_id));
-      },
-      error: (err) => {
-        this.toast.error('Unable to revoke share', this.extractErrorMessage(err, 'The share could not be revoked.'));
-      }
-    });
+    const targetUserId = item.raw.recipient_id;
+    const nextFn = () => {
+      this.sharedByMe = this.sharedByMe.filter(share => !(share.resourceId === item.resourceId && share.raw.recipient_id === targetUserId));
+    };
+    const errorFn = (err: any) => {
+      this.toast.error('Unable to revoke share', this.extractErrorMessage(err, 'The share could not be revoked.'));
+    };
+
+    if (item.itemType === 'document') {
+      this.documentShareService.revokeByOwner({ document_ids: [item.resourceId], target_user_id: targetUserId }).subscribe({ next: nextFn, error: errorFn });
+    } else {
+      this.connectionShareService.revoke({ connection_ids: [item.resourceId], target_user_id: targetUserId }).subscribe({ next: nextFn, error: errorFn });
+    }
   }
 
-  async revokeSharedWithMe(item: SharedWithMeItem): Promise<void> {
+  async revokeSharedWithMe(item: UnifiedShareItem): Promise<void> {
     const result = await Swal.fire({
-      title: 'Remove shared document?',
-      text: `${item.document_title} will be removed from your shared surface.`,
+      title: `Remove shared ${item.itemType}?`,
+      text: `${item.resourceTitle} will be removed from your shared surface.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Remove access',
@@ -1582,14 +1652,18 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.documentShareService.revokeSharedWithMe([item.document_id]).subscribe({
-      next: () => {
-        this.sharedWithMe = this.sharedWithMe.filter(share => share.document_id !== item.document_id);
-      },
-      error: (err) => {
-        this.toast.error('Unable to remove access', this.extractErrorMessage(err, 'The shared document could not be removed from your view.'));
-      }
-    });
+    const nextFn = () => {
+      this.sharedWithMe = this.sharedWithMe.filter(share => share.resourceId !== item.resourceId);
+    };
+    const errorFn = (err: any) => {
+      this.toast.error('Unable to remove access', this.extractErrorMessage(err, `The shared ${item.itemType} could not be removed from your view.`));
+    };
+
+    if (item.itemType === 'document') {
+      this.documentShareService.revokeSharedWithMe([item.resourceId]).subscribe({ next: nextFn, error: errorFn });
+    } else {
+      this.connectionShareService.removeSharedWithMe({ connection_ids: [item.resourceId] }).subscribe({ next: nextFn, error: errorFn });
+    }
   }
 
   jumpToSharedLibrary(): void {
@@ -1613,21 +1687,21 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       .filter((doc): doc is Document => !!doc);
   }
 
-  getShareExpiryLabel(item: SharedWithMeItem | SharedByMeItem): string {
-    if (!item.expires_at) {
+  getShareExpiryLabel(item: UnifiedShareItem): string {
+    if (!item.expiresAt) {
       return 'Never expires';
     }
-    return `${this.formatDate(item.expires_at)}`;
+    return `${this.formatDate(item.expiresAt)}`;
   }
 
-  getShareStatusLabel(item: SharedWithMeItem | SharedByMeItem): string {
-    if (item.revoked_at) {
+  getShareStatusLabel(item: UnifiedShareItem): string {
+    if (item.revokedAt) {
       return 'Revoked';
     }
-    if (!item.is_active && !item.active) {
+    if (!item.isActive && !item.active) {
       return 'Inactive';
     }
-    if (item.expires_at && new Date(item.expires_at).getTime() < Date.now()) {
+    if (item.expiresAt && new Date(item.expiresAt).getTime() < Date.now()) {
       return 'Expired';
     }
     return 'Active';
@@ -1843,16 +1917,21 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       return;
     }
     this.loadingSharedWithMe = true;
-    this.documentShareService.listSharedWithMe().pipe(
+    forkJoin({
+      docs: this.documentShareService.listSharedWithMe().pipe(catchError(() => of([]))),
+      conns: this.connectionShareService.listSharedWithMe().pipe(catchError(() => of([])))
+    }).pipe(
       finalize(() => {
         this.loadingSharedWithMe = false;
       })
     ).subscribe({
-      next: items => {
-        this.sharedWithMe = items;
+      next: ({ docs, conns }) => {
+        const docItems = docs.map(d => this.mapDocToUnified(d));
+        const connItems = conns.map(c => this.mapConnToUnified(c));
+        this.sharedWithMe = [...docItems, ...connItems].sort((a, b) => new Date(b.sharedAt).getTime() - new Date(a.sharedAt).getTime());
       },
       error: err => {
-        console.error('Error loading shared-with-me documents:', err);
+        console.error('Error loading shared-with-me:', err);
       }
     });
   }
@@ -1862,16 +1941,21 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
       return;
     }
     this.loadingSharedByMe = true;
-    this.documentShareService.listSharedByMe().pipe(
+    forkJoin({
+      docs: this.documentShareService.listSharedByMe().pipe(catchError(() => of([]))),
+      conns: this.connectionShareService.listSharedByMe().pipe(catchError(() => of([])))
+    }).pipe(
       finalize(() => {
         this.loadingSharedByMe = false;
       })
     ).subscribe({
-      next: items => {
-        this.sharedByMe = items;
+      next: ({ docs, conns }) => {
+        const docItems = docs.map(d => this.mapDocToUnified(d));
+        const connItems = conns.map(c => this.mapConnToUnified(c));
+        this.sharedByMe = [...docItems, ...connItems].sort((a, b) => new Date(b.sharedAt).getTime() - new Date(a.sharedAt).getTime());
       },
       error: err => {
-        console.error('Error loading shared-by-me documents:', err);
+        console.error('Error loading shared-by-me:', err);
       }
     });
   }
@@ -1896,18 +1980,38 @@ export class KnowledgeSectionComponent implements OnInit, OnDestroy {
     });
   }
 
-  private filterShareItems<T extends SharedWithMeItem | SharedByMeItem>(items: T[], mode: 'recipient' | 'owner'): T[] {
+  private mapDocToUnified(d: SharedWithMeItem | SharedByMeItem): UnifiedShareItem {
+    return {
+      itemType: 'document', id: d.id, resourceId: d.document_id,
+      resourceTitle: d.document_title, ownerEmail: d.owner_email,
+      recipientEmail: d.recipient_email, sharedAt: d.shared_at,
+      expiresAt: d.expires_at, isActive: d.is_active, active: d.active,
+      revokedAt: d.revoked_at, raw: d
+    };
+  }
+
+  private mapConnToUnified(c: ConnectionSharedWithMeItem | ConnectionSharedByMeItem): UnifiedShareItem {
+    return {
+      itemType: 'connection', id: c.id, resourceId: c.connection_id,
+      resourceTitle: c.connection_name, ownerEmail: c.owner_email,
+      recipientEmail: c.recipient_email, sharedAt: c.shared_at,
+      expiresAt: c.expires_at, isActive: c.is_active, active: c.active,
+      revokedAt: c.revoked_at, raw: c
+    };
+  }
+
+  private filterShareItems(items: UnifiedShareItem[], mode: 'recipient' | 'owner'): UnifiedShareItem[] {
     if (!this.searchQuery.trim()) {
       return items;
     }
     const query = this.searchQuery.trim().toLowerCase();
     return items.filter(item => {
-      const targetEmail = mode === 'recipient' ? item.owner_email : item.recipient_email;
+      const targetEmail = mode === 'recipient' ? item.ownerEmail : item.recipientEmail;
       return [
-        item.document_title,
-        item.document_id,
-        item.owner_email,
-        item.recipient_email,
+        item.resourceTitle,
+        item.resourceId,
+        item.ownerEmail,
+        item.recipientEmail,
         targetEmail
       ].filter(Boolean).join(' ').toLowerCase().includes(query);
     });

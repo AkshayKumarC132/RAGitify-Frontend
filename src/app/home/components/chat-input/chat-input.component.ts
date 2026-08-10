@@ -128,7 +128,12 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
   /** Returns ALL database connections, not just connected ones. */
   get allDatabaseConnections(): DatabaseConnection[] {
-    return this.databaseConnections || [];
+    const dbs = this.databaseConnections || [];
+    if (this.activeDatabaseTab === 'shared') {
+      return dbs.filter(db => db.access_type === 'shared');
+    } else {
+      return dbs.filter(db => db.access_type !== 'shared');
+    }
   }
 
   /** Returns true when the connection is in a failed/error state. */
@@ -177,6 +182,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   message = '';
   activePanel: AttachmentPanel = null;
   activeDocumentTab: 'my' | 'shared' | 'database' = 'my';
+  activeDatabaseTab: 'my' | 'shared' = 'my';
   attachmentMenuState: 'main' | 'document' | 'connectors' = 'main';
   pendingDatabaseConnectionIds = new Set<string>();
 

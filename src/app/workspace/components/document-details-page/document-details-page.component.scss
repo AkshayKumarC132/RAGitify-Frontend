@@ -301,37 +301,40 @@
 }
 
 .details-secondary-btn {
-  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
-  background: var(--surface-bg);
-  color: var(--text-primary);
-  padding: 0.78rem 1.05rem;
-  display: inline-flex;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  display: flex;
   align-items: center;
-  gap: 0.55rem;
-  text-decoration: none;
+  justify-content: center;
   cursor: pointer;
-  width: fit-content;
-  font-size: 0.7rem;
+  transition: all 0.2s;
+  text-decoration: none;
 
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-    color: var(--text-secondary);
-    background: var(--bg-tertiary);
-    border-color: var(--border-color);
-    box-shadow: none;
+  &:hover:not(:disabled) {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-color: var(--text-secondary);
   }
 
-  &.delete-btn {
-    transition: all 0.2s ease;
-    
-    &:hover,
-    &:focus {
-      color: #fff;
-      background: #ef4444;
-      border-color: #ef4444;
-    }
+  &.delete-btn:hover {
+      color: #ef4444;
+      border-color: #fca5a5;
+      background: #fef2f2;
+  }
+
+  &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+  }
+
+  &.active {
+      background: var(--accent-color);
+      color: white;
+      border-color: var(--accent-color);
   }
 }
 

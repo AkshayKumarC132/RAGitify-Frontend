@@ -7,7 +7,7 @@ import { takeUntil } from 'rxjs/operators';
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { AuthService } from '../../../shared/services/auth.service';
-import { DocumentShareService } from '../../../shared/services/document-share.service';
+import { ConnectionShareService } from '../../../shared/services/connection-share.service';
 import { ConnectionSyncService } from '../../../shared/services/connection-sync.service';
 import { User } from '../../../shared/models/user.model';
 import Swal from 'sweetalert2';
@@ -57,7 +57,7 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
         private confirmService: ConfirmDialogService,
         private toastService: ToastService,
         private authService: AuthService,
-        private documentShareService: DocumentShareService,
+        private connectionShareService: ConnectionShareService,
         private connectionSyncService: ConnectionSyncService
     ) { }
 
@@ -349,7 +349,13 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
     }
 
     get canShareConnection(): boolean {
-        return !!this.connection;
+        return !!this.connection && !this.hasFailed;
+    }
+
+    get hasFailed(): boolean {
+        if (!this.connection) return false;
+        const s = (this.connection.status || '').toLowerCase();
+        return s === 'failed' || s === 'error';
     }
 
     openShareDialog(): void {
@@ -411,8 +417,8 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
         }
 
         this.shareSubmitting = true;
-        this.documentShareService.share({
-            document_ids: [this.connection.id!],
+        this.connectionShareService.share({
+            connection_ids: [this.connection.id!],
             target_user_email: email,
             expires_at: this.shareExpiresAt ? new Date(this.shareExpiresAt).toISOString() : null
         }).subscribe({
@@ -443,34 +449,21 @@ export class ConnectionDetailsPageComponent implements OnInit, OnDestroy {
                     }
                 });
             },
-            error: () => {
+            error: (err) => {
                 this.shareSubmitting = false;
-                this.closeShareDialog();
                 void Swal.fire({
-                    icon: 'success',
-                    iconHtml: '<i class="fa-solid fa-check"></i>',
-                    title: 'Share updated',
-                    html: `
-                        <div class="ragitify-swal-success-body">
-                            <p class="ragitify-swal-success-copy">
-                                Connection <strong>${this.connection?.name || this.connection?.database_name}</strong> shared successfully.
-                            </p>
-                            <div class="ragitify-swal-success-meta">
-                                The selected recipient (${email}) can now access this shared connection.
-                            </div>
-                        </div>
-                    `,
-                    confirmButtonText: 'Done',
-                    customClass: {
-                        popup: 'ragitify-swal-success-popup',
-                        title: 'ragitify-swal-success-title',
-                        htmlContainer: 'ragitify-swal-success-html',
-                        actions: 'ragitify-swal-success-actions',
-                        confirmButton: 'ragitify-swal-success-confirm'
-                    }
+                    title: 'Unable to share connection',
+                    text: this.extractErrorMessage(err, 'The share request could not be completed.'),
+                    icon: 'error',
+                    confirmButtonText: 'Close'
                 });
             }
         });
+    }
+
+    private extractErrorMessage(error: unknown, fallback: string): string {
+        const candidate = error as { error?: { error?: string; detail?: string; message?: string }; message?: string };
+        return candidate?.error?.error || candidate?.error?.detail || candidate?.error?.message || candidate?.message || fallback;
     }
 
     private loadShareUsers(): void {

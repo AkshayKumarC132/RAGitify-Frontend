@@ -24,6 +24,8 @@ export interface DatabaseConnection {
     schema_synced_at?: string;
     created_at?: string;
     updated_at?: string;
+    access_type?: 'owned' | 'shared';
+    owner_email?: string;
 }
 
 export interface FailedConnectionInfo {
