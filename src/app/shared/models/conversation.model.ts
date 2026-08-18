@@ -1,3 +1,5 @@
+import { ChartConfig } from './chart-config.model';
+
 /** A single attachment item in the unified context rail */
 export interface ContextItem {
   type: 'file' | 'database';
@@ -33,6 +35,8 @@ export interface ConversationMessage {
   has_data_grid?: boolean;
   data_grid_id?: number;
   data_grid_row_count?: number;
+  /** Chart config from the linked DataGrid, if the LLM generated one. */
+  data_grid_chart_config?: ChartConfig | null;
   /** Token counts from the linked ResponseRecord — only present on assistant messages */
   usage?: {
     prompt_tokens: number;
@@ -63,6 +67,8 @@ export interface DataGridResponse {
     rows: Record<string, any>[];
   }>;
   sql_query: Record<string, string> | null;
+  /** Chart config stored on this DataGrid, if the LLM generated one. */
+  chart_config?: ChartConfig | null;
 }
 
 export interface AttachedDataGrid {

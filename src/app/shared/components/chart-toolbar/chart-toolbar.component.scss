@@ -1,0 +1,186 @@
+.chart-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--idg-border, rgba(0,0,0,0.09));
+  border-radius: 0 0 10px 10px;
+  background: var(--idg-header-bg, rgba(248,249,252,0.95));
+  position: relative;
+
+  .dark & {
+    border-top-color: rgba(255,255,255,0.07);
+    background: rgba(30,32,40,0.95);
+  }
+}
+
+// ── Type pills ──────────────────────────────────────────────────────────────
+
+.ct-type-pills {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ct-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary, #6b7280);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  i { font-size: 11px; }
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.08);
+    color: #6366f1;
+  }
+
+  &--active {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: rgba(99, 102, 241, 0.3);
+    color: #6366f1;
+    font-weight: 600;
+  }
+}
+
+.ct-pill-label {
+  @media (max-width: 640px) { display: none; }
+}
+
+// ── Divider ──────────────────────────────────────────────────────────────────
+
+.ct-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--idg-border, rgba(0,0,0,0.1));
+  margin: 0 4px;
+
+  .dark & { background: rgba(255,255,255,0.1); }
+}
+
+// ── Icon buttons (axis, download, close) ─────────────────────────────────────
+
+.ct-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-size: 13px;
+
+  &:hover { background: rgba(0,0,0,0.06); color: var(--text-primary, #111); }
+
+  &--active {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+  }
+
+  &--close:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+  .dark &:hover { background: rgba(255,255,255,0.07); color: #f3f4f6; }
+  .dark &--close:hover { background: rgba(248,113,113,0.12); color: #f87171; }
+}
+
+// ── Axis config panel ─────────────────────────────────────────────────────────
+
+.ct-axis-panel {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 0 4px;
+  animation: ct-slide-down 0.15s ease;
+
+  @keyframes ct-slide-down {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
+
+.ct-axis-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 140px;
+}
+
+.ct-axis-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary, #9ca3af);
+}
+
+.ct-select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--idg-border, rgba(0,0,0,0.12));
+  background: var(--input-bg, #fff);
+  color: var(--text-primary, #111827);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+
+  .dark & {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+    color: #f3f4f6;
+  }
+
+  &:focus { border-color: #6366f1; }
+}
+
+.ct-checkbox-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.ct-checkbox-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--idg-border, rgba(0,0,0,0.1));
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s, border-color 0.12s;
+  color: var(--text-secondary, #6b7280);
+
+  input { display: none; } // Hidden — handled by styling the label
+
+  &--checked {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.35);
+    color: #6366f1;
+    font-weight: 500;
+  }
+
+  &:hover { border-color: #6366f1; }
+
+  .dark & { border-color: rgba(255,255,255,0.1); color: #9ca3af; }
+  .dark &--checked {
+    background: rgba(129,140,248,0.12);
+    border-color: rgba(129,140,248,0.35);
+    color: #818cf8;
+  }
+}

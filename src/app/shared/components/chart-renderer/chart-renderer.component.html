@@ -1,0 +1,6 @@
+<div class="chart-renderer-wrap">
+  <canvas #chartCanvas></canvas>
+  <div class="chart-truncation-badge" *ngIf="config.totalRows && config.renderedRows && config.totalRows > config.renderedRows">
+    Showing {{ config.renderedRows }} of {{ config.totalRows }} rows
+  </div>
+</div>

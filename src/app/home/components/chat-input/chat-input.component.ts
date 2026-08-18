@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener, ChangeDetectorRef, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener, ChangeDetectorRef, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { VectorStore } from '../../../shared/models/vector-store.model';
 import { Assistant } from '../../../shared/models/assistant.model';
@@ -44,7 +44,8 @@ export interface ChatMessagePayload {
 @Component({
   selector: 'app-chat-input',
   templateUrl: './chat-input.component.html',
-  styleUrls: ['./chat-input.component.scss']
+  styleUrls: ['./chat-input.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnDestroy {
   private readonly maxSelectedDocuments = 10;
@@ -182,6 +183,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   message = '';
   activePanel: AttachmentPanel = null;
   activeDocumentTab: 'my' | 'shared' | 'database' = 'my';
+  documentGroups: { libraryId: string; name: string; user?: string | null; documents: Document[] }[] = [];
   activeDatabaseTab: 'my' | 'shared' = 'my';
   attachmentMenuState: 'main' | 'document' | 'connectors' = 'main';
   pendingDatabaseConnectionIds = new Set<string>();
@@ -287,6 +289,12 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     }
     if (changes['hasExistingThread']) {
       this.enforceDocumentsOnlyMode();
+    }
+    if (changes['documents']) {
+      this.updateDocumentGroups();
+    }
+    if (changes['libraries']) {
+      this.updateDocumentGroups();
     }
   }
 
@@ -607,7 +615,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
     return document.title || document.original_filename || `Document ${document.id}`;
   }
 
-  getDocumentsByLibraryForTab(): { libraryId: string; name: string; user?: string | null; documents: Document[] }[] {
+  updateDocumentGroups(): void {
     const filtered = this.availableDocuments.filter(doc => {
       if (this.activeDocumentTab === 'shared') {
         return doc.access_type === 'shared';
@@ -622,7 +630,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
       grouping.set(doc.vector_store, list);
     });
 
-    return Array.from(grouping.entries())
+    this.documentGroups = Array.from(grouping.entries())
       .map(([libraryId, docs]) => ({
         libraryId,
         name: this.getLibraryName(libraryId),

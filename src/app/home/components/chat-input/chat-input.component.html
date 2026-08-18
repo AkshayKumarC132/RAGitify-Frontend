@@ -222,12 +222,12 @@
             <!-- Tabs -->
             <div class="document-tabs" *ngIf="attachmentMenuState === 'document'">
               <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'my'"
-                (click)="activeDocumentTab = 'my'">
+                (click)="activeDocumentTab = 'my'; updateDocumentGroups()">
                 <i class="fa-solid fa-download"></i>
                 My Documents
               </button>
               <button type="button" class="document-tab" [class.active]="activeDocumentTab === 'shared'"
-                (click)="activeDocumentTab = 'shared'">
+                (click)="activeDocumentTab = 'shared'; updateDocumentGroups()">
                 <i class="fa-solid fa-user-group"></i>
                 Shared with Me
               </button>
@@ -240,10 +240,10 @@
               </ng-container>
               <ng-template #documentsReady>
                 <ng-container *ngIf="
-                    getDocumentsByLibraryForTab().length;
+                    documentGroups.length;
                     else emptyDocuments
                   ">
-                  <div class="library-group" *ngFor="let group of getDocumentsByLibraryForTab()">
+                  <div class="library-group" *ngFor="let group of documentGroups">
                     <div class="group-header" (click)="toggleLibraryGroup(group.libraryId)">
                       <div class="group-header-left">
                         <i class="fa-solid" [ngClass]="
@@ -405,7 +405,7 @@
             <div class="document-bottom-bar">
               <div class="document-search-bottom">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" [(ngModel)]="documentSearchQuery" placeholder="Search documents..."
+                <input type="text" [ngModel]="documentSearchQuery" (ngModelChange)="documentSearchQuery = $event; updateDocumentGroups()" placeholder="Search documents..."
                   aria-label="Search documents" />
               </div>
               <div class="bottom-actions">

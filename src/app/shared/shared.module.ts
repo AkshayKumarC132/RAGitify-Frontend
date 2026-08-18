@@ -28,9 +28,11 @@ import { TaskListComponent } from './components/task-list/task-list.component';
 import { ConnectionWarningModalComponent } from './components/connection-warning-modal/connection-warning-modal.component';
 import { ContextRailComponent } from './components/context-rail/context-rail.component';
 import { ContextPopoverComponent } from './components/context-popover/context-popover.component';
+import { ChartRendererComponent } from './components/chart-renderer/chart-renderer.component';
+import { ChartToolbarComponent } from './components/chart-toolbar/chart-toolbar.component';
 
 @NgModule({
-  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe, ToastComponent, SkeletonComponent, TopProgressComponent, CommandPaletteComponent, DocPreviewDirective, DatagridPreviewDirective, TaskListComponent, ConnectionWarningModalComponent, ContextRailComponent, ContextPopoverComponent],
+  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe, ToastComponent, SkeletonComponent, TopProgressComponent, CommandPaletteComponent, DocPreviewDirective, DatagridPreviewDirective, TaskListComponent, ConnectionWarningModalComponent, ContextRailComponent, ContextPopoverComponent, ChartRendererComponent, ChartToolbarComponent],
   imports: [
     CommonModule,
     HttpClientModule,
@@ -84,7 +86,9 @@ import { ContextPopoverComponent } from './components/context-popover/context-po
     TaskListComponent,
     ConnectionWarningModalComponent,
     ContextRailComponent,
-    ContextPopoverComponent
+    ContextPopoverComponent,
+    ChartRendererComponent,
+    ChartToolbarComponent
   ]
 })
 export class SharedModule { }

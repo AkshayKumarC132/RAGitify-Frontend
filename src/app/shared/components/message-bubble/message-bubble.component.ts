@@ -20,8 +20,10 @@ import {
   DataGridResponse,
   DataGridSource,
 } from '../../models/conversation.model';
+import { ChartConfig, ChartType } from '../../models/chart-config.model';
 import { ConversationService } from '../../services/conversation.service';
 import { DatagridAttachmentService } from '../../services/datagrid-attachment.service';
+import { ChartAutoPickService } from '../../services/chart-auto-pick.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -89,6 +91,22 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   // Inline Data Grid State
   private inlineDataLoaded = false;
 
+  // ── Chart state ──────────────────────────────────────────────────────
+  /** Active chart config (null = no chart shown) */
+  activeChartConfig: ChartConfig | null = null;
+  /** Whether the chart panel is visible */
+  showChart = false;
+  /** True when the chart was auto-displayed from LLM-generated chart_config (Path 1). */
+  isLlmChart = false;
+  /** Which column drives the X-axis / labels */
+  chartLabelColumn: string = '';
+  /** Which columns drive the Y-axis datasets */
+  chartDataColumns: string[] = [];
+  /** All columns eligible as X-axis (categorical/date) */
+  chartAvailableLabelColumns: string[] = [];
+  /** All columns eligible as Y-axis (numeric) */
+  chartAvailableDataColumns: string[] = [];
+
   private copyResetTimeout?: ReturnType<typeof setTimeout>;
   private sqlCopyResetTimeout?: ReturnType<typeof setTimeout>;
   private previousContent: string = '';
@@ -98,6 +116,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     private sanitizer: DomSanitizer,
     private conversationService: ConversationService,
     private datagridAttachmentService: DatagridAttachmentService,
+    private chartAutoPickService: ChartAutoPickService,
     private cdr: ChangeDetectorRef,
     private router: Router,
   ) {}
@@ -145,6 +164,13 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     this.updateRenderedContent();
     this.extractLegacyDataGrid();
     this.checkInlineDataLoad();
+
+    // Auto-display LLM-generated chart from the message payload.
+    // This handles the compact bar path where the DataGrid API isn't called
+    // at page load — the message list serializer already includes chart_config.
+    if (this.message?.data_grid_chart_config && !this.showChart) {
+      this._applyChartConfig(this.message.data_grid_chart_config);
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -242,6 +268,11 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     this.searchQuery = '';
     this.currentPage = 1;
     this.columnVisibility = {};
+
+    // Apply LLM-generated chart config from the DataGrid API response.
+    if (res.chart_config && !this.showChart) {
+      this._applyChartConfig(res.chart_config);
+    }
   }
 
   private sanitizeContent(content?: string): string {
@@ -421,6 +452,158 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     );
   }
 
+  // ── Chart handlers ────────────────────────────────────────────────────────
+
+  /** Called by "Visualize" button on the DataGrid bar. */
+  onVisualizeClick(): void {
+    const src = this.activeSource;
+    if (!src?.rows?.length || !src?.columns?.length) return;
+
+    const result = this.chartAutoPickService.autoPickChart(src.columns, src.rows);
+    this.chartLabelColumn = result.labelColumn;
+    this.chartDataColumns = result.dataColumns;
+    const isScatterLike = result.config.type === 'scatter' || result.config.type === 'bubble';
+    this.chartAvailableLabelColumns = isScatterLike
+      ? this.chartAutoPickService.getScatterXCandidates(src.columns, src.rows)
+      : this.chartAutoPickService.getLabelCandidates(src.columns, src.rows);
+    this.chartAvailableDataColumns  = this.chartAutoPickService.getValueCandidates(src.columns, src.rows);
+    this.activeChartConfig = result.config;
+    this.showChart = true;
+    this.isLlmChart = false;
+    this.cdr.markForCheck();
+  }
+
+  /** Type pill clicked in toolbar — re-build config with new type. */
+  onChartTypeChange(type: ChartType): void {
+    if (!this.activeSource?.rows) return;
+    
+    // Recompute X-axis candidates — scatter needs all columns, others need categorical/date.
+    const isScatterLike = type === 'scatter' || type === 'bubble';
+    const src = this.activeSource;
+    this.chartAvailableLabelColumns = isScatterLike
+      ? this.chartAutoPickService.getScatterXCandidates(src.columns, src.rows)
+      : this.chartAutoPickService.getLabelCandidates(src.columns, src.rows);
+      
+    // If current label column isn't in the new candidate list, reset to first available.
+    if (!this.chartAvailableLabelColumns.includes(this.chartLabelColumn)) {
+      this.chartLabelColumn = this.chartAvailableLabelColumns[0] ?? src.columns[0];
+    }
+    
+    this.activeChartConfig = this.chartAutoPickService.buildConfig(
+      type,
+      this.chartLabelColumn,
+      this.chartDataColumns,
+      this.activeSource.rows,
+      this.activeChartConfig?.title,
+    );
+    this.cdr.markForCheck();
+  }
+
+  /** X-axis dropdown changed — re-build config. */
+  onChartLabelColumnChange(col: string): void {
+    if (!this.activeSource?.rows) return;
+    this.chartLabelColumn = col;
+    this.activeChartConfig = this.chartAutoPickService.buildConfig(
+      this.activeChartConfig?.type ?? 'bar',
+      col,
+      this.chartDataColumns,
+      this.activeSource.rows,
+      this.activeChartConfig?.title,
+    );
+    this.cdr.markForCheck();
+  }
+
+  /** Y-axis checkboxes changed — re-build config. */
+  onChartDataColumnsChange(cols: string[]): void {
+    if (!cols.length || !this.activeSource?.rows) return;
+    this.chartDataColumns = cols;
+    this.activeChartConfig = this.chartAutoPickService.buildConfig(
+      this.activeChartConfig?.type ?? 'bar',
+      this.chartLabelColumn,
+      cols,
+      this.activeSource.rows,
+      this.activeChartConfig?.title,
+    );
+    this.cdr.markForCheck();
+  }
+
+  /** Close/dismiss the chart panel. */
+  onCloseChart(): void {
+    this.showChart = false;
+    this.activeChartConfig = null;
+    this.isLlmChart = false;
+    this.cdr.markForCheck();
+  }
+
+  /** Download current chart as PNG. */
+  onDownloadChartPng(rendererRef: any): void {
+    const dataUrl = rendererRef?.toBase64Image?.();
+    if (!dataUrl) return;
+    const link = document.createElement('a');
+    link.download = `chart-${Date.now()}.png`;
+    link.href = dataUrl;
+    link.click();
+  }
+
+  /**
+   * Apply a ChartConfig (from LLM or API) and compute available axis columns
+   * from the active data source (if already loaded).
+   */
+  private _applyChartConfig(config: ChartConfig): void {
+    this.activeChartConfig = config;
+    this.showChart = true;
+    this.isLlmChart = true;
+
+    // Compute label/value candidates from the first data source, if available.
+    const src = this.activeSource ?? this.dataSources[0];
+    if (src?.columns?.length && src?.rows?.length) {
+      this.chartAvailableLabelColumns = this.chartAutoPickService.getLabelCandidates(src.columns, src.rows);
+      this.chartAvailableDataColumns  = this.chartAutoPickService.getValueCandidates(src.columns, src.rows);
+      // Infer axis assignments from config datasets
+      this.chartLabelColumn  = src.columns.find(c => !config.datasets.map(d => d.label).includes(c)) ?? src.columns[0];
+      this.chartDataColumns  = config.datasets.map(d => d.label);
+    }
+  }
+
+  /**
+   * Called by the "Visualize" button on the compact DataGrid bar (non-inline path).
+   * Loads data from the API first if not already cached, then runs auto-pick.
+   */
+  onVisualizeFromBar(): void {
+    // If data is already loaded, just run auto-pick directly.
+    if (this.dataSources.length > 0) {
+      this.onVisualizeClick();
+      return;
+    }
+
+    // Otherwise, fetch data from the API first.
+    if (!this.conversationId || !this.message?.id || this.dataGridLoading) return;
+
+    this.dataGridLoading = true;
+    this.cdr.markForCheck();
+
+    this.conversationService
+      .getDataGrid(this.conversationId, this.message.id)
+      .subscribe({
+        next: (res) => {
+          this.parseDataGridResponse(res);
+          this.dataGridLoading = false;
+          this.inlineDataLoaded = true;
+          // Only run auto-pick if parseDataGridResponse didn't already
+          // apply an LLM-generated chart config (which sets showChart = true).
+          if (!this.showChart) {
+            this.onVisualizeClick();
+          }
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('[MessageBubble] Error loading data for chart:', err);
+          this.dataGridLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
   attachToConversation(): void {
     const id = this.message?.data_grid_id;
     if (id) {
@@ -506,6 +689,10 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     const dg = this.attachedDataGrid;
     if (dg?.name) return dg.name;
 
+    if (this.message?.data_grid_id) {
+      return `DataGrid #${this.message.data_grid_id}`;
+    }
+
     const sourceName =
       this.message?.metadata?.['source_name'] ||
       this.message?.metadata?.['table_name'];
@@ -519,9 +706,6 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     if (this.activeSource?.source_name) {
       return this.getSourceTabLabel(this.activeSource);
     }
-    if (this.message?.data_grid_id) {
-      return `DataGrid #${this.message.data_grid_id}`;
-    }
     return 'Data Records';
   }
 
@@ -532,18 +716,6 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
       this.message?.metadata?.['original_row_count'];
 
     let subtitle = `${rows} rows`;
-
-    let cols = this.attachedDataGrid?.columns;
-    if (!cols?.length && this.activeSource?.columns?.length) {
-      cols = this.activeSource.columns;
-    } else if (!cols?.length && this.dataGridColumns?.length) {
-      cols = this.dataGridColumns;
-    }
-
-    if (cols?.length) {
-      const preview = cols.slice(0, 4).join(', ');
-      subtitle += ` · ${preview}${cols.length > 4 ? ', …' : ''}`;
-    }
 
     if (totalRows && Number(totalRows) > Number(rows)) {
       subtitle += ` · filtered from ${Number(totalRows).toLocaleString()}`;

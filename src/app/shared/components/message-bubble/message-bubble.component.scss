@@ -584,6 +584,46 @@
   }
 }
 
+// Visualize icon — indigo accent on the compact bar
+.ndg-action-btn--chart {
+  color: #6366f1;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.1);
+    color: #4f46e5;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .dark & {
+    color: #818cf8;
+
+    &:hover { background: rgba(129, 140, 248, 0.12); color: #a5b4fc; }
+  }
+}
+
+// Chart panel that expands below the compact bar
+.ndg-chart-container {
+  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.07));
+  background: var(--bg-primary, #ffffff);
+  animation: idg-chart-fadein 0.25s ease;
+  overflow: hidden;
+  border-radius: 0 0 12px 12px;
+
+  app-chart-renderer {
+    display: block;
+    padding: 16px 16px 8px;
+  }
+
+  .dark & {
+    background: rgba(20, 22, 30, 0.6);
+    border-top-color: rgba(255, 255, 255, 0.06);
+  }
+}
+
 // ══════════════════════════════════════════════════════════════════════
 // ── Inline Data Grid v2 (multi-source) ────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════
@@ -708,6 +748,37 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07);
 }
 
+// Visualize button — indigo accent to stand out from SQL/Query
+.idg-btn-chart {
+  padding: 0.35rem 0.7rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07);
+  color: #6366f1;
+  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.06);
+
+  &:hover:not(:disabled) {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #4f46e5;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .dark & {
+    color: #818cf8;
+    border-color: rgba(129, 140, 248, 0.3);
+    background: rgba(129, 140, 248, 0.08);
+
+    &:hover:not(:disabled) {
+      background: rgba(129, 140, 248, 0.15);
+      border-color: rgba(129, 140, 248, 0.5);
+    }
+  }
+}
+
 // ── Tabs ──────────────────────────────────────────────────────────────
 .idg-tabs {
   display: flex;
@@ -825,6 +896,31 @@
   flex-shrink: 0;
   max-width: 220px;
 }
+
+// ── Chart Container ────────────────────────────────────────────────────
+.idg-chart-container {
+  background: var(--bg-primary, #ffffff);
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.07));
+  animation: idg-chart-fadein 0.25s ease;
+  overflow: hidden;
+
+  @keyframes idg-chart-fadein {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  // Give the canvas room to breathe
+  app-chart-renderer {
+    display: block;
+    padding: 16px 16px 8px;
+  }
+
+  .dark & {
+    background: rgba(20, 22, 30, 0.6);
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+  }
+}
+
 
 .idg-source-key {
   font-family: var(--app-mono, monospace);

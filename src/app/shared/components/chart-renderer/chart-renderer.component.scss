@@ -1,0 +1,23 @@
+.chart-renderer-wrap {
+  position: relative;
+  width: 100%;
+  // Keep a reasonable max height so tall data doesn't push chart off screen
+  max-height: 360px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  canvas {
+    width: 100% !important;
+    max-height: 340px;
+  }
+
+  .chart-truncation-badge {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-secondary, #6b7280);
+    padding: 8px 0 2px;
+    opacity: 0.75;
+  }
+}

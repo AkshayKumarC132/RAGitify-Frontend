@@ -65,6 +65,14 @@
                     <i class="fa-solid fa-code"></i>
                     <span>View SQL</span>
                 </button>
+                <button *ngIf="!isLlmChart"
+                        type="button" class="idg-btn idg-btn-chart"
+                        (click)="onVisualizeClick()"
+                        [disabled]="dataGridLoading || !activeSource?.rows?.length"
+                        title="Visualize as chart">
+                    <i class="fa-solid fa-chart-bar"></i>
+                    <span>Visualize</span>
+                </button>
                 <button type="button" class="idg-btn idg-btn-icon"
                         (click)="exportCsv()"
                         [disabled]="dataGridLoading || !activeSource?.rows?.length"
@@ -94,6 +102,26 @@
                class="idg-source-bar-icon"></i>
             <span class="idg-source-label">Source:</span>
             <span class="idg-source-name">{{ activeSource.source_name }}</span>
+        </div>
+
+        <!-- ── Chart Panel (above DataGrid body) ──────────────────── -->
+        <div class="idg-chart-container" *ngIf="showChart && activeChartConfig && !showEmptyState">
+            <app-chart-renderer
+                #chartRendererRef
+                [config]="activeChartConfig">
+            </app-chart-renderer>
+            <app-chart-toolbar *ngIf="!isLlmChart"
+                [activeType]="activeChartConfig.type"
+                [labelColumn]="chartLabelColumn"
+                [dataColumns]="chartDataColumns"
+                [availableLabelColumns]="chartAvailableLabelColumns"
+                [availableDataColumns]="chartAvailableDataColumns"
+                (typeChange)="onChartTypeChange($event)"
+                (labelColumnChange)="onChartLabelColumnChange($event)"
+                (dataColumnsChange)="onChartDataColumnsChange($event)"
+                (downloadPng)="onDownloadChartPng(chartRendererRef)"
+                (closeChart)="onCloseChart()">
+            </app-chart-toolbar>
         </div>
 
         <!-- ── Body ────────────────────────────────────────────── -->
@@ -162,10 +190,37 @@
                 <button type="button" class="ndg-action-btn" (click)="viewSql()" title="View SQL">
                     <i class="fa-solid fa-code"></i>
                 </button>
+                <button *ngIf="!isLlmChart"
+                        type="button" class="ndg-action-btn ndg-action-btn--chart"
+                        (click)="onVisualizeFromBar()"
+                        [disabled]="dataGridLoading"
+                        title="Visualize as chart">
+                    <i class="fa-solid fa-chart-bar"></i>
+                </button>
                 <button type="button" class="ndg-action-btn" (click)="previewDataGrid(true)" title="Download CSV">
                     <i class="fa-solid fa-download"></i>
                 </button>
             </div>
+        </div>
+
+        <!-- Chart Panel (inside compact bar) -->
+        <div class="ndg-chart-container" *ngIf="showChart && activeChartConfig">
+            <app-chart-renderer
+                #chartRendererBarRef
+                [config]="activeChartConfig">
+            </app-chart-renderer>
+            <app-chart-toolbar *ngIf="!isLlmChart"
+                [activeType]="activeChartConfig.type"
+                [labelColumn]="chartLabelColumn"
+                [dataColumns]="chartDataColumns"
+                [availableLabelColumns]="chartAvailableLabelColumns"
+                [availableDataColumns]="chartAvailableDataColumns"
+                (typeChange)="onChartTypeChange($event)"
+                (labelColumnChange)="onChartLabelColumnChange($event)"
+                (dataColumnsChange)="onChartDataColumnsChange($event)"
+                (downloadPng)="onDownloadChartPng(chartRendererBarRef)"
+                (closeChart)="onCloseChart()">
+            </app-chart-toolbar>
         </div>
     </div>
 

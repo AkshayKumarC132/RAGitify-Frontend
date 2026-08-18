@@ -1,0 +1,68 @@
+<div class="chart-toolbar">
+
+  <!-- Type pills (always visible) -->
+  <div class="ct-type-pills">
+    <button
+      *ngFor="let opt of chartTypes"
+      type="button"
+      class="ct-pill"
+      [class.ct-pill--active]="opt.type === activeType"
+      (click)="typeChange.emit(opt.type)"
+      [title]="opt.label">
+      <i [class]="opt.icon"></i>
+      <span class="ct-pill-label">{{ opt.label }}</span>
+    </button>
+  </div>
+
+  <!-- Divider -->
+  <div class="ct-divider"></div>
+
+  <!-- Axis config toggle -->
+  <button
+    type="button"
+    class="ct-icon-btn"
+    [class.ct-icon-btn--active]="showAxisConfig"
+    (click)="showAxisConfig = !showAxisConfig"
+    title="Configure axes">
+    <i class="fa-solid fa-sliders"></i>
+  </button>
+
+  <!-- Action buttons -->
+  <button type="button" class="ct-icon-btn" (click)="downloadPng.emit()" title="Download as PNG">
+    <i class="fa-solid fa-download"></i>
+  </button>
+  <button type="button" class="ct-icon-btn ct-icon-btn--close" (click)="closeChart.emit()" title="Close chart">
+    <i class="fa-solid fa-xmark"></i>
+  </button>
+
+  <!-- Collapsible axis config panel -->
+  <div class="ct-axis-panel" *ngIf="showAxisConfig">
+
+    <!-- X-Axis (labels) -->
+    <div class="ct-axis-group" *ngIf="availableLabelColumns.length > 0">
+      <label class="ct-axis-label">X-Axis</label>
+      <select class="ct-select" [value]="labelColumn" (change)="onLabelChange($event)">
+        <option *ngFor="let col of availableLabelColumns" [value]="col">{{ col }}</option>
+      </select>
+    </div>
+
+    <!-- Y-Axis (data series) -->
+    <div class="ct-axis-group" *ngIf="availableDataColumns.length > 0">
+      <label class="ct-axis-label">Y-Axis</label>
+      <div class="ct-checkbox-list">
+        <label
+          *ngFor="let col of availableDataColumns"
+          class="ct-checkbox-item"
+          [class.ct-checkbox-item--checked]="isDataColSelected(col)">
+          <input
+            type="checkbox"
+            [checked]="isDataColSelected(col)"
+            (change)="onDataColumnToggle(col)">
+          <span>{{ col }}</span>
+        </label>
+      </div>
+    </div>
+
+  </div>
+
+</div>
