@@ -19,7 +19,11 @@ export class VectorStoreListComponent {
   @Output() statsRequested = new EventEmitter<VectorStore>();
 
   getDocCount(store: VectorStore): number {
-    return this.documentCounts[store.id] ?? 0;
+    // documentCounts is only ever populated by KnowledgeSectionComponent, which
+    // doesn't mount on the library-picker or stats routes - so on those pages
+    // every library reported "0 docs". The API now serialises document_count,
+    // which is the reliable fallback.
+    return this.documentCounts[store.id] ?? store.document_count ?? 0;
   }
 
   getProgressPercent(store: VectorStore): number {

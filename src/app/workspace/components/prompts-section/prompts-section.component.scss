@@ -24,19 +24,19 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 20px;
+    font-size: 1.35rem;
     font-weight: 800;
     color: var(--text-primary);
 
     i {
-      color: var(--accent-color);
-      font-size: 18px;
+      color: var(--accent-text);
+      font-size: 1.2rem;
     }
   }
 
   .title-sub {
     margin: 0.25rem 0 0 2rem;
-    font-size: 13px;
+    font-size: var(--fs-base);
     color: var(--text-secondary);
   }
 }
@@ -71,14 +71,14 @@
 /* Shared modal content (same as Rename / Upload) */
 .prompt-create-modal .rename-title {
   margin: 0 0 0.35rem 0;
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .prompt-create-modal .rename-subtitle {
   margin: 0 0 1rem 0;
-  font-size: 13px;
+  font-size: var(--fs-base);
   color: var(--text-secondary);
 }
 
@@ -89,7 +89,7 @@
   margin-bottom: 1.25rem;
 
   label {
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 600;
     color: var(--text-secondary);
   }
@@ -99,7 +99,7 @@
   border-radius: 10px;
   border: 1px solid var(--border-color);
   padding: 0.5rem 0.75rem;
-  font-size: 13px;
+  font-size: var(--fs-base);
   background: var(--bg-primary);
   color: var(--text-primary);
   outline: none;
@@ -129,7 +129,7 @@
   min-width: 84px;
   border-radius: 999px;
   padding: 0.4rem 0.85rem;
-  font-size: 13px;
+  font-size: var(--fs-base);
   font-weight: 600;
   border: 1px solid transparent;
   cursor: pointer;
@@ -192,7 +192,7 @@
 .prompts-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--fs-sm);
 
   thead {
     background: var(--bg-tertiary);
@@ -205,7 +205,7 @@
   }
 
   th {
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     font-weight: 600;
     color: var(--text-secondary);
     letter-spacing: 0.06em;
@@ -236,15 +236,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--accent-color);
-    font-size: 16px;
+    color: var(--accent-text);
+    font-size: var(--fs-lg);
     flex-shrink: 0;
   }
 
   .prompt-row-name {
     // font-weight: 600;
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: var(--fs-md);
   }
 
   .col-instructions {
@@ -264,13 +264,13 @@
 
   .col-model {
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
 
   .col-created,
   .col-updated {
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
 
   .col-actions {
@@ -330,7 +330,7 @@
     border: none;
     background: transparent;
     color: var(--text-primary);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 500;
     text-align: left;
     cursor: pointer;
@@ -348,16 +348,16 @@
     }
 
     i {
-      font-size: 12px;
+      font-size: var(--fs-sm);
       width: 1.25rem;
       text-align: center;
     }
 
     &.danger {
-      color: var(--error-color);
+      color: var(--error-text);
 
       i {
-        color: var(--error-color);
+        color: var(--error-text);
       }
 
       &:hover:not(:disabled) {
@@ -397,7 +397,7 @@
 
     &:hover:not(.active) {
       border-color: var(--accent-color);
-      color: var(--accent-color);
+      color: var(--accent-text);
     }
   }
 }
@@ -419,8 +419,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--accent-color);
-    font-size: 20px;
+    color: var(--accent-text);
+    font-size: 1.35rem;
     flex-shrink: 0;
     transition: all 0.2s ease;
   }
@@ -455,7 +455,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      font-size: 10px;
+      font-size: var(--fs-2xs);
       color: var(--text-secondary);
       background: var(--bg-tertiary);
       padding: 0.25rem 0.6rem;
@@ -463,14 +463,14 @@
       font-weight: 500;
 
       i {
-        font-size: 11px;
+        font-size: var(--fs-xs);
       }
     }
   }
 
   .prompt-instructions {
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     line-height: 1.5;
     opacity: 0.8;
     margin-bottom: 0.25rem;
@@ -522,7 +522,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--text-secondary);
 
   .prompt-footer-left,
@@ -550,7 +550,7 @@
 
   .prompt-date {
     color: var(--text-secondary);
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     display: flex;
     align-items: center;
     gap: 0.35rem;
@@ -575,7 +575,7 @@
   gap: 1.25rem;
 
   i {
-    font-size: 48px;
+    font-size: 3.2rem;
     background: var(--accent-gradient);
     background-clip: text;
     -webkit-background-clip: text;
@@ -586,13 +586,13 @@
   h3 {
     margin: 0;
     color: var(--text-primary);
-    font-size: 16px;
+    font-size: var(--fs-lg);
     font-weight: 700;
   }
 
   p {
     margin: 0;
-    font-size: 13px;
+    font-size: var(--fs-base);
     color: var(--text-secondary);
     max-width: 320px;
   }

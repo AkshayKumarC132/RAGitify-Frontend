@@ -10,6 +10,7 @@ import { ConversationService } from '../../../shared/services/conversation.servi
 import { ConfirmDialogService } from '../../../shared/services/confirm-dialog.service';
 import { ThreadSearchPopupService } from '../../../shared/services/thread-search-popup.service';
 import { ChatStreamService } from '../../../shared/services/chat-stream.service';
+import { markdownToPlainText } from '../../../shared/utils/markdown-text.util';
 
 @Component({
   selector: 'app-thread-sidebar',
@@ -200,7 +201,9 @@ export class ThreadSidebarComponent implements OnChanges, OnInit, OnDestroy {
       return null;
     }
 
-    const content = matchingMessage.content;
+    // The stored content is raw Markdown; slicing it directly put `**bold**`
+    // and `### heading` markers straight into the preview.
+    const content = markdownToPlainText(matchingMessage.content);
     const lowerContent = content.toLowerCase();
     const index = lowerContent.indexOf(query);
 

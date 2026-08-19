@@ -10,11 +10,25 @@ import {
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
-import { Chart, ChartData, ChartOptions, registerables } from 'chart.js';
+import type { Chart, ChartData, ChartOptions } from 'chart.js';
 import { ChartConfig } from '../../models/chart-config.model';
 
-// Register all Chart.js components once globally.
-Chart.register(...registerables);
+/**
+ * chart.js + all its controllers is ~250 kB, and SharedModule is eager, so a
+ * static import puts the whole library in the initial bundle for every user —
+ * including the ones who never open a chart. Load it on first render instead
+ * and cache the promise so concurrent renderers share one fetch.
+ */
+let chartJsModule: Promise<typeof import('chart.js')> | null = null;
+function loadChartJs(): Promise<typeof import('chart.js')> {
+  if (!chartJsModule) {
+    chartJsModule = import('chart.js').then((m) => {
+      m.Chart.register(...m.registerables);
+      return m;
+    });
+  }
+  return chartJsModule;
+}
 
 /** Format large numbers as K / M / B for axis ticks. */
 function formatAxisValue(value: number | string): string {
@@ -72,6 +86,9 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
 
   private chartInstance: Chart | null = null;
   private _pendingBuild = false;
+  private _destroyed = false;
+  /** Incremented per build so a slow dynamic import can't paint a stale chart. */
+  private _buildToken = 0;
 
   constructor(private cdr: ChangeDetectorRef) {}
 
@@ -91,6 +108,7 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
 
   ngOnDestroy(): void {
     this._pendingBuild = false;
+    this._destroyed = true;
     this.destroyChart();
   }
 
@@ -98,10 +116,16 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
   // Internal helpers
   // ---------------------------------------------------------------------------
 
-  private buildChart(): void {
+  private async buildChart(): Promise<void> {
     if (!this.canvasRef || !this.config) return;
     const ctx = this.canvasRef.nativeElement.getContext('2d');
     if (!ctx) return;
+
+    const token = ++this._buildToken;
+    const { Chart } = await loadChartJs();
+    // The component may have been destroyed, or a newer build queued, while
+    // the chunk was in flight.
+    if (this._destroyed || token !== this._buildToken || !this.config) return;
 
     const palette = this.themeMode === 'dark' ? PALETTE_DARK : PALETTE_LIGHT;
     const type = this.config.type;
@@ -129,6 +153,12 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
       ? 'rgba(255, 255, 255, 0.08)'
       : 'rgba(0, 0, 0, 0.08)';
     const textColor = this.themeMode === 'dark' ? '#d1d5db' : '#374151';
+    // Canvas text is not styled by CSS, so pull the product typeface off the
+    // root custom property — otherwise chart labels drift away from the UI
+    // whenever the design system's font token changes.
+    const fontFamily = getComputedStyle(document.documentElement)
+      .getPropertyValue('--app-font')
+      .trim() || 'Geist, Inter, system-ui, sans-serif';
 
     // Scatter/bubble need linear numeric scales on both axes.
     // Bar/line/etc. need category scale on X.
@@ -152,13 +182,13 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
       plugins: {
         legend: {
           display: false,
-          labels: { color: textColor, font: { family: 'Inter, system-ui, sans-serif', size: 12 } },
+          labels: { color: textColor, font: { family: fontFamily, size: 12, weight: 500 } },
         },
         title: {
           display: !!this.config.title,
           text: this.config.title ?? '',
           color: textColor,
-          font: { family: 'Inter, system-ui, sans-serif', size: 14, weight: 'bold' },
+          font: { family: fontFamily, size: 14, weight: 600 },
           padding: { top: 0, bottom: 12 },
         },
         tooltip: {
@@ -191,7 +221,7 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
         x: {
           type: xScaleType as any,
           stacked: this.config.stacked ?? false,
-          ticks: { color: textColor, font: { family: 'Inter, system-ui, sans-serif', size: 11 }, maxRotation: 45 },
+          ticks: { color: textColor, font: { family: fontFamily, size: 11 }, maxRotation: 45 },
           grid: { color: gridColor },
           title: this.config.xLabel
             ? { display: true, text: this.config.xLabel, color: textColor }
@@ -201,7 +231,7 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
           stacked: this.config.stacked ?? false,
           ticks: { 
             color: textColor, 
-            font: { family: 'Inter, system-ui, sans-serif', size: 11 },
+            font: { family: fontFamily, size: 11 },
             callback: (value: any) => formatAxisValue(value),
           },
           grid: { color: gridColor },
@@ -212,11 +242,13 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
       },
     };
 
+    this.destroyChart();
     this.chartInstance = new Chart(ctx, {
       type: type as any,
       data: chartData,
       options: chartOptions,
     });
+    this.cdr.markForCheck();
   }
 
   private destroyChart(): void {

@@ -1,6 +1,5 @@
 /* Global Styles */
 @import 'sweetalert2/dist/sweetalert2.min.css';
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 * {
   font-family: inherit;
@@ -22,12 +21,21 @@
 
 body {
   font-family: var(--app-font);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-normal);
+  letter-spacing: var(--ls-tight);
   background-color: var(--bg-primary);
   color: var(--text-primary);
   height: 100vh;
   overflow: hidden;
   transition: background 0.3s ease, color 0.3s ease;
-  text-rendering: optimizeLegibility;
+  /* Variable-font rendering. `optimizeLegibility` is deliberately not used:
+     on long chat transcripts it forces a kerning/ligature pass over the whole
+     subtree on every reflow. `calt`/`liga` give the same shaping for free. */
+  font-optical-sizing: auto;
+  font-synthesis-weight: none;
+  font-feature-settings: 'liga' 1, 'calt' 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -38,24 +46,71 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
+  -webkit-text-size-adjust: 100%;
 }
 
 /* Light Theme Variables (default) */
 :root {
-  // --app-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
-  --app-mono: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  /* ────────────────────────────────────────────────────────────
+     Typography tokens
+     Geist is the product typeface: a neutral grotesk with a tall
+     x-height and unambiguous 1/l/I and 0/O — which is what a UI full
+     of SQL, identifiers, table cells and metrics actually needs.
+     Geist Mono is its matching monospace, so code blocks and IDs sit
+     on the same skeleton as the rest of the UI instead of clashing.
+     ──────────────────────────────────────────────────────────── */
+  --app-font: 'Geist', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
+  --app-display: var(--app-font);
+  --app-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  /* Weights — named so components stop hardcoding magic numbers */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Type scale (rem-based, so it rides the fluid :root font-size below) */
+  --fs-2xs: 0.6875rem;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-base: 0.875rem;
+  --fs-md: 0.9375rem;
+  --fs-lg: 1.0625rem;
+  --fs-xl: 1.25rem;
+  --fs-2xl: 1.5rem;
+  --fs-3xl: 1.9375rem;
+
+  /* Line heights */
+  --lh-tight: 1.2;
+  --lh-snug: 1.35;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.65;
+
+  /* Optical letter-spacing: tighter as the type gets bigger */
+  --ls-tighter: -0.022em;
+  --ls-tight: -0.011em;
+  --ls-normal: 0;
+  --ls-caps: 0.06em;
   --bg-primary: #fcfcfd;
   --bg-secondary: #f5f7fb;
   --bg-tertiary: #eff3fa;
   --text-primary: #111b2b;
   --text-secondary: #4c5a73;
   --border-color: #d1d9e9;
-  --accent-color: #3b82f6;
-  --accent-hover: #2563eb;
+  --accent-color: #2563eb;
+  --accent-hover: #1d4ed8;
   --accent-gradient: linear-gradient(135deg, #84b0f7 0%, #507ee2 100%);
   --success-color: #10b981;
   --error-color: #ef4444;
   --warning-color: #f59e0b;
+
+  /* Text-safe accents - see note above. One step deeper than the button fills,
+     because the neumorphic style paints on #e0e5ec rather than white and that
+     grey ground costs roughly 0.4 of contrast ratio. */
+  --accent-text: #1d4ed8;
+  --error-text: #b91c1c;
+  --success-text: #047857;
+  --info-text: #0369a1;
 
   /* Luxury Design Tokens */
   --shadow-luxury: 0 10px 40px -10px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.03);
@@ -130,9 +185,15 @@ body.theme-dark {
   /* Soft White */
   --text-secondary: #94a3b8;
   --border-color: rgba(255, 255, 255, 0.08);
-  --accent-color: #3b82f6;
-  --accent-hover: #60a5fa;
+  --accent-color: #2563eb;
+  --accent-hover: #3b82f6;
   --accent-gradient: linear-gradient(135deg, #a6c5f6 0%, #507ee2 100%);
+
+  /* On a dark ground the same roles need lighter, not darker, values. */
+  --accent-text: #7cb0fb;
+  --error-text: #f87171;
+  --success-text: #34d399;
+  --info-text: #38bdf8;
 }
 
 /* Luxury Default Style (Dark) */
@@ -209,6 +270,103 @@ body.style-neumorphic.theme-dark {
 
 @media (min-width: 2400px) {
   :root { font-size: 17.5px; }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Typographic Foundation
+   Element-level defaults so every screen inherits the same rhythm.
+   Components can still override; this only sets the floor.
+   ──────────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--app-display);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-tighter);
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--fs-2xl); }
+h2 { font-size: var(--fs-xl); }
+h3 { font-size: var(--fs-lg); }
+h4 { font-size: var(--fs-md); }
+h5 { font-size: var(--fs-base); }
+
+h6 {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+p {
+  line-height: var(--lh-relaxed);
+  text-wrap: pretty;
+}
+
+small {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+
+strong, b { font-weight: var(--fw-semibold); }
+
+/* Form controls do not inherit type from the page by default in any browser. */
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+}
+
+button { font-weight: var(--fw-medium); }
+
+/* Monospace surfaces: the global `* { font-family: inherit }` reset above
+   wipes the UA default, so code elements have to opt back in explicitly.
+   Letter-spacing resets to normal — mono faces are already spaced. */
+code,
+kbd,
+samp,
+pre,
+.mono {
+  font-family: var(--app-mono);
+  font-size: 0.92em;
+  letter-spacing: var(--ls-normal);
+  font-variant-ligatures: none;
+}
+
+/* Numbers that are read in columns must not jiggle between renders:
+   tabular figures for tables, metrics and any live-updating counter. */
+table,
+.tabular-nums,
+.data-grid,
+.data-grid-table,
+.new-data-grid,
+.inline-data-grid,
+.idg-table,
+.ctx-datagrid,
+.metric-value,
+.stat-value,
+.usage-value,
+time {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'liga' 1, 'calt' 1;
+}
+
+/* Uppercase micro-labels need extra tracking to stay readable. */
+.eyebrow,
+.section-label,
+.overline {
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--text-secondary);
 }
 
 /* Modern thin scrollbars — theme-aware, scrollbar-gutter-safe */
@@ -316,7 +474,7 @@ a:focus-visible,
 
   .workspace-tabs button {
     padding: 0.4rem 0.7rem;
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
 
   .workspace-panels {
@@ -375,7 +533,7 @@ a:focus-visible,
   background: var(--text-primary);
   color: var(--panel-bg);
   font-family: var(--app-font);
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.01em;
   padding: 0.35rem 0.65rem;
@@ -553,7 +711,7 @@ main#main-content:focus {
     padding: 0.12rem 0.45rem;
     border-radius: 999px;
     background: rgba(59, 130, 246, 0.1);
-    color: var(--accent-color);
+    color: var(--accent-text);
     font-size: 0.66rem;
     font-weight: 600;
     letter-spacing: 0.02em;
@@ -633,7 +791,7 @@ body.theme-dark .doc-preview-popover {
   border: none;
   border-radius: 10px;
   padding: 0.65rem 1.1rem;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -643,7 +801,7 @@ body.theme-dark .doc-preview-popover {
   transition: all 0.2s ease;
 
   i {
-    font-size: 14px;
+    font-size: var(--fs-md);
   }
 
   &:hover:not(:disabled) {
@@ -663,7 +821,7 @@ body.theme-dark .doc-preview-popover {
   border: 1px solid var(--btn-secondary-border);
   border-radius: 10px;
   padding: 0.65rem 1.1rem;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 500;
   display: inline-flex;
   align-items: center;
@@ -675,7 +833,7 @@ body.theme-dark .doc-preview-popover {
   &:hover:not(:disabled) {
     background: var(--bg-primary);
     border-color: var(--accent-color);
-    color: var(--accent-color);
+    color: var(--accent-text);
   }
 }
 
@@ -695,13 +853,13 @@ body.theme-dark .doc-preview-popover {
   &:hover:not(:disabled) {
     background: var(--bg-primary);
     border-color: var(--accent-color);
-    color: var(--accent-color);
+    color: var(--accent-text);
     transform: scale(1.05);
   }
 
   &.danger:hover:not(:disabled) {
     border-color: var(--error-color);
-    color: var(--error-color);
+    color: var(--error-text);
     background: rgba(239, 68, 68, 0.05);
   }
 }
@@ -819,7 +977,7 @@ body.theme-dark .swal2-container {
 
 .swal2-icon.swal2-info {
   border-color: rgba(59, 130, 246, 0.4);
-  color: var(--accent-color);
+  color: var(--accent-text);
   background: rgba(59, 130, 246, 0.08);
 }
 
@@ -1684,20 +1842,20 @@ app-knowledge-section {
     border: 1px solid var(--border-color);
     background: var(--bg-secondary);
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
       border-color: var(--accent-color);
-      color: var(--accent-color);
+      color: var(--accent-text);
     }
 
     &.active {
       background: rgba(59, 130, 246, 0.1);
       border-color: rgba(59, 130, 246, 0.32);
-      color: var(--accent-color);
+      color: var(--accent-text);
     }
   }
 
@@ -1710,7 +1868,7 @@ app-knowledge-section {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 700;
   }
 
@@ -1745,7 +1903,7 @@ app-knowledge-section {
 
     h3 {
       margin: 0;
-      font-size: 15px;
+      font-size: 1rem;
       font-weight: 700;
       color: var(--text-primary);
     }
@@ -1760,7 +1918,7 @@ app-knowledge-section {
 
   .share-card-copy {
     margin: 0;
-    font-size: 13px;
+    font-size: var(--fs-base);
     color: var(--text-secondary);
   }
 
@@ -1769,7 +1927,7 @@ app-knowledge-section {
     flex-wrap: wrap;
     gap: 0.9rem;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--fs-sm);
 
     span {
       display: inline-flex;
@@ -1786,7 +1944,7 @@ app-knowledge-section {
     border-radius: 999px;
     background: rgba(16, 185, 129, 0.12);
     color: #059669;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 700;
 
     &.inactive {
@@ -1812,14 +1970,14 @@ app-knowledge-section {
     border: 1px solid var(--border-color);
     background: var(--bg-secondary);
     color: var(--text-primary);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
       border-color: var(--accent-color);
-      color: var(--accent-color);
+      color: var(--accent-text);
     }
 
     &.danger {
@@ -1836,7 +1994,7 @@ app-knowledge-section {
     &.compact {
       min-height: 34px;
       padding: 0 0.75rem;
-      font-size: 11px;
+      font-size: var(--fs-xs);
     }
   }
 
@@ -1953,8 +2111,8 @@ app-knowledge-section {
     padding: 0.35rem 0.6rem;
     border-radius: 999px;
     background: rgba(59, 130, 246, 0.08);
-    color: var(--accent-color);
-    font-size: 12px;
+    color: var(--accent-text);
+    font-size: var(--fs-sm);
     font-weight: 600;
   }
 

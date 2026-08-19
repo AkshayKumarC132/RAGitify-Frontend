@@ -6,7 +6,9 @@
   <title>RAGitify</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <!-- src/favicon.ico was referenced but never existed, so every load 404'd.
+       Point at the logo that ships in assets/ instead. -->
+  <link rel="icon" type="image/svg+xml" href="assets/images/ragitify-logo.svg">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +24,14 @@
       integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
       crossorigin="anonymous" referrerpolicy="no-referrer" />
   </noscript>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!--
+    Brand typeface: Geist (UI + display) / Geist Mono (code, SQL, IDs, metrics).
+    The full variable weight axis is requested so the in-between weights the
+    components already use (550, 650, 800, 850) render as real instances
+    instead of being clamped or faux-bolded — one file per family either way.
+  -->
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@300..700&display=swap">
 </head>
 
 <body>

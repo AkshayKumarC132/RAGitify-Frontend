@@ -28,8 +28,9 @@
           <i class="fa-solid fa-user"></i>
           <h3>Personal Information</h3>
         </div>
-        <button type="button" class="section-action-btn" *ngIf="!editingProfile" (click)="startProfileEdit()">
-          <i class="fa-solid fa-pen"></i>
+        <button type="button" class="section-action-btn" *ngIf="!editingProfile" (click)="startProfileEdit()"
+          aria-label="Edit profile details" title="Edit profile details">
+          <i class="fa-solid fa-pen" aria-hidden="true"></i>
         </button>
       </div>
 
@@ -93,8 +94,9 @@
           <i class="fa-solid fa-lock"></i>
           <h3>Password</h3>
         </div>
-        <button type="button" class="section-action-btn" *ngIf="!editingPassword" (click)="startPasswordEdit()">
-          <i class="fa-solid fa-pen"></i>
+        <button type="button" class="section-action-btn" *ngIf="!editingPassword" (click)="startPasswordEdit()"
+          aria-label="Change password" title="Change password">
+          <i class="fa-solid fa-pen" aria-hidden="true"></i>
         </button>
       </div>
 

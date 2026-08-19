@@ -24,7 +24,7 @@
     background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(4px);
     color: #4f5053;
-    font-size: 13px;
+    font-size: var(--fs-base);
     cursor: pointer;
     opacity: 0;
     transition: opacity 0.2s ease, background 0.2s ease, transform 0.15s ease;
@@ -52,7 +52,7 @@
 
   .chart-truncation-badge {
     text-align: center;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     color: var(--text-secondary, #6b7280);
     padding: 8px 0 2px;
     opacity: 0.75;

@@ -27,7 +27,7 @@
     box-shadow: 0 0 0 1px var(--accent-color);
 
     .store-name {
-      color: var(--accent-color);
+      color: var(--accent-text);
     }
   }
 }
@@ -50,7 +50,7 @@
 .store-name {
   color: var(--text-primary);
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--fs-base);
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -69,7 +69,7 @@
   align-items: center;
   padding: 0.2rem 0.45rem;
   border-radius: 999px;
-  font-size: 9px;
+  font-size: var(--fs-2xs);
   font-weight: 800;
   letter-spacing: 0.06em;
 }
@@ -86,19 +86,19 @@
 
 .store-hint {
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: var(--fs-xs);
   line-height: 1.35;
 }
 
 .store-date {
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   display: flex;
   align-items: center;
   gap: 0.35rem;
 
   i {
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     opacity: 0.8;
   }
 }
@@ -111,13 +111,13 @@
 
 .store-docs {
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   display: flex;
   align-items: center;
   gap: 0.35rem;
 
   i {
-    font-size: 10px;
+    font-size: var(--fs-2xs);
   }
 }
 
@@ -127,7 +127,7 @@
 
 .store-system-note {
   color: #9a3412;
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   font-weight: 600;
 }
 

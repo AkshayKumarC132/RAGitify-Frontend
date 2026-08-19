@@ -32,7 +32,7 @@
     border-left: 2px solid var(--accent-color);
 
     .doc-title {
-      color: var(--accent-color);
+      color: var(--accent-text);
     }
   }
 }
@@ -55,7 +55,7 @@
 .doc-title {
   color: var(--text-primary);
   font-weight: 600;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   line-height: 1.3;
   word-break: break-all;
   transition: color 0.15s ease;
@@ -63,7 +63,7 @@
 }
 
 .status-icon {
-  font-size: 12px;
+  font-size: var(--fs-sm);
   flex-shrink: 0;
 
   &.fa-circle-check {
@@ -89,7 +89,7 @@
   flex-shrink: 0;
 
   .doc-type-text {
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 700;
     letter-spacing: 0;
   }
@@ -140,5 +140,5 @@
   text-align: center;
   padding: 1.5rem 0;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-sm);
 }

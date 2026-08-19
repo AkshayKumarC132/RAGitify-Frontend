@@ -82,7 +82,7 @@
   height: 32px;
 
   i {
-    font-size: 14px;
+    font-size: var(--fs-md);
   }
 
   &:hover {
@@ -118,7 +118,7 @@
   //   }
 
   i {
-    font-size: 14px;
+    font-size: var(--fs-md);
     color: var(--text-secondary);
     flex-shrink: 0;
   }
@@ -129,7 +129,7 @@
     outline: none;
     background: transparent;
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: var(--fs-md);
     font-weight: 500;
 
     &::placeholder {
@@ -171,7 +171,7 @@
 .result-title {
   flex: 1;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -181,13 +181,13 @@
 
 .result-time {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   flex-shrink: 0;
 }
 
 .result-snippet {
   margin-top: 0.35rem;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--text-secondary);
   line-height: 1.4;
   max-height: 3.2em;
@@ -203,10 +203,14 @@
   padding: 1rem 0.5rem;
   text-align: center;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
-.thread-search-highlight {
+/* The <mark class="thread-search-highlight"> is produced by highlightText()
+   and injected through [innerHTML], so it never gets this component's
+   _ngcontent attribute - without ::ng-deep this rule matched nothing and
+   search hits fell back to the browser's default yellow <mark>. */
+:host ::ng-deep .thread-search-highlight {
   background-color: rgba(var(--accent-color-rgb, 88, 115, 255), 0.18);
   color: var(--text-primary);
   border-radius: 3px;

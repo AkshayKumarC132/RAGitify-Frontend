@@ -4,14 +4,14 @@
 .document-upload-modal {
   .upload-modal-title {
     margin: 0 0 0.35rem 0;
-    font-size: 16px;
+    font-size: var(--fs-lg);
     font-weight: 700;
     color: var(--text-primary);
   }
 
   .upload-modal-subtitle {
     margin: 0 0 1rem 0;
-    font-size: 13px;
+    font-size: var(--fs-base);
     color: var(--text-secondary);
   }
 
@@ -22,7 +22,7 @@
     margin-bottom: 1.25rem;
 
     label {
-      font-size: 12px;
+      font-size: var(--fs-sm);
       font-weight: 600;
       color: var(--text-secondary);
     }
@@ -32,7 +32,7 @@
     border-radius: 10px;
     border: 1px solid var(--border-color);
     padding: 0.5rem 0.75rem;
-    font-size: 13px;
+    font-size: var(--fs-base);
     background: var(--bg-primary);
     color: var(--text-primary);
     outline: none;
@@ -53,7 +53,7 @@
 
   input[type="file"].upload-modal-input {
     padding: 0.4rem 0.5rem;
-    font-size: 12px;
+    font-size: var(--fs-sm);
     color: var(--text-secondary);
   }
 
@@ -68,7 +68,7 @@
     min-width: 84px;
     border-radius: 999px;
     padding: 0.4rem 0.85rem;
-    font-size: 13px;
+    font-size: var(--fs-base);
     font-weight: 600;
     border: 1px solid transparent;
     cursor: pointer;
@@ -164,7 +164,7 @@
 
 .file-name {
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -173,7 +173,7 @@
 
 .file-size {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--fs-sm);
 }
 
 .remove-btn {
@@ -197,7 +197,7 @@
   }
 
   i {
-    font-size: 14px;
+    font-size: var(--fs-md);
   }
 }
 
@@ -218,14 +218,14 @@
 
 .file-error {
   margin-top: 0.5rem;
-  color: var(--error-color);
-  font-size: 12px;
+  color: var(--error-text);
+  font-size: var(--fs-sm);
 }
 
 .file-info {
   margin-top: 0.5rem;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 
 .progress {
@@ -248,13 +248,13 @@
   justify-content: space-between;
   align-items: center;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: var(--fs-xs);
   margin-bottom: 0.75rem;
 }
 
 .overall-status {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--fs-base);
   margin: 1rem 0 0.75rem;
   font-weight: 500;
   display: flex;
@@ -291,11 +291,11 @@
   }
 
   .file-name {
-    font-size: 13px;
+    font-size: var(--fs-base);
   }
 
   .file-size {
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
 
   .file-list {

@@ -41,7 +41,7 @@
 
         i {
             font-size: 1.2rem;
-            color: var(--accent-color);
+            color: var(--accent-text);
             width: 40px;
             height: 40px;
             display: flex;
@@ -103,7 +103,7 @@
 
 .error-banner {
     background: rgba(var(--error-color-rgb), 0.1);
-    color: var(--error-color);
+    color: var(--error-text);
     padding: 0.75rem 1rem;
     font-size: 0.9rem;
     display: flex;
@@ -183,7 +183,7 @@
     gap: 0.35rem;
     padding: 0.25rem 0.6rem;
     border-radius: 6px;
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     font-weight: 600;
     margin-right: 0.25rem;
     flex-shrink: 0;
@@ -191,12 +191,12 @@
     height: 22px;
 
     i {
-        font-size: 10px;
+        font-size: var(--fs-2xs);
     }
 
     &.assistant-mode {
         background: rgba(var(--accent-color-rgb), 0.1);
-        color: var(--accent-color);
+        color: var(--accent-text);
         border: 1px solid rgba(var(--accent-color-rgb), 0.2);
     }
 }

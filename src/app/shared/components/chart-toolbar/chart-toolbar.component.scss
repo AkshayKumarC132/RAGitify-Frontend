@@ -32,12 +32,12 @@
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-secondary, #6b7280);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-family: inherit;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 
-  i { font-size: 11px; }
+  i { font-size: var(--fs-xs); }
 
   &:hover {
     background: rgba(99, 102, 241, 0.08);
@@ -81,7 +81,7 @@
   color: var(--text-secondary, #6b7280);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
-  font-size: 13px;
+  font-size: var(--fs-base);
 
   &:hover { background: rgba(0,0,0,0.06); color: var(--text-primary, #111); }
 
@@ -120,7 +120,7 @@
 }
 
 .ct-axis-label {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -133,7 +133,7 @@
   border: 1px solid var(--idg-border, rgba(0,0,0,0.12));
   background: var(--input-bg, #fff);
   color: var(--text-primary, #111827);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-family: inherit;
   outline: none;
   cursor: pointer;
@@ -160,7 +160,7 @@
   padding: 3px 8px;
   border-radius: 5px;
   border: 1px solid var(--idg-border, rgba(0,0,0,0.1));
-  font-size: 12px;
+  font-size: var(--fs-sm);
   cursor: pointer;
   user-select: none;
   transition: background 0.12s, border-color 0.12s;

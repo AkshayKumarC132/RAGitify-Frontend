@@ -42,7 +42,8 @@ export class ClickhouseWizardComponent implements OnInit {
     availableSchemas: string[] = [];
     selectedSchema = 'default';
 
-    private clickhouseTypeId: number | null = null;
+    /** DatabaseConnectionType.id is a UUID, not an integer. */
+    private clickhouseTypeId: string | null = null;
 
     constructor(private dbConnectionService: DatabaseConnectionService, private router: Router) { }
 

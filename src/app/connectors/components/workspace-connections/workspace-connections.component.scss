@@ -1,9 +1,11 @@
 .connections-page {
-    padding: 2rem 2.5rem;
+    padding: 2rem;
     display: flex;
     flex-direction: column;
     gap: 2.5rem;
     max-width: 1200px;
+    width: 100%;
+    margin-inline: auto;
 }
 
 /* ── Header ─────────────────────────────── */
@@ -29,20 +31,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
-    color: var(--accent-color);
+    font-size: 1.35rem;
+    color: var(--accent-text);
     flex-shrink: 0;
 }
 
 .connections-title {
-    font-size: 22px;
+    font-size: 1.45rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0 0 2px;
 }
 
 .connections-subtitle {
-    font-size: 13px;
+    font-size: var(--fs-base);
     color: var(--text-secondary);
     margin: 0;
 }
@@ -56,7 +58,7 @@
     border-radius: 10px;
     background: var(--accent-color);
     color: white;
-    font-size: 13px;
+    font-size: var(--fs-base);
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s ease, transform 0.2s ease;
@@ -74,13 +76,13 @@
     }
 
     i {
-        font-size: 12px;
+        font-size: var(--fs-sm);
     }
 }
 
 /* ── Section Label ───────────────────────── */
 .section-label {
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 700;
     letter-spacing: 0.08em;
     color: var(--text-secondary);
@@ -157,7 +159,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: var(--fs-lg);
     flex-shrink: 0;
 }
 
@@ -174,14 +176,14 @@
 }
 
 .connector-name {
-    font-size: 13px;
+    font-size: var(--fs-base);
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 3px;
 }
 
 .connector-desc {
-    font-size: 11.5px;
+    font-size: var(--fs-xs);
     color: var(--text-secondary);
     line-height: 1.4;
 }
@@ -190,7 +192,7 @@
     position: absolute;
     top: 8px;
     right: 8px;
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     font-weight: 600;
     color: var(--text-secondary);
     background: var(--bg-secondary);
@@ -229,7 +231,7 @@
     .search-icon {
         position: absolute;
         left: 0.75rem;
-        font-size: 12px;
+        font-size: var(--fs-sm);
         color: var(--text-secondary);
     }
 }
@@ -241,7 +243,7 @@
     border: 1px solid var(--border-color);
     background: var(--bg-secondary);
     color: var(--text-primary);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     padding: 0 2rem 0 2.25rem;
     outline: none;
     transition: border-color 0.2s ease;
@@ -288,7 +290,7 @@
         background: transparent;
         padding: 0.4rem 0.85rem;
         border-radius: 999px;
-        font-size: 13px;
+        font-size: var(--fs-base);
         color: var(--text-secondary);
         cursor: pointer;
         transition: all 0.15s ease;
@@ -307,7 +309,7 @@
     gap: 0.75rem;
     padding: 2rem;
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: var(--fs-base);
 }
 
 .spinner {
@@ -341,20 +343,20 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
+        font-size: 1.35rem;
         color: var(--text-secondary);
         margin-bottom: 0.5rem;
     }
 
     .empty-title {
-        font-size: 14px;
+        font-size: var(--fs-md);
         font-weight: 600;
         color: var(--text-primary);
         margin: 0;
     }
 
     .empty-hint {
-        font-size: 13px;
+        font-size: var(--fs-base);
         color: var(--text-secondary);
         margin: 0;
     }
@@ -404,20 +406,20 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 16px;
+                font-size: var(--fs-lg);
                 flex-shrink: 0;
             }
 
             .card-title {
                 .conn-name {
-                    font-size: 14px;
+                    font-size: var(--fs-md);
                     font-weight: 700;
                     color: var(--text-primary);
                     margin-bottom: 0.15rem;
                 }
 
                 .conn-host {
-                    font-size: 11px;
+                    font-size: var(--fs-xs);
                     color: var(--text-secondary);
                     // font-family: 'Courier New', monospace;
                 }
@@ -438,7 +440,7 @@
             align-items: center;
 
             .stat-label {
-                font-size: 10px;
+                font-size: var(--fs-2xs);
                 font-weight: 700;
                 color: var(--text-secondary);
                 text-transform: uppercase;
@@ -447,7 +449,7 @@
             }
 
             .stat-val {
-                font-size: 13px;
+                font-size: var(--fs-base);
                 font-weight: 600;
                 color: var(--text-primary);
             }
@@ -462,7 +464,7 @@
         align-items: center;
 
         .created-date {
-            font-size: 12px;
+            font-size: var(--fs-sm);
             color: var(--text-secondary);
         }
     }
@@ -478,7 +480,7 @@
 .connections-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: var(--fs-base);
 
     thead tr {
         background: var(--bg-secondary);
@@ -487,7 +489,7 @@
         th {
             padding: 0.65rem 1rem;
             text-align: left;
-            font-size: 11px;
+            font-size: var(--fs-xs);
             font-weight: 600;
             letter-spacing: 0.04em;
             color: var(--text-secondary);
@@ -530,7 +532,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: var(--fs-base);
     flex-shrink: 0;
 }
 
@@ -543,7 +545,7 @@
 .conn-db {
     color: var(--text-secondary);
     // font-family: 'Courier New', monospace;
-    font-size: 12px;
+    font-size: var(--fs-sm);
 }
 
 /* Status pill */
@@ -551,7 +553,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 11.5px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     padding: 3px 10px;
     border-radius: 999px;
@@ -607,7 +609,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: var(--fs-base);
     cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease;
     color: var(--text-secondary);
@@ -659,7 +661,7 @@
         border: none;
         padding: 0.6rem 1rem;
         text-align: left;
-        font-size: 13px;
+        font-size: var(--fs-base);
         color: var(--text-primary);
         cursor: pointer;
         display: flex;
@@ -668,7 +670,7 @@
         transition: background 0.15s ease;
 
         i {
-            font-size: 14px;
+            font-size: var(--fs-md);
             color: var(--text-secondary);
             width: 16px;
             text-align: center;

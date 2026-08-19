@@ -56,13 +56,13 @@
 
 .brand-title {
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 850;
 }
 
 .brand-subtitle {
   color: var(--text-secondary);
-  font-size: 9px;
+  font-size: var(--fs-2xs);
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
@@ -84,7 +84,7 @@
 .sidebar-toggle-control:hover,
 .sidebar-toggle-control:focus-visible {
   border-color: var(--accent-color);
-  color: var(--accent-color);
+  color: var(--accent-text);
 }
 
 .avatar {
@@ -96,7 +96,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  color: var(--accent-color);
+  color: var(--accent-text);
 }
 
 .profile-meta {
@@ -106,13 +106,13 @@
 }
 
 .profile-name {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .profile-email {
-  font-size: 9px;
+  font-size: var(--fs-2xs);
   color: var(--text-secondary);
 }
 
@@ -134,7 +134,7 @@ button.thread-menu {
   align-items: center;
   justify-content: flex-start;
   gap: 0.75rem;
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -144,7 +144,7 @@ button.thread-menu {
 
 button.new-thread-button {
   background: var(--surface-bg);
-  color: var(--accent-color);
+  color: var(--accent-text);
   box-shadow: 0 2px 6px rgba(var(--accent-color-rgb, 59, 130, 246), 0.08);
 
   &:hover {
@@ -166,7 +166,7 @@ button.workspace-button {
 }
 
 .button-text {
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 
 button.workspace-button:hover,
@@ -194,7 +194,7 @@ button.thread-menu {
 .section-title {
   padding: 0.35rem 0.5rem;
   color: var(--text-secondary);
-  font-size: 9px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.25em;
   text-transform: uppercase;
@@ -205,8 +205,8 @@ button.thread-menu {
   opacity: 0.7;
 
   i {
-    font-size: 10px;
-    color: var(--accent-color);
+    font-size: var(--fs-2xs);
+    color: var(--accent-text);
   }
 }
 
@@ -219,7 +219,7 @@ button.thread-menu {
     border-radius: 12px;
     background: var(--bg-tertiary);
     border: none;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     color: var(--text-primary);
     cursor: text;
@@ -233,11 +233,11 @@ button.thread-menu {
     &:focus-within {
       background: var(--surface-bg);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      color: var(--accent-color);
+      color: var(--accent-text);
     }
 
     i {
-      font-size: 15px;
+      font-size: 1rem;
       color: var(--text-secondary);
       flex-shrink: 0;
     }
@@ -248,7 +248,7 @@ button.thread-menu {
       outline: none;
       background: transparent;
       color: var(--text-primary);
-      font-size: 11px;
+      font-size: var(--fs-xs);
       font-weight: 600;
       min-width: 0;
 
@@ -389,7 +389,7 @@ button.thread-menu {
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    font-size: 13px;
+    font-size: var(--fs-base);
     flex-shrink: 0;
   }
 
@@ -406,7 +406,7 @@ button.thread-menu {
     }
 
     .profile-email {
-      font-size: 13px;
+      font-size: var(--fs-base);
       color: var(--text-secondary);
       white-space: nowrap;
       overflow: hidden;
@@ -451,13 +451,13 @@ button.thread-menu {
   padding: 0.4rem 0.4rem;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   text-align: left;
 }
 
 .profile-dropdown button:hover {
   background: var(--bg-tertiary);
-  color: var(--accent-color);
+  color: var(--accent-text);
 }
 
 .thread-sidebar.collapsed .sidebar-profile {
@@ -523,9 +523,9 @@ button.thread-menu {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
-  color: var(--accent-color);
+  color: var(--accent-text);
   text-transform: uppercase;
   flex-shrink: 0;
 
@@ -559,7 +559,7 @@ button.thread-menu {
 
 .thread-title {
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   // font-weight: 600;
   overflow: hidden;
   white-space: nowrap;
@@ -572,14 +572,14 @@ button.thread-menu {
   // Slightly more compact in search mode
   .thread-item.search-has-title-match &,
   .thread-item.search-has-message-match & {
-    font-size: 10.5px;
+    font-size: var(--fs-2xs);
     line-height: 1.15;
   }
 }
 
 .thread-snippet {
   margin-top: 0.2rem;
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   color: var(--text-secondary);
   line-height: 1.3;
   max-height: 2.6em;
@@ -595,7 +595,7 @@ button.thread-menu {
   .thread-item.search-has-title-match &,
   .thread-item.search-has-message-match & {
     margin-top: 0.15rem;
-    font-size: 9.5px;
+    font-size: var(--fs-2xs);
     line-height: 1.25;
     max-height: 2.2em;
     -webkit-line-clamp: 2;
@@ -603,7 +603,11 @@ button.thread-menu {
   }
 }
 
-.thread-search-highlight {
+/* The <mark class="thread-search-highlight"> is produced by highlightText()
+   and injected through [innerHTML], so it never gets this component's
+   _ngcontent attribute - without ::ng-deep this rule matched nothing and
+   search hits fell back to the browser's default yellow <mark>. */
+:host ::ng-deep .thread-search-highlight {
   background-color: rgba(var(--accent-color-rgb, 88, 115, 255), 0.18);
   color: var(--text-primary);
   border-radius: 3px;
@@ -613,7 +617,7 @@ button.thread-menu {
 
 .thread-time {
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: var(--fs-xs);
   line-height: 1.1;
   margin-top: auto;
   display: flex;
@@ -625,7 +629,7 @@ button.thread-menu {
     right: 0.85rem;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     color: var(--text-secondary);
     opacity: 0.6;
     transition: opacity 0.2s ease, visibility 0.2s ease;
@@ -656,7 +660,7 @@ button.thread-menu {
   flex-shrink: 0;
 
   i {
-    font-size: 11px;
+    font-size: var(--fs-xs);
     z-index: 2;
   }
 
@@ -676,7 +680,7 @@ button.thread-menu {
     height: 24px;
 
     i {
-      font-size: 10px;
+      font-size: var(--fs-2xs);
     }
   }
 }
@@ -746,7 +750,7 @@ button.thread-menu {
   pointer-events: none;
 
   i {
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
 
   .thread-item:hover &,
@@ -775,7 +779,7 @@ button.thread-menu {
     padding: 0.2rem;
 
     i {
-      font-size: 11px;
+      font-size: var(--fs-xs);
     }
   }
 }
@@ -820,7 +824,7 @@ button.thread-menu {
     cursor: pointer;
     border-radius: 8px;
     color: var(--text-primary);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     transition: background-color 0.2s ease;
 
     &:hover {
@@ -1006,7 +1010,7 @@ button.thread-menu {
 }
 
 .thread-menu-panel button.danger {
-  color: var(--error-color);
+  color: var(--error-text);
 }
 
 .thread-menu-panel button.danger:hover,
@@ -1076,7 +1080,7 @@ button.thread-menu {
     text-align: left;
     cursor: pointer;
     border-radius: 8px;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     transition: background-color 0.2s ease;
 
     &:hover,

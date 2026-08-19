@@ -8,6 +8,8 @@ export interface VectorStore {
   collection?: string;
   vs_type?: VsType;
   is_system?: boolean;
+  /** Documents in this library. Optional so version skew can't break the view. */
+  document_count?: number;
   created_at: string;
   updated_at: string;
 }

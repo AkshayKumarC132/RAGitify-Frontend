@@ -31,17 +31,17 @@
 
 .model-name {
   font-weight: 500;
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 
 .model-provider {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   color: var(--text-secondary);
   margin-top: 0.125rem;
 }
 
 .dropdown-icon {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   color: var(--text-secondary);
 }
 
@@ -87,11 +87,11 @@
 
 .item-name {
   font-weight: 500;
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 
 .item-details {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   color: var(--text-secondary);
   margin-top: 0.25rem;
 }

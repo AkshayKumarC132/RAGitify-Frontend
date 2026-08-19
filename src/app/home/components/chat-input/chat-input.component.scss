@@ -193,14 +193,14 @@
 }
 
 .slash-menu-cmd {
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 700;
-  color: var(--accent-color);
+  color: var(--accent-text);
   font-family: var(--app-mono);
 }
 
 .slash-menu-desc {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--text-secondary);
   flex: 1;
   text-align: right;
@@ -229,7 +229,7 @@
   background: transparent;
   border: none;
   color: var(--text-primary);
-  font-size: 15px;
+  font-size: 1rem;
   resize: none;
   min-height: 36px;
   max-height: 120px;
@@ -338,7 +338,7 @@
 }
 
 .token-tooltip-title {
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   color: #fff;
   margin-bottom: 0.55rem;
@@ -354,13 +354,13 @@
 }
 
 .token-label {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: rgba(200, 200, 220, 0.7);
   font-weight: 500;
 }
 
 .token-value {
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
@@ -403,7 +403,7 @@
   margin-top: 0.4rem;
   padding: 0 0.5rem;
   color: var(--text-secondary);
-  font-size: 10.5px;
+  font-size: var(--fs-2xs);
   font-weight: 500;
   letter-spacing: 0.01em;
   opacity: 0;
@@ -430,7 +430,7 @@
     border: 1px solid var(--border-color);
     color: var(--text-primary);
     font-family: var(--app-font);
-    font-size: 9.5px;
+    font-size: var(--fs-2xs);
     font-weight: 600;
     line-height: 1;
     box-shadow: 0 1px 0 var(--border-color);
@@ -468,7 +468,7 @@
 .attachment-toggle {
   background: transparent;
   border: none;
-  color: var(--accent-color);
+  color: var(--accent-text);
   font-size: 1.1rem;
   cursor: pointer;
   transition: color 0.2s ease, transform 0.2s ease;
@@ -515,13 +515,13 @@
   background: var(--bg-secondary);
   color: var(--text-secondary);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 
   > i:first-child {
-    color: var(--accent-color);
-    font-size: 12px;
+    color: var(--accent-text);
+    font-size: var(--fs-sm);
   }
 
   > span {
@@ -533,7 +533,7 @@
   &.is-open {
     background: var(--bg-tertiary);
     border-color: rgba(var(--accent-color-rgb, 88, 115, 255), 0.55);
-    color: var(--accent-color);
+    color: var(--accent-text);
   }
 
   &:focus-visible {
@@ -548,7 +548,7 @@
 }
 
 .response-mode-chevron {
-  font-size: 9px;
+  font-size: var(--fs-2xs);
   transition: transform 0.2s ease;
 
   .response-mode-trigger.is-open & {
@@ -572,7 +572,7 @@
 .response-mode-menu-title {
   padding: 0.25rem 0.35rem 0.45rem;
   color: var(--text-secondary);
-  font-size: 9px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -607,14 +607,14 @@
   &.selected .response-mode-option-title,
   &.selected .response-mode-icon,
   &.selected .response-mode-check {
-    color: var(--accent-color);
+    color: var(--accent-text);
   }
 }
 
 .response-mode-icon {
   padding-top: 0.15rem;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--fs-base);
 }
 
 .response-mode-copy {
@@ -626,7 +626,7 @@
 
 .response-mode-option-title {
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   line-height: 1.2;
 
@@ -637,7 +637,7 @@
     border-radius: 4px;
     background: rgba(var(--accent-color-rgb, 88, 115, 255), 0.1);
     color: var(--text-secondary);
-    font-size: 9px;
+    font-size: var(--fs-2xs);
     font-weight: 500;
     vertical-align: 1px;
   }
@@ -645,14 +645,14 @@
 
 .response-mode-option-description {
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   line-height: 1.25;
 }
 
 .response-mode-check {
   align-self: center;
-  color: var(--accent-color);
-  font-size: 12px;
+  color: var(--accent-text);
+  font-size: var(--fs-sm);
 }
 
 @keyframes responseModeMenuIn {
@@ -699,7 +699,7 @@
     padding: 0.6rem 0.75rem;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     transition: all 0.2s;
     white-space: nowrap;
 
@@ -725,7 +725,7 @@
     position: absolute;
     left: 0.85rem;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     pointer-events: none;
   }
 
@@ -736,7 +736,7 @@
     border: 1px solid var(--border-color);
     background: var(--bg-secondary);
     color: var(--text-primary);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
@@ -773,7 +773,7 @@
   justify-content: space-between;
   padding: 0.6rem 0.75rem;
   color: var(--text-primary);
-  font-size: 11px;
+  font-size: var(--fs-xs);
   cursor: pointer;
   border-radius: 6px;
   transition: background 0.2s;
@@ -847,7 +847,7 @@
   cursor: pointer;
   color: var(--text-secondary);
   transition: all 0.2s;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -855,7 +855,7 @@
   height: 38px;
 
   i {
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
 
   &:hover {
@@ -866,7 +866,7 @@
 
   &.active {
     border-color: var(--accent-color);
-    color: var(--accent-color);
+    color: var(--accent-text);
     background: rgba(var(--accent-color-rgb, 88, 115, 255), 0.1);
   }
 }
@@ -887,7 +887,7 @@
   transition: all 0.2s ease;
 
   i {
-    font-size: 13px;
+    font-size: var(--fs-base);
   }
 
   &:hover:not(:disabled) {
@@ -899,7 +899,7 @@
   &.active {
     background: rgba(var(--accent-color-rgb, 88, 115, 255), 0.14);
     border-color: rgba(var(--accent-color-rgb, 88, 115, 255), 0.6);
-    color: var(--accent-color);
+    color: var(--accent-text);
     box-shadow: 0 10px 24px rgba(var(--accent-color-rgb, 88, 115, 255), 0.25);
   }
 
@@ -956,7 +956,7 @@
   }
 
   i {
-    font-size: 16px;
+    font-size: var(--fs-lg);
     line-height: 1;
   }
 
@@ -980,7 +980,7 @@
   border-radius: 999px;
   border: 1px solid rgba(var(--accent-color-rgb, 88, 115, 255), 0.35);
   box-shadow: 0 8px 18px rgba(var(--accent-color-rgb, 88, 115, 255), 0.2);
-  font-size: 10px;
+  font-size: var(--fs-2xs);
 
   .pulse {
     width: 8px;
@@ -1013,7 +1013,7 @@
   gap: 0.35rem;
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   font-weight: 600;
   margin-right: 0.25rem;
   line-height: 1;
@@ -1022,12 +1022,12 @@
   animation: scaleIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
   i {
-    font-size: 10px;
+    font-size: var(--fs-2xs);
   }
 
   &.web {
     background: rgba(var(--accent-color-rgb, 59, 130, 246), 0.1);
-    color: var(--accent-color);
+    color: var(--accent-text);
     border: 1px solid rgba(var(--accent-color-rgb, 59, 130, 246), 0.2);
   }
 
@@ -1045,7 +1045,7 @@
     padding: 0.25rem 0.75rem;
     letter-spacing: 0.02em;
     text-transform: uppercase;
-    font-size: 9px;
+    font-size: var(--fs-2xs);
 
     i {
       color: rgba(255, 255, 255, 0.9);
@@ -1097,7 +1097,7 @@
 
   h4 {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--fs-lg);
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.02em;
@@ -1112,7 +1112,7 @@
     padding: 0.75rem 0.85rem;
     color: var(--text-primary);
     font-family: inherit;
-    font-size: 12px;
+    font-size: var(--fs-sm);
 
     &:focus {
       outline: none;
@@ -1147,7 +1147,7 @@
   p {
     margin: 0;
     max-width: 540px;
-    font-size: 12px;
+    font-size: var(--fs-sm);
     line-height: 1.5;
     color: var(--text-secondary);
   }
@@ -1178,13 +1178,13 @@
 }
 
 .selection-counter__value {
-  font-size: 15px;
+  font-size: 1rem;
   font-weight: 800;
   color: var(--text-primary);
 }
 
 .selection-counter__label {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   color: var(--text-secondary);
 }
 
@@ -1204,7 +1204,7 @@
     color: var(--text-primary);
     cursor: pointer;
     transition: all 0.2s;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 500;
     min-width: 80px;
     text-align: center;
@@ -1221,7 +1221,7 @@
 
     &:first-child {
       border-color: var(--accent-color);
-      color: var(--accent-color);
+      color: var(--accent-text);
       font-weight: 600;
 
       &:hover:not(:disabled) {
@@ -1250,12 +1250,12 @@
     background: var(--bg-tertiary);
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     transition: all 0.2s;
 
     &.active {
       border-color: var(--accent-color);
-      color: var(--accent-color);
+      color: var(--accent-text);
       background: rgba(59, 130, 246, 0.08);
     }
 
@@ -1312,13 +1312,13 @@
       .title {
         font-weight: 600;
         color: var(--text-primary);
-        font-size: 11px;
+        font-size: var(--fs-xs);
         line-height: 1.4;
         word-wrap: break-word;
       }
 
       .meta {
-        font-size: 10px;
+        font-size: var(--fs-2xs);
         color: var(--text-secondary);
         line-height: 1.3;
         opacity: 0.8;
@@ -1352,7 +1352,7 @@
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
   border-bottom: 2px solid transparent;
@@ -1360,7 +1360,7 @@
   white-space: nowrap;
 
   i {
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
 
   &:hover {
@@ -1369,7 +1369,7 @@
   }
 
   &.active {
-    color: var(--accent-color);
+    color: var(--accent-text);
     border-bottom-color: var(--accent-color);
     background: rgba(var(--accent-color-rgb, 88, 115, 255), 0.06);
   }
@@ -1452,7 +1452,7 @@
 
   .fa-folder,
   .fa-folder-open {
-    font-size: 18px;
+    font-size: 1.2rem;
     flex-shrink: 0;
   }
 
@@ -1474,7 +1474,7 @@
 
 .group-name {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-base);
   color: var(--text-primary);
   line-height: 1.3;
   overflow: hidden;
@@ -1483,14 +1483,14 @@
 }
 
 .group-shared-by {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
 
   i {
-    font-size: 9px;
+    font-size: var(--fs-2xs);
   }
 }
 
@@ -1502,7 +1502,7 @@
 }
 
 .document-picker-panel .group-count {
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   color: var(--text-secondary);
   padding: 0;
@@ -1512,7 +1512,7 @@
 }
 
 .group-chevron {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--text-secondary);
   transition: transform 0.2s ease;
 }
@@ -1565,7 +1565,7 @@
 
 // File type icon colors
 .doc-file-icon {
-  font-size: 16px;
+  font-size: var(--fs-lg);
   flex-shrink: 0;
 
   &.file-red {
@@ -1601,7 +1601,7 @@
 }
 
 .doc-name {
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.35;
@@ -1611,7 +1611,7 @@
 }
 
 .doc-info {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--text-secondary);
   line-height: 1.3;
 }
@@ -1624,7 +1624,7 @@
   justify-content: center;
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
-  font-size: 9.5px;
+  font-size: var(--fs-2xs);
   font-weight: 800;
   letter-spacing: 0.04em;
 
@@ -1732,12 +1732,12 @@
     transition: all 0.2s ease;
 
     i {
-      font-size: 11px;
+      font-size: var(--fs-xs);
     }
 
     &:hover {
       background: rgba(0, 0, 0, 0.05);
-      color: var(--accent-color);
+      color: var(--accent-text);
     }
   }
 }
@@ -1761,7 +1761,7 @@
     position: absolute;
     left: 0.7rem;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     pointer-events: none;
   }
 
@@ -1772,7 +1772,7 @@
     border: 1px solid var(--border-color);
     background: var(--bg-tertiary);
     color: var(--text-primary);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     outline: none;
     transition: border-color 0.2s ease;
 
@@ -1799,7 +1799,7 @@
   justify-content: center;
   padding: 0.55rem 1rem;
   border-radius: 8px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -1821,7 +1821,7 @@
 .apply-btn {
   background: rgba(var(--accent-color-rgb, 88, 115, 255), 0.1);
   border: 1px solid rgba(var(--accent-color-rgb, 88, 115, 255), 0.3);
-  color: var(--accent-color);
+  color: var(--accent-text);
 
   &:hover:not(:disabled) {
     background: rgba(var(--accent-color-rgb, 88, 115, 255), 0.15);
@@ -1872,12 +1872,12 @@
 
 .group-title {
   font-weight: 700;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--text-primary);
 }
 
 .group-count {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   color: var(--text-secondary);
   padding: 0.2rem 0.5rem;
@@ -1960,7 +1960,7 @@
 
 .document-card-topline .title {
   min-width: 0;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.35;
@@ -1971,7 +1971,7 @@
 
 .document-card-subline .meta,
 .document-card-footer .meta {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   color: var(--text-secondary);
   line-height: 1.35;
   word-break: break-word;
@@ -1985,8 +1985,8 @@
   padding: 0.18rem 0.45rem;
   border-radius: 999px;
   background: rgba(var(--accent-color-rgb, 88, 115, 255), 0.12);
-  color: var(--accent-color);
-  font-size: 9px;
+  color: var(--accent-text);
+  font-size: var(--fs-2xs);
   font-weight: 800;
   letter-spacing: 0.05em;
 
@@ -2010,7 +2010,7 @@
     color: var(--text-primary);
     cursor: pointer;
     transition: all 0.2s;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 500;
 
     &:hover {
@@ -2035,7 +2035,7 @@
   border: 1px solid var(--border-color);
   border-radius: 999px;
   padding: 0.5rem 1rem;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--text-primary);
 
   span {
@@ -2047,7 +2047,7 @@
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     line-height: 1;
     padding: 0;
     width: 20px;
@@ -2133,7 +2133,7 @@
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 0.4rem 0.5rem;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--text-primary);
   max-width: 160px;
   height: 28px;
@@ -2144,7 +2144,7 @@
   cursor: pointer;
 
   .file-type {
-    font-size: 8px;
+    font-size: var(--fs-2xs);
     font-weight: 800;
     padding: 0.15rem 0.35rem;
     border-radius: 4px;
@@ -2193,7 +2193,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 500;
     line-height: 1.2;
   }
@@ -2218,13 +2218,13 @@
     }
 
     i {
-      font-size: 10px;
+      font-size: var(--fs-2xs);
     }
   }
 
   &.library-mode i.fa-folder,
   &.prompt-mode i.fa-terminal {
-    font-size: 12px;
+    font-size: var(--fs-sm);
     color: var(--text-secondary);
     padding: 0 0.2rem;
   }
@@ -2256,7 +2256,7 @@
       flex: 1;
 
       .doc-title {
-        font-size: 11px;
+        font-size: var(--fs-xs);
         font-weight: 600;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -2265,7 +2265,7 @@
     }
 
     .datagrid-chip-meta {
-      font-size: 9.5px;
+      font-size: var(--fs-2xs);
       color: var(--text-secondary);
       overflow: hidden;
       text-overflow: ellipsis;
@@ -2282,7 +2282,7 @@
     cursor: pointer;
     border: 1px dashed rgba(var(--accent-color-rgb, 88, 115, 255), 0.4);
     background: rgba(var(--accent-color-rgb, 88, 115, 255), 0.05);
-    color: var(--accent-color);
+    color: var(--accent-text);
     padding: 0 0.8rem;
     /* Use height from parent, adjust horizontal padding */
     width: 160px;
@@ -2323,13 +2323,13 @@
     background: var(--surface-bg);
 
     .menu-title {
-      font-size: 12px;
+      font-size: var(--fs-sm);
       font-weight: 600;
       color: var(--text-primary);
     }
 
     .subtext {
-      font-size: 10px;
+      font-size: var(--fs-2xs);
       color: var(--text-secondary);
     }
   }
@@ -2362,7 +2362,7 @@
       gap: 0.1rem;
 
       .doc-title {
-        font-size: 11.5px;
+        font-size: var(--fs-xs);
         font-weight: 500;
         color: var(--text-primary);
         white-space: nowrap;
@@ -2371,7 +2371,7 @@
       }
 
       .doc-size {
-        font-size: 10px;
+        font-size: var(--fs-2xs);
         color: var(--text-secondary);
       }
     }
@@ -2380,7 +2380,7 @@
       background: transparent;
       border: none;
       color: var(--text-secondary);
-      font-size: 12px;
+      font-size: var(--fs-sm);
       cursor: pointer;
       width: 20px;
       height: 20px;
@@ -2427,20 +2427,20 @@
       margin-bottom: 20px;
 
       .db-main-icon {
-        font-size: 24px;
+        font-size: 1.6rem;
         color: #0f172a;
       }
     }
 
     h4 {
-      font-size: 16px;
+      font-size: var(--fs-lg);
       font-weight: 600;
       color: #0f172a;
       margin: 0 0 8px 0;
     }
 
     p {
-      font-size: 14px;
+      font-size: var(--fs-md);
       color: #64748b;
       margin: 0 0 24px 0;
     }
@@ -2451,7 +2451,7 @@
       border: none;
       border-radius: 8px;
       padding: 10px 24px;
-      font-size: 14px;
+      font-size: var(--fs-md);
       font-weight: 600;
       cursor: pointer;
       transition: background-color 0.2s;
@@ -2481,7 +2481,7 @@
   margin-left: 8px;
 
   .limit-label {
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 500;
     color: var(--text-secondary);
     min-width: 48px;
@@ -2537,11 +2537,11 @@
       height: 32px;
       border-radius: 8px;
       background: rgba(var(--accent-color-rgb, 88, 115, 255), 0.1);
-      color: var(--accent-color);
+      color: var(--accent-text);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: var(--fs-md);
     }
 
     .menu-item-text {
@@ -2549,7 +2549,7 @@
       flex-direction: column;
 
       .title {
-        font-size: 13px;
+        font-size: var(--fs-base);
         font-weight: 600;
         color: var(--text-primary);
       }
@@ -2582,7 +2582,7 @@
   }
 
   .back-title {
-    font-size: 14px;
+    font-size: var(--fs-md);
     font-weight: 600;
     color: var(--text-primary);
   }

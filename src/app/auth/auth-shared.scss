@@ -148,13 +148,13 @@ body.theme-dark .auth-container-standard {
         text-transform: uppercase;
 
         .required {
-            color: var(--error-color);
+            color: var(--error-text);
             margin-left: 2px;
         }
     }
 
     small {
-        color: var(--error-color);
+        color: var(--error-text);
         font-size: 0.7rem;
         margin-top: 0.1rem;
     }
@@ -221,7 +221,7 @@ body.theme-dark .auth-container-standard {
 
     input:focus ~ i,
     select:focus ~ i {
-        color: var(--accent-color);
+        color: var(--accent-text);
     }
 
     &.password-wrapper {
@@ -267,7 +267,7 @@ body.theme-dark .auth-container-standard {
     margin-top: -0.15rem;
 
     .forgot-password {
-        color: var(--accent-color);
+        color: var(--accent-text);
         font-size: 0.74rem;
         font-weight: 600;
         text-decoration: none;

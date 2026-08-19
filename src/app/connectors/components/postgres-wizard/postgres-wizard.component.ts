@@ -42,7 +42,8 @@ export class PostgresWizardComponent implements OnInit {
     availableSchemas: string[] = [];
     selectedSchema = 'public';
 
-    private postgresTypeId: number | null = null;
+    /** DatabaseConnectionType.id is a UUID, not an integer. */
+    private postgresTypeId: string | null = null;
 
     constructor(private dbConnectionService: DatabaseConnectionService, private router: Router) { }
 

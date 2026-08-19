@@ -10,7 +10,7 @@
 
   .section-title {
     margin: 0 0 0.5rem 0;
-    font-size: 24px;
+    font-size: 1.6rem;
     font-weight: 700;
     letter-spacing: -0.02em;
     color: var(--text-primary);
@@ -18,7 +18,7 @@
 
   .section-desc {
     margin: 0;
-    font-size: 14px;
+    font-size: var(--fs-md);
     color: var(--text-secondary);
     max-width: 600px;
     line-height: 1.5;
@@ -53,14 +53,14 @@
   gap: 0.35rem;
 
   .setting-label {
-    font-size: 15px;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
   }
 
   .setting-desc {
-    font-size: 13px;
+    font-size: var(--fs-base);
     color: var(--text-secondary);
     line-height: 1.4;
     opacity: 0.85;
@@ -90,13 +90,13 @@
     border-radius: 999px;
     background: transparent;
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: var(--fs-base);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 
     i {
-      font-size: 14px;
+      font-size: var(--fs-md);
     }
 
     &:hover:not(.active) {
@@ -131,7 +131,7 @@
   position: relative;
 
   span {
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 700;
     color: var(--text-primary);
   }
@@ -190,7 +190,7 @@
     border-radius: 50%;
     background: #3b82f6; // blue badge color
     color: white;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     transform: scale(0);
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 2;

@@ -61,7 +61,7 @@
   .eyebrow {
     display: block;
     margin-bottom: 0.2rem;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -70,7 +70,7 @@
 
   h1 {
     margin: 0;
-    font-size: 28px;
+    font-size: 1.85rem;
     line-height: 1;
     letter-spacing: -0.04em;
     color: var(--text-primary);
@@ -87,13 +87,13 @@
   display: inline-flex;
   align-items: center;
   gap: 0.7rem;
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 650;
   cursor: pointer;
   transition: all 0.2s ease;
 
   i {
-    color: var(--accent-color);
+    color: var(--accent-text);
   }
 
   &:hover {
@@ -142,7 +142,7 @@
   align-items: center;
   justify-content: center;
   background: rgba(var(--accent-rgb), 0.1);
-  color: var(--accent-color);
+  color: var(--accent-text);
   flex-shrink: 0;
 }
 
@@ -154,13 +154,13 @@
 }
 
 .nav-item__label {
-  font-size: 15px;
+  font-size: 1rem;
   font-weight: 700;
   color: inherit;
 }
 
 .nav-item__description {
-  font-size: 12px;
+  font-size: var(--fs-sm);
   line-height: 1.45;
   color: var(--text-secondary);
 }
@@ -202,7 +202,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 13px;
+  font-size: var(--fs-base);
   font-weight: 550;
   cursor: pointer;
   transition: color 0.2s ease;
@@ -214,7 +214,7 @@
 
 .breadcrumb-link,
 .breadcrumb-current {
-  font-size: 13px;
+  font-size: var(--fs-base);
   font-weight: 550;
 }
 
@@ -240,7 +240,7 @@
   background: #5d5ae5;
   color: white;
   border: none;
-  font-size: 13px;
+  font-size: var(--fs-base);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -328,7 +328,7 @@
   }
 
   .brand-copy h1 {
-    font-size: 24px;
+    font-size: 1.6rem;
   }
 
   .breadcrumb-bar {

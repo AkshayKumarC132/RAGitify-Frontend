@@ -30,7 +30,20 @@ import {
 import { ConversationService } from '../../services/conversation.service';
 import { DatagridAttachmentService } from '../../services/datagrid-attachment.service';
 import { ChartAutoPickService } from '../../services/chart-auto-pick.service';
-import * as XLSX from 'xlsx';
+/**
+ * `xlsx` is ~430 kB and this component lives in the eager SharedModule, so a
+ * static import shipped the whole spreadsheet library to every user on first
+ * paint. It is only needed when someone actually clicks an export, so it is
+ * pulled in on demand.
+ */
+type XlsxModule = typeof import('xlsx');
+let xlsxModule: Promise<XlsxModule> | null = null;
+function loadXlsx(): Promise<XlsxModule> {
+  if (!xlsxModule) {
+    xlsxModule = import('xlsx');
+  }
+  return xlsxModule;
+}
 
 @Component({
   selector: 'app-message-bubble',
@@ -1176,12 +1189,13 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     }, 2000);
   }
 
-  exportCsv(): void {
+  async exportCsv(): Promise<void> {
     const src = this.activeSource;
     const rowsToExport =
       src?.rows ?? this.modalDataGridRows ?? this.dataGridRows;
     if (!rowsToExport || rowsToExport.length === 0) return;
 
+    const XLSX = await loadXlsx();
     const worksheet = XLSX.utils.json_to_sheet(rowsToExport);
     const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
     const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
@@ -1217,12 +1231,13 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     this.showExportMenu = false;
   }
 
-  exportExcel(): void {
+  async exportExcel(): Promise<void> {
     const src = this.activeSource;
     const rowsToExport =
       src?.rows ?? this.modalDataGridRows ?? this.dataGridRows;
     if (!rowsToExport || rowsToExport.length === 0) return;
 
+    const XLSX = await loadXlsx();
     const worksheet = XLSX.utils.json_to_sheet(rowsToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');

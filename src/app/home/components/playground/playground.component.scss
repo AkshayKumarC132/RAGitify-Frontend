@@ -28,11 +28,11 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 13px;
+    font-size: var(--fs-base);
     font-weight: 600;
 
     i {
-      font-size: 14px;
+      font-size: var(--fs-md);
     }
   }
 }
@@ -145,7 +145,7 @@
     font-weight: 400;
     margin-bottom: 0;
     color: #f7f7f7;
-    font-family: Georgia, 'Playfair Display', serif;
+    font-family: var(--app-display);
     letter-spacing: -0.02em;
 
     :host-context(.theme-dark) & {
@@ -161,7 +161,7 @@
 
 .incognito-footer-note {
   text-align: center;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: rgba(255, 255, 255, 0.45);
   line-height: 1.5;
   margin-top: 1rem;
@@ -228,7 +228,7 @@
       color: #c7c7c7;
       padding: 0.55rem 1rem;
       border-radius: 18px;
-      font-size: 14px;
+      font-size: var(--fs-md);
       cursor: pointer;
       text-align: left;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);

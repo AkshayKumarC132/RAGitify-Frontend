@@ -24,7 +24,7 @@
   border: 1px solid rgba(239, 68, 68, 0.24);
   background: rgba(239, 68, 68, 0.08);
   color: #dc2626;
-  font-size: 14px;
+  font-size: var(--fs-md);
   padding: 0.75rem 1rem;
 }
 
@@ -47,7 +47,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.6rem;
-    font-size: 14px;
+    font-size: var(--fs-md);
     font-weight: 800;
     color: var(--text-primary);
     text-transform: uppercase;
@@ -62,7 +62,7 @@
     display: block;
     margin-bottom: 0.4rem;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -78,7 +78,7 @@
     font-weight: 400;
     text-transform: none;
     letter-spacing: normal;
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
 
   .form-control {
@@ -89,7 +89,7 @@
     border: 1px solid var(--border-color);
     background: var(--bg-secondary);
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: var(--fs-md);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
     &:focus {
@@ -114,13 +114,13 @@
   padding: 0.25rem 0.75rem;
   background: var(--bg-primary);
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--fs-base);
   cursor: pointer;
   transition: all 0.15s ease;
 
   &.active {
     background: rgba(59, 130, 246, 0.1);
-    color: var(--accent-color);
+    color: var(--accent-text);
     border-color: var(--accent-color);
   }
 }
@@ -130,7 +130,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 14px;
+    font-size: var(--fs-md);
     cursor: pointer;
     color: var(--text-primary);
   }
@@ -149,7 +149,7 @@
   border-radius: 10px;
   background: var(--accent-color);
   color: white;
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
@@ -175,7 +175,7 @@
   border-radius: 10px;
   background: transparent;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -183,7 +183,7 @@
   &:hover {
     background: var(--bg-tertiary);
     border-color: var(--accent-color);
-    color: var(--accent-color);
+    color: var(--accent-text);
   }
 }
 
@@ -237,7 +237,7 @@
         }
 
         .provider-name {
-          font-size: 18px;
+          font-size: 1.2rem;
           font-weight: 700;
           color: var(--text-primary);
           letter-spacing: -0.01em;
@@ -245,9 +245,9 @@
       }
 
       .badge-configured {
-        font-size: 11px;
+        font-size: var(--fs-xs);
         font-weight: 600;
-        color: var(--accent-color);
+        color: var(--accent-text);
         background: rgba(59, 130, 246, 0.1);
         padding: 0.15rem 0.55rem;
         border-radius: 99px;
@@ -257,7 +257,7 @@
 
     .provider-description {
       margin: 0;
-      font-size: 13px;
+      font-size: var(--fs-base);
       color: var(--text-secondary);
       line-height: 1.5;
     }
@@ -271,7 +271,7 @@
         width: 100%;
         padding: 0.65rem 1rem;
         border-radius: 10px;
-        font-size: 14px;
+        font-size: var(--fs-md);
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -290,7 +290,7 @@
 
       .btn-manage {
         background: transparent;
-        color: var(--accent-color);
+        color: var(--accent-text);
         border: 1px solid rgba(59, 130, 246, 0.35);
 
         &:hover {
@@ -331,7 +331,7 @@
       border-radius: 999px;
       border: 1px solid var(--border-color);
       background: var(--bg-secondary);
-      font-size: 14px;
+      font-size: var(--fs-md);
       color: var(--text-primary);
       transition: all 0.2s ease;
 
@@ -360,7 +360,7 @@
       background: transparent;
       padding: 0.5rem 1rem;
       border-radius: 999px;
-      font-size: 13px;
+      font-size: var(--fs-base);
       font-weight: 600;
       color: var(--text-secondary);
       cursor: pointer;
@@ -383,7 +383,7 @@
   margin-top: 0.5rem;
 
   .provider-label {
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     color: var(--text-secondary);
     letter-spacing: 0.1em;
@@ -392,7 +392,7 @@
   }
 
   .provider-title {
-    font-size: 22px;
+    font-size: 1.45rem;
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.02em;
@@ -401,7 +401,7 @@
   }
 
   .updated-time {
-    font-size: 13px;
+    font-size: var(--fs-base);
     color: var(--text-secondary);
     margin-bottom: 0.3rem;
     opacity: 0.8;
@@ -495,7 +495,7 @@
       right: 1.5rem;
       background: var(--success-color, #10b981);
       color: #ffffff;
-      font-size: 10px;
+      font-size: var(--fs-2xs);
       font-weight: 700;
       padding: 0.3rem 0.6rem;
       border-radius: 0 0 8px 8px;
@@ -522,7 +522,7 @@
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 20px;
+          font-size: 1.35rem;
           transition: all 0.2s ease;
 
           .model-logo {
@@ -540,7 +540,7 @@
 
         .name-col {
           .model-title {
-            font-size: 16px;
+            font-size: var(--fs-lg);
             font-weight: 700;
             color: var(--text-primary);
             display: flex;
@@ -549,13 +549,13 @@
             letter-spacing: -0.01em;
 
             i.fa-star {
-              font-size: 13px;
+              font-size: var(--fs-base);
               color: #f59e0b;
             }
           }
 
           .model-id {
-            font-size: 12px;
+            font-size: var(--fs-sm);
             color: var(--text-secondary);
             margin-top: 0.15rem;
             font-family: var(--app-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
@@ -571,7 +571,7 @@
       flex-wrap: wrap;
 
       .cap-badge {
-        font-size: 11px;
+        font-size: var(--fs-xs);
         font-weight: 600;
         color: var(--text-secondary);
         background: var(--bg-tertiary);
@@ -594,7 +594,7 @@
         gap: 0.3rem;
 
         label {
-          font-size: 10px;
+          font-size: var(--fs-2xs);
           font-weight: 700;
           color: var(--text-secondary);
           letter-spacing: 0.05em;
@@ -603,7 +603,7 @@
         }
 
         .val {
-          font-size: 14px;
+          font-size: var(--fs-md);
           font-weight: 700;
           color: var(--text-primary);
 
@@ -640,7 +640,7 @@
           background: transparent;
           color: var(--text-secondary);
           cursor: pointer;
-          font-size: 15px;
+          font-size: 1rem;
           opacity: 0.6;
           transition: all 0.15s ease;
           padding: 0.2rem;
@@ -656,7 +656,7 @@
           background: transparent;
           padding: 0.4rem 0.85rem;
           border-radius: 8px;
-          font-size: 13px;
+          font-size: var(--fs-base);
           font-weight: 600;
           color: var(--text-primary);
           cursor: pointer;
@@ -665,7 +665,7 @@
           &:hover {
             background: var(--bg-tertiary);
             border-color: var(--accent-color);
-            color: var(--accent-color);
+            color: var(--accent-text);
           }
         }
 
@@ -674,7 +674,7 @@
           background: var(--success-color, #10b981);
           padding: 0.4rem 0.85rem;
           border-radius: 8px;
-          font-size: 13px;
+          font-size: var(--fs-base);
           font-weight: 600;
           color: #ffffff;
           display: flex;
@@ -706,7 +706,7 @@
 
       th {
         padding: 1rem 1.5rem;
-        font-size: 11px;
+        font-size: var(--fs-xs);
         font-weight: 700;
         color: var(--text-secondary);
         text-transform: uppercase;
@@ -750,7 +750,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 1.2rem;
 
             .model-logo-list {
               width: 22px;
@@ -767,7 +767,7 @@
 
           .name-col-list {
             .model-title-list {
-              font-size: 15px;
+              font-size: 1rem;
               font-weight: 700;
               color: var(--text-primary);
               display: flex;
@@ -776,7 +776,7 @@
               letter-spacing: -0.01em;
 
               .active-badge-list {
-                font-size: 10px;
+                font-size: var(--fs-2xs);
                 background: var(--success-color, #10b981);
                 color: white;
                 padding: 0.15rem 0.45rem;
@@ -786,13 +786,13 @@
               }
 
               i.fa-star {
-                font-size: 12px;
+                font-size: var(--fs-sm);
                 color: #f59e0b;
               }
             }
 
             .model-id-list {
-              font-size: 12px;
+              font-size: var(--fs-sm);
               color: var(--text-secondary);
               font-family: var(--app-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
               opacity: 0.7;
@@ -803,7 +803,7 @@
 
         .col-context {
           .context-pill {
-            font-size: 14px;
+            font-size: var(--fs-md);
             font-weight: 500;
             color: var(--text-secondary);
             display: flex;
@@ -818,14 +818,14 @@
         }
 
         .col-pricing {
-          font-size: 14px;
+          font-size: var(--fs-md);
           font-weight: 500;
           color: var(--text-secondary);
         }
 
         .col-speed {
           .speed-val {
-            font-size: 14px;
+            font-size: var(--fs-md);
             font-weight: 500;
             color: var(--text-secondary);
             display: flex;
@@ -850,7 +850,7 @@
               background: transparent;
               padding: 0.4rem 0.8rem;
               border-radius: 8px;
-              font-size: 13px;
+              font-size: var(--fs-base);
               font-weight: 600;
               color: var(--text-primary);
               cursor: pointer;
@@ -859,7 +859,7 @@
               &:hover {
                 background: var(--bg-tertiary);
                 border-color: var(--accent-color);
-                color: var(--accent-color);
+                color: var(--accent-text);
               }
             }
 
@@ -868,7 +868,7 @@
               background: transparent;
               color: var(--text-secondary);
               cursor: pointer;
-              font-size: 17px;
+              font-size: 1.13rem;
               opacity: 0.6;
               transition: all 0.15s ease;
               padding: 0.2rem;
@@ -905,21 +905,21 @@
   color: var(--text-secondary);
 
   i {
-    font-size: 32px;
+    font-size: 2.15rem;
     color: var(--border-color);
     margin-bottom: 1rem;
     display: block;
   }
 
   p {
-    font-size: 16px;
+    font-size: var(--fs-lg);
     font-weight: 600;
     color: var(--text-primary);
     margin: 0 0 0.5rem;
   }
 
   span {
-    font-size: 14px;
+    font-size: var(--fs-md);
     color: var(--text-secondary);
   }
 }

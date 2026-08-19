@@ -112,7 +112,7 @@ app-chat-container {
     backdrop-filter: blur(10px);
 
     i {
-      font-size: 13px;
+      font-size: var(--fs-base);
       color: var(--text-primary);
       transition: color 0.2s ease;
       flex-shrink: 0;
@@ -124,7 +124,7 @@ app-chat-container {
       transform: translateY(-1px);
 
       i {
-        color: var(--accent-color);
+        color: var(--accent-text);
       }
     }
 
@@ -137,7 +137,7 @@ app-chat-container {
       background: rgba(var(--accent-color-rgb, 37, 99, 235), 0.08);
 
       i {
-        color: var(--accent-color);
+        color: var(--accent-text);
       }
     }
   }
@@ -149,8 +149,8 @@ app-chat-container {
   gap: 0.5rem;
   padding: 0.75rem 1.2rem;
   background: rgba(255, 99, 99, 0.1);
-  color: var(--error-color);
-  font-size: 12px;
+  color: var(--error-text);
+  font-size: var(--fs-sm);
   border-bottom: 1px solid rgba(255, 99, 99, 0.2);
   margin-bottom: 0.5rem;
 
@@ -190,7 +190,7 @@ app-chat-container {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 600;
   color: var(--text-primary);
   cursor: pointer;
@@ -199,7 +199,7 @@ app-chat-container {
   transition: background-color 0.2s ease;
 
   i {
-    font-size: 12px;
+    font-size: var(--fs-sm);
     color: var(--text-secondary);
     transition: transform 0.2s ease;
   }
@@ -235,7 +235,7 @@ app-chat-container {
     cursor: pointer;
     border-radius: 8px;
     color: var(--text-primary);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     transition: background-color 0.2s ease;
 
     &:hover {
@@ -320,14 +320,14 @@ app-chat-container {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   font-weight: 500;
   color: var(--text-secondary);
   letter-spacing: 0.05em;
 
   i {
-    font-size: 10px;
-    color: var(--accent-color);
+    font-size: var(--fs-2xs);
+    color: var(--accent-text);
   }
 }
 
@@ -376,7 +376,7 @@ app-chat-container {
 
 .attachment-status {
   margin-top: 0.5rem;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--text-secondary);
 }
 
@@ -425,13 +425,13 @@ app-chat-container {
   gap: 1rem;
 
   h3 {
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 600;
     color: var(--text-primary);
   }
 
   p {
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     color: var(--text-secondary);
   }
 }
@@ -454,7 +454,7 @@ app-chat-container {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     color: var(--text-secondary);
   }
 
@@ -465,12 +465,12 @@ app-chat-container {
     padding: 0.4rem 0.5rem;
     background: transparent;
     color: var(--text-primary);
-    font-size: 10px;
+    font-size: var(--fs-2xs);
   }
 
   small {
-    color: var(--error-color);
-    font-size: 9px;
+    color: var(--error-text);
+    font-size: var(--fs-2xs);
   }
 }
 
@@ -481,8 +481,8 @@ app-chat-container {
 }
 
 .profile-message {
-  font-size: 10px;
-  color: var(--accent-color);
+  font-size: var(--fs-2xs);
+  color: var(--accent-text);
 }
 
 .main-content.empty-mode {

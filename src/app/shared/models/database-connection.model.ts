@@ -1,7 +1,8 @@
 export interface DatabaseConnection {
     id?: string;
     name?: string;
-    connection_type_id?: number;
+    /** DatabaseConnectionType.id is a UUIDField on the backend, not an int. */
+    connection_type_id?: string;
     connection_type?: {
         id: number;
         name: string;

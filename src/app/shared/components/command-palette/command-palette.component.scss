@@ -134,7 +134,7 @@ body.theme-dark .cp-panel {
     transition: background 0.15s ease, color 0.15s ease;
 
     &.kind-thread { color: #6366f1; }
-    &.kind-document { color: #0ea5e9; }
+    &.kind-document { color: var(--info-text); }
     &.kind-library { color: #f59e0b; }
     &.kind-assistant { color: #10b981; }
     &.kind-action { color: var(--accent-color); }

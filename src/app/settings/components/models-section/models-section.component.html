@@ -170,8 +170,9 @@
 
         <div class="grid-footer">
           <div class="action-buttons-grid">
-            <button class="btn-icon-danger" (click)="deleteModel(model.id)"><i
-                class="fa-regular fa-trash-can"></i></button>
+            <button class="btn-icon-danger" (click)="deleteModel(model.id)"
+              [attr.aria-label]="'Delete model ' + model.name" title="Delete model"><i
+                class="fa-regular fa-trash-can" aria-hidden="true"></i></button>
             <button class="btn-set-active" *ngIf="!model.is_active" (click)="setActive(model)">Set Active</button>
           </div>
         </div>
@@ -222,8 +223,9 @@
             <td class="col-actions">
               <div class="action-wrap-list">
                 <button *ngIf="!model.is_active" class="btn-set-active" (click)="setActive(model)">Set Active</button>
-                <button class="btn-icon-danger" (click)="deleteModel(model.id)"><i
-                    class="fa-regular fa-trash-can"></i></button>
+                <button class="btn-icon-danger" (click)="deleteModel(model.id)"
+                  [attr.aria-label]="'Delete model ' + model.name" title="Delete model"><i
+                    class="fa-regular fa-trash-can" aria-hidden="true"></i></button>
               </div>
             </td>
           </tr>

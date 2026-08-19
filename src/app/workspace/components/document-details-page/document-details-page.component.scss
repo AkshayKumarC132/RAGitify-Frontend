@@ -36,28 +36,28 @@
 
 .rename-header h3 {
   margin: 0 0 0.35rem;
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .rename-subtitle {
   margin: 0 0 1rem;
-  font-size: 13px;
+  font-size: var(--fs-base);
   color: var(--text-secondary);
 }
 
 .rename-label {
   display: block;
   margin-bottom: 0.35rem;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 .rename-error {
   margin: -0.75rem 0 0.75rem;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: #ef4444;
 }
 
@@ -67,7 +67,7 @@
   border-radius: 10px;
   border: 1px solid var(--border-color);
   padding: 0.5rem 0.75rem;
-  font-size: 13px;
+  font-size: var(--fs-base);
   background: var(--bg-primary);
   color: var(--text-primary);
   outline: none;
@@ -120,7 +120,7 @@
   min-width: 84px;
   border-radius: 999px;
   padding: 0.4rem 0.85rem;
-  font-size: 13px;
+  font-size: var(--fs-base);
   font-weight: 600;
   border: 1px solid transparent;
   cursor: pointer;
@@ -151,7 +151,7 @@
   margin-bottom: 1.25rem;
 
   label {
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 600;
     color: var(--text-secondary);
   }
@@ -161,7 +161,7 @@
     border-radius: 10px;
     border: 1px solid var(--border-color);
     padding: 0.5rem 0.75rem;
-    font-size: 13px;
+    font-size: var(--fs-base);
     background: var(--bg-primary);
     color: var(--text-primary);
     outline: none;
@@ -376,7 +376,7 @@
   padding: 0.38rem 0.68rem;
   border-radius: 999px;
   background: rgba(59, 130, 246, 0.12);
-  color: var(--accent-color);
+  color: var(--accent-text);
   font-weight: 700;
   font-size: 0.76rem;
 
@@ -527,7 +527,7 @@
     gap: 0.5rem;
 
     i {
-      color: var(--accent-color);
+      color: var(--accent-text);
       font-size: 0.9rem;
     }
   }
@@ -887,7 +887,7 @@ body.theme-dark .versions-panel {
   padding: 0.18rem 0.5rem;
   border-radius: 999px;
   background: rgba(59, 130, 246, 0.12);
-  color: var(--accent-color);
+  color: var(--accent-text);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -958,7 +958,7 @@ body.theme-dark .version-tag {
 
   &:hover:not(:disabled) {
     border-color: var(--accent-color);
-    color: var(--accent-color);
+    color: var(--accent-text);
   }
 
   &:focus-visible {

@@ -202,7 +202,7 @@ body.theme-dark .password-checklist li.is-met i {
   gap: 0.55rem;
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.25);
-  color: var(--error-color);
+  color: var(--error-text);
   padding: 0.55rem 0.8rem;
   border-radius: 10px;
   font-size: 0.78rem;
@@ -218,7 +218,7 @@ body.theme-dark .password-checklist li.is-met i {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  color: var(--accent-color);
+  color: var(--accent-text);
   font-size: 0.7rem;
   margin-top: 0.3rem;
 
@@ -276,10 +276,10 @@ body.theme-dark .password-checklist li.is-met i {
 
     &.new-tenant {
       border-top: 1px solid var(--border-color);
-      color: var(--accent-color);
+      color: var(--accent-text);
 
       i {
-        color: var(--accent-color);
+        color: var(--accent-text);
       }
     }
   }

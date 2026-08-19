@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../shared/services/auth.service';
 import { OpenAIKeyService } from '../../../shared/services/openai-key.service';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -27,6 +27,7 @@ export class LoginComponent implements OnInit {
     private authService: AuthService,
     private openAIKeyService: OpenAIKeyService,
     private router: Router,
+    private route: ActivatedRoute,
     private toast: ToastService,
     private oauthService: OAuthService
   ) {
@@ -37,6 +38,15 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // /auth/register resolves to this component with data.mode = 'register' —
+    // the sign-up form is a pane inside this card, not a standalone screen.
+    // ?mode=register is honoured too so the tab can be deep-linked directly.
+    const wantsRegister = this.route.snapshot.data['mode'] === 'register'
+      || this.route.snapshot.queryParamMap.get('mode') === 'register';
+    if (wantsRegister) {
+      this.setAuthMode(true);
+    }
+
     if (this.authService.isAuthenticated()) {
       const status = this.authService.getCurrentStatus();
       if (status && this.authService.isLlmReady(status)) {

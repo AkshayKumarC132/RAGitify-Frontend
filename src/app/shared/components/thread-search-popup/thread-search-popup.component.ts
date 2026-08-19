@@ -4,6 +4,7 @@ import { Subscription, from } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { Conversation, ConversationMessage } from '../../models/conversation.model';
 import { ConversationService } from '../../services/conversation.service';
+import { markdownToPlainText } from '../../utils/markdown-text.util';
 
 @Component({
   selector: 'app-thread-search-popup',
@@ -214,7 +215,8 @@ export class ThreadSearchPopupComponent implements OnInit, AfterViewInit, OnDest
     }
     const query = this.searchQuery.trim().toLowerCase();
     for (const message of messages) {
-      const content = (message.content || '').trim();
+      // Raw Markdown would otherwise show its `**` / `###` markers here.
+      const content = markdownToPlainText(message.content || '');
       if (!content) {
         continue;
       }

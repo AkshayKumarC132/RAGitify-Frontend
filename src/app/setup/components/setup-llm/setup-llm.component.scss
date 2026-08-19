@@ -48,7 +48,7 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-size: 0.68rem;
-  color: var(--accent-color);
+  color: var(--accent-text);
   font-weight: 700;
   margin: 0;
 }
@@ -75,13 +75,13 @@
 .info-banner {
   background: rgba(59, 130, 246, 0.1);
   border: 1px solid rgba(59, 130, 246, 0.25);
-  color: var(--accent-color);
+  color: var(--accent-text);
 }
 
 .error-banner {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.25);
-  color: var(--error-color);
+  color: var(--error-text);
 }
 
 // ─────────────────────────────────────────────
@@ -188,7 +188,7 @@
 }
 
 .field-error {
-  color: var(--error-color);
+  color: var(--error-text);
   font-size: 0.74rem;
   margin-top: 0.4rem;
 }
