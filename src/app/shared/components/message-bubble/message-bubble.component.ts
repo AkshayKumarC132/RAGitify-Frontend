@@ -20,7 +20,13 @@ import {
   DataGridResponse,
   DataGridSource,
 } from '../../models/conversation.model';
-import { ChartConfig, ChartType } from '../../models/chart-config.model';
+import {
+  AnyChartConfig,
+  ChartConfig,
+  ChartType,
+  ColumnMappingConfig,
+  isColumnMappingConfig,
+} from '../../models/chart-config.model';
 import { ConversationService } from '../../services/conversation.service';
 import { DatagridAttachmentService } from '../../services/datagrid-attachment.service';
 import { ChartAutoPickService } from '../../services/chart-auto-pick.service';
@@ -111,6 +117,11 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   private sqlCopyResetTimeout?: ReturnType<typeof setTimeout>;
   private previousContent: string = '';
   private previousEnableDataGrid: boolean = false;
+  /**
+   * A ColumnMappingConfig that arrived (e.g. from the message list payload)
+   * before the DataGrid rows were loaded. Resolved in parseDataGridResponse().
+   */
+  private _pendingColumnMapping: ColumnMappingConfig | null = null;
 
   constructor(
     private sanitizer: DomSanitizer,
@@ -170,6 +181,12 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     // at page load — the message list serializer already includes chart_config.
     if (this.message?.data_grid_chart_config && !this.showChart) {
       this._applyChartConfig(this.message.data_grid_chart_config);
+      // If the config was deferred (ColumnMappingConfig with no rows yet),
+      // and checkInlineDataLoad() won't run (enableDataGrid=false / compact bar),
+      // proactively fetch the DataGrid data so the chart auto-displays immediately.
+      if (this._pendingColumnMapping) {
+        this._fetchDataForPendingChart();
+      }
     }
   }
 
@@ -268,6 +285,14 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     this.searchQuery = '';
     this.currentPage = 1;
     this.columnVisibility = {};
+
+    // Resolve a pending ColumnMappingConfig that arrived before the rows loaded
+    // (e.g. from the message list serializer in ngOnInit).
+    if (this._pendingColumnMapping && !this.showChart) {
+      this._applyChartConfig(this._pendingColumnMapping);
+      this._pendingColumnMapping = null;
+      return;
+    }
 
     // Apply LLM-generated chart config from the DataGrid API response.
     if (res.chart_config && !this.showChart) {
@@ -546,23 +571,102 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   /**
-   * Apply a ChartConfig (from LLM or API) and compute available axis columns
-   * from the active data source (if already loaded).
+   * Apply an LLM-generated chart config (either schema) and show the chart.
+   *
+   * - ColumnMappingConfig (_schema: "column_mapping"):
+   *     The LLM only declared which columns to use. We materialise the full
+   *     ChartConfig from ALL rows in the active DataGrid source using
+   *     ChartAutoPickService.buildConfig(). If rows haven't loaded yet, the
+   *     config is stored as _pendingColumnMapping and resolved in
+   *     parseDataGridResponse() once data arrives.
+   *
+   * - Legacy ChartConfig (has `labels` + `datasets`):
+   *     Used as-is for backward compatibility with existing stored configs.
    */
-  private _applyChartConfig(config: ChartConfig): void {
-    this.activeChartConfig = config;
-    this.showChart = true;
+  private _applyChartConfig(config: AnyChartConfig): void {
+    const src = this.activeSource ?? this.dataSources[0];
+
+    if (isColumnMappingConfig(config)) {
+      // ── New column-mapping path ──────────────────────────────────────────
+      if (!src?.rows?.length) {
+        // Data not loaded yet — defer resolution until parseDataGridResponse().
+        this._pendingColumnMapping = config;
+        return;
+      }
+
+      // Materialise the chart from the full row set.
+      const built = this.chartAutoPickService.buildConfig(
+        config.type,
+        config.xColumn,
+        config.yColumns,
+        src.rows,
+        config.title,
+      );
+      if (config.xLabel) built.xLabel = config.xLabel;
+      if (config.yLabel) built.yLabel = config.yLabel;
+      if (config.stacked !== undefined) built.stacked = config.stacked;
+
+      this.activeChartConfig = built;
+      this.chartLabelColumn  = config.xColumn;
+      this.chartDataColumns  = config.yColumns;
+
+    } else {
+      // ── Legacy hardcoded-values path ─────────────────────────────────────
+      this.activeChartConfig = config;
+      // Infer axis assignments from config datasets for the toolbar.
+      if (src?.columns?.length) {
+        this.chartLabelColumn = src.columns.find(
+          c => !config.datasets.map(d => d.label).includes(c)
+        ) ?? src.columns[0];
+        this.chartDataColumns = config.datasets.map(d => d.label);
+      }
+    }
+
+    this.showChart  = true;
     this.isLlmChart = true;
 
-    // Compute label/value candidates from the first data source, if available.
-    const src = this.activeSource ?? this.dataSources[0];
+    // Compute available axis candidates for the toolbar (both paths).
     if (src?.columns?.length && src?.rows?.length) {
       this.chartAvailableLabelColumns = this.chartAutoPickService.getLabelCandidates(src.columns, src.rows);
       this.chartAvailableDataColumns  = this.chartAutoPickService.getValueCandidates(src.columns, src.rows);
-      // Infer axis assignments from config datasets
-      this.chartLabelColumn  = src.columns.find(c => !config.datasets.map(d => d.label).includes(c)) ?? src.columns[0];
-      this.chartDataColumns  = config.datasets.map(d => d.label);
     }
+  }
+
+  /**
+   * Proactively fetch DataGrid rows when a ColumnMappingConfig is pending but
+   * checkInlineDataLoad() will not run (e.g. enableDataGrid=false / compact bar
+   * view). Once the rows arrive, parseDataGridResponse() resolves the pending
+   * mapping and auto-displays the chart.
+   */
+  private _fetchDataForPendingChart(): void {
+    if (!this.conversationId || !this.message?.id || this.dataGridLoading) return;
+    if (this.dataSources.length > 0) {
+      // Rows are already cached — resolve immediately.
+      if (this._pendingColumnMapping) {
+        this._applyChartConfig(this._pendingColumnMapping);
+        this._pendingColumnMapping = null;
+        this.cdr.markForCheck();
+      }
+      return;
+    }
+
+    this.dataGridLoading = true;
+    this.cdr.markForCheck();
+
+    this.conversationService
+      .getDataGrid(this.conversationId, this.message.id)
+      .subscribe({
+        next: (res) => {
+          this.parseDataGridResponse(res);
+          this.dataGridLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('[MessageBubble] Error fetching data for pending chart:', err);
+          this.dataGridLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   /**

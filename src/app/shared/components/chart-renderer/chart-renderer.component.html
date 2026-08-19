@@ -1,4 +1,11 @@
 <div class="chart-renderer-wrap">
+  <button
+    class="chart-download-btn"
+    (click)="downloadAsPng()"
+    title="Download chart as PNG"
+    aria-label="Download chart as PNG">
+    <i class="fa-solid fa-download"></i>
+  </button>
   <canvas #chartCanvas></canvas>
   <div class="chart-truncation-badge" *ngIf="config.totalRows && config.renderedRows && config.totalRows > config.renderedRows">
     Showing {{ config.renderedRows }} of {{ config.totalRows }} rows

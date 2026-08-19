@@ -44,7 +44,6 @@ export class ChartToolbarComponent {
   @Output() typeChange = new EventEmitter<ChartType>();
   @Output() labelColumnChange = new EventEmitter<string>();
   @Output() dataColumnsChange = new EventEmitter<string[]>();
-  @Output() downloadPng = new EventEmitter<void>();
   @Output() expandChart = new EventEmitter<void>();
   @Output() closeChart = new EventEmitter<void>();
 

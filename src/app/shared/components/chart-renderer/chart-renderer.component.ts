@@ -1,4 +1,5 @@
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
@@ -6,7 +7,6 @@ import {
   Input,
   OnChanges,
   OnDestroy,
-  OnInit,
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
@@ -63,7 +63,7 @@ const PALETTE_DARK = [
   styleUrls: ['./chart-renderer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ChartRendererComponent implements OnInit, OnChanges, OnDestroy {
+export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() config!: ChartConfig;
   @Input() themeMode: 'light' | 'dark' = 'light';
 
@@ -71,20 +71,26 @@ export class ChartRendererComponent implements OnInit, OnChanges, OnDestroy {
   canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private chartInstance: Chart | null = null;
+  private _pendingBuild = false;
 
   constructor(private cdr: ChangeDetectorRef) {}
 
-  ngOnInit(): void {
-    this.buildChart();
+  ngAfterViewInit(): void {
+    // Defer chart creation to the next animation frame so the DOM is fully
+    // laid out. During SPA navigation the container may not have its final
+    // width yet in ngOnInit/ngAfterViewInit — requestAnimationFrame waits
+    // until after layout + paint, giving Chart.js accurate dimensions.
+    this._scheduleBuild();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (this.chartInstance && (changes['config'] || changes['themeMode'])) {
-      this.rebuildChart();
+      this._scheduleBuild();
     }
   }
 
   ngOnDestroy(): void {
+    this._pendingBuild = false;
     this.destroyChart();
   }
 
@@ -131,6 +137,17 @@ export class ChartRendererComponent implements OnInit, OnChanges, OnDestroy {
     const chartOptions: ChartOptions = {
       responsive: true,
       maintainAspectRatio: true,
+      aspectRatio: isPolar ? 1.5 : 1.6,
+      // Prevent layout recalculations on hover/tooltip that cause title/label jitter.
+      resizeDelay: 100,
+      layout: {
+        padding: {
+          top: this.config.title ? 4 : 8,
+          right: 8,
+          bottom: 4,
+          left: 4,
+        },
+      },
       animation: { duration: 350 },
       plugins: {
         legend: {
@@ -142,13 +159,16 @@ export class ChartRendererComponent implements OnInit, OnChanges, OnDestroy {
           text: this.config.title ?? '',
           color: textColor,
           font: { family: 'Inter, system-ui, sans-serif', size: 14, weight: 'bold' },
-          padding: { bottom: 12 },
+          padding: { top: 0, bottom: 12 },
         },
         tooltip: {
           // 'index' mode requires a matching labels array — breaks on scatter.
           // 'nearest' works correctly for point-based charts.
           mode: isScatterLike ? 'nearest' : 'index',
           intersect: isScatterLike,
+          // Use 'nearest' position so the tooltip floats near the cursor
+          // instead of shifting the chart layout.
+          position: 'nearest',
           callbacks: {
             title: (items: any[]) => {
               // If config has raw (untruncated) labels stored, prefer those for tooltip title
@@ -206,6 +226,22 @@ export class ChartRendererComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  /**
+   * Schedule a chart (re)build on the next animation frame.
+   * Coalesces multiple rapid calls (e.g. config + themeMode changing together)
+   * and ensures the DOM is fully laid out before Chart.js reads dimensions.
+   */
+  private _scheduleBuild(): void {
+    if (this._pendingBuild) return;
+    this._pendingBuild = true;
+    requestAnimationFrame(() => {
+      if (!this._pendingBuild) return; // component was destroyed
+      this._pendingBuild = false;
+      this.destroyChart();
+      this.buildChart();
+    });
+  }
+
   private rebuildChart(): void {
     this.destroyChart();
     this.buildChart();
@@ -214,5 +250,15 @@ export class ChartRendererComponent implements OnInit, OnChanges, OnDestroy {
   /** Export the chart as a PNG data URL (called by parent via template ref). */
   toBase64Image(): string | null {
     return this.chartInstance?.toBase64Image() ?? null;
+  }
+
+  /** Download the chart as a PNG image file. */
+  downloadAsPng(): void {
+    const dataUrl = this.chartInstance?.toBase64Image();
+    if (!dataUrl) return;
+    const link = document.createElement('a');
+    link.download = `chart-${Date.now()}.png`;
+    link.href = dataUrl;
+    link.click();
   }
 }

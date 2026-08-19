@@ -8,8 +8,45 @@
   justify-content: center;
   align-items: center;
 
+  // Download button — top-right overlay, visible on hover
+  .chart-download-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(4px);
+    color: #4f5053;
+    font-size: 13px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease, background 0.2s ease, transform 0.15s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+
+    &:hover {
+      background: rgba(99, 102, 241, 0.12);
+      transform: scale(1.08);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  &:hover .chart-download-btn {
+    opacity: 1;
+  }
+
   canvas {
     width: 100% !important;
+    min-height: 200px;
     max-height: 340px;
   }
 
@@ -21,3 +58,18 @@
     opacity: 0.75;
   }
 }
+
+// Dark mode overrides
+:host-context(.dark-mode),
+:host-context([data-theme='dark']) {
+  .chart-download-btn {
+    background: rgba(30, 30, 40, 0.75);
+    color: #818cf8;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+
+    &:hover {
+      background: rgba(129, 140, 248, 0.18);
+    }
+  }
+}
+

@@ -6,6 +6,12 @@
  *  2. The client-side ChartAutoPickService (column-shape analysis)
  *
  * Both paths feed the same ChartRendererComponent so rendering is unified.
+ *
+ * Two LLM chart schemas are supported:
+ *  - ColumnMappingConfig  (_schema: "column_mapping") — new, preferred.
+ *    The LLM declares which columns to use; the frontend materialises the
+ *    chart from the complete DataGrid rows via ChartAutoPickService.buildConfig().
+ *  - ChartConfig (legacy) — backward-compat. The LLM hardcoded labels+data.
  */
 
 export type ChartType =
@@ -54,6 +60,47 @@ export interface ChartConfig {
   /** How many rows were actually included in the chart. */
   renderedRows?: number;
 }
+
+/**
+ * Declarative column-mapping chart config produced by the LLM (new schema).
+ *
+ * The LLM specifies *which* columns to use; the Angular frontend materialises
+ * the full ChartConfig from the complete DataGrid rows at render time.
+ * This ensures the chart always uses all rows, not just the 3-row preview.
+ */
+export interface ColumnMappingConfig {
+  /** Discriminator — always "column_mapping". */
+  _schema: 'column_mapping';
+  /** Chart type to render. */
+  type: ChartType;
+  /** Optional chart title. */
+  title?: string;
+  /** Optional X-axis label. */
+  xLabel?: string;
+  /** Optional Y-axis label. */
+  yLabel?: string;
+  /** Column name to use as X-axis / category labels. */
+  xColumn: string;
+  /** Column names to use as Y-axis data series (1–5 entries). */
+  yColumns: string[];
+  /** Whether to stack bar/line datasets. */
+  stacked?: boolean;
+}
+
+/**
+ * Type guard: returns true when the value is a ColumnMappingConfig.
+ * Safe to call on any unknown value from an API response.
+ */
+export function isColumnMappingConfig(c: unknown): c is ColumnMappingConfig {
+  return (
+    typeof c === 'object' &&
+    c !== null &&
+    (c as Record<string, unknown>)['_schema'] === 'column_mapping'
+  );
+}
+
+/** Union type for any LLM-produced chart config (either schema). */
+export type AnyChartConfig = ChartConfig | ColumnMappingConfig;
 
 /** Column data type classification used by ChartAutoPickService. */
 export type ColumnType = 'numeric' | 'date' | 'categorical';

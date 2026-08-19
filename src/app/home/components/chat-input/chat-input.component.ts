@@ -466,27 +466,28 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
 
     this.attachmentPanelOpened.emit(panel);
 
-    setTimeout(() => {
-      this.activePanel = panel;
+    this.activePanel = panel;
 
-      if (panel === 'library') {
-        this.expandedLibraries.clear();
-        this.attachmentMenuState = 'main';
-        this.pendingLibraryId = this.selectedLibraryId;
-        this.pendingDocumentIds = new Set((this.selectedDocumentIds || []).map(id => String(id)));
-        this.pendingDatabaseConnectionIds = new Set((this.selectedDatabaseConnectionIds || []).map(id => String(id)));
-        this.documentSearchQuery = '';
-        if (this.hasExistingThread) {
-          this.enforceDocumentsOnlyMode();
-        }
+    if (panel === 'library') {
+      this.expandedLibraries.clear();
+      this.attachmentMenuState = 'main';
+      this.pendingLibraryId = this.selectedLibraryId;
+      this.pendingDocumentIds = new Set((this.selectedDocumentIds || []).map(id => String(id)));
+      this.pendingDatabaseConnectionIds = new Set((this.selectedDatabaseConnectionIds || []).map(id => String(id)));
+      this.documentSearchQuery = '';
+      if (this.hasExistingThread) {
+        this.enforceDocumentsOnlyMode();
       }
-    }, 0);
+    }
+
+    this.cdr.detectChanges();
   }
 
   closePanels(): void {
     this.autoApplyDocumentSelection();
     this.activePanel = null;
     this.documentSearchQuery = '';
+    this.cdr.detectChanges();
   }
 
   submitWebForm(): void {
@@ -544,6 +545,7 @@ export class ChatInputComponent implements OnChanges, OnInit, AfterViewInit, OnD
   private closeMenus(): void {
     this.autoApplyDocumentSelection();
     this.activePanel = null;
+    this.cdr.detectChanges();
   }
 
   getDocumentsByLibrary(): { libraryId: string; name: string; user?: string | null; documents: Document[] }[] {
