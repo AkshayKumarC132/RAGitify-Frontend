@@ -403,19 +403,15 @@
                 </div>
               </div>
               <div class="document-card-meta">
+                <span class="document-card-meta-chip status-chip" [ngClass]="getStatusBadgeClass(resolvedDocumentStatus(doc))"
+                  [title]="getDisplayStatus(resolvedDocumentStatus(doc))">
+                  <i class="fa-solid"
+                    [ngClass]="resolvedDocumentStatus(doc) === 'completed' ? 'fa-circle-check' : resolvedDocumentStatus(doc) === 'failed' ? 'fa-triangle-exclamation' : 'fa-clock'"></i>
+                  <span>{{ getDisplayStatus(resolvedDocumentStatus(doc)) }}</span>
+                </span>
                 <span class="document-card-meta-chip">{{ getDocumentSource(doc) }}</span>
                 <span class="document-card-meta-chip">{{ formatFileSize(doc) }}</span>
                 <span class="document-card-meta-chip">{{ formatDate(resolvedDocumentDate(doc)) }}</span>
-              </div>
-              <div class="document-card-summary">
-                <div class="document-card-status-line">
-                  <span class="document-card-status" [ngClass]="getStatusBadgeClass(resolvedDocumentStatus(doc))"
-                    [title]="getDisplayStatus(resolvedDocumentStatus(doc))">
-                    <i class="fa-solid"
-                      [ngClass]="resolvedDocumentStatus(doc) === 'completed' ? 'fa-circle-check' : resolvedDocumentStatus(doc) === 'failed' ? 'fa-triangle-exclamation' : 'fa-clock'"></i>
-                  </span>
-                  <span class="document-card-status-text">{{ getDisplayStatus(resolvedDocumentStatus(doc)) }}</span>
-                </div>
               </div>
               <div class="document-card-footer">
                 <div class="document-card-footer-right">

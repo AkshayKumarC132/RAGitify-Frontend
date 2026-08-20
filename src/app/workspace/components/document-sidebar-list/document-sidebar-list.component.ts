@@ -109,14 +109,39 @@ export class DocumentSidebarListComponent implements OnInit, OnChanges, OnDestro
     return 'DOC';
   }
 
-  getIconClass(doc: Document): string {
-    const ext = this.getFileExt(doc);
-    if (ext === 'JSON') return 'icon-json';
-    if (ext === 'CSV' || ext === 'XLSX' || ext === 'XLS') return 'icon-xlsx';
-    if (ext === 'PDF') return 'icon-pdf';
-    if (ext === 'DOC' || ext === 'DOCX') return 'icon-docx';
-    if (ext === 'TXT') return 'icon-txt';
-    return 'icon-default';
+  getFileIcon(doc: Document): string {
+    const ext = this.getFileExtension(doc);
+    if (ext === 'pdf') return 'fa-file-pdf';
+    if (['doc', 'docx', 'odt', 'rtf'].includes(ext)) return 'fa-file-word';
+    if (['xls', 'xlsx', 'csv'].includes(ext)) return 'fa-file-excel';
+    if (['ppt', 'pptx'].includes(ext)) return 'fa-file-powerpoint';
+    if (['txt', 'log', 'md', 'epub', 'tex', 'msg'].includes(ext)) return 'fa-file-lines';
+    if (['json', 'xml', 'html', 'htm', 'yaml', 'yml', 'ini', 'cfg'].includes(ext)) return 'fa-file-code';
+    if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'avif', 'ico', 'heic', 'heif', 'apng', 'jfif'].includes(ext)) return 'fa-file-image';
+    if (['mp4', 'avi', 'mov', 'wmv', 'mkv', 'flv', 'webm', 'm4v', 'mpg', 'mpeg', '3gp', 'ts'].includes(ext)) return 'fa-file-video';
+    if (['mp3', 'wav', 'm4a', 'ogg', 'flac', 'aac', 'opus', 'wma', 'alac'].includes(ext)) return 'fa-file-audio';
+    if (['zip', 'tar', 'gz', 'tgz', 'bz2', 'tbz2', 'rar', '7z', 'xz', 'txz'].includes(ext)) return 'fa-file-zipper';
+    return 'fa-file-lines';
+  }
+
+  getFileIconTone(doc: Document): string {
+    const ext = this.getFileExtension(doc);
+    if (ext === 'pdf') return 'tone-pdf';
+    if (['doc', 'docx', 'odt', 'rtf'].includes(ext)) return 'tone-word';
+    if (['xls', 'xlsx', 'csv'].includes(ext)) return 'tone-sheet';
+    if (['ppt', 'pptx'].includes(ext)) return 'tone-slide';
+    if (['json', 'xml', 'html', 'htm', 'yaml', 'yml', 'ini', 'cfg'].includes(ext)) return 'tone-code';
+    if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'avif', 'ico', 'heic', 'heif', 'apng', 'jfif'].includes(ext)) return 'tone-image';
+    if (['mp4', 'avi', 'mov', 'wmv', 'mkv', 'flv', 'webm', 'm4v', 'mpg', 'mpeg', '3gp', 'ts'].includes(ext)) return 'tone-video';
+    if (['mp3', 'wav', 'm4a', 'ogg', 'flac', 'aac', 'opus', 'wma', 'alac'].includes(ext)) return 'tone-audio';
+    if (['zip', 'tar', 'gz', 'tgz', 'bz2', 'tbz2', 'rar', '7z', 'xz', 'txz'].includes(ext)) return 'tone-archive';
+    return 'tone-text';
+  }
+
+  private getFileExtension(doc: Document): string {
+    const name = this.getDisplayName(doc);
+    const parts = name.split('.');
+    return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
   }
 
   formatDate(dateStr: string | undefined): string {

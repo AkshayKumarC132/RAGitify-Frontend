@@ -9,7 +9,7 @@
   background: var(--idg-header-bg, rgba(248,249,252,0.95));
   position: relative;
 
-  .dark & {
+  :host-context(body.theme-dark) & {
     border-top-color: rgba(255,255,255,0.07);
     background: rgba(30,32,40,0.95);
   }
@@ -64,7 +64,7 @@
   background: var(--idg-border, rgba(0,0,0,0.1));
   margin: 0 4px;
 
-  .dark & { background: rgba(255,255,255,0.1); }
+  :host-context(body.theme-dark) & { background: rgba(255,255,255,0.1); }
 }
 
 // ── Icon buttons (axis, download, close) ─────────────────────────────────────
@@ -92,8 +92,8 @@
 
   &--close:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
 
-  .dark &:hover { background: rgba(255,255,255,0.07); color: #f3f4f6; }
-  .dark &--close:hover { background: rgba(248,113,113,0.12); color: #f87171; }
+  :host-context(body.theme-dark) &:hover { background: rgba(255,255,255,0.07); color: #f3f4f6; }
+  :host-context(body.theme-dark) &--close:hover { background: rgba(248,113,113,0.12); color: #f87171; }
 }
 
 // ── Axis config panel ─────────────────────────────────────────────────────────
@@ -138,7 +138,7 @@
   outline: none;
   cursor: pointer;
 
-  .dark & {
+  :host-context(body.theme-dark) & {
     background: rgba(255,255,255,0.05);
     border-color: rgba(255,255,255,0.1);
     color: #f3f4f6;
@@ -177,8 +177,8 @@
 
   &:hover { border-color: #6366f1; }
 
-  .dark & { border-color: rgba(255,255,255,0.1); color: #9ca3af; }
-  .dark &--checked {
+  :host-context(body.theme-dark) & { border-color: rgba(255,255,255,0.1); color: #9ca3af; }
+  :host-context(body.theme-dark) &--checked {
     background: rgba(129,140,248,0.12);
     border-color: rgba(129,140,248,0.35);
     color: #818cf8;

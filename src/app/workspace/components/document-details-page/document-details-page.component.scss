@@ -509,6 +509,12 @@
   font-size: 0.84rem;
   line-height: 1;
   border: 1px solid #d4ddee;
+
+  :host-context(body.theme-dark) & {
+    background: rgba(99, 130, 190, 0.15);
+    color: #94a8c8;
+    border-color: rgba(148, 163, 184, 0.2);
+  }
 }
 
 .details-card-header {

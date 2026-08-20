@@ -12,6 +12,8 @@ import {
 } from '@angular/core';
 import type { Chart, ChartData, ChartOptions } from 'chart.js';
 import { ChartConfig } from '../../models/chart-config.model';
+import { ThemeService } from '../../services/theme.service';
+import { Subscription } from 'rxjs';
 
 /**
  * chart.js + all its controllers is ~250 kB, and SharedModule is eager, so a
@@ -79,7 +81,6 @@ const PALETTE_DARK = [
 })
 export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() config!: ChartConfig;
-  @Input() themeMode: 'light' | 'dark' = 'light';
 
   @ViewChild('chartCanvas', { static: true })
   canvasRef!: ElementRef<HTMLCanvasElement>;
@@ -89,8 +90,17 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
   private _destroyed = false;
   /** Incremented per build so a slow dynamic import can't paint a stale chart. */
   private _buildToken = 0;
+  private themeSub?: Subscription;
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(private cdr: ChangeDetectorRef, private themeService: ThemeService) {}
+
+  ngOnInit(): void {
+    this.themeSub = this.themeService.theme$.subscribe(() => {
+      if (this.chartInstance) {
+        this._scheduleBuild();
+      }
+    });
+  }
 
   ngAfterViewInit(): void {
     // Defer chart creation to the next animation frame so the DOM is fully
@@ -101,7 +111,7 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (this.chartInstance && (changes['config'] || changes['themeMode'])) {
+    if (this.chartInstance && changes['config']) {
       this._scheduleBuild();
     }
   }
@@ -109,6 +119,7 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
   ngOnDestroy(): void {
     this._pendingBuild = false;
     this._destroyed = true;
+    this.themeSub?.unsubscribe();
     this.destroyChart();
   }
 
@@ -127,7 +138,8 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
     // the chunk was in flight.
     if (this._destroyed || token !== this._buildToken || !this.config) return;
 
-    const palette = this.themeMode === 'dark' ? PALETTE_DARK : PALETTE_LIGHT;
+    const currentTheme = this.themeService.getCurrentTheme();
+    const palette = currentTheme === 'dark' ? PALETTE_DARK : PALETTE_LIGHT;
     const type = this.config.type;
     const isScatterLike = type === 'scatter' || type === 'bubble';
     const isPolar = type === 'pie' || type === 'doughnut' || type === 'radar';
@@ -149,10 +161,10 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
       })),
     };
 
-    const gridColor = this.themeMode === 'dark'
+    const gridColor = currentTheme === 'dark'
       ? 'rgba(255, 255, 255, 0.08)'
       : 'rgba(0, 0, 0, 0.08)';
-    const textColor = this.themeMode === 'dark' ? '#d1d5db' : '#374151';
+    const textColor = currentTheme === 'dark' ? '#d1d5db' : '#374151';
     // Canvas text is not styled by CSS, so pull the product typeface off the
     // root custom property — otherwise chart labels drift away from the UI
     // whenever the design system's font token changes.

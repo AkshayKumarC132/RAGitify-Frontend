@@ -14,8 +14,8 @@
          [class.selected]="activeDocumentId === doc.id"
          (click)="selectDocument(doc)">
       
-      <div class="doc-icon-container" [ngClass]="getIconClass(doc)">
-         <span class="doc-type-text">{{ getFileExt(doc) }}</span>
+      <div class="doc-icon-container">
+         <i class="fa-solid" [ngClass]="[getFileIcon(doc), getFileIconTone(doc)]"></i>
       </div>
 
       <div class="doc-info">
