@@ -724,7 +724,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   attachToConversation(): void {
     const id = this.message?.data_grid_id;
     if (id) {
-      const name = this.fallbackDataGridTitle || `DataGrid #${id}`;
+      const name = this.fallbackDataGridTitle || 'DataGrid';
       const rowCount =
         typeof this.dataGridRecordCount === 'number'
           ? this.dataGridRecordCount
@@ -767,13 +767,21 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   } | null {
     const dg = this.message?.metadata?.['attached_datagrid'];
     if (!dg || typeof dg !== 'object') return null;
-    return dg as {
-      id: number;
-      name: string;
-      row_count?: number;
-      columns?: string[];
+    
+    // Intercept and sanitize the name for older conversations
+    let dgName = dg.name;
+    if (typeof dgName === 'string' && dgName.startsWith('DataGrid #')) {
+      dgName = 'DataGrid';
+    }
+
+    return {
+      id: dg.id,
+      name: dgName,
+      row_count: dg.row_count,
+      columns: dg.columns
     };
   }
+
 
   /** First ≤4 column names joined for the card subtitle. */
   get datagridColumnsPreview(): string {
@@ -807,7 +815,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     if (dg?.name) return dg.name;
 
     if (this.message?.data_grid_id) {
-      return `DataGrid #${this.message.data_grid_id}`;
+      return 'DataGrid';
     }
 
     const sourceName =

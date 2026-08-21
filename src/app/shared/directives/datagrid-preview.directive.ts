@@ -99,7 +99,7 @@ export class DatagridPreviewDirective implements OnDestroy {
     private renderPopover(dg: AttachedDataGridPreview): void {
         if (!this.popoverEl) return;
         
-        const meta: string[] = [`DATAGRID #${dg.id}`];
+        const meta: string[] = ['DATAGRID'];
         if (dg.row_count !== undefined) meta.push(`${this.formatNumber(dg.row_count)} rows`);
         if (dg.columns?.length) meta.push(`${this.formatNumber(dg.columns.length)} columns`);
 

@@ -44,6 +44,36 @@ function formatAxisValue(value: number | string): string {
   return n.toLocaleString();
 }
 
+/** 
+ * Generates an array of colors that fade from the base color towards white.
+ * Used for single-dimensional sectioned charts (Bar, Pie, Doughnut).
+ */
+function generateLighterGradient(baseRgba: string, steps: number, theme: 'light' | 'dark'): string[] {
+  const match = baseRgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+  if (!match || steps <= 1) return Array(steps || 1).fill(baseRgba);
+  
+  const r = parseInt(match[1], 10);
+  const g = parseInt(match[2], 10);
+  const b = parseInt(match[3], 10);
+  const a = match[4] ? parseFloat(match[4]) : 1;
+
+  const result = [];
+  // We cap the lightening factor so it doesn't become completely invisible
+  const maxFactor = theme === 'dark' ? 0.6 : 0.75; 
+
+  for (let i = 0; i < steps; i++) {
+    const factor = steps === 1 ? 0 : (i / (steps - 1)) * maxFactor;
+    // Interpolate towards white
+    const newR = Math.round(r + (255 - r) * factor);
+    const newG = Math.round(g + (255 - g) * factor);
+    const newB = Math.round(b + (255 - b) * factor);
+    
+    result.push(`rgba(${newR}, ${newG}, ${newB}, ${a})`);
+  }
+  
+  return result;
+}
+
 /** Harmonious 8-colour palette used for datasets (cycled). */
 const PALETTE_LIGHT = [
   'rgba(99, 102, 241, 0.8)',   // indigo
@@ -143,22 +173,38 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
     const type = this.config.type;
     const isScatterLike = type === 'scatter' || type === 'bubble';
     const isPolar = type === 'pie' || type === 'doughnut' || type === 'radar';
+    const supportsSections = type === 'bar' || type === 'pie' || type === 'doughnut';
 
     const chartData: ChartData = {
       // scatter/bubble don't use labels[] at all — Chart.js reads x/y from point objects
       labels: isScatterLike ? [] : this.config.labels,
-      datasets: this.config.datasets.map((ds, i) => ({
-        label: ds.label,
-        data: ds.data as any,
-        backgroundColor: palette[i % palette.length],
-        borderColor: palette[i % palette.length].replace('0.8', '1').replace('0.85', '1'),
-        borderWidth: type === 'line' ? 2 : 1,
-        fill: false,
-        tension: 0.4,
-        // Scatter needs larger points to be visible; bubble radius comes from data.r
-        pointRadius: type === 'scatter' ? 6 : (type === 'line' ? 4 : 3),
-        pointHoverRadius: type === 'scatter' ? 8 : 5,
-      })),
+      datasets: this.config.datasets.map((ds, i) => {
+        const baseColor = palette[i % palette.length];
+        const baseBorderColor = baseColor.replace('0.8', '1').replace('0.85', '1');
+        const isSingleDataset = this.config.datasets.length === 1;
+        const dataLength = ds.data.length;
+
+        let backgroundColor: string | string[] = baseColor;
+        let borderColor: string | string[] = baseBorderColor;
+
+        if (isSingleDataset && supportsSections && dataLength > 1) {
+          backgroundColor = generateLighterGradient(baseColor, dataLength, currentTheme);
+          borderColor = generateLighterGradient(baseBorderColor, dataLength, currentTheme);
+        }
+
+        return {
+          label: ds.label,
+          data: ds.data as any,
+          backgroundColor,
+          borderColor,
+          borderWidth: type === 'line' ? 2 : 1,
+          fill: false,
+          tension: 0.4,
+          // Scatter needs larger points to be visible; bubble radius comes from data.r
+          pointRadius: type === 'scatter' ? 6 : (type === 'line' ? 4 : 3),
+          pointHoverRadius: type === 'scatter' ? 8 : 5,
+        };
+      }),
     };
 
     const gridColor = currentTheme === 'dark'

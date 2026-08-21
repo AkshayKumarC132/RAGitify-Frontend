@@ -66,7 +66,7 @@
       <div class="ctx-dg-info">
         <span class="ctx-dg-name" [title]="attachedDatagrid.name">{{ attachedDatagrid.name }}</span>
         <span class="ctx-dg-meta">
-          DataGrid #{{ attachedDatagrid.id }}
+          DataGrid
           <ng-container *ngIf="attachedDatagrid.row_count"> · {{ attachedDatagrid.row_count | number }} rows</ng-container>
         </span>
       </div>

@@ -134,7 +134,7 @@ export class ChartAutoPickService {
    */
   classifyColumn(rows: Record<string, any>[], colName: string): ColumnType {
     const samples = rows
-      .map(r => r[colName])
+      .map(r => this._getRowValue(r, colName))
       .filter(v => v !== null && v !== undefined && v !== '')
       .slice(0, SAMPLE_SIZE);
 
@@ -222,8 +222,8 @@ export class ChartAutoPickService {
       datasets = [{
         label: `${xCol} vs ${yCol}`,
         data: truncated.map(r => ({
-          x: this._toNum(r[xCol]),
-          y: this._toNum(r[yCol]),
+          x: this._toNum(this._getRowValue(r, xCol)),
+          y: this._toNum(this._getRowValue(r, yCol)),
         })),
       }];
 
@@ -238,7 +238,7 @@ export class ChartAutoPickService {
       // are readable regardless of the raw magnitude of the column.
       let rValues: number[] = [];
       if (rCol) {
-        const raw = truncated.map(r => this._toNum(r[rCol]));
+        const raw = truncated.map(r => this._toNum(this._getRowValue(r, rCol)));
         const min = Math.min(...raw);
         const max = Math.max(...raw);
         const range = max - min || 1;
@@ -248,20 +248,20 @@ export class ChartAutoPickService {
       datasets = [{
         label: `${xCol} / ${yCol}${rCol ? ' / ' + rCol : ''}`,
         data: truncated.map((r, i) => ({
-          x: this._toNum(r[xCol]),
-          y: this._toNum(r[yCol]),
+          x: this._toNum(this._getRowValue(r, xCol)),
+          y: this._toNum(this._getRowValue(r, yCol)),
           r: rCol ? rValues[i] : 5,
         })),
       }];
 
     } else {
       // bar / line / pie / doughnut / radar — flat number arrays.
-      _rawLabels = truncated.map(r => String(r[labelColumn] ?? ''));
+      _rawLabels = truncated.map(r => String(this._getRowValue(r, labelColumn) ?? ''));
       labels = _rawLabels.map(l => this._truncateLabel(l));
 
       datasets = dataColumns.map(col => ({
         label: col,
-        data: truncated.map(r => this._toNum(r[col])),
+        data: truncated.map(r => this._toNum(this._getRowValue(r, col))),
       }));
     }
 
@@ -281,6 +281,24 @@ export class ChartAutoPickService {
   private _toNum(val: any): number {
     const n = Number(val);
     return isNaN(n) ? 0 : n;
+  }
+
+  /** Safely gets a value from a row, with a case-insensitive fallback. */
+  private _getRowValue(row: Record<string, any>, colName: string): any {
+    if (!colName) return undefined;
+    
+    // Exact match
+    if (colName in row) return row[colName];
+    
+    // Case-insensitive / whitespace-insensitive fallback
+    const target = colName.trim().toLowerCase();
+    for (const key of Object.keys(row)) {
+      if (key.trim().toLowerCase() === target) {
+        return row[key];
+      }
+    }
+    
+    return undefined;
   }
 
   /** Truncate a label for chart display; full value shown in tooltip. */
