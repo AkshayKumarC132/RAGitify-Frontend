@@ -1812,3 +1812,26 @@
   animation: highlight-pulse 2s ease-out;
   border-radius: 0.5rem;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dashboard container (wraps app-dashboard-layout inside message bubble)
+// ─────────────────────────────────────────────────────────────────────────────
+
+.dashboard-container {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.dashboard-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px;
+  color: var(--text-muted, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
+
+  i {
+    font-size: 14px;
+    color: rgba(99, 102, 241, 0.6);
+  }
+}

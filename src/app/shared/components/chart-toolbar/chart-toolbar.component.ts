@@ -46,9 +46,16 @@ export class ChartToolbarComponent {
   @Output() dataColumnsChange = new EventEmitter<string[]>();
   @Output() expandChart = new EventEmitter<void>();
   @Output() closeChart = new EventEmitter<void>();
+  /** Fired whenever the axis config panel is opened or closed. */
+  @Output() axisConfigToggled = new EventEmitter<void>();
 
   readonly chartTypes = CHART_TYPE_OPTIONS;
   showAxisConfig = false;
+
+  toggleAxisConfig(): void {
+    this.showAxisConfig = !this.showAxisConfig;
+    this.axisConfigToggled.emit();
+  }
 
   onLabelChange(event: Event): void {
     const sel = event.target as HTMLSelectElement;

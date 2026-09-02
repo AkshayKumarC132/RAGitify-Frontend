@@ -1,0 +1,141 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// KPI Strip Component Styles
+// ─────────────────────────────────────────────────────────────────────────────
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+// ── Strip row ─────────────────────────────────────────────────────────────────
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+  animation: kpiStripIn 0.4s ease-out both;
+}
+
+@keyframes kpiStripIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ── Individual card ───────────────────────────────────────────────────────────
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--kpi-border, rgba(99, 102, 241, 0.2));
+  background: var(--kpi-bg, rgba(99, 102, 241, 0.08));
+  cursor: default;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  min-width: 0;
+  animation: kpiCardPop 0.35s ease-out both;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+
+  @for $i from 1 through 5 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{($i - 1) * 0.06}s;
+    }
+  }
+}
+
+:host-context([data-theme='dark']) .kpi-card {
+  border-color: var(--kpi-border, rgba(99, 102, 241, 0.25));
+  background: var(--kpi-bg, rgba(99, 102, 241, 0.10));
+
+  &:hover {
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+  }
+}
+
+@keyframes kpiCardPop {
+  from { opacity: 0; transform: scale(0.96) translateY(4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+// ── Icon ──────────────────────────────────────────────────────────────────────
+
+.kpi-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--kpi-bg, rgba(99, 102, 241, 0.12));
+  flex-shrink: 0;
+
+  i {
+    font-size: 13px;
+    color: var(--kpi-icon-color, rgba(99, 102, 241, 0.85));
+  }
+}
+
+// ── Body ──────────────────────────────────────────────────────────────────────
+
+.kpi-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.kpi-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #1a1a2e);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  // Text values (e.g. category names) use smaller size
+  &.kpi-value--text {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+}
+
+:host-context([data-theme='dark']) .kpi-value {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.kpi-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted, rgba(0, 0, 0, 0.45));
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+:host-context([data-theme='dark']) .kpi-label {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+// ── Responsive ────────────────────────────────────────────────────────────────
+
+@media (max-width: 640px) {
+  .kpi-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 380px) {
+  .kpi-strip {
+    grid-template-columns: 1fr;
+  }
+}

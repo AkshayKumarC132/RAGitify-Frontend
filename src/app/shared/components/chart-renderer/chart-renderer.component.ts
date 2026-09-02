@@ -337,6 +337,27 @@ export class ChartRendererComponent implements AfterViewInit, OnChanges, OnDestr
     this.buildChart();
   }
 
+  /**
+   * Re-measure and resize the chart after an external layout change
+   * (e.g. the axis config panel opening/closing in the toolbar).
+   *
+   * A simple `chart.resize()` is insufficient because the canvas drawing
+   * buffer can become mismatched with the CSS display size during
+   * ResizeObserver-triggered reflows. A full destroy + rebuild — the same
+   * path used by chart-type changes — guarantees correct dimensions.
+   *
+   * The 200 ms delay waits for the toolbar's CSS slide-down animation
+   * (150 ms) to complete so Chart.js reads a stable layout.
+   */
+  scheduleResize(): void {
+    setTimeout(() => {
+      if (!this._destroyed && this.config) {
+        this.destroyChart();
+        this.buildChart();
+      }
+    }, 200);
+  }
+
   /** Export the chart as a PNG data URL (called by parent via template ref). */
   toBase64Image(): string | null {
     return this.chartInstance?.toBase64Image() ?? null;

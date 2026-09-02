@@ -45,28 +45,21 @@
     flex-wrap: wrap;
   }
 
-  // Expanded (multi-line) state: switch to column layout
+  // Expanded (multi-line) state: keep grid but let the textarea row grow
   &.expanded {
-    flex-direction: column;
-    align-items: stretch;
     border-radius: 24px;
-    gap: 0;
 
-    .chat-input-shell {
-      width: 100%;
-      flex: none;
+    &:not(.has-attachments) {
+      grid-template-rows: auto 44px;
     }
 
-    .input-bar {
-      padding-top: 0.25rem;
+    &.has-attachments {
+      grid-template-rows: auto auto 44px;
+    }
 
-      .attachment-controls {
-        order: 0;
-      }
-
-      .input-actions {
-        order: 1;
-      }
+    .attachment-controls {
+      align-self: start;
+      padding-top: 0.35rem;
     }
   }
 }
@@ -82,7 +75,7 @@
 // In the compact composer, the input bar's controls participate directly in
 // the parent layout so the attachment button, mode selector, and actions can
 // occupy their intended rows.
-.input-wrapper:not(.expanded) {
+.input-wrapper {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;

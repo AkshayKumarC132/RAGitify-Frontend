@@ -6,7 +6,11 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
+  // Use 'stretch' so the canvas fills the container width naturally.
+  // 'center' caused the canvas to shrink-wrap, which forced a
+  // `width: 100% !important` override that conflicted with Chart.js's
+  // internal sizing and produced stretched charts on layout reflows.
+  align-items: stretch;
 
   // Download button — top-right overlay, visible on hover
   .chart-download-btn {
@@ -45,7 +49,11 @@
   }
 
   canvas {
-    width: 100% !important;
+    // Do NOT set `width: 100% !important` — it overrides Chart.js's inline
+    // styles and causes buffer/display mismatches (stretched charts) when
+    // the ResizeObserver fires during layout transitions.
+    // Chart.js responsive mode handles width automatically.
+    display: block;
     min-height: 200px;
     max-height: 340px;
   }

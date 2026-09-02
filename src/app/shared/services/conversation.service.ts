@@ -56,8 +56,8 @@ export class ConversationService {
     return this.api.get<ConversationMessage[]>(`/conversation/${conversationId}/items/${token}/`, token);
   }
 
-  getDataGrid(conversationId: string, messageId: string | number): Observable<DataGridResponse> {
+  getDataGrid(conversationId: string, messageId: string | number): Observable<DataGridResponse[]> {
     const token = this.getToken();
-    return this.api.get<DataGridResponse>(`/conversation/${conversationId}/messages/${messageId}/data-grid/${token}/`, token);
+    return this.api.get<DataGridResponse[]>(`/conversation/${conversationId}/messages/${messageId}/data-grid/${token}/`, token);
   }
 }

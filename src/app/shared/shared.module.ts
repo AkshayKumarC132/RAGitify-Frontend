@@ -30,9 +30,11 @@ import { ContextRailComponent } from './components/context-rail/context-rail.com
 import { ContextPopoverComponent } from './components/context-popover/context-popover.component';
 import { ChartRendererComponent } from './components/chart-renderer/chart-renderer.component';
 import { ChartToolbarComponent } from './components/chart-toolbar/chart-toolbar.component';
+import { DashboardLayoutComponent } from './components/dashboard-layout/dashboard-layout.component';
+import { KpiStripComponent } from './components/kpi-strip/kpi-strip.component';
 
 @NgModule({
-  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe, ToastComponent, SkeletonComponent, TopProgressComponent, CommandPaletteComponent, DocPreviewDirective, DatagridPreviewDirective, TaskListComponent, ConnectionWarningModalComponent, ContextRailComponent, ContextPopoverComponent, ChartRendererComponent, ChartToolbarComponent],
+  declarations: [ThemeToggleComponent, TypingLabelComponent, ConfirmDialogComponent, ThreadSearchPopupComponent, MessageSourcesComponent, TypingIndicatorComponent, MessageBubbleComponent, FormatTimePipe, ToastComponent, SkeletonComponent, TopProgressComponent, CommandPaletteComponent, DocPreviewDirective, DatagridPreviewDirective, TaskListComponent, ConnectionWarningModalComponent, ContextRailComponent, ContextPopoverComponent, ChartRendererComponent, ChartToolbarComponent, DashboardLayoutComponent, KpiStripComponent],
   imports: [
     CommonModule,
     HttpClientModule,
@@ -88,7 +90,9 @@ import { ChartToolbarComponent } from './components/chart-toolbar/chart-toolbar.
     ContextRailComponent,
     ContextPopoverComponent,
     ChartRendererComponent,
-    ChartToolbarComponent
+    ChartToolbarComponent,
+    DashboardLayoutComponent,
+    KpiStripComponent
   ]
 })
 export class SharedModule { }

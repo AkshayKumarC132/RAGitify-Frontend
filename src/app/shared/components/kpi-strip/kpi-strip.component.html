@@ -1,0 +1,18 @@
+<div class="kpi-strip" *ngIf="cards.length > 0" role="region" aria-label="Key performance indicators">
+  <div
+    class="kpi-card"
+    *ngFor="let card of cards; let i = index"
+    [style.--kpi-bg]="card.accent.bg"
+    [style.--kpi-icon-color]="card.accent.icon"
+    [style.--kpi-border]="card.accent.border"
+    [attr.aria-label]="card.label + ': ' + card.displayValue"
+  >
+    <div class="kpi-icon-wrap">
+      <i [class]="card.iconClass" aria-hidden="true"></i>
+    </div>
+    <div class="kpi-body">
+      <div class="kpi-value" [class.kpi-value--text]="!card.isNumeric">{{ card.displayValue }}</div>
+      <div class="kpi-label">{{ card.label }}</div>
+    </div>
+  </div>
+</div>

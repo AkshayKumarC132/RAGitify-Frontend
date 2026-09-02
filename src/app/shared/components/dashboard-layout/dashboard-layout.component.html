@@ -1,0 +1,302 @@
+<div *ngIf="panels.length > 0" class="dashboard-wrapper">
+
+  <!-- ── Dashboard Title ──────────────────────────────────────────── -->
+  <div class="dashboard-header" *ngIf="dashboardTitle">
+    <i class="fa-solid fa-chart-pie dashboard-icon"></i>
+    <h3 class="dashboard-title">{{ dashboardTitle }}</h3>
+    <span class="dashboard-badge">{{ panels.length }} panels</span>
+    <button
+      type="button"
+      class="dashboard-download-btn"
+      (click)="downloadDashboard()"
+      [disabled]="isDownloading"
+      [title]="isDownloading ? 'Capturing…' : 'Download dashboard as image'">
+      <i [class]="isDownloading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-download'"></i>
+    </button>
+  </div>
+
+  <!-- ── KPI Headline Strip ────────────────────────────────────────── -->
+  <app-kpi-strip *ngIf="kpis && kpis.length > 0" [kpis]="kpis"></app-kpi-strip>
+
+  <!-- ── Panel Grid ────────────────────────────────────────────────── -->
+  <div class="dashboard-grid" [class.cols-2]="panels.length <= 4" [class.cols-3]="panels.length > 4">
+    <div
+      class="dashboard-panel"
+      *ngFor="let panel of panels; let i = index; trackBy: trackByIndex"
+      [class.panel--enlarged]="shouldEnlarge(panel)"
+    >
+      <!-- ── Panel Header ─────────────────────────────────────────── -->
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <i class="fa-solid fa-grip-vertical panel-drag-handle"></i>
+          <div class="panel-title-block">
+            <span class="panel-title">{{ panel.title || ('Panel ' + (i + 1)) }}</span>
+            <span class="panel-subtitle" *ngIf="panel.description">{{ panel.description }}</span>
+          </div>
+        </div>
+
+        <!-- Toolbar icons — visible on hover only -->
+        <div class="panel-toolbar" (click)="$event.stopPropagation()">
+
+          <!-- Table toggle -->
+          <button
+            type="button"
+            class="panel-tool-btn"
+            (click)="toggleTable(i)"
+            [title]="panel.showTable ? 'Show chart' : 'Show table'"
+            [class.panel-tool-btn--active]="panel.showTable">
+            <i [class]="panel.showTable ? 'fa-solid fa-chart-bar' : 'fa-solid fa-table'"></i>
+          </button>
+
+          <!-- Configure axes (only available when chart is shown) -->
+          <button
+            type="button"
+            class="panel-tool-btn"
+            *ngIf="!panel.showTable && panel.chartConfig"
+            (click)="toggleAxisConfig(i)"
+            [class.panel-tool-btn--active]="panel.showAxisConfig"
+            title="Configure axes">
+            <i class="fa-solid fa-sliders"></i>
+          </button>
+
+          <!-- Focus / expand panel -->
+          <button
+            type="button"
+            class="panel-tool-btn"
+            (click)="focusPanel(i)"
+            [class.panel-tool-btn--active]="focusedPanelIndex === i"
+            [title]="focusedPanelIndex === i ? 'Exit focus' : 'Focus panel'">
+            <i [class]="focusedPanelIndex === i ? 'fa-solid fa-compress' : 'fa-solid fa-expand'"></i>
+          </button>
+
+          <!-- Dropdown trigger -->
+          <div class="panel-dropdown-wrap">
+            <button
+              type="button"
+              class="panel-tool-btn"
+              [class.panel-tool-btn--active]="panel.showDropdown"
+              (click)="toggleDropdown(i)"
+              title="Panel options">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
+
+            <!-- Dropdown menu -->
+            <div class="panel-dropdown" *ngIf="panel.showDropdown" (click)="$event.stopPropagation()">
+              <div class="panel-dropdown-header">Panel</div>
+              <button class="panel-dropdown-item" (click)="toggleTable(i); toggleDropdown(i)">
+                <i [class]="panel.showTable ? 'fa-solid fa-chart-bar' : 'fa-solid fa-table'"></i>
+                {{ panel.showTable ? 'Show chart' : 'Show table' }}
+              </button>
+              <button class="panel-dropdown-item" (click)="exportCsv(i)">
+                <i class="fa-solid fa-download"></i> Export CSV
+              </button>
+              <button class="panel-dropdown-item" (click)="copyQuery(i)">
+                <i class="fa-solid fa-copy"></i> Copy query
+              </button>
+              <div class="panel-dropdown-divider"></div>
+              <button class="panel-dropdown-item panel-dropdown-item--danger" (click)="removePanel(i)">
+                <i class="fa-solid fa-xmark"></i> Remove panel
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /panel-toolbar -->
+      </div><!-- /panel-header -->
+
+      <!-- ── Axis Config Panel (inline, below header) ─────────────── -->
+      <div class="panel-axis-config" *ngIf="panel.showAxisConfig && !panel.showTable && panel.chartConfig">
+        <div class="panel-axis-group" *ngIf="panel.availableLabelColumns.length > 0">
+          <label class="panel-axis-label">X-Axis</label>
+          <select class="panel-axis-select" [value]="panel.labelColumn" (change)="onLabelChange(i, $event)">
+            <option *ngFor="let col of panel.availableLabelColumns" [value]="col">{{ col }}</option>
+          </select>
+        </div>
+        <div class="panel-axis-group" *ngIf="panel.availableDataColumns.length > 0">
+          <label class="panel-axis-label">Y-Axis</label>
+          <div class="panel-axis-checkboxes">
+            <label
+              *ngFor="let col of panel.availableDataColumns"
+              class="panel-axis-chip"
+              [class.panel-axis-chip--on]="isDataColSelected(panel, col)">
+              <input type="checkbox" [checked]="isDataColSelected(panel, col)" (change)="onDataColumnToggle(i, col)">
+              <span>{{ col }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Chart Area ───────────────────────────────────────────── -->
+      <div class="panel-chart-area" *ngIf="!panel.showTable && panel.chartConfig">
+        <app-chart-renderer [config]="panel.chartConfig"></app-chart-renderer>
+      </div>
+
+      <!-- ── Chart Footer (description + type pills) ─────────────── -->
+      <div class="panel-chart-footer" *ngIf="!panel.showTable && panel.chartConfig">
+        <!-- Description — visible by default, hides on hover -->
+        <div class="panel-description" *ngIf="panel.description">
+          <i class="fa-solid fa-sparkles panel-description-icon"></i>
+          <span>{{ panel.description }}</span>
+        </div>
+        <!-- Chart type pills — hidden by default, revealed on hover -->
+        <div class="panel-type-pills">
+          <button
+            *ngFor="let opt of chartTypeOptions"
+            type="button"
+            class="panel-type-pill"
+            [class.panel-type-pill--active]="opt.type === panel.chartConfig!.type"
+            (click)="onTypeChange(i, opt.type)"
+            [title]="opt.label">
+            <i [class]="opt.icon"></i>
+            <span class="panel-type-pill-label">{{ opt.label }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── No Chart Fallback ────────────────────────────────────── -->
+      <div class="panel-no-chart" *ngIf="!panel.showTable && !panel.chartConfig">
+        <i class="fa-solid fa-chart-simple no-chart-icon"></i>
+        <span>No chart available</span>
+      </div>
+
+      <!-- ── Mini Table (shown when chart toggled off) ────────────── -->
+      <div class="panel-table-area" *ngIf="panel.showTable">
+        <div class="panel-table-scroll">
+          <table class="panel-table">
+            <thead>
+              <tr>
+                <th class="row-num">#</th>
+                <th *ngFor="let col of panel.source.columns">{{ formatColumnHeader(col) }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of panel.source.rows.slice(0, 100); let ri = index">
+                <td class="row-num">{{ ri + 1 }}</td>
+                <td *ngFor="let col of panel.source.columns">{{ row[col] }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel-table-footer" *ngIf="panel.source.rows.length > 100">
+          Showing 100 of {{ panel.source.rows.length }} rows
+        </div>
+      </div>
+
+    </div><!-- /dashboard-panel -->
+  </div><!-- /dashboard-grid -->
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- ── Focus Panel Modal Overlay ──────────────────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="focus-overlay" *ngIf="focusedPanelIndex !== null" (click)="focusPanel(focusedPanelIndex!)">
+    <div class="focus-modal" (click)="$event.stopPropagation()">
+
+      <!-- Modal Header -->
+      <div class="focus-header">
+        <div class="focus-header-left">
+          <span class="focus-title">{{ panels[focusedPanelIndex!].title }}</span>
+          <span class="focus-subtitle" *ngIf="panels[focusedPanelIndex!].description">
+            {{ panels[focusedPanelIndex!].description }}
+          </span>
+        </div>
+        <div class="focus-header-right">
+          <!-- Table toggle -->
+          <button
+            type="button"
+            class="panel-tool-btn"
+            (click)="toggleTable(focusedPanelIndex!)"
+            [title]="panels[focusedPanelIndex!].showTable ? 'Show chart' : 'Show table'">
+            <i [class]="panels[focusedPanelIndex!].showTable ? 'fa-solid fa-chart-bar' : 'fa-solid fa-table'"></i>
+          </button>
+          <!-- Configure axes -->
+          <button
+            type="button"
+            class="panel-tool-btn"
+            *ngIf="!panels[focusedPanelIndex!].showTable && panels[focusedPanelIndex!].chartConfig"
+            (click)="toggleAxisConfig(focusedPanelIndex!)"
+            [class.panel-tool-btn--active]="panels[focusedPanelIndex!].showAxisConfig"
+            title="Configure axes">
+            <i class="fa-solid fa-sliders"></i>
+          </button>
+          <!-- Export CSV -->
+          <button type="button" class="panel-tool-btn" (click)="exportCsv(focusedPanelIndex!)" title="Export CSV">
+            <i class="fa-solid fa-download"></i>
+          </button>
+          <!-- Copy query -->
+          <button type="button" class="panel-tool-btn" (click)="copyQuery(focusedPanelIndex!)" title="Copy query">
+            <i class="fa-solid fa-copy"></i>
+          </button>
+          <!-- Close -->
+          <button type="button" class="panel-tool-btn focus-close-btn" (click)="focusPanel(focusedPanelIndex!)" title="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Axis Config -->
+      <div class="panel-axis-config" *ngIf="panels[focusedPanelIndex!].showAxisConfig && !panels[focusedPanelIndex!].showTable && panels[focusedPanelIndex!].chartConfig">
+        <div class="panel-axis-group" *ngIf="panels[focusedPanelIndex!].availableLabelColumns.length > 0">
+          <label class="panel-axis-label">X-Axis</label>
+          <select class="panel-axis-select" [value]="panels[focusedPanelIndex!].labelColumn" (change)="onLabelChange(focusedPanelIndex!, $event)">
+            <option *ngFor="let col of panels[focusedPanelIndex!].availableLabelColumns" [value]="col">{{ col }}</option>
+          </select>
+        </div>
+        <div class="panel-axis-group" *ngIf="panels[focusedPanelIndex!].availableDataColumns.length > 0">
+          <label class="panel-axis-label">Y-Axis</label>
+          <div class="panel-axis-checkboxes">
+            <label
+              *ngFor="let col of panels[focusedPanelIndex!].availableDataColumns"
+              class="panel-axis-chip"
+              [class.panel-axis-chip--on]="isDataColSelected(panels[focusedPanelIndex!], col)">
+              <input type="checkbox" [checked]="isDataColSelected(panels[focusedPanelIndex!], col)" (change)="onDataColumnToggle(focusedPanelIndex!, col)">
+              <span>{{ col }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="focus-chart-area" *ngIf="!panels[focusedPanelIndex!].showTable && panels[focusedPanelIndex!].chartConfig">
+        <app-chart-renderer [config]="panels[focusedPanelIndex!].chartConfig!"></app-chart-renderer>
+      </div>
+
+      <!-- Chart type pills -->
+      <div class="focus-type-pills" *ngIf="!panels[focusedPanelIndex!].showTable && panels[focusedPanelIndex!].chartConfig">
+        <button
+          *ngFor="let opt of chartTypeOptions"
+          type="button"
+          class="panel-type-pill"
+          [class.panel-type-pill--active]="opt.type === panels[focusedPanelIndex!].chartConfig!.type"
+          (click)="onTypeChange(focusedPanelIndex!, opt.type)"
+          [title]="opt.label">
+          <i [class]="opt.icon"></i>
+          <span class="panel-type-pill-label">{{ opt.label }}</span>
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="focus-table-area" *ngIf="panels[focusedPanelIndex!].showTable">
+        <div class="panel-table-scroll">
+          <table class="panel-table">
+            <thead>
+              <tr>
+                <th class="row-num">#</th>
+                <th *ngFor="let col of panels[focusedPanelIndex!].source.columns">{{ formatColumnHeader(col) }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of panels[focusedPanelIndex!].source.rows.slice(0, 200); let ri = index">
+                <td class="row-num">{{ ri + 1 }}</td>
+                <td *ngFor="let col of panels[focusedPanelIndex!].source.columns">{{ row[col] }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel-table-footer" *ngIf="panels[focusedPanelIndex!].source.rows.length > 200">
+          Showing 200 of {{ panels[focusedPanelIndex!].source.rows.length }} rows
+        </div>
+      </div>
+
+    </div><!-- /focus-modal -->
+  </div><!-- /focus-overlay -->
+
+</div>

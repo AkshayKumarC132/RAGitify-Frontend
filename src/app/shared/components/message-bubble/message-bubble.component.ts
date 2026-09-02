@@ -9,6 +9,7 @@ import {
   OnInit,
   Output,
   SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Router } from '@angular/router';
@@ -19,7 +20,11 @@ import { Run } from '../../models/run.model';
 import {
   DataGridResponse,
   DataGridSource,
+  KpiItem,
 } from '../../models/conversation.model';
+import {
+  DashboardPanel,
+} from '../dashboard-layout/dashboard-layout.component';
 import {
   AnyChartConfig,
   ChartConfig,
@@ -30,6 +35,7 @@ import {
 import { ConversationService } from '../../services/conversation.service';
 import { DatagridAttachmentService } from '../../services/datagrid-attachment.service';
 import { ChartAutoPickService } from '../../services/chart-auto-pick.service';
+import { ChartRendererComponent } from '../chart-renderer/chart-renderer.component';
 /**
  * `xlsx` is ~430 kB and this component lives in the eager SharedModule, so a
  * static import shipped the whole spreadsheet library to every user on first
@@ -110,7 +116,18 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   // Inline Data Grid State
   private inlineDataLoaded = false;
 
+  // ── Dashboard state ──────────────────────────────────────────────────────
+  /** Built panels for dashboard rendering (populated when isDashboard is true). */
+  dashboardPanels: DashboardPanel[] = [];
+  /** Dashboard title extracted from message metadata or data_grids. */
+  dashboardTitle: string = '';
+  /** Headline KPI values for the KPI strip above the chart grid. */
+  dashboardKpis: KpiItem[] = [];
+  private _dashboardLoaded = false;
+
   // ── Chart state ──────────────────────────────────────────────────────
+  /** Reference to the active chart renderer so we can call scheduleResize(). */
+  @ViewChild('chartRendererRef') chartRendererRef?: ChartRendererComponent;
   /** Active chart config (null = no chart shown) */
   activeChartConfig: ChartConfig | null = null;
   /** Whether the chart panel is visible */
@@ -192,7 +209,7 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     // Auto-display LLM-generated chart from the message payload.
     // This handles the compact bar path where the DataGrid API isn't called
     // at page load — the message list serializer already includes chart_config.
-    if (this.message?.data_grid_chart_config && !this.showChart) {
+    if (this.message?.data_grid_chart_config && !this.showChart && !this.isDashboard) {
       this._applyChartConfig(this.message.data_grid_chart_config);
       // If the config was deferred (ColumnMappingConfig with no rows yet),
       // and checkInlineDataLoad() won't run (enableDataGrid=false / compact bar),
@@ -200,6 +217,11 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
       if (this._pendingColumnMapping) {
         this._fetchDataForPendingChart();
       }
+    }
+
+    // For dashboard messages (2+ data_grids), eagerly fetch all panels.
+    if (this.isDashboard && !this._dashboardLoaded) {
+      this._loadDashboardPanels();
     }
   }
 
@@ -219,6 +241,9 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private checkInlineDataLoad(): void {
+    // Dashboard messages are handled separately by _loadDashboardPanels().
+    if (this.isDashboard) return;
+
     if (!this.enableDataGrid || !this.hasDataGrid || this.inlineDataLoaded) {
       return;
     }
@@ -246,8 +271,8 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     this.conversationService
       .getDataGrid(this.conversationId, this.message.id)
       .subscribe({
-        next: (res) => {
-          this.parseDataGridResponse(res);
+        next: (resArray) => {
+          this.parseDataGridResponse(resArray[0]);
           this.dataGridLoading = false;
           this.inlineDataLoaded = true;
           this.cdr.markForCheck();
@@ -265,12 +290,19 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
 
   /**
    * Parse the multi-source DataGridResponse from the API into DataGridSource[].
-   * Also populates sqlQueryMap.
+   * Also populates sqlQueryMap. Accepts a single DataGridResponse (first item
+   * of the array returned by the updated backend for non-dashboard messages).
    */
   private parseDataGridResponse(res: DataGridResponse): void {
+    if (!res) return;
+
     // Populate SQL query map (grid_id → sql string)
-    if (res.sql_query && typeof res.sql_query === 'object') {
-      this.sqlQueryMap = res.sql_query;
+    const sq = res.sql_query;
+    if (sq && typeof sq === 'object' && !Array.isArray(sq)) {
+      this.sqlQueryMap = sq as Record<string, string>;
+    } else if (typeof sq === 'string') {
+      // Legacy plain-string SQL — store under a generic key.
+      this.sqlQueryMap = { '_': sq };
     } else {
       this.sqlQueryMap = {};
     }
@@ -490,6 +522,187 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     );
   }
 
+  /**
+   * True when the message contains 2+ DataGrids, meaning the LLM called
+   * `generate_dashboard` and the response should render as a grid layout.
+   */
+  get isDashboard(): boolean {
+    return (this.message?.data_grids?.length ?? 0) > 1;
+  }
+
+  /**
+   * Fetch all DataGrids for a dashboard message and build DashboardPanel[].
+   * Called once on init when isDashboard is true.
+   */
+  private _loadDashboardPanels(): void {
+    if (!this.conversationId || !this.message?.id || this._dashboardLoaded) return;
+    this._dashboardLoaded = true;
+
+    // Extract dashboard title from message metadata (set by backend).
+    this.dashboardTitle =
+      this.message?.metadata?.['dashboard_title'] ?? '';
+
+    // Extract KPI headline values (set by backend when kpi_query is used).
+    const rawKpis = this.message?.metadata?.['dashboard_kpis'];
+    if (Array.isArray(rawKpis)) {
+      this.dashboardKpis = (rawKpis as any[]).filter(
+        (k) => k && typeof k === 'object' && 'label' in k && 'value' in k
+      ) as KpiItem[];
+    }
+
+    this.dataGridLoading = true;
+    this.cdr.markForCheck();
+
+    this.conversationService
+      .getDataGrid(this.conversationId, this.message.id)
+      .subscribe({
+        next: (resArray) => {
+          this.dataGridLoading = false;
+
+          const panels: DashboardPanel[] = resArray
+            .filter((res) => res.data && Array.isArray(res.data))
+            .map((res, idx) => {
+              // Build a DataGridSource from the first grid slot in each response.
+              const firstGrid = res.data?.[0];
+              const sanitizedRows = (firstGrid?.rows ?? []).map((r: any) =>
+                this.sanitizeRow(r),
+              );
+              const source: DataGridSource = {
+                grid_id: firstGrid?.grid_id ?? `dashboard-${idx}`,
+                source_key: firstGrid?.source_key ?? '',
+                source_name: firstGrid?.source_name ?? '',
+                rows: sanitizedRows,
+                columns:
+                  sanitizedRows.length > 0 ? Object.keys(sanitizedRows[0]) : [],
+              };
+
+              // Materialise chart config.
+              let chartConfig: import('../../models/chart-config.model').ChartConfig | null = null;
+              let labelColumn = '';
+              let dataColumns: string[] = [];
+              let availableLabelColumns: string[] = [];
+              let availableDataColumns: string[] = [];
+
+              if (res.chart_config && source.rows.length > 0) {
+                if (isColumnMappingConfig(res.chart_config)) {
+                  // ── Column-name validation ──────────────────────────────────
+                  // The LLM's chart config references SCHEMA column names (e.g.
+                  // "Unnamed_8"), but the SQL Agent may alias them to readable
+                  // names (e.g. "avg_salary_lpa"). Validate before using them.
+                  const actualCols = new Set(source.columns);
+                  const xValid = actualCols.has(res.chart_config.xColumn);
+                  const yValid = res.chart_config.yColumns.some(c => actualCols.has(c));
+
+                  if (xValid && yValid) {
+                    // Columns match — use LLM config as-is.
+                    const validYCols = res.chart_config.yColumns.filter(c => actualCols.has(c));
+                    chartConfig = this.chartAutoPickService.buildConfig(
+                      res.chart_config.type,
+                      res.chart_config.xColumn,
+                      validYCols,
+                      source.rows,
+                      res.chart_config.title,
+                    );
+                    labelColumn = res.chart_config.xColumn;
+                    dataColumns = validYCols;
+                  } else {
+                    // ── Mismatch: fall back to auto-pick, preserve chart type ─
+                    // The SQL agent aliased column names — pick the closest real
+                    // columns by type (categorical/date → X, numeric → Y), then
+                    // force the LLM-requested chart type.
+                    const autoPicked = this.chartAutoPickService.autoPickChart(
+                      source.columns,
+                      source.rows,
+                    );
+                    // Override chart type to what the LLM wanted.
+                    chartConfig = this.chartAutoPickService.buildConfig(
+                      res.chart_config.type,
+                      autoPicked.labelColumn,
+                      autoPicked.dataColumns,
+                      source.rows,
+                      res.chart_config.title,
+                    );
+                    labelColumn = autoPicked.labelColumn;
+                    dataColumns = autoPicked.dataColumns;
+                    console.info(
+                      `[Dashboard] Column mismatch for panel — LLM wanted (${res.chart_config.xColumn}, ${res.chart_config.yColumns}) ` +
+                      `but data has (${source.columns.join(', ')}). Auto-picked (${labelColumn}, ${dataColumns}).`
+                    );
+                  }
+                } else {
+                  // Legacy hardcoded ChartConfig — use as-is.
+                  chartConfig = res.chart_config as import('../../models/chart-config.model').ChartConfig;
+                }
+              } else if (source.rows.length > 0 && source.columns.length > 0) {
+                // Auto-pick chart if no explicit config provided.
+                const picked = this.chartAutoPickService.autoPickChart(
+                  source.columns,
+                  source.rows,
+                );
+                chartConfig = picked.config;
+                labelColumn = picked.labelColumn;
+                dataColumns = picked.dataColumns;
+              }
+
+              if (source.rows.length > 0 && source.columns.length > 0) {
+                availableLabelColumns =
+                  this.chartAutoPickService.getLabelCandidates(source.columns, source.rows);
+                availableDataColumns =
+                  this.chartAutoPickService.getValueCandidates(source.columns, source.rows);
+              }
+
+              // Use summary panel_title from message.data_grids if API didn't set it.
+              const summaryTitle =
+                this.message?.data_grids?.[idx]?.panel_title ?? '';
+              const panelTitle =
+                res.panel_title || summaryTitle || `Panel ${idx + 1}`;
+
+              // Extract description from chart_config (stored there to avoid DB migration).
+              const rawCfg = res.chart_config as any;
+              const panelDescription = (rawCfg && typeof rawCfg === 'object')
+                ? String(rawCfg['description'] || '').trim()
+                : '';
+
+              // Extract SQL query string for the "Copy query" action.
+              let panelSqlQuery = '';
+              if (res.sql_query) {
+                if (typeof res.sql_query === 'string') {
+                  panelSqlQuery = res.sql_query;
+                } else if (typeof res.sql_query === 'object') {
+                  // sql_query is a Record<string, string> keyed by source_key
+                  panelSqlQuery = Object.values(res.sql_query).join('\n\n');
+                }
+              }
+
+              return {
+                title: panelTitle,
+                description: panelDescription,
+                source,
+                chartConfig,
+                rawConfig: res.chart_config ?? null,
+                sqlQuery: panelSqlQuery,
+                labelColumn,
+                dataColumns,
+                availableLabelColumns,
+                availableDataColumns,
+                showTable: false,
+                showAxisConfig: false,
+                showDropdown: false,
+              } as DashboardPanel;
+            });
+
+          this.dashboardPanels = panels;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('[MessageBubble] Error loading dashboard panels:', err);
+          this.dataGridLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+
   // ── Chart handlers ────────────────────────────────────────────────────────
 
   /** Called by "Visualize" button on the DataGrid bar. */
@@ -571,6 +784,17 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     this.activeChartConfig = null;
     this.isLlmChart = false;
     this.cdr.markForCheck();
+  }
+
+  /**
+   * Axis config panel opened/closed — the toolbar grows or shrinks, which
+   * causes Chart.js's ResizeObserver to fire during the CSS animation and
+   * read incorrect dimensions (chart stretches). Scheduling a resize after
+   * the animation settles (180 ms) corrects the canvas dimensions without a
+   * full chart destroy + rebuild.
+   */
+  onAxisConfigToggled(): void {
+    this.chartRendererRef?.scheduleResize();
   }
 
   /** Download current chart as PNG. */
@@ -669,8 +893,8 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     this.conversationService
       .getDataGrid(this.conversationId, this.message.id)
       .subscribe({
-        next: (res) => {
-          this.parseDataGridResponse(res);
+        next: (resArray) => {
+          this.parseDataGridResponse(resArray[0]);
           this.dataGridLoading = false;
           this.cdr.markForCheck();
         },
@@ -702,8 +926,8 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     this.conversationService
       .getDataGrid(this.conversationId, this.message.id)
       .subscribe({
-        next: (res) => {
-          this.parseDataGridResponse(res);
+        next: (resArray) => {
+          this.parseDataGridResponse(resArray[0]);
           this.dataGridLoading = false;
           this.inlineDataLoaded = true;
           // Only run auto-pick if parseDataGridResponse didn't already
@@ -1064,8 +1288,8 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
     this.conversationService
       .getDataGrid(this.conversationId, this.message.id)
       .subscribe({
-        next: (res) => {
-          this.parseDataGridResponse(res);
+        next: (resArray) => {
+          this.parseDataGridResponse(resArray[0]);
           this.dataGridLoading = false;
           this.inlineDataLoaded = true;
           this.cdr.markForCheck();
@@ -1104,8 +1328,8 @@ export class MessageBubbleComponent implements OnInit, OnDestroy, OnChanges {
       this.conversationService
         .getDataGrid(this.conversationId, this.message.id)
         .subscribe({
-          next: (res) => {
-            this.parseDataGridResponse(res);
+          next: (resArray) => {
+            this.parseDataGridResponse(resArray[0]);
             this.sqlActiveSourceIndex = targetIndex;
             this.showSqlModal = true;
             this.cdr.markForCheck();

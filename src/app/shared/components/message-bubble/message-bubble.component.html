@@ -37,9 +37,27 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════
-         Inline Data Grid (v2 — multi-source)
+         Dashboard Layout (when isDashboard — 2+ data grids)
          ═══════════════════════════════════════════════════════════ -->
-    <div *ngIf="hasDataGrid && !showEmptyState && enableDataGrid" class="inline-data-grid" [attr.id]="message.data_grid_id ? 'datagrid-' + message.data_grid_id : null">
+    <div *ngIf="isDashboard && !showEmptyState" class="dashboard-container">
+        <!-- Loading shimmer while panels are being fetched -->
+        <div *ngIf="dataGridLoading" class="dashboard-loading">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>Loading dashboard...</span>
+        </div>
+
+        <app-dashboard-layout
+            *ngIf="!dataGridLoading && dashboardPanels.length > 0"
+            [panels]="dashboardPanels"
+            [dashboardTitle]="dashboardTitle"
+            [kpis]="dashboardKpis">
+        </app-dashboard-layout>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Inline Data Grid (v2 — multi-source, single-query only)
+         ═══════════════════════════════════════════════════════════ -->
+    <div *ngIf="hasDataGrid && !isDashboard && !showEmptyState && enableDataGrid" class="inline-data-grid" [attr.id]="message.data_grid_id ? 'datagrid-' + message.data_grid_id : null">
 
         <!-- ── Header ──────────────────────────────────────────── -->
         <div class="idg-header">
@@ -119,6 +137,7 @@
                 (typeChange)="onChartTypeChange($event)"
                 (labelColumnChange)="onChartLabelColumnChange($event)"
                 (dataColumnsChange)="onChartDataColumnsChange($event)"
+                (axisConfigToggled)="onAxisConfigToggled()"
                 (closeChart)="onCloseChart()">
             </app-chart-toolbar>
         </div>
@@ -164,8 +183,8 @@
 
     </div>
 
-    <!-- Data Grid Bar (fallback when enableDataGrid is false) -->
-    <div *ngIf="hasDataGrid && !showEmptyState && !enableDataGrid" class="new-data-grid-container" [attr.id]="message.data_grid_id ? 'datagrid-' + message.data_grid_id : null">
+    <!-- Data Grid Bar (fallback when enableDataGrid is false, single-query only) -->
+    <div *ngIf="hasDataGrid && !isDashboard && !showEmptyState && !enableDataGrid" class="new-data-grid-container" [attr.id]="message.data_grid_id ? 'datagrid-' + message.data_grid_id : null">
         <div class="new-data-grid-header">
             <div class="ndg-icon-wrap">
                 <i class="fa-solid fa-database"></i>

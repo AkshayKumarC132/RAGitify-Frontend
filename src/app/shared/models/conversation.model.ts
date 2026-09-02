@@ -1,5 +1,12 @@
 import { AnyChartConfig } from './chart-config.model';
 
+/** A single headline KPI item as returned by the backend dashboard_kpis field. */
+export interface KpiItem {
+  label: string;
+  value: any;
+  subtitle?: string;
+}
+
 /** A single attachment item in the unified context rail */
 export interface ContextItem {
   type: 'file' | 'database';
@@ -43,6 +50,26 @@ export interface ConversationMessage {
     completion_tokens: number;
     total_tokens: number;
   } | null;
+
+  /**
+   * Summary list of all DataGrids for this message.
+   * 1 entry → single-chart inline view (legacy path).
+   * 2+ entries → dashboard grid layout.
+   */
+  data_grids?: DataGridSummary[];
+}
+
+/**
+ * Lightweight summary of a single DataGrid, returned by the
+ * ConversationItemsSerializer `data_grids` field.
+ */
+export interface DataGridSummary {
+  id: number;
+  row_count: number;
+  chart_config?: AnyChartConfig | null;
+  /** Human-readable panel title (set by generate_dashboard tool). */
+  panel_title?: string;
+  display_order: number;
 }
 
 /** A single parsed source grid ready for display */
@@ -54,7 +81,7 @@ export interface DataGridSource {
   columns: string[];     // derived from Object.keys(rows[0])
 }
 
-/** Shape of the /data-grid/ API response */
+/** Shape of a single item in the /data-grid/ API response array */
 export interface DataGridResponse {
   id: number;
   message: number;
@@ -66,9 +93,13 @@ export interface DataGridResponse {
     source_name: string;
     rows: Record<string, any>[];
   }>;
-  sql_query: Record<string, string> | null;
+  sql_query: Record<string, string> | string | null;
   /** Chart config stored on this DataGrid, if the LLM generated one. */
   chart_config?: AnyChartConfig | null;
+  /** Human-readable panel title (set by generate_dashboard tool). */
+  panel_title?: string;
+  /** Render order within the parent message. */
+  display_order?: number;
 }
 
 export interface AttachedDataGrid {
